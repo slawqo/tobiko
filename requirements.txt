@@ -1,0 +1,6 @@
+keystoneauth1
+oslo.config
+oslo.log
+python-heatclient
+testtools
+tempest
