@@ -2,5 +2,6 @@ keystoneauth1
 oslo.config
 oslo.log
 python-heatclient
+testscenarios
 testtools
 tempest
