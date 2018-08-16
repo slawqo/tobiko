@@ -22,9 +22,9 @@ class FloatingIPTest(base.ScenarioTestsBase):
         """Creates a server and checks it can reach it."""
 
         # Defines parameters required by heat template
-        parameters = {'public_net': self.conf.floating_network_name,
+        parameters = {'public_net': self.conf.network.floating_network_name,
                       'image': "cirros-0.3.5-x86_64-disk.img",
-                      'flavor': "m1.tiny"}
+                      'flavor': "m1.micro"}
 
         # creates stack and stores its ID
         st = self.stackManager.create_stack(stack_name="fip",

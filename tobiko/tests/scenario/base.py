@@ -27,7 +27,7 @@ class ScenarioTestsBase(base.TobikoTest):
 
     def setUp(self):
         super(ScenarioTestsBase, self).setUp()
-        self.clientManager = clients.ClientManager()
+        self.clientManager = clients.ClientManager(self.conf)
 
         templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
         self.stackManager = stack.StackManager(self.clientManager,

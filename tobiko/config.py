@@ -1,5 +1,4 @@
-# Copyright (c) 2018 Red Hat
-# All Rights Reserved.
+# Copyright 2018 Red Hat
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,16 +11,21 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from oslo_config import cfg
+
 from tempest import config
-import testscenarios
-import testtools
 
 
-class TobikoTest(testtools.testcase.WithAttributes,
-                 testscenarios.WithScenarios,
-                 testtools.TestCase):
+CONF = config.CONF
 
-    def setUp(self):
-        super(TobikoTest, self).setUp()
-        self.conf = config.CONF
-        print(self.conf)
+
+TobikoGroup = [
+    cfg.StrOpt('floating_network_name',
+               default='public',
+               help="Floating network name "),
+    cfg.StrOpt('admin_username',
+               help="Username to use for admin API requests."),
+]
+
+tobiko_group = cfg.OptGroup(name="tobiko_plugin",
+                            title="Tobiko Plugin Options")

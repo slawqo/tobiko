@@ -11,8 +11,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import os
-
 from heatclient import client as heat_client
 from keystoneauth1 import loading
 from keystoneauth1 import session
@@ -21,7 +19,8 @@ from keystoneauth1 import session
 class ClientManager(object):
     """Manages OpenStack official Python clients."""
 
-    def __init__(self):
+    def __init__(self, conf):
+        self.conf = conf
         self.heat_client = self.get_heat_client()
 
     def get_heat_client(self):
@@ -30,11 +29,26 @@ class ClientManager(object):
         sess = self.get_session()
         return heat_client.Client('1', session=sess)
 
+    def get_username(self):
+        """Returns username based on config."""
+        if not hasattr(self.conf.auth, 'username'):
+            return self.conf.auth.admin_username
+        else:
+            return self.conf.auth.username
+
+    def get_password(self):
+        """Returns password based on config."""
+        if not hasattr(self.conf.auth, 'password'):
+            return self.conf.auth.admin_password
+        else:
+            return self.conf.auth.password
+
     def get_session(self):
         """Returns keystone session."""
         loader = loading.get_plugin_loader('password')
-        auth = loader.load_from_options(auth_url=os.environ['OS_AUTH_URL'],
-                                        username=os.environ['OS_USERNAME'],
-                                        password=os.environ['PASSWORD'],
-                                        project_id=os.environ['OS_TENANT_ID'])
+        auth = loader.load_from_options(
+            auth_url=self.conf.identity.uri,
+            username=self.get_username(),
+            password=self.get_password(),
+            project_name=self.conf.auth.admin_project_name)
         return session.Session(auth=auth)
