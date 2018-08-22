@@ -1,0 +1,7 @@
+- project:
+    name: openstack/tobiko
+    templates:
+      - check-requirements
+      - tempest-plugin-jobs
+    gate:
+      queue: tobiko
