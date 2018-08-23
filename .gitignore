@@ -2,15 +2,20 @@
 *.egg
 *.egg-info
 *.pyc
+
+# Hidden files
+.eggs
+.stestr
 .test
-.stestr*
-etc
 .testrepository
 .tox
 .venv
+
+__pycache__
 AUTHORS
 build/*
 ChangeLog
 doc/build/*
-zuul/versioninfo
 dist/
+etc/
+zuul/versioninfo
