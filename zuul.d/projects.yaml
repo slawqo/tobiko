@@ -5,3 +5,5 @@
       - tempest-plugin-jobs
     gate:
       queue: tobiko
+      jobs:
+          - tobiko-tempest
