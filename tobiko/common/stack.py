@@ -39,7 +39,6 @@ class StackManager(object):
                                           template=template,
                                           parameters=parameters)
 
-        print(stack)
         return stack
 
     def delete_stack(self, sid):
@@ -57,8 +56,6 @@ class StackManager(object):
         complete status or when timeout reached.
         """
         res = self.client.resources.get(stack_id, resource_name)
-        print(res.resource_status)
         while (res.resource_status != 'CREATE_COMPLETE'):
-            print(res.resource_status)
             time.sleep(5)
             res = self.client.resources.get(stack_id, resource_name)
