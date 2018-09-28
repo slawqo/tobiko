@@ -23,7 +23,7 @@ class FloatingIPTest(base.ScenarioTestsBase):
 
         # Defines parameters required by heat template
         parameters = {'public_net': self.conf.network.floating_network_name,
-                      'image': "cirros-0.3.5-x86_64-disk.img",
+                      'image': self.conf.compute.image_ref,
                       'flavor': "m1.micro"}
 
         # creates stack and stores its ID
