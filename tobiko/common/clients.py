@@ -27,7 +27,9 @@ class ClientManager(object):
         """Returns heat client."""
 
         sess = self.get_session()
-        return heat_client.Client('1', session=sess)
+        return heat_client.Client('1', session=sess,
+                                  endpoint_type='public',
+                                  service_type='orchestration')
 
     def get_username(self):
         """Returns username based on config."""
@@ -43,12 +45,69 @@ class ClientManager(object):
         else:
             return self.conf.auth.password
 
+    def get_tenant_name(self):
+        """Returns tenant/project name."""
+        if hasattr(self.conf.auth, 'project_name'):
+            return self.conf.auth.project_name
+        else:
+            return self.conf.auth.admin_project_name
+
+    def get_user_domain_name(self):
+        """Returns user domain name."""
+        if hasattr(self.conf.auth, 'user_domain_name'):
+            return self.conf.auth.user_domain_name
+        elif hasattr(self.conf.auth, "admin_domain_name"):
+            return self.conf.auth.admin_domain_name
+        else:
+            return self.conf.tobiko_plugin.user_domain_name
+
+    def get_uri(self, ver=2):
+        """Returns URI."""
+        if ver == 3:
+            if hasattr(self.conf.identity, 'uri_v3'):
+                return self.conf.identity.uri_v3
+        return self.conf.identity.uri
+
+    def get_auth_version(self):
+        """Returns identity/keystone API verion."""
+        if hasattr(self.conf.identity_feature_enabled, 'api_v3'):
+            if self.conf.identity_feature_enabled.api_v3:
+                return 3
+        return 2
+
+    def get_project_domain_name(self):
+        """Returns project domain name."""
+        if hasattr(self.conf.identity, 'project_domain_name'):
+            return self.conf.identity.project_domain_name
+        elif hasattr(self.conf.auth, 'admin_domain_name'):
+            return self.conf.auth.admin_domain_name
+        elif hasattr(self.conf.identity, 'admin_domain_name'):
+            return self.conf.identity.admin_domain_name
+        elif hasattr(self.conf.identity, 'admin_tenant_name'):
+            return self.conf.identity.admin_tenant_name
+        else:
+            return self.conf.auth.admin_domain_name
+
     def get_session(self):
         """Returns keystone session."""
+
+        ver = self.get_auth_version()
+
+        kwargs = {
+            'auth_url': self.get_uri(ver),
+            'username': self.get_username(),
+            'password': self.get_password(),
+            'project_name': self.get_tenant_name(),
+        }
+
+        if ver == 3:
+            kwargs.update(
+                {'user_domain_name': self.get_user_domain_name(),
+                 'project_domain_name': self.get_project_domain_name()})
+
+        with open('/tmp/stam', 'w+') as f:
+            f.write(str(kwargs))
+
         loader = loading.get_plugin_loader('password')
-        auth = loader.load_from_options(
-            auth_url=self.conf.identity.uri,
-            username=self.get_username(),
-            password=self.get_password(),
-            project_name=self.conf.auth.admin_project_name)
-        return session.Session(auth=auth)
+        auth = loader.load_from_options(**kwargs)
+        return session.Session(auth=auth, verify=False)

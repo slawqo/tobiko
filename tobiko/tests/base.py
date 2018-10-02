@@ -24,4 +24,3 @@ class TobikoTest(testtools.testcase.WithAttributes,
     def setUp(self):
         super(TobikoTest, self).setUp()
         self.conf = config.CONF
-        print(self.conf)
