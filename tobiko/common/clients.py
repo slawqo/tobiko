@@ -105,9 +105,6 @@ class ClientManager(object):
                 {'user_domain_name': self.get_user_domain_name(),
                  'project_domain_name': self.get_project_domain_name()})
 
-        with open('/tmp/stam', 'w+') as f:
-            f.write(str(kwargs))
-
         loader = loading.get_plugin_loader('password')
         auth = loader.load_from_options(**kwargs)
         return session.Session(auth=auth, verify=False)

@@ -25,6 +25,9 @@ TobikoGroup = [
                help="Floating network name "),
     cfg.StrOpt('admin_username',
                help="Username to use for admin API requests."),
+    cfg.StrOpt('user_domain_name',
+               default="Default",
+               help="User domain name")
 ]
 
 tobiko_group = cfg.OptGroup(name="tobiko_plugin",

@@ -19,24 +19,10 @@ class FloatingIPTest(base.ScenarioTestsBase):
     """Tests server connectivity"""
 
     def test_pre_fip(self):
-        """Creates a server and checks it can reach it."""
-
-        # Defines parameters required by heat template
-        parameters = {'public_net': self.conf.network.floating_network_name,
-                      'image': self.conf.compute.image_ref,
-                      'flavor': "m1.micro"}
-
-        # creates stack and stores its ID
-        st = self.stackManager.create_stack(stack_name="fip",
-                                            template_name="fip.yaml",
-                                            parameters=parameters)
-        sid = st['stack']['id']
-
-        # Before pinging the floating IP, ensure resource is ready
-        self.stackManager.wait_for_status_complete(sid, 'floating_ip')
+        """Validates connectivity to a server created by another test."""
 
         # Get floating IP address
-        stack = self.stackManager.client.stacks.get(sid)
+        stack = self.stackManager.get_stack(stack_name="scenario")
         server_fip = stack.outputs[0]['output_value']
 
         # Check if instance is reachable
@@ -44,9 +30,10 @@ class FloatingIPTest(base.ScenarioTestsBase):
             self.fail("IP address is not reachable: %s" % server_fip)
 
     def test_post_fip(self):
-        """Validates connectivity to a server created by another test."""
+        """Validates connectivity to a server post upgrade."""
 
-        stack = self.stackManager.get_stack(stack_name="fip")
+        # Get floating IP address
+        stack = self.stackManager.get_stack(stack_name="scenario")
         server_fip = stack.outputs[0]['output_value']
 
         # Check if instance is reachable

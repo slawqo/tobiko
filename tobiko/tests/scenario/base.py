@@ -12,9 +12,11 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 import os
 import subprocess
+
+from heatclient import exc
+
 
 from tempest.common.utils import net_utils
 from tempest.lib.common.utils import test_utils
@@ -34,6 +36,27 @@ class ScenarioTestsBase(base.TobikoTest):
         templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
         self.stackManager = stack.StackManager(self.clientManager,
                                                templates_dir)
+
+        try:
+            self.stackManager.get_stack("scenario")
+        except exc.HTTPNotFound:
+            self.create_stack()
+
+    def create_stack(self):
+        """Creates stack to be used by all scenario tests."""
+
+        # Defines parameters required by heat template
+        parameters = {'public_net': self.conf.network.floating_network_name,
+                      'image': self.conf.compute.image_ref,
+                      'flavor': "m1.micro"}
+
+        # creates stack and stores its ID
+        st = self.stackManager.create_stack(stack_name="scenario",
+                                            template_name="scenario.yaml",
+                                            parameters=parameters)
+        sid = st['stack']['id']
+
+        self.stackManager.wait_for_status_complete(sid, 'floating_ip')
 
     def ping_ip_address(self, ip_address, should_succeed=True,
                         ping_timeout=None, mtu=None):

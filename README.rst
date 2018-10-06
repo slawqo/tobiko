@@ -2,10 +2,8 @@
 Tobiko
 ======
 
-To run pre-upgrade tests:
+Tempest plugin for testing upgrades
 
-    tempest run --regex pre
-
-To run post-upgrade tests:
-
-    tempest run --regex post
+* Free software: Apache license
+* Source: https://git.openstack.org/cgit/openstack/tobiko
+* Bugs: https://bugs.launchpad.net/tobiko
