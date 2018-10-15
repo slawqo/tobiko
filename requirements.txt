@@ -1,7 +1,7 @@
-keystoneauth1>=3.4.0
+keystoneauth1>=2.0.0
 oslo.config>=5.2.0
 oslo.log>=3.36.0
-python-heatclient>=1.10.0
+python-heatclient>=1.5.0
 testscenarios>=0.4
 testtools>=2.2.0
 tempest>=17.1.0
