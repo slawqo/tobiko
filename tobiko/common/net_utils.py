@@ -16,6 +16,9 @@ import re
 import signal
 import subprocess
 
+from tempest.common.utils import net_utils
+from tempest.lib.common.utils import test_utils
+
 
 def run_background_ping(server_fip):
     """Starts background ping process."""
@@ -29,21 +32,49 @@ def run_background_ping(server_fip):
 def get_packet_loss(server_fip):
     """Returns packet loss."""
 
-    # Kill Process
-    with open("/tmp/ping_%s_pid" % server_fip) as f:
-        pid = f.read()
-    os.kill(int(pid), signal.SIGINT)
+    try:
+        # Kill Process
+        with open("/tmp/ping_%s_pid" % server_fip) as f:
+            pid = f.read()
+        os.kill(int(pid), signal.SIGINT)
 
-    # Packet loss pattern
-    p = re.compile("(\d{1,3})% packet loss")
+        # Packet loss pattern
+        p = re.compile("(\d{1,3})% packet loss")
 
-    # Get ping package loss
-    with open("/tmp/ping_%s_output" % server_fip) as f:
-        m = p.search(f.read())
-        packet_loss = m.group(1)
-
-    # Remove files created by pre test
-    os.remove("/tmp/ping_%s_output" % server_fip)
-    os.remove("/tmp/ping_%s_pid" % server_fip)
+        # Get ping package loss
+        with open("/tmp/ping_%s_output" % server_fip) as f:
+            m = p.search(f.read())
+            packet_loss = m.group(1)
+    finally:
+        # Remove files created by pre test
+        os.remove("/tmp/ping_%s_output" % server_fip)
+        os.remove("/tmp/ping_%s_pid" % server_fip)
 
     return packet_loss
+
+
+def ping_ip_address(ip_address, should_succeed=True,
+                    ping_timeout=None, mtu=None):
+
+    timeout = ping_timeout or 120
+    cmd = ['ping', '-c1', '-w1']
+
+    if mtu:
+        cmd += [
+            # don't fragment
+            '-M', 'do',
+            # ping receives just the size of ICMP payload
+            '-s', str(net_utils.get_ping_payload_size(mtu, 4))
+        ]
+    cmd.append(ip_address)
+
+    def ping():
+        proc = subprocess.Popen(cmd,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        proc.communicate()
+
+        return (proc.returncode == 0) == should_succeed
+
+    result = test_utils.call_until_true(ping, timeout, 1)
+    return result

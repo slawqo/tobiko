@@ -59,3 +59,9 @@ class StackManager(object):
         while (res.resource_status != 'CREATE_COMPLETE'):
             time.sleep(5)
             res = self.client.resources.get(stack_id, resource_name)
+
+    def get_output(self, stack_name, index=0):
+        """Returns the output from the given stack by using the given index."""
+        stack = self.get_stack(stack_name="scenario")
+        output = stack.outputs[index]['output_value']
+        return output

@@ -1,5 +1,4 @@
-# Copyright (c) 2018 Red Hat
-# All Rights Reserved.
+# Copyright 2018 Red Hat
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,21 +11,21 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-from tobiko.tests.scenario import base
-from tobiko.common.asserts import assert_ping
 
 
-class FloatingIPTest(base.ScenarioTestsBase):
-    """Tests server connectivity"""
+class TobikoException(Exception):
+    """Base Tobiko Exception.
 
-    def test_pre_fip(self):
-        """Validates connectivity to a server created by another test."""
+    To use this class, inherit from it and define a 'message' property.
+    """
+    message = "An unknown exception occurred."
 
-        fip = self.stackManager.get_output("scenario")
-        assert_ping(fip)
+    def __init__(self, *args, **kwargs):
+        if len(args) > 0:
+            self.message = args[0]
+        super(TobikoException, self).__init__(self.message % kwargs)
+        self.msg = self.message % kwargs
 
-    def test_post_fip(self):
-        """Validates connectivity to a server post upgrade."""
 
-        fip = self.stackManager.get_output("scenario")
-        assert_ping(fip)
+class PingException(TobikoException):
+    message = "Was unable to ping the IP address: %(ip)s"

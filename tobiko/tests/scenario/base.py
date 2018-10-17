@@ -13,13 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 import os
-import subprocess
 
 from heatclient import exc
 
-
-from tempest.common.utils import net_utils
-from tempest.lib.common.utils import test_utils
 
 from tobiko.tests import base
 from tobiko.common import stack
@@ -57,29 +53,3 @@ class ScenarioTestsBase(base.TobikoTest):
         sid = st['stack']['id']
 
         self.stackManager.wait_for_status_complete(sid, 'floating_ip')
-
-    def ping_ip_address(self, ip_address, should_succeed=True,
-                        ping_timeout=None, mtu=None):
-
-        timeout = ping_timeout or 120
-        cmd = ['ping', '-c1', '-w1']
-
-        if mtu:
-            cmd += [
-                # don't fragment
-                '-M', 'do',
-                # ping receives just the size of ICMP payload
-                '-s', str(net_utils.get_ping_payload_size(mtu, 4))
-            ]
-        cmd.append(ip_address)
-
-        def ping():
-            proc = subprocess.Popen(cmd,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            proc.communicate()
-
-            return (proc.returncode == 0) == should_succeed
-
-        result = test_utils.call_until_true(ping, timeout, 1)
-        return result

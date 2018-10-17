@@ -19,27 +19,18 @@ import tobiko.common.net_utils as net_utils
 class ContinuousPingTest(base.ScenarioTestsBase):
     """Tests server connectivity over time."""
 
+    MAX_PACKET_LOSS = 5
+
     def test_pre_continuous_ping(self):
         """Starts the ping process."""
 
-        # Get floating IP address
-        stack = self.stackManager.get_stack(stack_name="scenario")
-        server_fip = stack.outputs[0]['output_value']
-
-        # Check if instance is reachable
-        if not self.ping_ip_address(server_fip):
-            self.fail("IP address is not reachable: %s" % server_fip)
-
-        # Start ping process
-        net_utils.run_background_ping(server_fip)
+        fip = self.stackManager.get_output("scenario")
+        net_utils.run_background_ping(fip)
 
     def test_post_continuous_ping(self):
         """Validates the ping test was successful."""
 
-        # Get floating IP address
-        stack = self.stackManager.get_stack(stack_name="scenario")
-        server_fip = stack.outputs[0]['output_value']
+        fip = self.stackManager.get_output("scenario")
+        packet_loss = net_utils.get_packet_loss(fip)
 
-        packet_loss = net_utils.get_packet_loss(server_fip)
-
-        self.assertLessEqual(int(packet_loss), 5)
+        self.assertLessEqual(int(packet_loss), self.MAX_PACKET_LOSS)
