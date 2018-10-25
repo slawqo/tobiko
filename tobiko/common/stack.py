@@ -15,6 +15,7 @@ import os
 import time
 
 from heatclient.common import template_utils
+from heatclient import exc as heat_exc
 import yaml
 
 
@@ -47,7 +48,10 @@ class StackManager(object):
 
     def get_stack(self, stack_name):
         """Returns stack ID."""
-        return self.client.stacks.get(stack_name)
+        try:
+            return self.client.stacks.get(stack_name)
+        except heat_exc.HTTPNotFound:
+            return
 
     def wait_for_status_complete(self, stack_id, resource_name):
         """Verifies resource reached complete status.
@@ -62,6 +66,8 @@ class StackManager(object):
 
     def get_output(self, stack_name, index=0):
         """Returns the output from the given stack by using the given index."""
-        stack = self.get_stack(stack_name="scenario")
+        stack = self.get_stack(stack_name=stack_name)
+        print(stack_name)
+        print(stack)
         output = stack.outputs[index]['output_value']
         return output

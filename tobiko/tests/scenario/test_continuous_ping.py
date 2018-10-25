@@ -21,16 +21,18 @@ class ContinuousPingTest(base.ScenarioTestsBase):
 
     MAX_PACKET_LOSS = 5
 
+    def setUp(self):
+        super(ContinuousPingTest, self).setUp()
+        self.stack = self._get_stack()
+        self.fip = self.stack.outputs[0]['output_value']
+
     def test_pre_continuous_ping(self):
         """Starts the ping process."""
 
-        fip = self.stackManager.get_output("scenario")
-        net_utils.run_background_ping(fip)
+        net_utils.run_background_ping(self.fip)
 
     def test_post_continuous_ping(self):
         """Validates the ping test was successful."""
 
-        fip = self.stackManager.get_output("scenario")
-        packet_loss = net_utils.get_packet_loss(fip)
-
+        packet_loss = net_utils.get_packet_loss(self.fip)
         self.assertLessEqual(int(packet_loss), self.MAX_PACKET_LOSS)

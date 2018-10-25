@@ -34,7 +34,7 @@ class ScenarioTestsBase(base.TobikoTest):
                                                templates_dir)
 
         try:
-            self.stackManager.get_stack("scenario")
+            self.stackManager.get_stack("default")
         except exc.HTTPNotFound:
             self.create_stack()
 
@@ -47,9 +47,16 @@ class ScenarioTestsBase(base.TobikoTest):
                       'flavor': "m1.micro"}
 
         # creates stack and stores its ID
-        st = self.stackManager.create_stack(stack_name="scenario",
-                                            template_name="scenario.yaml",
+        st = self.stackManager.create_stack(stack_name="default",
+                                            template_name="default.yaml",
                                             parameters=parameters)
         sid = st['stack']['id']
-
         self.stackManager.wait_for_status_complete(sid, 'floating_ip')
+
+        return st['stack']
+
+    def _get_stack(self, name="default"):
+        stack = self.stackManager.get_stack(name)
+        if not stack:
+            stack = self.create_stack()
+        return stack
