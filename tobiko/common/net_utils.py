@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import inspect
 import os
 import re
 import signal
@@ -20,21 +21,27 @@ from tempest.common.utils import net_utils
 from tempest.lib.common.utils import test_utils
 
 
-def run_background_ping(server_fip):
+def run_background_ping(ip):
     """Starts background ping process."""
-    ping_log = open("/tmp/ping_%s_output" % server_fip, 'ab')
-    p = subprocess.Popen(['ping -q %s' % server_fip],
+    # The caller function name
+    caller_f = inspect.stack()[1][1].split('/')[-1].split(".py")[0]
+
+    ping_log = open("/tmp/ping_%s_%s_output" % (ip, caller_f), 'ab')
+    p = subprocess.Popen(['ping -q %s' % ip],
                          stdout=ping_log, shell=True)
-    with open("/tmp/ping_%s_pid" % server_fip, 'ab') as pf:
+    with open("/tmp/ping_%s_%s_pid" % (ip, caller_f), 'ab') as pf:
         pf.write(str(p.pid))
 
 
-def get_packet_loss(server_fip):
+def get_packet_loss(ip):
     """Returns packet loss."""
+
+    # The caller function name
+    caller_f = inspect.stack()[1][1].split('/')[-1].split(".py")[0]
 
     try:
         # Kill Process
-        with open("/tmp/ping_%s_pid" % server_fip) as f:
+        with open("/tmp/ping_%s_%s_pid" % (ip, caller_f)) as f:
             pid = f.read()
         os.kill(int(pid), signal.SIGINT)
 
@@ -42,13 +49,13 @@ def get_packet_loss(server_fip):
         p = re.compile("(\d{1,3})% packet loss")
 
         # Get ping package loss
-        with open("/tmp/ping_%s_output" % server_fip) as f:
+        with open("/tmp/ping_%s_%s_output" % (ip, caller_f)) as f:
             m = p.search(f.read())
             packet_loss = m.group(1)
     finally:
         # Remove files created by pre test
-        os.remove("/tmp/ping_%s_output" % server_fip)
-        os.remove("/tmp/ping_%s_pid" % server_fip)
+        os.remove("/tmp/ping_%s_%s_output" % (ip, caller_f))
+        os.remove("/tmp/ping_%s_%s_pid" % (ip, caller_f))
 
     return packet_loss
 
