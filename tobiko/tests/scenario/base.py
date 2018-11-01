@@ -51,7 +51,9 @@ class ScenarioTestsBase(base.TobikoTest):
                                             template_name="default.yaml",
                                             parameters=parameters)
         sid = st['stack']['id']
+
         self.stackManager.wait_for_status_complete(sid, 'floating_ip')
+        self.stackManager.wait_for_status_complete(sid, 'floating_ip2')
 
         return st['stack']
 

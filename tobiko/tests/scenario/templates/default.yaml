@@ -1,7 +1,7 @@
 heat_template_version: 2013-05-23
 
 description: |
-  Template to create an instance and check connectivity to it
+  Default stack used by tests. One instance with FIP.
 
 parameters:
   flavor:
@@ -22,6 +22,7 @@ parameters:
     default: ["8.8.8.8", "8.8.4.4"]
 
 resources:
+
   sg:
     type: OS::Neutron::SecurityGroup
     properties:
@@ -33,7 +34,18 @@ resources:
         port_range_min: 22
         port_range_max: 22
 
+  sg2:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: sg2
+      description: Security group to deny ICMP and SSH
+
   floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: {get_param: public_net}
+
+  floating_ip2:
     type: OS::Neutron::FloatingIP
     properties:
       floating_network: {get_param: public_net}
@@ -74,12 +86,31 @@ resources:
       security_groups:
       - {get_resource: sg}
 
+  # Server without security groups
+  server2:
+    type: OS::Nova::Server
+    properties:
+      image: {get_param: image}
+      flavor: {get_param: flavor}
+      networks:
+      - subnet: {get_resource: subnet}
+      security_groups:
+      - {get_resource: sg2}
+
   server_floating_ip_assoc:
     type: OS::Neutron::FloatingIPAssociation
     properties:
       floatingip_id: {get_resource: floating_ip}
       port_id: {get_attr: [server, addresses, {get_resource: network}, 0, port]}
 
+  server_floating_ip_assoc2:
+    type: OS::Neutron::FloatingIPAssociation
+    properties:
+      floatingip_id: {get_resource: floating_ip2}
+      port_id: {get_attr: [server2, addresses, {get_resource: network}, 0, port]}
+
 outputs:
   server_ip:
     value: {get_attr: [floating_ip, floating_ip_address]}
+  server_ip2:
+    value: {get_attr: [floating_ip2, floating_ip_address]}

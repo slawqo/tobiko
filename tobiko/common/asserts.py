@@ -11,10 +11,12 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-from tobiko.common import net_utils
+import tobiko.common.utils.network as net_utils
 from tobiko.common import exceptions
 
 
-def assert_ping(ip):
-    if not net_utils.ping_ip_address(ip):
+def assert_ping(ip, should_fail=False):
+    if not net_utils.ping_ip_address(ip) and not should_fail:
         raise exceptions.PingException("IP address is not reachable: %s" % ip)
+    elif net_utils.ping_ip_address(ip) and should_fail:
+        raise exceptions.PingException("IP address is reachable: %s" % ip)

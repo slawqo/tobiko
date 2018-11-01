@@ -11,25 +11,18 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import os
+import signal
+
+import tobiko.common.exceptions as exc
 
 
-class TobikoException(Exception):
-    """Base Tobiko Exception.
-
-    To use this class, inherit from it and define a 'message' property.
-    """
-    message = "An unknown exception occurred."
-
-    def __init__(self, *args, **kwargs):
-        if len(args) > 0:
-            self.message = args[0]
-        super(TobikoException, self).__init__(self.message % kwargs)
-        self.msg = self.message % kwargs
-
-
-class PingException(TobikoException):
-    message = "Was unable to ping the IP address: %(ip)s"
-
-
-class MissingInputException(TobikoException):
-    message = "No %(input)s was provided"
+def kill_process(pid_num=None, pid_f=None):
+    if not any([pid_num, pid_f]):
+        raise exc.MissingInputException("pid")
+    elif pid_num:
+        os.kill(int(pid_num), signal.SIGINT)
+    else:
+        with open(pid_f) as f:
+            pid = f.read()
+            os.kill(int(pid), signal.SIGINT)

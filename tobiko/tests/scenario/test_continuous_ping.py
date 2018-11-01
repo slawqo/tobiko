@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from tobiko.tests.scenario import base
-import tobiko.common.net_utils as net_utils
+import tobiko.common.utils.network as net_utils
 
 
 class ContinuousPingTest(base.ScenarioTestsBase):
@@ -24,7 +24,7 @@ class ContinuousPingTest(base.ScenarioTestsBase):
     def setUp(self):
         super(ContinuousPingTest, self).setUp()
         self.stack = self._get_stack()
-        self.fip = self.stack.outputs[0]['output_value']
+        self.fip = self.stack.outputs[1]['output_value']
 
     def test_pre_continuous_ping(self):
         """Starts the ping process."""

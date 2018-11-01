@@ -67,7 +67,5 @@ class StackManager(object):
     def get_output(self, stack_name, index=0):
         """Returns the output from the given stack by using the given index."""
         stack = self.get_stack(stack_name=stack_name)
-        print(stack_name)
-        print(stack)
         output = stack.outputs[index]['output_value']
         return output

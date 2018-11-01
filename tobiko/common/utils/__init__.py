@@ -11,25 +11,3 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
-
-class TobikoException(Exception):
-    """Base Tobiko Exception.
-
-    To use this class, inherit from it and define a 'message' property.
-    """
-    message = "An unknown exception occurred."
-
-    def __init__(self, *args, **kwargs):
-        if len(args) > 0:
-            self.message = args[0]
-        super(TobikoException, self).__init__(self.message % kwargs)
-        self.msg = self.message % kwargs
-
-
-class PingException(TobikoException):
-    message = "Was unable to ping the IP address: %(ip)s"
-
-
-class MissingInputException(TobikoException):
-    message = "No %(input)s was provided"
