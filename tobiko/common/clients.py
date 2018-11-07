@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from heatclient import client as heat_client
+from neutronclient.v2_0 import client as neutron_client
 from keystoneauth1 import loading
 from keystoneauth1 import session
 
@@ -21,15 +22,21 @@ class ClientManager(object):
 
     def __init__(self, conf):
         self.conf = conf
+        self.session = self.get_session()
         self.heat_client = self.get_heat_client()
+        self.neutron_client = self.get_neutron_client()
 
     def get_heat_client(self):
         """Returns heat client."""
 
-        sess = self.get_session()
-        return heat_client.Client('1', session=sess,
+        return heat_client.Client('1', session=self.session,
                                   endpoint_type='public',
                                   service_type='orchestration')
+
+    def get_neutron_client(self):
+        """Returns neutron client."""
+
+        return neutron_client.Client(session=self.session)
 
     def get_username(self):
         """Returns username based on config."""

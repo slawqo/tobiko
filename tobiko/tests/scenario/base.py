@@ -18,7 +18,9 @@ from heatclient import exc
 
 
 from tobiko.tests import base
-from tobiko.common import stack
+from tobiko.common.managers import stack
+from tobiko.common.managers import network
+from tobiko.common import constants
 from tobiko.common import clients
 
 
@@ -32,6 +34,7 @@ class ScenarioTestsBase(base.TobikoTest):
         templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
         self.stackManager = stack.StackManager(self.clientManager,
                                                templates_dir)
+        self.networkManager = network.NetworkManager(self.clientManager)
 
         try:
             self.stackManager.get_stack("default")
@@ -47,14 +50,9 @@ class ScenarioTestsBase(base.TobikoTest):
                       'flavor': "m1.micro"}
 
         # creates stack and stores its ID
-        st = self.stackManager.create_stack(stack_name="default",
-                                            template_name="default.yaml",
-                                            parameters=parameters)
-        sid = st['stack']['id']
-
-        self.stackManager.wait_for_status_complete(sid, 'floating_ip')
-        self.stackManager.wait_for_status_complete(sid, 'floating_ip2')
-
+        st = self.stackManager.create_stack(
+            stack_name="default", template_name="default.yaml",
+            parameters=parameters, wait_for_status=constants.COMPLETE_STATUS)
         return st['stack']
 
     def _get_stack(self, name="default"):

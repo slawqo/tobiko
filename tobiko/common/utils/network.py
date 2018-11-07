@@ -23,6 +23,13 @@ from tempest.lib.common.utils import test_utils
 
 import tobiko.common.utils.process as proc_utils
 
+SG_RULES = {'ALLOW_ICMP':
+            {'direction': 'ingress',
+             'ethertype': 'IPv4',
+             'protcol': 'icmp'
+             }
+            }
+
 
 def run_background_ping(ip):
     """Starts background ping process."""
