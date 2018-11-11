@@ -21,10 +21,20 @@ class TobikoException(Exception):
     message = "An unknown exception occurred."
 
     def __init__(self, *args, **kwargs):
+        super(TobikoException, self).__init__()
+        try:
+            self._message = self.message % kwargs
+
+        except Exception:
+            self._message = self.message
+
         if len(args) > 0:
-            self.message = args[0]
-        super(TobikoException, self).__init__(self.message % kwargs)
-        self.msg = self.message % kwargs
+            args = ["%s" % arg for arg in args]
+            self._messsage = (self._message +
+                              "\nDetails: %s" % '\n'.join(args))
+
+    def __str__(self):
+        return self._message
 
 
 class PingException(TobikoException):
@@ -33,3 +43,7 @@ class PingException(TobikoException):
 
 class MissingInputException(TobikoException):
     message = "No %(input)s was provided"
+
+
+class MissingTemplateException(TobikoException):
+    message = "No such template. Existing templates:\n%(templates)s"

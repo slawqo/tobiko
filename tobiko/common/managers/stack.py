@@ -19,6 +19,7 @@ from heatclient import exc as heat_exc
 import yaml
 
 from tobiko.common import constants
+from tobiko.common import exceptions as exc
 
 
 class StackManager(object):
@@ -67,12 +68,6 @@ class StackManager(object):
             time.sleep(self.wait_interval)
             res = self.client.resources.get(stack_id, resource_name)
 
-    def get_output(self, stack_name, index=0):
-        """Returns the output from the given stack by using the given index."""
-        stack = self.get_stack(stack_name=stack_name)
-        output = stack.outputs[index]['output_value']
-        return output
-
     def wait_for_stack_status(self, stack_name,
                               status=constants.COMPLETE_STATUS):
         """Waits for the stack to reach the given status."""
@@ -80,3 +75,24 @@ class StackManager(object):
         while (stack.stack_status != status):
             time.sleep(self.wait_interval)
             stack = self.get_stack(stack_name=stack_name)
+
+    def get_output(self, stack, key):
+        """Returns a specific value from stack outputs by using a given key."""
+        value = None
+        for output in stack.outputs:
+            if output['output_key'] == key:
+                value = output['output_value']
+        if not value:
+            raise exc.NoSuchKey(key)
+        else:
+            return value
+
+    def get_templates_names(self, strip_suffix=False):
+        """Returns a list of all the files in templates dir."""
+        templates = []
+        for (path, folders, files) in os.walk(self.templates_dir):
+            templates.extend(files)
+        if strip_suffix:
+            templates = [
+                f[:-len(constants.TEMPLATE_SUFFIX)] for f in templates]
+        return templates
