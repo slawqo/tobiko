@@ -11,17 +11,22 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import os
+
 from heatclient import client as heat_client
 from neutronclient.v2_0 import client as neutron_client
 from keystoneauth1 import loading
 from keystoneauth1 import session
 
+from tobiko.common import constants
+
 
 class ClientManager(object):
     """Manages OpenStack official Python clients."""
 
-    def __init__(self, conf):
+    def __init__(self, conf=None, use_os=False):
         self.conf = conf
+        self.use_os = use_os
         self.session = self.get_session()
         self.heat_client = self.get_heat_client()
         self.neutron_client = self.get_neutron_client()
@@ -40,60 +45,85 @@ class ClientManager(object):
 
     def get_username(self):
         """Returns username based on config."""
-        if not hasattr(self.conf.auth, 'username'):
-            return self.conf.auth.admin_username
+        if not self.use_os:
+            if not hasattr(self.conf.auth, 'username'):
+                return self.conf.auth.admin_username
+            else:
+                return self.conf.auth.username
         else:
-            return self.conf.auth.username
+            return os.getenv("OS_USERNAME")
 
     def get_password(self):
         """Returns password based on config."""
-        if not hasattr(self.conf.auth, 'password'):
-            return self.conf.auth.admin_password
+        if not self.use_os:
+            if not hasattr(self.conf.auth, 'password'):
+                return self.conf.auth.admin_password
+            else:
+                return self.conf.auth.password
         else:
-            return self.conf.auth.password
+            return os.getenv("OS_PASSWORD")
 
     def get_tenant_name(self):
         """Returns tenant/project name."""
-        if hasattr(self.conf.auth, 'project_name'):
-            return self.conf.auth.project_name
+        if not self.use_os:
+            if hasattr(self.conf.auth, 'project_name'):
+                return self.conf.auth.project_name
+            else:
+                return self.conf.auth.admin_project_name
         else:
-            return self.conf.auth.admin_project_name
+            if "OS_TENANT_NAME" in os.environ:
+                return os.getenv("OS_TENANT_NAME")
+            else:
+                return os.getenv("OS_PROJECT_NAME")
 
     def get_user_domain_name(self):
         """Returns user domain name."""
-        if hasattr(self.conf.auth, 'user_domain_name'):
-            return self.conf.auth.user_domain_name
-        elif hasattr(self.conf.auth, "admin_domain_name"):
-            return self.conf.auth.admin_domain_name
+        if not self.use_os:
+            if hasattr(self.conf.auth, 'user_domain_name'):
+                return self.conf.auth.user_domain_name
+            elif hasattr(self.conf.auth, "admin_domain_name"):
+                return self.conf.auth.admin_domain_name
+            else:
+                return self.conf.tobiko_plugin.user_domain_name
         else:
-            return self.conf.tobiko_plugin.user_domain_name
+            return os.getenv("OS_USER_DOMAIN_NAME")
 
     def get_uri(self, ver=2):
         """Returns URI."""
-        if ver == 3:
-            if hasattr(self.conf.identity, 'uri_v3'):
-                return self.conf.identity.uri_v3
-        return self.conf.identity.uri
+        if not self.use_os:
+            if ver == 3:
+                if hasattr(self.conf.identity, 'uri_v3'):
+                    return self.conf.identity.uri_v3
+            return self.conf.identity.uri
+        else:
+            return os.getenv("OS_AUTH_URL")
 
     def get_auth_version(self):
         """Returns identity/keystone API verion."""
-        if hasattr(self.conf.identity_feature_enabled, 'api_v3'):
-            if self.conf.identity_feature_enabled.api_v3:
-                return 3
-        return 2
+        if not self.use_os:
+            if hasattr(self.conf.identity_feature_enabled, 'api_v3'):
+                if self.conf.identity_feature_enabled.api_v3:
+                    return 3
+            return 2
+        else:
+            return os.getenv("OS_IDENTITY_API_VERSION",
+                             constants.DEFAULT_API_VER)
 
     def get_project_domain_name(self):
         """Returns project domain name."""
-        if hasattr(self.conf.identity, 'project_domain_name'):
-            return self.conf.identity.project_domain_name
-        elif hasattr(self.conf.auth, 'admin_domain_name'):
-            return self.conf.auth.admin_domain_name
-        elif hasattr(self.conf.identity, 'admin_domain_name'):
-            return self.conf.identity.admin_domain_name
-        elif hasattr(self.conf.identity, 'admin_tenant_name'):
-            return self.conf.identity.admin_tenant_name
+        if not self.use_os:
+            if hasattr(self.conf.identity, 'project_domain_name'):
+                return self.conf.identity.project_domain_name
+            elif hasattr(self.conf.auth, 'admin_domain_name'):
+                return self.conf.auth.admin_domain_name
+            elif hasattr(self.conf.identity, 'admin_domain_name'):
+                return self.conf.identity.admin_domain_name
+            elif hasattr(self.conf.identity, 'admin_tenant_name'):
+                return self.conf.identity.admin_tenant_name
+            else:
+                return self.conf.auth.admin_domain_name
         else:
-            return self.conf.auth.admin_domain_name
+            return os.getenv("OS_PROJECT_NAME")
 
     def get_session(self):
         """Returns keystone session."""
