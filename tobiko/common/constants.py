@@ -11,5 +11,19 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from tempest import config
+
+conf = config.CONF
 
 COMPLETE_STATUS = "CREATE_COMPLETE"
+DEFAULT_FLAVOR = "m1.micro"
+
+DEFAULT_API_VER = 2
+
+TEMPLATE_SUFFIX = ".yaml"
+
+DEFAULT_PARAMS = {
+    'public_net': conf.network.floating_network_name,
+    'image': conf.compute.image_ref,
+    'flavor': DEFAULT_FLAVOR
+}

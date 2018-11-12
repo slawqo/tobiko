@@ -21,42 +21,41 @@ from tobiko.tests import base
 from tobiko.common.managers import stack
 from tobiko.common.managers import network
 from tobiko.common import constants
-from tobiko.common import clients
 
 
 class ScenarioTestsBase(base.TobikoTest):
     """All scenario tests inherit from this scenario base class."""
 
-    def setUp(self):
+    def setUp(self, file_path, params=None):
         super(ScenarioTestsBase, self).setUp()
-        self.clientManager = clients.ClientManager(self.conf)
-
         templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
         self.stackManager = stack.StackManager(self.clientManager,
                                                templates_dir)
         self.networkManager = network.NetworkManager(self.clientManager)
+        self.params = params or self.default_params
+        file_name = os.path.basename(file_path)
+        self.stack_name = file_name.split(".py")[0]
 
         try:
-            self.stackManager.get_stack("default")
+            self.stackManager.get_stack(self.stack_name)
         except exc.HTTPNotFound:
-            self.create_stack()
+            self.create_stack(self.stack_name)
 
     def create_stack(self):
         """Creates stack to be used by all scenario tests."""
 
         # Defines parameters required by heat template
-        parameters = {'public_net': self.conf.network.floating_network_name,
-                      'image': self.conf.compute.image_ref,
-                      'flavor': "m1.micro"}
 
         # creates stack and stores its ID
         st = self.stackManager.create_stack(
-            stack_name="default", template_name="default.yaml",
-            parameters=parameters, wait_for_status=constants.COMPLETE_STATUS)
+            stack_name=self.stack_name,
+            template_name="%s.yaml" % self.stack_name,
+            parameters=self.params,
+            status=constants.COMPLETE_STATUS)
         return st['stack']
 
-    def _get_stack(self, name="default"):
-        stack = self.stackManager.get_stack(name)
+    def _get_stack(self):
+        stack = self.stackManager.get_stack(self.stack_name)
         if not stack:
             stack = self.create_stack()
         return stack

@@ -18,3 +18,11 @@ class NetworkManager(object):
 
     def __init__(self, client_manager):
         self.client = client_manager.get_neutron_client()
+
+    def create_sg_rules(self, rules, sg_id):
+        """Creates security group rules."""
+        for rule in rules:
+            rule['security_group_id'] = sg_id
+            body = {'security_group_rule': rule}
+            print(body)
+            self.client.create_security_group_rule(body)

@@ -34,5 +34,3 @@ class TobikoTempestPlugin(plugins.TempestPlugin):
 
     def get_opt_lists(self):
         pass
-        # return [(tobiko_config.tobiko_group.name,
-        #         tobiko_config.TobikoGroup)]

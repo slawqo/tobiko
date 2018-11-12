@@ -16,6 +16,9 @@ from tempest import config
 import testscenarios
 import testtools
 
+from tobiko.common import constants
+from tobiko.common import clients
+
 
 class TobikoTest(testtools.testcase.WithAttributes,
                  testscenarios.WithScenarios,
@@ -24,3 +27,8 @@ class TobikoTest(testtools.testcase.WithAttributes,
     def setUp(self):
         super(TobikoTest, self).setUp()
         self.conf = config.CONF
+        self.default_params = {
+            'public_net': self.conf.network.floating_network_name,
+            'image': self.conf.compute.image_ref,
+            'flavor': constants.DEFAULT_FLAVOR}
+        self.clientManager = clients.ClientManager(conf=self.conf)

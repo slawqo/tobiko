@@ -25,8 +25,7 @@ import tobiko.common.utils.process as proc_utils
 
 SG_RULES = {'ALLOW_ICMP':
             {'direction': 'ingress',
-             'ethertype': 'IPv4',
-             'protcol': 'icmp'
+             'protocol': 'icmp'
              }
             }
 
@@ -76,6 +75,9 @@ def get_packet_loss(ip):
             packet_loss = m.group(1)
     finally:
         # Remove files created by pre test
+
+        from shutil import copyfile
+        copyfile(PING_OUTPUT_F, "/home/abregman/stam")
         os.remove(PING_OUTPUT_F)
         os.remove(PING_PID_F)
 

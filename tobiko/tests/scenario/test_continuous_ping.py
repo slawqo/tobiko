@@ -24,7 +24,9 @@ class ContinuousPingTest(base.ScenarioTestsBase):
     def setUp(self):
         super(ContinuousPingTest, self).setUp()
         self.stack = self._get_stack()
-        self.fip = self.stack.outputs[1]['output_value']
+        print(self.stack)
+        print(self.stack.stack_status)
+        self.fip = self.stackManager.get_output(self.stack, "fip")
 
     def test_pre_continuous_ping(self):
         """Starts the ping process."""

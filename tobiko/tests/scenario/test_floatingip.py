@@ -20,22 +20,11 @@ class FloatingIPTest(base.ScenarioTestsBase):
     """Tests server connectivity"""
 
     def setUp(self):
-        super(FloatingIPTest, self).setUp()
+        super(FloatingIPTest, self).setUp(__file__)
         self.stack = self._get_stack()
-        self.unreachable_fip = self.stack.outputs[0]['output_value']
-        self.fip = self.stack.outputs[1]['output_value']
-
-    def test_pre_secgroup(self):
-        """Validates security group before upgrade."""
-
-        assert_ping(self.fip)
-        assert_ping(self.unreachable_fip, should_fail=True)
-
-    def test_post_secgroup(self):
-        """Validates security groups post upgrade."""
-
-        assert_ping(self.fip)
-        assert_ping(self.unreachable_fip, should_fail=True)
+        print(self.stack)
+        self.fip = self.stackManager.get_output(self.stack, "fip")
+        self.unreachable_fip = self.stackManager.get_output(self.stack, "fip2")
 
     def test_pre_fip(self):
         """Validates connectivity to a server created by another test."""
