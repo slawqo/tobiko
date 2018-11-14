@@ -24,5 +24,4 @@ class NetworkManager(object):
         for rule in rules:
             rule['security_group_id'] = sg_id
             body = {'security_group_rule': rule}
-            print(body)
             self.client.create_security_group_rule(body)
