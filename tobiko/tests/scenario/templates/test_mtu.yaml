@@ -1,7 +1,7 @@
 heat_template_version: 2013-05-23
 
 description: |
-  Stack for testing security groups
+  Stack for testing MTU
 
 parameters:
   flavor:
@@ -11,6 +11,9 @@ parameters:
   subnet_cidr:
     type: string
     default: 190.40.2.0/24
+  subnet_cidr2:
+    type: string
+    default: 190.40.3.0/24 
   public_net:
     type: string
     default: public
@@ -34,12 +37,6 @@ resources:
         port_range_min: 22
         port_range_max: 22
 
-  sg2:
-    type: OS::Neutron::SecurityGroup
-    properties:
-      name: sg2
-      description: Security group to deny ICMP and SSH
-
   floating_ip:
     type: OS::Neutron::FloatingIP
     properties:
@@ -53,12 +50,23 @@ resources:
   network:
     type: OS::Neutron::Net
 
+  network2:
+    type: OS::Neutron::Net
+
   subnet:
     type: OS::Neutron::Subnet
     properties:
       network: {get_resource: network}
       ip_version: 4
       cidr: {get_param: subnet_cidr}
+      dns_nameservers: {get_param: dns_servers}
+
+  subnet2:
+    type: OS::Neutron::Subnet
+    properties:
+      network: {get_resource: network2}
+      ip_version: 4
+      cidr: {get_param: subnet_cidr2}
       dns_nameservers: {get_param: dns_servers}
 
   router:
@@ -72,6 +80,12 @@ resources:
     properties:
       router: {get_resource: router}
       subnet: {get_resource: subnet}
+
+  router_interface2:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router: {get_resource: router}
+      subnet: {get_resource: subnet2}
 
   wait_handle:
     type: OS::Heat::WaitConditionHandle
@@ -93,9 +107,9 @@ resources:
       image: {get_param: image}
       flavor: {get_param: flavor}
       networks:
-      - subnet: {get_resource: subnet}
+      - subnet: {get_resource: subnet2}
       security_groups:
-      - {get_resource: sg2}
+      - {get_resource: sg}
 
   server_floating_ip_assoc:
     type: OS::Neutron::FloatingIPAssociation
@@ -107,12 +121,14 @@ resources:
     type: OS::Neutron::FloatingIPAssociation
     properties:
       floatingip_id: {get_resource: floating_ip2}
-      port_id: {get_attr: [server2, addresses, {get_resource: network}, 0, port]}
+      port_id: {get_attr: [server2, addresses, {get_resource: network2}, 0, port]}
 
 outputs:
-  fip:
+  fip_max_mtu:
     value: {get_attr: [floating_ip, floating_ip_address]}
-  fip2:
+  fip_min_mtu:
     value: {get_attr: [floating_ip2, floating_ip_address]}
-  sg2:
-    value: {get_resource: sg2}
+  network_max_mtu:
+    value: {get_resource: network}
+  network_min_mtu:
+    value: {get_resource: network2}

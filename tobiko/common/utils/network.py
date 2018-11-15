@@ -85,18 +85,15 @@ def get_packet_loss(ip):
 
 
 def ping_ip_address(ip_address, should_succeed=True,
-                    ping_timeout=None, mtu=None):
+                    ping_timeout=None, mtu=None, fragmentation=True):
 
     timeout = ping_timeout or 10
     cmd = ['ping', '-c1', '-w1']
 
     if mtu:
-        cmd += [
-            # don't fragment
-            '-M', 'do',
-            # ping receives just the size of ICMP payload
-            '-s', str(net_utils.get_ping_payload_size(mtu, 4))
-        ]
+        if not fragmentation:
+            cmd += ['-M', 'do']
+        cmd += ['-s', str(net_utils.get_ping_payload_size(mtu, 4))]
     cmd.append(ip_address)
 
     def ping():

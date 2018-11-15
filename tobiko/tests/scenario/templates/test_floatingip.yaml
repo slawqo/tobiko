@@ -10,7 +10,7 @@ parameters:
     type: string
   subnet_cidr:
     type: string
-    default: 190.40.2.0/24 
+    default: 190.40.2.0/24
   public_net:
     type: string
     default: public
