@@ -96,3 +96,17 @@ class StackManager(object):
             templates = [
                 f[:-len(constants.TEMPLATE_SUFFIX)] for f in templates]
         return templates
+
+    def get_stacks_match_templates(self):
+        """Returns a list of existing stack names in the cloud project
+        which match the templates defined in the project source code."""
+        matched_stacks = []
+
+        code_stacks = self.get_templates_names(strip_suffix=True)
+        cloud_stacks = self.client.stacks.list()
+
+        for stack in cloud_stacks:
+            if stack.stack_name in code_stacks:
+                matched_stacks.append(stack.stack_name)
+
+        return matched_stacks
