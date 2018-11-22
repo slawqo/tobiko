@@ -1,1 +1,4 @@
 mock >= 2.0  # BSD
+testscenarios>=0.4
+testtools>=2.2.0
+tempest>=17.1.0
