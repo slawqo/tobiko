@@ -11,137 +11,123 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import os
 
-from heatclient import client as heat_client
-from neutronclient.v2_0 import client as neutron_client
-from keystoneauth1 import loading
-from keystoneauth1 import session
+from tobiko import config
 
-from tobiko.common import constants
+
+def get_default_credentials(api_version=None, username=None, password=None,
+                            project_name=None, auth_url=None,
+                            user_domain_name=None, project_domain_name=None):
+    if api_version is None:
+        api_version = config.get_any_option(
+            'environ.OS_IDENTITY_API_VERSION',
+            'tempest.identity_feature_enabled.api_v3')
+        if api_version is True:
+            api_version = 3
+        elif api_version is False:
+            api_version = 2
+        elif api_version is not None:
+            api_version = int(api_version)
+
+    username = (username or
+                config.get_any_option(
+                    'environ.OS_USERNAME',
+                    'tempest.auth.username',
+                    'tempest.auth.admin_username'))
+    password = (password or
+                config.get_any_option(
+                    'environ.OS_PASSWORD',
+                    'tempest.auth.password',
+                    'tempest.auth.admin_password'))
+    project_name = (project_name or
+                    config.get_any_option(
+                        'environ.OS_PROJECT_NAME',
+                        'environ.OS_TENANT_NAME',
+                        'tempest.auth.project_name',
+                        'tempest.auth.admin_project_name'))
+
+    if auth_url is None and api_version in [None, 2]:
+        auth_url = config.get_any_option(
+            'environ.OS_AUTH_URL', 'tempest.identity.uri')
+        if auth_url and api_version is None:
+            api_version = get_version_from_url(auth_url)
+
+    if auth_url is None:
+        auth_url = config.get_any_option('tempest.identity.uri_v3')
+        if auth_url and api_version is None:
+            api_version = 3
+
+    credentials = dict(username=username,
+                       password=password,
+                       project_name=project_name,
+                       auth_url=auth_url)
+
+    if api_version and api_version > 2:
+        credentials.update(
+            user_domain_name=(
+                user_domain_name or
+                config.get_any_option(
+                    'environ.OS_USER_DOMAIN_NAME',
+                    'tempest.auth.user_domain_name',
+                    'tempest.auth.admin_domain_name')),
+            project_domain_name=(
+                project_domain_name or
+                config.get_any_option(
+                    'environ.OS_PROJECT_DOMAIN_NAME',
+                    'tempest.identity.project_domain_name',
+                    'tempest.auth.admin_domain_name',
+                    'tempest.identity.admin_domain_name',
+                    'tempest.identity.admin_tenant_name')),)
+
+    # remove every field that is still None from credentials dictionary
+    return {k: v for k, v in credentials.items() if v is not None}
+
+
+def get_version_from_url(auth_url):
+    if auth_url.endswith('/v2.0'):
+        return 2
+    elif auth_url.endswith('/v3'):
+        return 3
+    else:
+        return None
 
 
 class ClientManager(object):
     """Manages OpenStack official Python clients."""
 
-    def __init__(self, conf=None, use_os=False):
-        self.conf = conf
-        self.use_os = use_os
-        self.session = self.get_session()
-        self.heat_client = self.get_heat_client()
-        self.neutron_client = self.get_neutron_client()
+    credentials = get_default_credentials()
+    _session = None
+    _heat_client = None
+    _neutron_client = None
 
-    def get_heat_client(self):
-        """Returns heat client."""
+    def __init__(self, credentials=None):
+        if credentials:
+            self.credentials = credentials
 
-        return heat_client.Client('1', session=self.session,
-                                  endpoint_type='public',
-                                  service_type='orchestration')
-
-    def get_neutron_client(self):
-        """Returns neutron client."""
-
-        return neutron_client.Client(session=self.session)
-
-    def get_username(self):
-        """Returns username based on config."""
-        if not self.use_os:
-            if not hasattr(self.conf.auth, 'username'):
-                return self.conf.auth.admin_username
-            else:
-                return self.conf.auth.username
-        else:
-            return os.getenv("OS_USERNAME")
-
-    def get_password(self):
-        """Returns password based on config."""
-        if not self.use_os:
-            if not hasattr(self.conf.auth, 'password'):
-                return self.conf.auth.admin_password
-            else:
-                return self.conf.auth.password
-        else:
-            return os.getenv("OS_PASSWORD")
-
-    def get_tenant_name(self):
-        """Returns tenant/project name."""
-        if not self.use_os:
-            if hasattr(self.conf.auth, 'project_name'):
-                return self.conf.auth.project_name
-            else:
-                return self.conf.auth.admin_project_name
-        else:
-            if "OS_TENANT_NAME" in os.environ:
-                return os.getenv("OS_TENANT_NAME")
-            else:
-                return os.getenv("OS_PROJECT_NAME")
-
-    def get_user_domain_name(self):
-        """Returns user domain name."""
-        if not self.use_os:
-            if hasattr(self.conf.auth, 'user_domain_name'):
-                return self.conf.auth.user_domain_name
-            elif hasattr(self.conf.auth, "admin_domain_name"):
-                return self.conf.auth.admin_domain_name
-            else:
-                return self.conf.tobiko_plugin.user_domain_name
-        else:
-            return os.getenv("OS_USER_DOMAIN_NAME")
-
-    def get_uri(self, ver=2):
-        """Returns URI."""
-        if not self.use_os:
-            if ver == 3:
-                if hasattr(self.conf.identity, 'uri_v3'):
-                    return self.conf.identity.uri_v3
-            return self.conf.identity.uri
-        else:
-            return os.getenv("OS_AUTH_URL")
-
-    def get_auth_version(self):
-        """Returns identity/keystone API verion."""
-        if not self.use_os:
-            if hasattr(self.conf.identity_feature_enabled, 'api_v3'):
-                if self.conf.identity_feature_enabled.api_v3:
-                    return 3
-            return 2
-        else:
-            return os.getenv("OS_IDENTITY_API_VERSION",
-                             constants.DEFAULT_API_VER)
-
-    def get_project_domain_name(self):
-        """Returns project domain name."""
-        if not self.use_os:
-            if hasattr(self.conf.identity, 'project_domain_name'):
-                return self.conf.identity.project_domain_name
-            elif hasattr(self.conf.auth, 'admin_domain_name'):
-                return self.conf.auth.admin_domain_name
-            elif hasattr(self.conf.identity, 'admin_domain_name'):
-                return self.conf.identity.admin_domain_name
-            elif hasattr(self.conf.identity, 'admin_tenant_name'):
-                return self.conf.identity.admin_tenant_name
-            else:
-                return self.conf.auth.admin_domain_name
-        else:
-            return os.getenv("OS_PROJECT_NAME")
-
-    def get_session(self):
+    @property
+    def session(self):
         """Returns keystone session."""
+        if self._session is None:
+            from keystoneauth1 import loading
+            from keystoneauth1 import session
+            loader = loading.get_plugin_loader('password')
+            auth = loader.load_from_options(**self.credentials)
+            self._session = session.Session(auth=auth, verify=False)
+        return self._session
 
-        ver = self.get_auth_version()
+    @property
+    def heat_client(self):
+        if self._heat_client is None:
+            from heatclient import client as heat_client
+            self._heat_client = heat_client.Client(
+                '1', session=self.session, endpoint_type='public',
+                service_type='orchestration')
+        return self._heat_client
 
-        kwargs = {
-            'auth_url': self.get_uri(ver),
-            'username': self.get_username(),
-            'password': self.get_password(),
-            'project_name': self.get_tenant_name(),
-        }
-
-        if ver == 3:
-            kwargs.update(
-                {'user_domain_name': self.get_user_domain_name(),
-                 'project_domain_name': self.get_project_domain_name()})
-
-        loader = loading.get_plugin_loader('password')
-        auth = loader.load_from_options(**kwargs)
-        return session.Session(auth=auth, verify=False)
+    @property
+    def neutron_client(self):
+        """Returns neutron client."""
+        if self._neutron_client is None:
+            from neutronclient.v2_0 import client as neutron_client
+            self._neutron_client = neutron_client.Client(session=self.session)
+        return self._neutron_client
