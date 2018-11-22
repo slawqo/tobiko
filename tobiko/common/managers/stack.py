@@ -25,9 +25,8 @@ from tobiko.common import exceptions as exc
 class StackManager(object):
     """Manages Heat stacks."""
 
-    def __init__(self, client_manager, templates_dir,
-                 wait_interval=5):
-        self.client = client_manager.get_heat_client()
+    def __init__(self, client_manager, templates_dir, wait_interval=5):
+        self.client = client_manager.heat_client
         self.templates_dir = templates_dir
         self.wait_interval = wait_interval
 

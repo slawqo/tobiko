@@ -17,7 +17,7 @@ class NetworkManager(object):
     """Manages Neutron Resources."""
 
     def __init__(self, client_manager):
-        self.client = client_manager.get_neutron_client()
+        self.client = client_manager.neutron_client
 
     def create_sg_rules(self, rules, sg_id):
         """Creates security group rules."""
