@@ -24,11 +24,6 @@ class TobikoTest(testtools.testcase.WithAttributes,
                  testscenarios.WithScenarios,
                  testtools.TestCase):
 
-    def setUp(self):
-        super(TobikoTest, self).setUp()
-        self.conf = config.CONF
-        self.default_params = {
-            'public_net': self.conf.network.floating_network_name,
-            'image': self.conf.compute.image_ref,
-            'flavor': constants.DEFAULT_FLAVOR}
-        self.clientManager = clients.ClientManager(conf=self.conf)
+    default_params = constants.DEFAULT_PARAMS
+    conf = config.CONF
+    clientManager = clients.ClientManager()
