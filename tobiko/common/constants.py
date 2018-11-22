@@ -11,19 +11,20 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-from tempest import config
 
-conf = config.CONF
+from tobiko import config
 
 COMPLETE_STATUS = "CREATE_COMPLETE"
-DEFAULT_FLAVOR = "m1.micro"
-
-DEFAULT_API_VER = 2
-
 TEMPLATE_SUFFIX = ".yaml"
 
 DEFAULT_PARAMS = {
-    'public_net': conf.network.floating_network_name,
-    'image': conf.compute.image_ref,
-    'flavor': DEFAULT_FLAVOR
+    'public_net': config.get_any_option(
+        'tobiko.network.floating_network_name',
+        'tempest.network.floating_network_name'),
+    'image': config.get_any_option(
+        'tobiko.compute.image_ref',
+        'tempest.compute.image_ref'),
+    'flavor': config.get_any_option(
+        'tobiko.compute.flavor_ref',
+        'tempest.compute.flavor_ref'),
 }
