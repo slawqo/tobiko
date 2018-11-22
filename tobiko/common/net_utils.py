@@ -20,6 +20,11 @@ import subprocess
 from tempest.common.utils import net_utils
 from tempest.lib.common.utils import test_utils
 
+from tobiko import config
+
+SHELL = config.get_any_option('tobiko.shell.command',
+                              default='bin/sh -c').split()
+
 
 def run_background_ping(ip):
     """Starts background ping process."""
@@ -64,7 +69,7 @@ def ping_ip_address(ip_address, should_succeed=True,
                     ping_timeout=None, mtu=None):
 
     timeout = ping_timeout or 120
-    cmd = ['ping', '-c1', '-w1']
+    cmd = SHELL + ['ping', '-c1', '-w1']
 
     if mtu:
         cmd += [
@@ -74,9 +79,10 @@ def ping_ip_address(ip_address, should_succeed=True,
             '-s', str(net_utils.get_ping_payload_size(mtu, 4))
         ]
     cmd.append(ip_address)
+    cmd_line = SHELL + [subprocess.list2cmdline(cmd)]
 
     def ping():
-        proc = subprocess.Popen(cmd,
+        proc = subprocess.Popen(cmd_line,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         proc.communicate()

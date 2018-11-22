@@ -23,6 +23,12 @@ from tempest.lib.common.utils import test_utils
 
 import tobiko.common.utils.process as proc_utils
 
+from tobiko import config
+
+SHELL = config.get_any_option('tobiko.shell.command',
+                              default='bin/sh -c').split()
+
+
 SG_RULES = {'ALLOW_ICMP':
             {'direction': 'ingress',
              'protocol': 'icmp'
@@ -95,9 +101,10 @@ def ping_ip_address(ip_address, should_succeed=True,
             cmd += ['-M', 'do']
         cmd += ['-s', str(net_utils.get_ping_payload_size(mtu, 4))]
     cmd.append(ip_address)
+    cmd_line = SHELL + [subprocess.list2cmdline(cmd)]
 
     def ping():
-        proc = subprocess.Popen(cmd,
+        proc = subprocess.Popen(cmd_line,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         proc.communicate()
