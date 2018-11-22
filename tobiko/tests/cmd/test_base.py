@@ -12,19 +12,17 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import os
 
-from tobiko.common import clients
-from tobiko.common.managers import stack
+import os.path
+
+from tobiko.cmd import base
+from tobiko.tests.base import TobikoTest
 
 
-class TobikoCMD(object):
-    """Manages different command line utilities."""
+class TobikoCMDTest(TobikoTest):
 
-    def __init__(self):
-        self.clientManager = clients.ClientManager()
-        curr_dir = os.path.dirname(__file__)
-        self.templates_dir = os.path.join(curr_dir,
-                                          "../tests/scenario/templates")
-        self.stackManager = stack.StackManager(self.clientManager,
-                                               self.templates_dir)
+    def test_init(self):
+        cmd = base.TobikoCMD()
+        self.assertIsNotNone(cmd.clientManager)
+        self.assertTrue(os.path.isdir(cmd.templates_dir))
+        self.assertIsNotNone(cmd.stackManager)
