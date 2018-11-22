@@ -14,11 +14,18 @@
 import argparse
 import logging
 import sys
-import urllib2
 
 from tobiko.cmd import base
 from tobiko.common import constants
 from tobiko.common import exceptions as exc
+
+try:
+    # Python 3
+    from urllib import error as url_error
+except ImportError:
+    # Python 2
+    import urllib2 as url_error
+
 
 LOG = logging.getLogger(__name__)
 
@@ -57,7 +64,7 @@ class CreateUtil(base.TobikoCMD):
                                          constants.TEMPLATE_SUFFIX]),
                     parameters=constants.DEFAULT_PARAMS)
                 LOG.info("Created stack: %s" % stack_name)
-            except urllib2.URLError:
+            except url_error.URLError:
                 stacks = self.stackManager.get_templates_names(
                     strip_suffix=True)
                 raise exc.MissingTemplateException(templates="\n".join(stacks))
