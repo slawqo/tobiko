@@ -17,7 +17,10 @@ from tempest.common import utils
 from tobiko.common.asserts import assert_ping
 from tobiko.tests.scenario import base
 
+from testtools import skip
 
+
+@skip("Broken or incomplete test case.")
 class MTUTest(base.ScenarioTestsBase):
     """Tests MTU."""
 

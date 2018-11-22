@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from tobiko.common.asserts import assert_ping
-from tobiko.common.utils.network import SG_RULES
 from tobiko.tests.scenario import base
 
 
@@ -38,10 +37,3 @@ class SecurityGroupTest(base.ScenarioTestsBase):
 
         assert_ping(self.fip)
         assert_ping(self.unreachable_fip, should_fail=True)
-
-        # Add 'allow ICMP' rule to the blank security group
-        self.networkManager.create_sg_rules([SG_RULES['ALLOW_ICMP']],
-                                            self.blank_sg_id)
-
-        # Make sure unreachable floating IP is now reachable
-        assert_ping(self.unreachable_fip)
