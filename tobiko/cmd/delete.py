@@ -39,11 +39,11 @@ class DeleteUtil(base.TobikoCMD):
 
     def delete_stack(self, stack_name=None, all_stacks=False):
         """Deletes a stack based on given arguments."""
-        if all_stacks:
+        if all_stacks or stack_name is None:
             stacks = self.stackManager.get_stacks_match_templates()
             for stack in stacks:
-                    self.stackManager.delete_stack(stack.id)
-                    LOG.info("Deleted stack: %s" % stack.stack_name)
+                self.stackManager.delete_stack(stack)
+                LOG.info("Deleted stack: %s" % stack)
         else:
             self.stackManager.delete_stack(stack_name)
             LOG.info("Deleted stack: %s" % stack_name)
