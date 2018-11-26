@@ -50,7 +50,7 @@ class CreateUtil(base.TobikoCMD):
 
     def create_stack(self, stack_name=None, all_stacks=False):
         """Creates a stack based on given arguments."""
-        if all_stacks:
+        if all_stacks or stack_name is None:
             templates = self.stackManager.get_templates_names()
             for template in templates:
                 stack_name = template.split(constants.TEMPLATE_SUFFIX)[0]

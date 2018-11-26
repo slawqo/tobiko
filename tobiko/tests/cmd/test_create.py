@@ -58,15 +58,38 @@ class CreateUtilTest(TobikoTest):
 class TestMain(TobikoTest):
 
     @mock.patch('sys.argv', ['tobiko-create', '--stack', 'test_floatingip'])
+    def test_main_with_stack(self):
+        self._test_main(stack_names=['test_floatingip'],
+                        walk_dir=False)
+
+    @mock.patch('sys.argv', ['tobiko-create'])
+    def test_main(self):
+        self._test_main(stack_names=['test_floatingip', 'test_mtu'],
+                        walk_dir=True)
+
+    @mock.patch('sys.argv', ['tobiko-create', '--all'])
+    def test_main_with_all(self):
+        self._test_main(stack_names=['test_mtu', 'test_security_groups'],
+                        walk_dir=True)
+
     @mock.patch('heatclient.client.Client')
-    def test_main_with_stack(self, MockClient):
+    @mock.patch('os.walk')
+    def _test_main(self, mock_walk, MockClient, stack_names, walk_dir):
         # Break wait for stack status loop
         MockClient().stacks.get().stack_status = constants.COMPLETE_STATUS
+        mock_walk.return_value = [(None, None, [(name + '.yaml')
+                                                for name in stack_names])]
 
         create.main()
 
         # Check stack is created
-        MockClient().stacks.create.assert_called_once_with(
-            parameters=constants.DEFAULT_PARAMS,
-            stack_name='test_floatingip',
-            template=mock.ANY)
+        MockClient().stacks.create.assert_has_calls(
+            [mock.call(parameters=constants.DEFAULT_PARAMS,
+                       stack_name=stack_name,
+                       template=mock.ANY)
+             for stack_name in stack_names])
+
+        if walk_dir:
+            mock_walk.assert_called_once_with(mock.ANY)
+        else:
+            mock_walk.assert_not_called()
