@@ -86,7 +86,7 @@ class TestMain(TobikoTest):
 
         delete.main()
 
-        # Check stack is created
+        # Check stack is deleted
         MockClient().stacks.delete.assert_has_calls(
             [mock.call(stack_name)
              for stack_name in stack_names[::2]])
