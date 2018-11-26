@@ -5,6 +5,7 @@
 
 # Hidden files
 .eggs
+.coverage*
 .stestr
 .test
 .testrepository
@@ -15,6 +16,7 @@ __pycache__
 AUTHORS
 build/*
 ChangeLog
+cover/
 doc/build/*
 dist/
 etc/
