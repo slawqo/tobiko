@@ -42,12 +42,12 @@ class ListUtil(base.TobikoCMD):
     def list_stacks(self):
         """Lists stacks created by Tobiko."""
         for stack in self.stackManager.get_stacks_match_templates():
-            print(stack)
+            sys.stdout.write(stack + '\n')
 
     def list_templates(self):
         """Lists stacks created by Tobiko."""
         for template in self.stackManager.get_templates_names():
-            print(template)
+            sys.stdout.write(template + '\n')
 
 
 def main():
