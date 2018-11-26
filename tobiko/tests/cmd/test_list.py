@@ -33,11 +33,11 @@ class ListUtilTest(TobikoTest):
         self.assertIsNotNone(cmd.parser)
         self.assertIsNone(cmd.args.action)
 
-    @mock.patch('sys.argv', ['tobiko-create', '--stacks'])
+    @mock.patch('sys.argv', ['tobiko-list', '--stacks'])
     def test_init_with_stacks(self):
         self._test_init_with_stacks()
 
-    @mock.patch('sys.argv', ['tobiko-create', '-s'])
+    @mock.patch('sys.argv', ['tobiko-list', '-s'])
     def test_init_with_s(self):
         self._test_init_with_stacks()
 
@@ -49,11 +49,11 @@ class ListUtilTest(TobikoTest):
         self.assertIsNotNone(cmd.parser)
         self.assertEqual('list_stacks', cmd.args.action)
 
-    @mock.patch('sys.argv', ['tobiko-create', '--templates'])
+    @mock.patch('sys.argv', ['tobiko-list', '--templates'])
     def test_init_with_templates(self):
         self._test_init_with_templates()
 
-    @mock.patch('sys.argv', ['tobiko-create', '-t'])
+    @mock.patch('sys.argv', ['tobiko-list', '-t'])
     def test_init_with_t(self):
         self._test_init_with_templates()
 
@@ -68,7 +68,7 @@ class ListUtilTest(TobikoTest):
 
 class TestMain(TobikoTest):
 
-    @mock.patch('sys.argv', ['tobiko-create'])
+    @mock.patch('sys.argv', ['tobiko-list'])
     def test_main(self):
         self._test_main(stack_names=['test_floatingip', 'test_mtu'],
                         show_templates=True)
