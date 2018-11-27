@@ -23,8 +23,6 @@ import subprocess
 from tempest.common.utils import net_utils
 from tempest.lib.common.utils import test_utils
 
-import tobiko.common.utils.process as proc_utils
-
 from tobiko import config
 
 SHELL = config.get_any_option('tobiko.shell.command',
@@ -48,7 +46,8 @@ def run_background_ping(ip):
 
     # Kill any existing running ping process to the same IP address
     if os.path.exists(PING_OUTPUT_F):
-        proc_utils.kill_process(pid_f=PING_PID_F)
+        with os.open(PING_OUTPUT_F) as pid_file:
+            os.kill(int(pid_file.read()), signal.SIGINT)
         for f in glob.glob("/tmp/ping_%s_%s*" % (ip, caller_f)):
             os.remove(f)
         for f in glob.glob("/tmp/ping_%s_%s.*"):
@@ -75,7 +74,7 @@ def get_packet_loss(ip):
         os.kill(int(pid), signal.SIGINT)
 
         # Packet loss pattern
-        p = re.compile("(\d{1,3})% packet loss")
+        p = re.compile("(\\d{1,3})% packet loss")
 
         # Get ping package loss
         with open(PING_OUTPUT_F) as f:

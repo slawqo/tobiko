@@ -13,8 +13,15 @@
 #    under the License.
 from __future__ import absolute_import
 
+import testtools
+
 import tobiko.common.utils.network as net_utils
 from tobiko.common import exceptions
+
+
+class PingFailed(exceptions.TobikoException,
+                 testtools.TestCase.failureException):
+    message = "Failed pinging %(destination)r: %(reason)"
 
 
 def assert_ping(ip, should_fail=False, mtu=None, fragmentation=True):
@@ -22,6 +29,6 @@ def assert_ping(ip, should_fail=False, mtu=None, fragmentation=True):
                                         fragmentation=fragmentation)
     if success:
         if should_fail:
-            raise exceptions.PingException("IP address is reachable: %s" % ip)
+            raise PingFailed(destination=ip, reason="IP address is reachable")
     elif not should_fail:
-        raise exceptions.PingException("IP address is not reachable: %s" % ip)
+        raise PingFailed(destination=ip, reason="IP address is not reachable")

@@ -19,31 +19,27 @@ class TobikoException(Exception):
 
     To use this class, inherit from it and define a 'message' property.
     """
+
     message = "An unknown exception occurred."
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **properties):
         super(TobikoException, self).__init__()
-        try:
-            self._message = self.message % kwargs
-
-        except Exception:
-            self._message = self.message
-
-        if len(args) > 0:
-            args = ["%s" % arg for arg in args]
-            self._messsage = (self._message +
-                              "\nDetails: %s" % '\n'.join(args))
+        self._properties = properties
+        message = self.message  # pylint: disable=exception-message-attribute
+        if properties:
+            message = message % properties
+        self._message = message
 
     def __str__(self):
         return self._message
 
-
-class PingException(TobikoException):
-    message = "Was unable to ping the IP address: %(ip)s"
-
-
-class MissingInputException(TobikoException):
-    message = "No %(input)s was provided"
+    def __getattr(self, name):
+        try:
+            return self._properties[name]
+        except KeyError:
+            pass
+        msg = ("'{!r}' object has no attribute {!r}").format(self, name)
+        raise AttributeError(msg)
 
 
 class MissingTemplateException(TobikoException):
