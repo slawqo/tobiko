@@ -21,7 +21,6 @@ from heatclient import exc as heat_exc
 import yaml
 
 from tobiko.common import constants
-from tobiko.common import exceptions as exc
 
 
 class StackManager(object):
@@ -34,7 +33,7 @@ class StackManager(object):
 
     def load_template(self, template_path):
         """Loads template from a given file."""
-        _files, template = template_utils.get_template_contents(template_path)
+        _, template = template_utils.get_template_contents(template_path)
         return yaml.safe_dump(template)
 
     def create_stack(self, stack_name, template_name, parameters,
@@ -79,19 +78,15 @@ class StackManager(object):
 
     def get_output(self, stack, key):
         """Returns a specific value from stack outputs by using a given key."""
-        value = None
         for output in stack.outputs:
             if output['output_key'] == key:
-                value = output['output_value']
-        if not value:
-            raise exc.NoSuchKey(key)
-        else:
-            return value
+                return output['output_value']
+        raise KeyError("No such key: {!r}".format(key))
 
     def get_templates_names(self, strip_suffix=False):
         """Returns a list of all the files in templates dir."""
         templates = []
-        for (path, folders, files) in os.walk(self.templates_dir):
+        for (_, _, files) in os.walk(self.templates_dir):
             templates.extend(files)
         if strip_suffix:
             templates = [
