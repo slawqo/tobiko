@@ -19,8 +19,7 @@ import os
 from oslo_config import cfg
 from oslo_log import log
 
-CONFIG_MODULES = ['oslo_log.log',
-                  'tobiko.tests.config']
+CONFIG_MODULES = ['tobiko.tests.config']
 
 CONFIG_DIRS = [os.getcwd(),
                os.path.expanduser("~/.tobiko"),
@@ -38,11 +37,11 @@ class GlobalConfig(object):
             cls._instance = object.__new__(cls)
         return cls._instance
 
-    def __setattr__(self, name, conf):
-        if conf is None:
+    def set_source(self, name, source_conf):
+        if source_conf is None:
             raise TypeError("Config source cannot be None")
-        actual = self._sources.setdefault(name, conf)
-        if actual is not conf:
+        actual = self._sources.setdefault(name, source_conf)
+        if actual is not source_conf:
             msg = "Config source already registered: {!r}".format(name)
             raise RuntimeError(msg)
 
@@ -63,35 +62,51 @@ def init_config():
     init_environ_config()
 
 
-def init_tobiko_config(default_config_dirs=CONFIG_DIRS, product_name='tobiko',
+def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
                        version='unknown'):
+    default_config_dirs = default_config_dirs or CONFIG_DIRS
+
+    # Register configuration options
     conf = cfg.ConfigOpts()
-    register_options(conf=conf)
+    log.register_options(conf)
+    log.register_options = dummy_log_register_options
+    register_tobiko_options(conf=conf)
+
+    # Initialize tobiko configuration object
     conf(args=[], default_config_dirs=default_config_dirs)
-    setup(conf=conf, product_name=product_name, version=version)
-    CONF.tobiko = conf
+    CONF.set_source('tobiko', conf)
+
+    # setup final configuration
+    log.setup(conf=conf, product_name=product_name, version=version)
+    log.setup = dummy_log_setup
+    setup_tobiko_config()
 
 
-def register_options(conf):
+# pylint: disable=unused-argument
+def dummy_log_register_options(conf):
+    pass
+
+
+# pylint: disable=unused-argument
+def dummy_log_setup(conf, product_name, version=None):
+    pass
+
+
+def register_tobiko_options(conf):
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
-        register_options_func = getattr(module, 'register_options', None)
-        if register_options_func:
+        register_options_func = getattr(module, 'register_tobiko_options',
+                                        None)
+        if callable(register_options_func):
             register_options_func(conf=conf)
 
-    def dummy_log_register_options(conf):
-        pass
-    log.register_options = dummy_log_register_options
 
-
-def setup(conf, product_name, version):
+def setup_tobiko_config():
     for module in CONFIG_MODULES:
-        setup_func = getattr(module, 'setup', None)
-        if setup_func:
-            setup_func(conf=conf, product_name=product_name, version=version)
+        setup_func = getattr(module, 'setup_tobiko_config', None)
+        if callable(setup_func):
+            setup_func()  # pylint: disable=not-callable
 
-    def dummy_log_setup(conf, product_name, version=None):
-        pass
     log.setup = dummy_log_setup
 
 
@@ -101,15 +116,12 @@ def init_tempest_config():
     except ImportError:
         pass
     else:
-        CONF.tempest = tempest_conf = config.CONF
-        if 'http_proxy' not in os.environ or 'https_proxy' not in os.environ:
-            if tempest_conf.service_clients.proxy_url:
-                os.environ['http_proxy'] = (
-                    tempest_conf.service_clients.proxy_url)
+        tempest_conf = config.CONF
+        CONF.set_source('tempest', tempest_conf)
 
 
 def init_environ_config():
-    CONF.environ = EnvironConfig()
+    CONF.set_source('environ', EnvironConfig())
 
 
 class EnvironConfig(object):

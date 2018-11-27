@@ -16,7 +16,7 @@ from __future__ import absolute_import
 from oslo_config import cfg
 
 
-def register_options(conf):
+def register_tobiko_options(conf):
     conf.register_opts(
         group=cfg.OptGroup('compute'),
         opts=[cfg.StrOpt('image_ref',
@@ -35,5 +35,5 @@ def register_options(conf):
                               "local commands")])
 
 
-def setup(conf, product_name, version):
+def setup_tobiko_config():
     pass

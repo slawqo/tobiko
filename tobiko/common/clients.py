@@ -13,7 +13,20 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
+
 from tobiko import config
+
+
+# Configure HTTP proxy for connecting clients
+HTTP_PROXY = config.get_any_option(
+    'environ.http_proxy',
+    'environ.https_proxy',
+    'tempest.service_clients.proxy_url')
+if (HTTP_PROXY and 'http_proxy' not in os.environ and
+        'https_proxy' not in os.environ):
+    os.environ.update(http_proxy=HTTP_PROXY,
+                      https_proxy=HTTP_PROXY)
 
 
 def get_default_credentials(api_version=None, username=None, password=None,
