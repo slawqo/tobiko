@@ -22,7 +22,7 @@ class FloatingIPTest(base.ScenarioTestsBase):
     """Tests server connectivity"""
 
     def setUp(self):
-        super(FloatingIPTest, self).setUp(__file__)
+        super(FloatingIPTest, self).setUp()
         self.stack = self._get_stack()
         self.fip = self.stackManager.get_output(self.stack, "fip")
         self.unreachable_fip = self.stackManager.get_output(self.stack, "fip2")

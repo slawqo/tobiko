@@ -22,7 +22,7 @@ class SecurityGroupTest(base.ScenarioTestsBase):
     """Tests security groups."""
 
     def setUp(self):
-        super(SecurityGroupTest, self).setUp(__file__)
+        super(SecurityGroupTest, self).setUp()
         self.stack = self._get_stack()
         self.fip = self.stackManager.get_output(self.stack, "fip")
         self.unreachable_fip = self.stackManager.get_output(self.stack, "fip2")

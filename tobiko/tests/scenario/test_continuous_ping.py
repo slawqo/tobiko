@@ -27,7 +27,7 @@ class ContinuousPingTest(base.ScenarioTestsBase):
     MAX_PACKET_LOSS = 5
 
     def setUp(self):
-        super(ContinuousPingTest, self).setUp(__file__)
+        super(ContinuousPingTest, self).setUp()
         self.stack = self._get_stack()
         self.fip = self.stackManager.get_output(self.stack, "fip")
 

@@ -27,7 +27,7 @@ class MTUTest(base.ScenarioTestsBase):
     """Tests MTU."""
 
     def setUp(self):
-        super(MTUTest, self).setUp(__file__)
+        super(MTUTest, self).setUp()
         self.stack = self._get_stack()
         self.fip_max_mtu = self.stackManager.get_output(
             self.stack, "fip_max_mtu")

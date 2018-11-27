@@ -15,9 +15,9 @@
 from __future__ import absolute_import
 
 import os
+import sys
 
 from heatclient import exc
-
 
 from tobiko.tests import base
 from tobiko.common.managers import stack
@@ -28,20 +28,30 @@ from tobiko.common import constants
 class ScenarioTestsBase(base.TobikoTest):
     """All scenario tests inherit from this scenario base class."""
 
-    def setUp(self, file_path, params=None):
+    def setUp(self):
         super(ScenarioTestsBase, self).setUp()
         templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
         self.stackManager = stack.StackManager(self.clientManager,
                                                templates_dir)
         self.networkManager = network.NetworkManager(self.clientManager)
-        self.params = params or self.default_params
-        file_name = os.path.basename(file_path)
-        self.stack_name = file_name.split(".py")[0]
+        self.params = self.default_params
+
+        test_name = self.id()
+        while test_name:
+            test_module = sys.modules.get(test_name)
+            if test_module:
+                break
+            name_parts = test_name.rsplit('.', 1)
+            if len(name_parts) == 1:
+                msg = "Invalid test name: {!r}".format(self.id())
+                raise RuntimeError(msg)
+            test_name = name_parts[0]
+        self.stack_name = test_name.rsplit('.', 1)[-1]
 
         try:
             self.stackManager.get_stack(self.stack_name)
         except exc.HTTPNotFound:
-            self.create_stack(self.stack_name)
+            self.create_stack()
 
     def create_stack(self):
         """Creates stack to be used by all scenario tests."""
@@ -57,7 +67,7 @@ class ScenarioTestsBase(base.TobikoTest):
         return st['stack']
 
     def _get_stack(self):
-        stack = self.stackManager.get_stack(self.stack_name)
-        if not stack:
-            stack = self.create_stack()
-        return stack
+        _stack = self.stackManager.get_stack(self.stack_name)
+        if not _stack:
+            _stack = self.create_stack()
+        return _stack
