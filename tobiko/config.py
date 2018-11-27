@@ -82,30 +82,28 @@ def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
     setup_tobiko_config()
 
 
-# pylint: disable=unused-argument
 def dummy_log_register_options(conf):
+    # pylint: disable=unused-argument
     pass
 
 
-# pylint: disable=unused-argument
 def dummy_log_setup(conf, product_name, version=None):
+    # pylint: disable=unused-argument
     pass
 
 
 def register_tobiko_options(conf):
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
-        register_options_func = getattr(module, 'register_tobiko_options',
-                                        None)
-        if callable(register_options_func):
-            register_options_func(conf=conf)
+        if hasattr(module, 'register_tobiko_options'):
+            module.register_tobiko_options(conf=conf)
 
 
 def setup_tobiko_config():
-    for module in CONFIG_MODULES:
-        setup_func = getattr(module, 'setup_tobiko_config', None)
-        if callable(setup_func):
-            setup_func()  # pylint: disable=not-callable
+    for module_name in CONFIG_MODULES:
+        module = importlib.import_module(module_name)
+        if hasattr(module, 'setup_tobiko_config'):
+            module.setup_tobiko_config()
 
     log.setup = dummy_log_setup
 
