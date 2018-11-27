@@ -60,16 +60,19 @@ class TestMain(TobikoTest):
 
     @mock.patch('sys.argv', ['tobiko-delete', '--stack', 'test_floatingip'])
     def test_main_with_stack(self):
+        # pylint: disable=no-value-for-parameter
         self._test_main(stack_names=['test_floatingip'],
                         walk_dir=False)
 
     @mock.patch('sys.argv', ['tobiko-delete'])
     def test_main(self):
+        # pylint: disable=no-value-for-parameter
         self._test_main(stack_names=['test_floatingip', 'test_mtu'],
                         walk_dir=True)
 
     @mock.patch('sys.argv', ['tobiko-delete', '--all'])
     def test_main_with_all(self):
+        # pylint: disable=no-value-for-parameter
         self._test_main(stack_names=['test_mtu', 'test_security_groups',
                                      'test_floatingip'],
                         walk_dir=True)

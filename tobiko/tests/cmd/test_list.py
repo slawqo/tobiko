@@ -18,7 +18,7 @@ import os.path
 
 import mock
 
-from tobiko.cmd import list
+from tobiko.cmd import list as list_cmd
 from tobiko.common import constants
 from tobiko.tests.base import TobikoTest
 
@@ -27,7 +27,7 @@ class ListUtilTest(TobikoTest):
 
     @mock.patch('sys.argv', ['tobiko-list'])
     def test_init(self):
-        cmd = list.ListUtil()
+        cmd = list_cmd.ListUtil()
         self.assertIsNotNone(cmd.clientManager)
         self.assertTrue(os.path.isdir(cmd.templates_dir))
         self.assertIsNotNone(cmd.stackManager)
@@ -43,7 +43,7 @@ class ListUtilTest(TobikoTest):
         self._test_init_with_stacks()
 
     def _test_init_with_stacks(self):
-        cmd = list.ListUtil()
+        cmd = list_cmd.ListUtil()
         self.assertIsNotNone(cmd.clientManager)
         self.assertTrue(os.path.isdir(cmd.templates_dir))
         self.assertIsNotNone(cmd.stackManager)
@@ -59,7 +59,7 @@ class ListUtilTest(TobikoTest):
         self._test_init_with_templates()
 
     def _test_init_with_templates(self):
-        cmd = list.ListUtil()
+        cmd = list_cmd.ListUtil()
         self.assertIsNotNone(cmd.clientManager)
         self.assertTrue(os.path.isdir(cmd.templates_dir))
         self.assertIsNotNone(cmd.stackManager)
@@ -71,26 +71,31 @@ class TestMain(TobikoTest):
 
     @mock.patch('sys.argv', ['tobiko-list'])
     def test_main(self):
+        # pylint: disable=no-value-for-parameter
         self._test_main(stack_names=['test_floatingip', 'test_mtu'],
                         show_templates=True)
 
     @mock.patch('sys.argv', ['tobiko-list', '--stack'])
     def test_main_with_stacks(self):
+        # pylint: disable=no-value-for-parameter
         self._test_main(stack_names=['test_floatingip', 'test_mtu'],
                         show_templates=False)
 
     @mock.patch('sys.argv', ['tobiko-list', '-s'])
     def test_main_with_s(self):
+        # pylint: disable=no-value-for-parameter
         self._test_main(stack_names=['test_floatingip', 'test_mtu'],
                         show_templates=False)
 
     @mock.patch('sys.argv', ['tobiko-list', '--templates'])
     def test_main_with_templates(self):
+        # pylint: disable=no-value-for-parameter
         self._test_main(stack_names=['test_floatingip', 'test_mtu'],
                         show_templates=True)
 
     @mock.patch('sys.argv', ['tobiko-list', '-t'])
     def test_main_with_all(self):
+        # pylint: disable=no-value-for-parameter
         self._test_main(stack_names=['test_floatingip', 'test_mtu'],
                         show_templates=True)
 
@@ -107,7 +112,7 @@ class TestMain(TobikoTest):
             mock.Mock(stack_name=stack_name)
             for stack_name in stack_names[::2]]
 
-        list.main()
+        list_cmd.main()
 
         if show_templates:
             mock_write.assert_has_calls([mock.call(stack_name + '.yaml\n')
