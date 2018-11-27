@@ -4,3 +4,4 @@
 
 flake8==2.5.5  # MIT
 flake8-import-order==0.12  # LGPLv3
+pylint>=1.9
