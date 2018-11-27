@@ -40,7 +40,3 @@ class TobikoException(Exception):
             pass
         msg = ("'{!r}' object has no attribute {!r}").format(self, name)
         raise AttributeError(msg)
-
-
-class MissingTemplateException(TobikoException):
-    message = "No such template. Existing templates:\n%(templates)s"

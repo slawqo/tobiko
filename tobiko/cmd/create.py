@@ -19,7 +19,7 @@ import sys
 
 from tobiko.cmd import base
 from tobiko.common import constants
-from tobiko.common import exceptions as exc
+from tobiko.common import exceptions
 
 try:
     # Python 3
@@ -69,7 +69,11 @@ class CreateUtil(base.TobikoCMD):
             except url_error.URLError:
                 stacks = self.stackManager.get_templates_names(
                     strip_suffix=True)
-                raise exc.MissingTemplateException(templates="\n".join(stacks))
+                raise NoSuchTemplateError(templates="\n".join(stacks))
+
+
+class NoSuchTemplateError(exceptions.TobikoException):
+    message = "No such template. Existing templates:\n%(templates)s"
 
 
 def main():
