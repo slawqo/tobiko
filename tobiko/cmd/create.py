@@ -58,14 +58,14 @@ class CreateUtil(base.TobikoCMD):
                 stack_name = template.split(constants.TEMPLATE_SUFFIX)[0]
                 self.stackManager.create_stack(
                     stack_name, template, parameters=constants.DEFAULT_PARAMS)
-                LOG.info("Created stack: %s" % stack_name)
+                LOG.info("Created stack: %s", stack_name)
         else:
             try:
                 self.stackManager.create_stack(
                     stack_name, ''.join([stack_name,
                                          constants.TEMPLATE_SUFFIX]),
                     parameters=constants.DEFAULT_PARAMS)
-                LOG.info("Created stack: %s" % stack_name)
+                LOG.info("Created stack: %s", stack_name)
             except url_error.URLError:
                 stacks = self.stackManager.get_templates_names(
                     strip_suffix=True)

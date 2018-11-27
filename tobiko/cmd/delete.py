@@ -45,10 +45,10 @@ class DeleteUtil(base.TobikoCMD):
             stacks = self.stackManager.get_stacks_match_templates()
             for stack in stacks:
                 self.stackManager.delete_stack(stack)
-                LOG.info("Deleted stack: %s" % stack)
+                LOG.info("Deleted stack: %s", stack)
         else:
             self.stackManager.delete_stack(stack_name)
-            LOG.info("Deleted stack: %s" % stack_name)
+            LOG.info("Deleted stack: %s", stack_name)
 
 
 def main():
