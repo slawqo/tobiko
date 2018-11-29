@@ -1,0 +1,18 @@
+- name: Test FloatingIP
+  hosts: localhost
+  tasks:
+    - name: Launch an instance
+      os_server:
+        state: present
+        auth:
+          auth_url: "{{ auth_url }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+          project_name: "{{ project_name }}"
+        name: server1
+        image: "{{ image }}"
+        key_name: "{{ key }}"
+        timeout: 200
+        flavor: "{{ flavor }}"
+        security_groups: default
+        auto_ip: yes
