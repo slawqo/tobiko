@@ -2,5 +2,4 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
 
-flake8==2.5.5  # MIT
-flake8-import-order==0.12  # LGPLv3
+pylint>=1.9
