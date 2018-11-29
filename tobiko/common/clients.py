@@ -47,7 +47,8 @@ def get_default_credentials(api_version=None, username=None, password=None,
                 config.get_any_option(
                     'environ.OS_USERNAME',
                     'tempest.auth.username',
-                    'tempest.auth.admin_username'))
+                    'tempest.auth.admin_username') or
+                'admin')
     password = (password or
                 config.get_any_option(
                     'environ.OS_PASSWORD',
@@ -58,18 +59,22 @@ def get_default_credentials(api_version=None, username=None, password=None,
                         'environ.OS_PROJECT_NAME',
                         'environ.OS_TENANT_NAME',
                         'tempest.auth.project_name',
-                        'tempest.auth.admin_project_name'))
+                        'tempest.auth.admin_project_name') or
+                    'admin')
 
     if auth_url is None and api_version in [None, 2]:
         auth_url = config.get_any_option(
             'environ.OS_AUTH_URL', 'tempest.identity.uri')
+
         if auth_url and api_version is None:
             api_version = get_version_from_url(auth_url)
-
     if auth_url is None:
         auth_url = config.get_any_option('tempest.identity.uri_v3')
         if auth_url and api_version is None:
             api_version = 3
+    if auth_url is None:
+        auth_url = 'http://127.0.0.1:5000/v2.0'
+        api_version = 2
 
     credentials = dict(username=username,
                        password=password,
@@ -83,7 +88,8 @@ def get_default_credentials(api_version=None, username=None, password=None,
                 config.get_any_option(
                     'environ.OS_USER_DOMAIN_NAME',
                     'tempest.auth.user_domain_name',
-                    'tempest.auth.admin_domain_name')),
+                    'tempest.auth.admin_domain_name') or
+                'admin'),
             project_domain_name=(
                 project_domain_name or
                 config.get_any_option(
@@ -91,7 +97,8 @@ def get_default_credentials(api_version=None, username=None, password=None,
                     'tempest.identity.project_domain_name',
                     'tempest.auth.admin_domain_name',
                     'tempest.identity.admin_domain_name',
-                    'tempest.identity.admin_tenant_name')),)
+                    'tempest.identity.admin_tenant_name') or
+                'admin'),)
 
     # remove every field that is still None from credentials dictionary
     return {k: v for k, v in credentials.items() if v is not None}

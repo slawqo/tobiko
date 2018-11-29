@@ -3,3 +3,15 @@
     templates:
       - check-requirements
       - tempest-plugin-jobs
+    check:
+      jobs:
+        - openstack-tox-pep8
+        - openstack-tox-pylint
+        - openstack-tox-py35
+        - openstack-tox-py27
+    gate:
+      jobs:
+        - openstack-tox-pep8
+        - openstack-tox-pylint
+        - openstack-tox-py35
+        - openstack-tox-py27
