@@ -78,6 +78,9 @@ class StackManager(object):
 
     def get_output(self, stack, key):
         """Returns a specific value from stack outputs by using a given key."""
+        if stack.stack_status != constants.COMPLETE_STATUS:
+            raise ValueError("Invalid stack status: {!r}".format(
+                stack.stack_status))
         for output in stack.outputs:
             if output['output_key'] == key:
                 return output['output_value']
