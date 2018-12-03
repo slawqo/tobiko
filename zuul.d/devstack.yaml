@@ -1,0 +1,57 @@
+- job:
+    name: tobiko-devstack
+    parent: devstack
+    abstract: true
+    nodeset: openstack-single-node
+    description: |
+      Base Tobiko devstack job.
+
+      This job provides the base for both the single and multi-node
+      test setup. To run a multi-node test inherit from tobiko-devstack and
+      set the nodeset to a multi-node one.
+    required-projects:
+      - git.openstack.org/openstack/tobiko
+    timeout: 7200
+    roles:
+      - zuul: git.openstack.org/openstack-dev/devstack
+    vars:
+      devstack_services:
+        tempest: false
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            compute:
+              min_compute_nodes: "{{ groups['compute'] | default(['controller']) | length }}"
+      test_results_stage_name: test_results
+      zuul_copy_output:
+        '{{ devstack_base_dir }}/tempest/etc/tempest.conf': logs
+        '{{ devstack_base_dir }}/tempest/etc/accounts.yaml': logs
+        '{{ devstack_base_dir }}/tempest/tempest.log': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.subunit': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.html': logs
+        '{{ stage_dir }}/stackviz': logs
+      extensions_to_txt:
+        conf: true
+        log: true
+        yaml: true
+        yml: true
+    run: playbooks/devstack.yaml
+    # post-run: playbooks/post-tobiko.yaml
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^api-ref/.*$
+      - ^doc/.*$
+      - ^etc/.*$
+      - ^releasenotes/.*$
+
+
+- job:
+    name: tobiko-devstack-neutron
+    parent: tobiko-devstack
+    description: |
+      Integration test that runs all tests against DevStack provided cloud
+    vars:
+      tox_envlist: neutron
+      # tempest_test_regex: tempest
+      devstack_localrc:
+        ENABLE_FILE_INJECTION: true

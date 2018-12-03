@@ -12,8 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-#TODO(fressi): fill this playbook
-
 ---
 
-
+# Changes that run through tobiko-devstack are likely to have an impact on
+# the devstack part of the job, so we keep devstack in the main play to
+# avoid zuul retrying on legitimate failures.
+- hosts: all
+  roles:
+    - orchestrate-devstack

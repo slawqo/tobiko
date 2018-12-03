@@ -12,8 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-#TODO(fressi): fill this playbook
-
 ---
 
-
+- hosts: tempest
+  become: true
+  roles:
+    - role: fetch-subunit-output
+      zuul_work_dir: '{{ devstack_base_dir }}/tempest'
+    - role: process-stackviz
