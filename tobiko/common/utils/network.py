@@ -25,8 +25,8 @@ from tempest.lib.common.utils import test_utils
 
 from tobiko import config
 
-SHELL = config.get_any_option('tobiko.shell.command',
-                              default='bin/sh -c').split()
+SHELL = (config.get_any_option('tobiko.shell.command') or
+         'bin/sh -c').split()
 
 
 SG_RULES = {'ALLOW_ICMP':
