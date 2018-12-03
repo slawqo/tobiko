@@ -42,12 +42,9 @@ class StackManager(object):
         template = self.load_template(os.path.join(self.templates_dir,
                                                    template_name))
 
-        stack = self.client.stacks.create(stack_name=stack_name,
-                                          template=template,
-                                          parameters=parameters)
-        self.wait_for_stack_status(stack_name, status)
-
-        return stack
+        self.client.stacks.create(stack_name=stack_name, template=template,
+                                  parameters=parameters)
+        return self.wait_for_stack_status(stack_name, status)
 
     def delete_stack(self, sid):
         """Deletes stack."""
@@ -75,6 +72,7 @@ class StackManager(object):
         while (stack.stack_status != status):
             time.sleep(self.wait_interval)
             stack = self.get_stack(stack_name=stack_name)
+        return stack
 
     def get_output(self, stack, key):
         """Returns a specific value from stack outputs by using a given key."""
