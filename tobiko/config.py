@@ -73,6 +73,7 @@ def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
     register_tobiko_options(conf=conf)
 
     # Initialize tobiko configuration object
+    conf.use_stderr = True
     conf(args=[], default_config_dirs=default_config_dirs)
     CONF.set_source('tobiko', conf)
 
@@ -112,10 +113,14 @@ def init_tempest_config():
     try:
         from tempest import config
     except ImportError:
-        pass
-    else:
-        tempest_conf = config.CONF
-        CONF.set_source('tempest', tempest_conf)
+        return
+
+    tempest_conf = config.CONF
+    CONF.set_source('tempest', tempest_conf)
+
+    logger = log.getLogger('tempest')
+    if logger.isEnabledFor(log.WARNING):
+        logger.logger.setLevel(log.INFO)
 
 
 def init_environ_config():
