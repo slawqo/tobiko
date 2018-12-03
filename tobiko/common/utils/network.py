@@ -93,6 +93,8 @@ def get_packet_loss(ip):
 
 def ping_ip_address(ip_address, should_succeed=True,
                     ping_timeout=None, mtu=None, fragmentation=True):
+    if not ip_address:
+        raise ValueError("Invalid IP address: {!r}".format(ip_address))
 
     timeout = ping_timeout or 10
     cmd = ['ping', '-c1', '-w1']
