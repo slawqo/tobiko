@@ -21,7 +21,7 @@ from tobiko.common import exceptions
 
 class PingFailed(exceptions.TobikoException,
                  testtools.TestCase.failureException):
-    message = "Failed pinging %(destination)r: %(reason)"
+    message = "Failed pinging %(destination)r: %(reason)s"
 
 
 def assert_ping(ip, should_fail=False, mtu=None, fragmentation=True):

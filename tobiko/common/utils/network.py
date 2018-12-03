@@ -20,13 +20,14 @@ import re
 import signal
 import subprocess
 
+from oslo_log import log
 from tempest.common.utils import net_utils
 from tempest.lib.common.utils import test_utils
 
 from tobiko import config
 
-SHELL = (config.get_any_option('tobiko.shell.command') or
-         'bin/sh -c').split()
+LOG = log.getLogger(__name__)
+SHELL = (config.get_any_option('tobiko.shell.command') or '/bin/sh -c').split()
 
 
 SG_RULES = {'ALLOW_ICMP':
@@ -96,23 +97,26 @@ def ping_ip_address(ip_address, should_succeed=True,
     if not ip_address:
         raise ValueError("Invalid IP address: {!r}".format(ip_address))
 
-    timeout = ping_timeout or 10
-    cmd = ['ping', '-c1', '-w1']
+    timeout = ping_timeout or 60.
+    cmd = ['ping', '-c1', '-w10']
 
     if mtu:
         if not fragmentation:
             cmd += ['-M', 'do']
         cmd += ['-s', str(net_utils.get_ping_payload_size(mtu, 4))]
     cmd.append(ip_address)
-    cmd_line = SHELL + [subprocess.list2cmdline(cmd)]
+    cmd_line = SHELL + [str(subprocess.list2cmdline(cmd))]
 
     def ping():
+        LOG.debug('Execute ping command: %r', cmd_line)
         proc = subprocess.Popen(cmd_line,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
-        proc.communicate()
+        stdout, stderr = proc.communicate()
+        LOG.debug('Ping command exit status: %d', proc.returncode)
+        LOG.debug('Ping command stderr:\n%s', stderr)
+        LOG.debug('Ping command stdout:\n%s', stdout)
 
         return (proc.returncode == 0) == should_succeed
 
-    result = test_utils.call_until_true(ping, timeout, 1)
-    return result
+    return test_utils.call_until_true(ping, timeout, 1)
