@@ -17,8 +17,6 @@ from __future__ import absolute_import
 import os
 import sys
 
-from heatclient import exc
-
 from tobiko.tests import base
 from tobiko.common.managers import stack
 from tobiko.common.managers import network
@@ -27,6 +25,8 @@ from tobiko.common import constants
 
 class ScenarioTestsBase(base.TobikoTest):
     """All scenario tests inherit from this scenario base class."""
+
+    stack = None
 
     def setUp(self):
         super(ScenarioTestsBase, self).setUp()
@@ -47,11 +47,15 @@ class ScenarioTestsBase(base.TobikoTest):
                 raise RuntimeError(msg)
             test_name = name_parts[0]
         self.stack_name = test_name.rsplit('.', 1)[-1]
+        self.setup_stack()
 
-        try:
-            self.stackManager.get_stack(self.stack_name)
-        except exc.HTTPNotFound:
-            self.create_stack()
+    def setup_stack(self):
+        if not self.stack:
+            self.stack = (self.stackManager.get_stack(self.stack_name) or
+                          self.create_stack())
+        return self.stack
+
+    _get_stack = setup_stack
 
     def create_stack(self):
         """Creates stack to be used by all scenario tests."""
@@ -59,15 +63,8 @@ class ScenarioTestsBase(base.TobikoTest):
         # Defines parameters required by heat template
 
         # creates stack and stores its ID
-        st = self.stackManager.create_stack(
+        return self.stackManager.create_stack(
             stack_name=self.stack_name,
             template_name="%s.yaml" % self.stack_name,
             parameters=self.params,
             status=constants.COMPLETE_STATUS)
-        return st['stack']
-
-    def _get_stack(self):
-        _stack = self.stackManager.get_stack(self.stack_name)
-        if not _stack:
-            _stack = self.create_stack()
-        return _stack
