@@ -111,12 +111,18 @@ def ping_ip_address(ip_address, should_succeed=True,
         LOG.debug('Execute ping command: %r', cmd_line)
         proc = subprocess.Popen(cmd_line,
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+                                stderr=subprocess.PIPE,
+                                universal_newlines=True)
         stdout, stderr = proc.communicate()
-        LOG.debug('Ping command exit status: %d', proc.returncode)
-        LOG.debug('Ping command stderr:\n%s', stderr)
-        LOG.debug('Ping command stdout:\n%s', stdout)
-
-        return (proc.returncode == 0) == should_succeed
+        if proc.returncode == 0:
+            LOG.debug("Ping command succeeded:\n"
+                      "stdout:\n%s\n"
+                      "stderr:\n%s\n", stdout, stderr)
+            return should_succeed
+        else:
+            LOG.debug("Ping command failed (exit_status=%d):\n"
+                      "stdout:\n%s\n"
+                      "stderr:\n%s\n", proc.returncode, stdout, stderr)
+            return not should_succeed
 
     return test_utils.call_until_true(ping, timeout, 1)
