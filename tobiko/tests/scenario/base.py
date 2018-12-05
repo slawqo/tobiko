@@ -20,12 +20,15 @@ import sys
 from tobiko.tests import base
 from tobiko.common.managers import stack
 from tobiko.common.managers import network
+from tobiko.common import clients
 from tobiko.common import constants
 
 
 class ScenarioTestsBase(base.TobikoTest):
     """All scenario tests inherit from this scenario base class."""
 
+    clientManager = clients.ClientManager()
+    default_params = constants.DEFAULT_PARAMS
     stack = None
 
     def setUp(self):

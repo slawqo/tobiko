@@ -1,5 +1,8 @@
+# Tobiko framework requirements
+
 keystoneauth1>=2.0.0
 oslo.config>=5.2.0
 oslo.log>=3.36.0
 python-heatclient>=1.5.0
 python-neutronclient>=6.7.0
+testtools>=2.2.0
