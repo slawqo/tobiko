@@ -69,28 +69,15 @@ def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
     # Register configuration options
     conf = cfg.ConfigOpts()
     log.register_options(conf)
-    log.register_options = dummy_log_register_options
     register_tobiko_options(conf=conf)
 
     # Initialize tobiko configuration object
-    conf.use_stderr = True
     conf(args=[], default_config_dirs=default_config_dirs)
     CONF.set_source('tobiko', conf)
 
     # setup final configuration
     log.setup(conf=conf, product_name=product_name, version=version)
-    log.setup = dummy_log_setup
     setup_tobiko_config()
-
-
-def dummy_log_register_options(conf):
-    # pylint: disable=unused-argument
-    pass
-
-
-def dummy_log_setup(conf, product_name, version=None):
-    # pylint: disable=unused-argument
-    pass
 
 
 def register_tobiko_options(conf):
@@ -105,8 +92,6 @@ def setup_tobiko_config():
         module = importlib.import_module(module_name)
         if hasattr(module, 'setup_tobiko_config'):
             module.setup_tobiko_config()
-
-    log.setup = dummy_log_setup
 
 
 def init_tempest_config():
