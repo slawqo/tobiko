@@ -37,25 +37,29 @@ class DeleteUtil(base.TobikoCMD):
         parser.add_argument(
             '--all', '-a', action='store_true', dest='all',
             help="Remove all the stacks created by Tobiko.")
+        parser.add_argument(
+            '--wait', '-w', action='store_true', dest='wait',
+            help="Wait for stack to be deleted before exiting.")
         return parser
 
-    def delete_stack(self, stack_name=None, all_stacks=False):
+    def delete_stack(self, stack_name=None, all_stacks=False, wait=False):
         """Deletes a stack based on given arguments."""
         if all_stacks or stack_name is None:
             stacks = self.stackManager.get_stacks_match_templates()
             for stack in stacks:
-                self.stackManager.delete_stack(stack)
+                self.stackManager.delete_stack(stack, wait=wait)
                 LOG.info("Deleted stack: %s", stack)
         else:
-            self.stackManager.delete_stack(stack_name)
+            self.stackManager.delete_stack(stack_name, wait=wait)
             LOG.info("Deleted stack: %s", stack_name)
 
 
 def main():
     """Delete CLI main entry."""
     delete_cmd = DeleteUtil()
-    delete_cmd.delete_stack(delete_cmd.args.stack,
-                            delete_cmd.args.all)
+    delete_cmd.delete_stack(stack_name=delete_cmd.args.stack,
+                            all_stacks=delete_cmd.args.all,
+                            wait=delete_cmd.args.wait)
 
 
 if __name__ == '__main__':

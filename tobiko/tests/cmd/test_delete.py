@@ -14,79 +14,76 @@
 #    under the License.
 from __future__ import absolute_import
 
-import os.path
-
+from heatclient import exc
 import mock
 
 from tobiko.cmd import delete
-from tobiko.common.managers import stack
-from tobiko.tests.base import TobikoTest
+from tobiko.common.managers import stack as stack_manager
+from tobiko.tests.cmd import test_base
 
 
-class DeleteUtilTest(TobikoTest):
+class DeleteTest(test_base.TobikoCMDTest):
 
-    @mock.patch('sys.argv', ['tobiko-delete'])
-    def test_init(self):
-        cmd = delete.DeleteUtil()
-        self.assertIsNotNone(cmd.clientManager)
-        self.assertTrue(os.path.isdir(cmd.templates_dir))
-        self.assertIsNotNone(cmd.stackManager)
+    command_name = 'tobiko-delete'
+    command_class = delete.DeleteUtil
+
+    def test_init(self, argv=None, all_stacks=False, stack=None, wait=False):
+        # pylint: disable=arguments-differ,no-member
+        cmd = super(DeleteTest, self).test_init(argv=argv)
         self.assertIsNotNone(cmd.parser)
-        self.assertFalse(cmd.args.all)
-        self.assertIsNone(cmd.args.stack)
+        self.assertIs(all_stacks, cmd.args.all)
+        self.assertEqual(stack, cmd.args.stack)
+        self.assertIs(wait, cmd.args.wait)
+        return cmd
 
-    @mock.patch('sys.argv', ['tobiko-delete', '--all'])
     def test_init_with_all(self):
-        cmd = delete.DeleteUtil()
-        self.assertIsNotNone(cmd.clientManager)
-        self.assertTrue(os.path.isdir(cmd.templates_dir))
-        self.assertIsNotNone(cmd.stackManager)
-        self.assertIsNotNone(cmd.parser)
-        self.assertTrue(cmd.args.all)
-        self.assertIsNone(cmd.args.stack)
+        self.test_init(argv=['--all'], all_stacks=True)
 
-    @mock.patch('sys.argv', ['tobiko-delete', '--stack', 'my-stack'])
     def test_init_with_stack(self):
-        cmd = delete.DeleteUtil()
-        self.assertIsNotNone(cmd.clientManager)
-        self.assertTrue(os.path.isdir(cmd.templates_dir))
-        self.assertIsNotNone(cmd.stackManager)
-        self.assertIsNotNone(cmd.parser)
-        self.assertFalse(cmd.args.all)
-        self.assertEqual('my-stack', cmd.args.stack)
+        self.test_init(argv=['--stack', 'my-stack'], stack='my-stack')
 
+    def test_init_with_wait(self):
+        self.test_init(argv=['--wait'], wait=True)
 
-class TestMain(TobikoTest):
+    def test_init_with_w(self):
+        self.test_init(argv=['-w'], wait=True)
 
-    @mock.patch('sys.argv', ['tobiko-delete', '--stack', 'test_floatingip'])
-    def test_main_with_stack(self):
-        # pylint: disable=no-value-for-parameter
-        self._test_main(stack_names=['test_floatingip'],
-                        walk_dir=False)
+    def test_main(self, argv=None, stack_names=None, walk_dir=True,
+                  wait=False):
 
-    @mock.patch('sys.argv', ['tobiko-delete'])
-    def test_main(self):
-        # pylint: disable=no-value-for-parameter
-        self._test_main(stack_names=['test_floatingip', 'test_mtu'],
-                        walk_dir=True)
+        if stack_names is None:
+            stack_names = ['test_mtu', 'test_floatingip']
 
-    @mock.patch('sys.argv', ['tobiko-delete', '--all'])
-    def test_main_with_all(self):
-        # pylint: disable=no-value-for-parameter
-        self._test_main(stack_names=['test_mtu', 'test_security_groups',
-                                     'test_floatingip'],
-                        walk_dir=True)
+        self.patch_argv(argv=argv)
 
-    @mock.patch('heatclient.client.Client')
-    @mock.patch('os.walk')
-    def _test_main(self, mock_walk, MockClient, stack_names, walk_dir):
-        # Break wait for stack status loop
-        MockClient().stacks.get().stack_status = stack.CREATE_COMPLETE
-        mock_walk.return_value = [(None, None, [(name + '.yaml')
-                                                for name in stack_names])]
+        mock_sleep = self.patch('time.sleep')
+
+        mock_walk = self.patch('os.walk', return_value=[
+            (None, None, [(name + '.yaml') for name in stack_names])])
+
+        MockClient = self.patch('heatclient.client.Client')
         MockClient().stacks.list.return_value = [
             mock.Mock(stack_name=stack_name)
             for stack_name in stack_names[::2]]
+
+        def mock_client_get():
+
+            for i, name in enumerate(stack_names):
+                if wait:
+                    # This would cause to wait for DELETE_COMPLETE status
+                    yield mock.Mock(
+                        stack_status=stack_manager.DELETE_IN_PROGRESS,
+                        name=name)
+                    if i % 2:
+                        # Break wait for stack status loop with DELETE_COMPLETE
+                        yield mock.Mock(
+                            stack_status=stack_manager.DELETE_COMPLETE,
+                            name=name)
+                    else:
+                        # Break wait for stack status loop with HTTPNotFound
+                        yield exc.HTTPNotFound
+
+        MockClient().stacks.get.side_effect = mock_client_get()
 
         delete.main()
 
@@ -101,3 +98,28 @@ class TestMain(TobikoTest):
         else:
             mock_walk.assert_not_called()
             MockClient().stacks.list.assert_not_called()
+
+        if wait:
+            mock_sleep.assert_called()
+
+    def test_main_with_stack(self):
+        self.test_main(argv=['--stack', 'test_floatingip'],
+                       stack_names=['test_floatingip'],
+                       walk_dir=False)
+
+    def test_main_with_all(self):
+        self.test_main(argv=['--all'],
+                       stack_names=['test_mtu', 'test_security_groups',
+                                    'test_floatingip'])
+
+    def test_main_with_wait(self):
+        self.test_main(argv=['--wait'],
+                       stack_names=['test_mtu', 'test_security_groups',
+                                    'test_floatingip'],
+                       wait=True)
+
+    def test_main_with_w(self):
+        self.test_main(argv=['-w'],
+                       stack_names=['test_mtu', 'test_security_groups',
+                                    'test_floatingip'],
+                       wait=True)
