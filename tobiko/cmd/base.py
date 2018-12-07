@@ -16,14 +16,20 @@ from __future__ import absolute_import
 
 import os
 
+from oslo_log import log
+
 from tobiko.common import clients
 from tobiko.common.managers import stack
+from tobiko import config
 
 
 class TobikoCMD(object):
     """Manages different command line utilities."""
 
     def __init__(self):
+        config.CONF.tobiko.use_stderr = True
+        log.setup(config.CONF.tobiko, 'tobiko')
+
         self.clientManager = clients.ClientManager()
         curr_dir = os.path.dirname(__file__)
         self.templates_dir = os.path.join(curr_dir,
