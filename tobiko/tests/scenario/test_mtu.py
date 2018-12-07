@@ -26,37 +26,26 @@ from testtools import skip
 class MTUTest(base.ScenarioTestsBase):
     """Tests MTU."""
 
-    def setUp(self):
-        super(MTUTest, self).setUp()
-        self.stack = self._get_stack()
-        self.fip_max_mtu = self.stackManager.get_output(
-            self.stack, "fip_max_mtu")
-        self.fip_min_mtu = self.stackManager.get_output(
-            self.stack, "fip_min_mtu")
-        self.net_max_mtu = self.networkManager.client.show_network(
-            self.stackManager.get_output(self.stack, "network_max_mtu"))
-        self.net_min_mtu = self.networkManager.client.show_network(
-            self.stackManager.get_output(self.stack, "network_min_mtu"))
+    @classmethod
+    def setUpClass(cls):
+        super(MTUTest, cls).setUpClass()
 
-    def test_pre_mtu(self):
-        """Validates MTU before upgrade."""
+        cls.fip_max_mtu = cls.stacks.get_output(cls.stack, "fip_max_mtu")
+        cls.net_max_mtu = cls.networks.client.show_network(
+            cls.stackManager.get_output(cls.stack, "network_max_mtu"))
 
-        # Ping without fragmentation and without changing MTU should succeed
+        cls.fip_min_mtu = cls.stacks.get_output(cls.stack, "fip_min_mtu")
+        cls.net_min_mtu = cls.networkManager.client.show_network(
+            cls.stackManager.get_output(cls.stack, "network_min_mtu"))
+
+    def test_ping_max_mtu(self):
         assert_ping(self.fip_max_mtu)
-        assert_ping(self.fip_min_mtu)
 
+    def test_ping_min_mtu(self):
+        # Ping without fragmentation and without changing MTU should succeed
+        assert_ping(self.fip_min_mtu)
         assert_ping(self.fip_min_mtu, should_fail=True,
                     mtu=self.net_min_mtu['network']['mtu'] + 100,
-                    fragmentation=False)
-
-    def test_post_mtu(self):
-        """Validates MTU post upgrade."""
-
-        # Assert ping without fragmentation still works
-        assert_ping(self.fip_max_mtu)
-
-        assert_ping(self.fip_max_mtu, should_fail=True,
-                    mtu=self.net_max_mtu['network']['mtu'] + 100,
                     fragmentation=False)
 
     @utils.requires_ext(extension="net-mtu-writable", service="network")
