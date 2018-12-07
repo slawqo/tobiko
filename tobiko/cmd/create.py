@@ -14,22 +14,16 @@
 from __future__ import absolute_import
 
 import argparse
-import logging
+import os
 import sys
+
+from oslo_log import log
 
 from tobiko.cmd import base
 from tobiko.common import constants
 from tobiko.common import exceptions
 
-try:
-    # Python 3
-    from urllib import error as url_error
-except ImportError:
-    # Python 2
-    import urllib2 as url_error
-
-
-LOG = logging.getLogger(__name__)
+LOG = log.getLogger(__name__)
 
 
 class CreateUtil(base.TobikoCMD):
@@ -48,28 +42,25 @@ class CreateUtil(base.TobikoCMD):
         parser.add_argument(
             '--all', '-a', action='store_true', dest='all',
             help="Create all the stacks defined in Tobiko.")
+        parser.add_argument(
+            '--wait', '-w', action='store_true', dest='wait',
+            help="Wait for stack to reach CREATE_COMPLETE status before "
+            "exiting.")
         return parser
 
-    def create_stack(self, stack_name=None, all_stacks=False):
+    def create_stacks(self, stack_name=None, all_stacks=False, wait=False):
         """Creates a stack based on given arguments."""
         if all_stacks or stack_name is None:
             templates = self.stackManager.get_templates_names()
-            for template in templates:
-                stack_name = template.split(constants.TEMPLATE_SUFFIX)[0]
-                self.stackManager.create_stack(
-                    stack_name, template, parameters=constants.DEFAULT_PARAMS)
-                LOG.info("Created stack: %s", stack_name)
         else:
-            try:
-                self.stackManager.create_stack(
-                    stack_name, ''.join([stack_name,
-                                         constants.TEMPLATE_SUFFIX]),
-                    parameters=constants.DEFAULT_PARAMS)
-                LOG.info("Created stack: %s", stack_name)
-            except url_error.URLError:
-                stacks = self.stackManager.get_templates_names(
-                    strip_suffix=True)
-                raise NoSuchTemplateError(templates="\n".join(stacks))
+            templates = [stack_name + constants.TEMPLATE_SUFFIX]
+        for template in templates:
+            stack_name = os.path.splitext(template)[0]
+            self.stackManager.create_stack(
+                stack_name=stack_name,
+                template_name=template,
+                parameters=constants.DEFAULT_PARAMS,
+                wait=wait)
 
 
 class NoSuchTemplateError(exceptions.TobikoException):
@@ -79,8 +70,9 @@ class NoSuchTemplateError(exceptions.TobikoException):
 def main():
     """Create CLI main entry."""
     create_cmd = CreateUtil()
-    create_cmd.create_stack(create_cmd.args.stack,
-                            create_cmd.args.all)
+    create_cmd.create_stacks(stack_name=create_cmd.args.stack,
+                             all_stacks=create_cmd.args.all,
+                             wait=create_cmd.args.wait)
 
 
 if __name__ == '__main__':

@@ -17,13 +17,22 @@ import os
 import time
 
 from heatclient.common import template_utils
-from heatclient import exc as heat_exc
+from heatclient import exc
+from oslo_log import log
 import yaml
 
 from tobiko.common import constants
 
 
+LOG = log.getLogger(__name__)
+
+
+# Status
+CREATE_IN_PROGRESS = 'CREATE_IN_PROGRESS'
 CREATE_COMPLETE = 'CREATE_COMPLETE'
+CREATE_FAILED = 'CREATE_FAILED'
+DELETE_IN_PROGRESS = 'DELETE_IN_PROGRESS'
+DELETE_COMPLETE = 'DELETE_COMPLETE'
 
 
 class StackManager(object):
@@ -39,42 +48,79 @@ class StackManager(object):
         _, template = template_utils.get_template_contents(template_path)
         return yaml.safe_dump(template)
 
-    def create_stack(self, stack_name, template_name, parameters,
-                     status=CREATE_COMPLETE):
+    def create_stack(self, stack_name, template_name, parameters, wait=True):
         """Creates stack based on passed parameters."""
+        stack = self.wait_for_stack_status(
+            stack_name=stack_name, status={DELETE_COMPLETE,
+                                           CREATE_COMPLETE,
+                                           CREATE_FAILED})
+        if stack and stack.stack_status == CREATE_COMPLETE:
+            LOG.debug('Stack %r already exists.', stack_name)
+            return stack
+
+        if stack and stack.stack_status.endswith('_FAILED'):
+            self.delete_stack(stack_name, wait=True)
+
         template = self.load_template(os.path.join(self.templates_dir,
                                                    template_name))
 
-        self.client.stacks.create(stack_name=stack_name, template=template,
-                                  parameters=parameters)
-        return self.wait_for_stack_status(stack_name, status)
+        try:
+            self.client.stacks.create(stack_name=stack_name,
+                                      template=template,
+                                      parameters=parameters)
+        except exc.HTTPConflict:
+            LOG.debug('Stack %r already exists.', stack_name)
+        else:
+            LOG.debug('Crating stack %r...', stack_name)
 
-    def delete_stack(self, sid):
+        if wait:
+            return self.wait_for_stack_status(stack_name=stack_name)
+        else:
+            return self.get_stack(stack_name=stack_name)
+
+    def delete_stack(self, stack_name, wait=False):
         """Deletes stack."""
-        self.client.stacks.delete(sid)
+        self.client.stacks.delete(stack_name)
+        if wait:
+            self.wait_for_stack_status(stack_name, status={DELETE_COMPLETE})
 
     def get_stack(self, stack_name):
         """Returns stack ID."""
         try:
             return self.client.stacks.get(stack_name)
-        except heat_exc.HTTPNotFound:
-            return
+        except exc.HTTPNotFound:
+            return None
 
     def wait_for_resource_status(self, stack_id, resource_name,
-                                 status="CREATE_COMPLETE"):
+                                 status=CREATE_COMPLETE):
         """Waits for resource to reach the given status."""
         res = self.client.resources.get(stack_id, resource_name)
         while (res.resource_status != status):
             time.sleep(self.wait_interval)
             res = self.client.resources.get(stack_id, resource_name)
 
-    def wait_for_stack_status(self, stack_name,
-                              status=CREATE_COMPLETE):
+    def wait_for_stack_status(self, stack_name, status=None, stack=None,
+                              check=True):
         """Waits for the stack to reach the given status."""
-        stack = self.get_stack(stack_name=stack_name)
-        while (stack.stack_status != status):
+        status = status or {CREATE_COMPLETE}
+        stack = stack or self.get_stack(stack_name=stack_name)
+        while (stack and stack.stack_status.endswith('_IN_PROGRESS') and
+               stack.stack_status not in status):
+            LOG.debug('Waiting for %r stack status (expected=%r, acual=%r)...',
+                      stack_name, status, stack.stack_status)
             time.sleep(self.wait_interval)
             stack = self.get_stack(stack_name=stack_name)
+
+        if check:
+            if stack is None:
+                if DELETE_COMPLETE not in status:
+                    msg = "Stack {!r} not found".format(stack_name)
+                    raise RuntimeError(msg)
+            elif stack.stack_status not in status:
+                msg = ("Invalid stack {!r} status (expected={!r}, "
+                       "actual={!r})").format(stack_name, status,
+                                              stack.stack_status)
+                raise RuntimeError(msg)
         return stack
 
     def get_output(self, stack, key):

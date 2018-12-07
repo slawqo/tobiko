@@ -17,13 +17,21 @@ from __future__ import absolute_import
 import os.path
 
 from tobiko.cmd import base
-from tobiko.tests.base import TobikoTest
+from tobiko.tests.unit import TobikoUnitTest
 
 
-class TobikoCMDTest(TobikoTest):
+class TobikoCMDTest(TobikoUnitTest):
 
-    def test_init(self):
-        cmd = base.TobikoCMD()
+    command_name = None
+    command_class = base.TobikoCMD
+
+    def test_init(self, argv=None):
+        self.patch_argv(argv=argv)
+        cmd = self.command_class()
         self.assertIsNotNone(cmd.clientManager)
         self.assertTrue(os.path.isdir(cmd.templates_dir))
         self.assertIsNotNone(cmd.stackManager)
+        return cmd
+
+    def patch_argv(self, argv=None):
+        return self.patch('sys.argv', [self.command_name] + (argv or []))
