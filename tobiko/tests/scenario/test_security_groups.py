@@ -21,21 +21,15 @@ from tobiko.tests.scenario import base
 class SecurityGroupTest(base.ScenarioTestsBase):
     """Tests security groups."""
 
-    def setUp(self):
-        super(SecurityGroupTest, self).setUp()
-        self.stack = self._get_stack()
-        self.fip = self.stackManager.get_output(self.stack, "fip")
-        self.unreachable_fip = self.stackManager.get_output(self.stack, "fip2")
-        self.blank_sg_id = self.stackManager.get_output(self.stack, "sg2")
+    @classmethod
+    def setUpClass(cls):
+        super(SecurityGroupTest, cls).setUpClass()
+        cls.fip = cls.stacks.get_output(cls.stack, "fip")
+        cls.unreachable_fip = cls.stacks.get_output(cls.stack, "fip2")
+        cls.blank_sg_id = cls.stacks.get_output(cls.stack, "sg2")
 
-    def test_pre_secgroup(self):
-        """Validates security group before upgrade."""
-
+    def test_ping_fip(self):
         assert_ping(self.fip)
-        assert_ping(self.unreachable_fip, should_fail=True)
 
-    def test_post_secgroup(self):
-        """Validates security groups post upgrade."""
-
-        assert_ping(self.fip)
+    def test_ping_unreacheable_fip(self):
         assert_ping(self.unreachable_fip, should_fail=True)

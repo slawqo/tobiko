@@ -15,10 +15,9 @@
 from __future__ import absolute_import
 
 import os
-import sys
 
 from tobiko.tests import base
-from tobiko.common.managers import stack
+from tobiko.common.managers import stack as stack_manager
 from tobiko.common.managers import network
 from tobiko.common import clients
 from tobiko.common import constants
@@ -27,46 +26,35 @@ from tobiko.common import constants
 class ScenarioTestsBase(base.TobikoTest):
     """All scenario tests inherit from this scenario base class."""
 
-    clientManager = clients.ClientManager()
+    clients = clients.ClientManager()
     default_params = constants.DEFAULT_PARAMS
+    networks = network.NetworkManager(clients)
+    templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
+    stacks = stack_manager.StackManager(clients, templates_dir)
     stack = None
 
-    def setUp(self):
-        super(ScenarioTestsBase, self).setUp()
-        templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
-        self.stackManager = stack.StackManager(self.clientManager,
-                                               templates_dir)
-        self.networkManager = network.NetworkManager(self.clientManager)
-        self.params = self.default_params
+    @classmethod
+    def setUpClass(cls):
+        super(ScenarioTestsBase, cls).setUpClass()
+        cls.stack_name = cls.__module__.rsplit('.', 1)[-1]
+        cls.setup_stack()
 
-        test_name = self.id()
-        while test_name:
-            test_module = sys.modules.get(test_name)
-            if test_module:
-                break
-            name_parts = test_name.rsplit('.', 1)
-            if len(name_parts) == 1:
-                msg = "Invalid test name: {!r}".format(self.id())
-                raise RuntimeError(msg)
-            test_name = name_parts[0]
-        self.stack_name = test_name.rsplit('.', 1)[-1]
-        self.setup_stack()
+    @classmethod
+    def setup_stack(cls):
+        if not cls.stack:
+            cls.stack = (
+                cls.stacks.wait_for_stack_status(
+                    stack_name=cls.stack_name,
+                    check=False) or
+                cls.create_stack())
+        return cls.stack
 
-    def setup_stack(self):
-        if not self.stack:
-            self.stack = (self.stackManager.get_stack(self.stack_name) or
-                          self.create_stack())
-        return self.stack
-
-    _get_stack = setup_stack
-
-    def create_stack(self):
+    @classmethod
+    def create_stack(cls, stack_name=None, template_name=None, **parameters):
         """Creates stack to be used by all scenario tests."""
-
-        # Defines parameters required by heat template
-
-        # creates stack and stores its ID
-        return self.stackManager.create_stack(
-            stack_name=self.stack_name,
-            template_name="%s.yaml" % self.stack_name,
-            parameters=self.params)
+        stack_name = stack_name or cls.stack_name
+        template_name = template_name or stack_name + ".yaml"
+        parameters = dict(cls.default_params, **parameters)
+        return cls.stacks.create_stack(
+            stack_name=stack_name, template_name=template_name,
+            parameters=parameters)

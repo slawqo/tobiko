@@ -21,18 +21,15 @@ from tobiko.common.asserts import assert_ping
 class FloatingIPTest(base.ScenarioTestsBase):
     """Tests server connectivity"""
 
-    def setUp(self):
-        super(FloatingIPTest, self).setUp()
-        self.stack = self._get_stack()
-        self.fip = self.stackManager.get_output(self.stack, "fip")
-        self.unreachable_fip = self.stackManager.get_output(self.stack, "fip2")
+    @classmethod
+    def setUpClass(cls):
+        super(FloatingIPTest, cls).setUpClass()
+        cls.fip = cls.stacks.get_output(cls.stack, "fip")
+        cls.unreachable_fip = cls.stacks.get_output(cls.stack, "fip2")
 
-    def test_pre_fip(self):
-        """Validates connectivity to a server created by another test."""
-
-        assert_ping(self.fip)
-
-    def test_post_fip(self):
+    def test_ping_floating_ip(self):
         """Validates connectivity to a server post upgrade."""
-
         assert_ping(self.fip)
+
+    def test_ping_unreachable_floating_ip(self):
+        assert_ping(self.unreachable_fip, should_fail=True)
