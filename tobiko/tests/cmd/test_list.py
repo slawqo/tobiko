@@ -14,111 +14,89 @@
 #    under the License.
 from __future__ import absolute_import
 
-import os.path
-
 import mock
 
 from tobiko.cmd import list as list_cmd
 from tobiko.common.managers import stack
-from tobiko.tests.base import TobikoTest
+from tobiko.tests.cmd import test_base
 
 
-class ListUtilTest(TobikoTest):
+class ListTest(test_base.TobikoCMDTest):
 
-    @mock.patch('sys.argv', ['tobiko-list'])
-    def test_init(self):
-        cmd = list_cmd.ListUtil()
-        self.assertIsNotNone(cmd.clientManager)
-        self.assertTrue(os.path.isdir(cmd.templates_dir))
-        self.assertIsNotNone(cmd.stackManager)
+    command_name = 'tobiko-list'
+    command_class = list_cmd.ListUtil
+
+    def test_init(self, argv=None, action=None):
+        # pylint: disable=arguments-differ,no-member
+        cmd = super(ListTest, self).test_init(argv=argv)
         self.assertIsNotNone(cmd.parser)
-        self.assertIsNone(cmd.args.action)
+        self.assertEqual(action, cmd.args.action)
 
-    @mock.patch('sys.argv', ['tobiko-list', '--stacks'])
     def test_init_with_stacks(self):
-        self._test_init_with_stacks()
+        self.test_init(argv=['--stacks'],
+                       action='list_stacks')
 
-    @mock.patch('sys.argv', ['tobiko-list', '-s'])
     def test_init_with_s(self):
-        self._test_init_with_stacks()
+        self.test_init(argv=['--stacks'],
+                       action='list_stacks')
 
-    def _test_init_with_stacks(self):
-        cmd = list_cmd.ListUtil()
-        self.assertIsNotNone(cmd.clientManager)
-        self.assertTrue(os.path.isdir(cmd.templates_dir))
-        self.assertIsNotNone(cmd.stackManager)
-        self.assertIsNotNone(cmd.parser)
-        self.assertEqual('list_stacks', cmd.args.action)
-
-    @mock.patch('sys.argv', ['tobiko-list', '--templates'])
     def test_init_with_templates(self):
-        self._test_init_with_templates()
+        self.test_init(argv=['--templates'],
+                       action='list_templates')
 
-    @mock.patch('sys.argv', ['tobiko-list', '-t'])
     def test_init_with_t(self):
-        self._test_init_with_templates()
+        self.test_init(argv=['-t'],
+                       action='list_templates')
 
-    def _test_init_with_templates(self):
-        cmd = list_cmd.ListUtil()
-        self.assertIsNotNone(cmd.clientManager)
-        self.assertTrue(os.path.isdir(cmd.templates_dir))
-        self.assertIsNotNone(cmd.stackManager)
-        self.assertIsNotNone(cmd.parser)
-        self.assertEqual('list_templates', cmd.args.action)
+    def test_main(self, argv=None, stack_names=None, show_stacks=None):
 
+        if stack_names is None:
+            stack_names = ['test_mtu', 'test_floatingip']
 
-class TestMain(TobikoTest):
+        self.patch_argv(argv=argv)
 
-    @mock.patch('sys.argv', ['tobiko-list'])
-    def test_main(self):
-        # pylint: disable=no-value-for-parameter
-        self._test_main(stack_names=['test_floatingip', 'test_mtu'],
-                        show_templates=True)
-
-    @mock.patch('sys.argv', ['tobiko-list', '--stack'])
-    def test_main_with_stacks(self):
-        # pylint: disable=no-value-for-parameter
-        self._test_main(stack_names=['test_floatingip', 'test_mtu'],
-                        show_templates=False)
-
-    @mock.patch('sys.argv', ['tobiko-list', '-s'])
-    def test_main_with_s(self):
-        # pylint: disable=no-value-for-parameter
-        self._test_main(stack_names=['test_floatingip', 'test_mtu'],
-                        show_templates=False)
-
-    @mock.patch('sys.argv', ['tobiko-list', '--templates'])
-    def test_main_with_templates(self):
-        # pylint: disable=no-value-for-parameter
-        self._test_main(stack_names=['test_floatingip', 'test_mtu'],
-                        show_templates=True)
-
-    @mock.patch('sys.argv', ['tobiko-list', '-t'])
-    def test_main_with_all(self):
-        # pylint: disable=no-value-for-parameter
-        self._test_main(stack_names=['test_floatingip', 'test_mtu'],
-                        show_templates=True)
-
-    @mock.patch('heatclient.client.Client')
-    @mock.patch('os.walk')
-    @mock.patch('sys.stdout.write')
-    def _test_main(self, mock_write, mock_walk, MockClient, stack_names,
-                   show_templates):
+        MockClient = self.patch('heatclient.client.Client')
         # Break wait for stack status loop
         MockClient().stacks.get().stack_status = stack.CREATE_COMPLETE
-        mock_walk.return_value = [(None, None, [(name + '.yaml')
-                                                for name in stack_names])]
         MockClient().stacks.list.return_value = [
             mock.Mock(stack_name=stack_name)
             for stack_name in stack_names[::2]]
 
+        mock_walk = self.patch('os.walk',
+                               return_value=[(None, None, [(name + '.yaml')
+                                             for name in stack_names])])
+
+        mock_stdout_write = self.patch('sys.stdout.write')
+
         list_cmd.main()
 
-        if show_templates:
-            mock_write.assert_has_calls([mock.call(stack_name + '.yaml\n')
-                                         for stack_name in stack_names])
+        if show_stacks:
+            mock_stdout_write.assert_has_calls(
+                [mock.call(stack_name + '\n')
+                 for stack_name in stack_names[::2]])
         else:
-            mock_write.assert_has_calls([mock.call(stack_name + '\n')
-                                         for stack_name in stack_names[::2]])
+            mock_stdout_write.assert_has_calls(
+                [mock.call(stack_name + '.yaml\n')
+                 for stack_name in stack_names])
 
         mock_walk.assert_called_once_with(mock.ANY)
+
+    def test_main_with_stacks(self):
+        self.test_main(argv=['--stack'],
+                       stack_names=['test_floatingip', 'test_mtu'],
+                       show_stacks=True)
+
+    def test_main_with_s(self):
+        self.test_main(argv=['-s'],
+                       stack_names=['test_floatingip', 'test_security_groups'],
+                       show_stacks=True)
+
+    def test_main_with_templates(self):
+        self.test_main(argv=['--templates'],
+                       stack_names=['test_floatingip', 'test_mtu'],
+                       show_stacks=False)
+
+    def test_main_with_t(self):
+        self.test_main(argv=['-t'],
+                       stack_names=['test_floatingip', 'test_security_groups'],
+                       show_stacks=False)
