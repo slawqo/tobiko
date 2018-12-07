@@ -70,4 +70,4 @@ class ScenarioTestsBase(base.TobikoTest):
             stack_name=self.stack_name,
             template_name="%s.yaml" % self.stack_name,
             parameters=self.params,
-            status=constants.COMPLETE_STATUS)
+            status=stack.CREATE_COMPLETE)

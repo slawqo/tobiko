@@ -23,6 +23,9 @@ import yaml
 from tobiko.common import constants
 
 
+CREATE_COMPLETE = 'CREATE_COMPLETE'
+
+
 class StackManager(object):
     """Manages Heat stacks."""
 
@@ -37,7 +40,7 @@ class StackManager(object):
         return yaml.safe_dump(template)
 
     def create_stack(self, stack_name, template_name, parameters,
-                     status=constants.COMPLETE_STATUS):
+                     status=CREATE_COMPLETE):
         """Creates stack based on passed parameters."""
         template = self.load_template(os.path.join(self.templates_dir,
                                                    template_name))
@@ -66,7 +69,7 @@ class StackManager(object):
             res = self.client.resources.get(stack_id, resource_name)
 
     def wait_for_stack_status(self, stack_name,
-                              status=constants.COMPLETE_STATUS):
+                              status=CREATE_COMPLETE):
         """Waits for the stack to reach the given status."""
         stack = self.get_stack(stack_name=stack_name)
         while (stack.stack_status != status):
@@ -76,7 +79,7 @@ class StackManager(object):
 
     def get_output(self, stack, key):
         """Returns a specific value from stack outputs by using a given key."""
-        if stack.stack_status != constants.COMPLETE_STATUS:
+        if stack.stack_status != CREATE_COMPLETE:
             raise ValueError("Invalid stack status: {!r}".format(
                 stack.stack_status))
         for output in stack.outputs:

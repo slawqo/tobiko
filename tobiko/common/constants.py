@@ -15,7 +15,6 @@ from __future__ import absolute_import
 
 from tobiko import config
 
-COMPLETE_STATUS = "CREATE_COMPLETE"
 TEMPLATE_SUFFIX = ".yaml"
 
 DEFAULT_PARAMS = {

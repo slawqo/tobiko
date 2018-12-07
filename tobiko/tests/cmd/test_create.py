@@ -20,6 +20,7 @@ import mock
 
 from tobiko.cmd import create
 from tobiko.common import constants
+from tobiko.common.managers import stack
 from tobiko.tests.base import TobikoTest
 
 
@@ -80,7 +81,7 @@ class TestMain(TobikoTest):
     @mock.patch('os.walk')
     def _test_main(self, mock_walk, MockClient, stack_names, walk_dir):
         # Break wait for stack status loop
-        MockClient().stacks.get().stack_status = constants.COMPLETE_STATUS
+        MockClient().stacks.get().stack_status = stack.CREATE_COMPLETE
         mock_walk.return_value = [(None, None, [(name + '.yaml')
                                                 for name in stack_names])]
 
