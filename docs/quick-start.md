@@ -37,7 +37,7 @@ tools integrated or to be integrated are:
 
  - (TODO) Ansible Configuration Management tool user to prepare testing
    environment and test fixtures. Some fixtures are better handled by this
-   non-Openstack generic tool, even if it offers a completly different approach
+   non-Openstack generic tool, even if it offers a completely different approach
    to achieve the same purpose of Heat. Test developer should decide when to
    prefer this tool or others according his experience and his goals.
 
@@ -52,12 +52,12 @@ tools that has specifically designed for managing cloud resources from its
 fundamentals. This has also another implicit minor advantage: Tobiko is also
 a tool for testing Heat and regular OpenStack Python clients, while tempest
 choose to re-implement clients and resources management from scratch (work
-mostly incomplete and under very slow maintainance).
+mostly incomplete and under very slow maintenance).
 
 
 ## Install Tobiko
 
-Tobiko is preferably used from a dedicated virtual enviroment:
+Tobiko is preferably used from a dedicated virtual environment:
 
 ```
 virtualenv path/to/virtualenv
@@ -153,14 +153,14 @@ Or it could be restricted using test case packages or file names as below:
 tobiko create (-m|--module) <test-case-names|test-case-packages>...
 ```
 
-To have a summary of all test cases which resouces could be set up using
+To have a summary of all test cases which resources could be set up using
 Tobiko you could type:
 
 ```
 tobiko list
 ```
 
-To have a summary of all test cases which resouces has been actually set up
+To have a summary of all test cases which resources has been actually set up
 using Tobiko you can type:
 
 ```
