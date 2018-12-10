@@ -1,0 +1,3 @@
+GITREPO["tobiko"]=${TOBIKO_REPO:-${GIT_BASE}/openstack/tobiko.git}
+GITDIR["tobiko"]=$DEST/tobiko
+GITBRANCH["tobiko"]=master
