@@ -17,12 +17,28 @@ from oslo_config import cfg
 
 
 def register_tobiko_options(conf):
+
+    conf.register_opts(
+        group=cfg.OptGroup('identity'),
+        opts=[cfg.StrOpt('auth_url',
+                         help="Default identity service URL"),
+              cfg.StrOpt('username',
+                         help="Default username"),
+              cfg.StrOpt('password',
+                         help="Default password"),
+              cfg.StrOpt('domain_name',
+                         help="Default domain name"),
+              cfg.StrOpt('project_name',
+                         help="Default project name"),
+              ])
+
     conf.register_opts(
         group=cfg.OptGroup('compute'),
         opts=[cfg.StrOpt('image_ref',
                          help="Default image reference"),
               cfg.StrOpt('flavor_ref',
                          help="Default flavor reference")])
+
     conf.register_opts(
         group=cfg.OptGroup('network'),
         opts=[cfg.StrOpt('floating_network_name',

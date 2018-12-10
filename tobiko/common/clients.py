@@ -46,30 +46,36 @@ def get_default_credentials(api_version=None, username=None, password=None,
     username = (username or
                 config.get_any_option(
                     'environ.OS_USERNAME',
+                    'tobiko.identity.username',
                     'tempest.auth.username',
                     'tempest.auth.admin_username') or
                 'admin')
     password = (password or
                 config.get_any_option(
                     'environ.OS_PASSWORD',
+                    'tobiko.identity.password',
                     'tempest.auth.password',
                     'tempest.auth.admin_password'))
     project_name = (project_name or
                     config.get_any_option(
                         'environ.OS_PROJECT_NAME',
                         'environ.OS_TENANT_NAME',
+                        'tobiko.identity.project_name',
                         'tempest.auth.project_name',
                         'tempest.auth.admin_project_name') or
                     'admin')
 
     if auth_url is None and api_version in [None, 2]:
-        auth_url = config.get_any_option(
-            'environ.OS_AUTH_URL', 'tempest.identity.uri')
+        auth_url = config.get_any_option('environ.OS_AUTH_URL',
+                                         'tobiko.identity.auth_url',
+                                         'tempest.identity.uri')
 
         if auth_url and api_version is None:
             api_version = get_version_from_url(auth_url)
     if auth_url is None:
-        auth_url = config.get_any_option('tempest.identity.uri_v3')
+        auth_url = config.get_any_option('environ.OS_AUTH_URL',
+                                         'tobiko.identity.auth_url',
+                                         'tempest.identity.uri_v3')
         if auth_url and api_version is None:
             api_version = 3
     if auth_url is None:
@@ -87,6 +93,7 @@ def get_default_credentials(api_version=None, username=None, password=None,
                 user_domain_name or
                 config.get_any_option(
                     'environ.OS_USER_DOMAIN_NAME',
+                    'tobiko.identity.user_domain_name',
                     'tempest.auth.user_domain_name',
                     'tempest.auth.admin_domain_name') or
                 'admin'),
@@ -94,6 +101,7 @@ def get_default_credentials(api_version=None, username=None, password=None,
                 project_domain_name or
                 config.get_any_option(
                     'environ.OS_PROJECT_DOMAIN_NAME',
+                    'tobiko.identity.project_domain_name'
                     'tempest.identity.project_domain_name',
                     'tempest.auth.admin_domain_name',
                     'tempest.identity.admin_domain_name',

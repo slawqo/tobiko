@@ -10,6 +10,7 @@
 .test
 .testrepository
 .tox
+.vagrant
 .venv
 
 __pycache__
