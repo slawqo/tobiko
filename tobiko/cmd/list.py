@@ -39,6 +39,10 @@ class ListUtil(base.TobikoCMD):
                             help="List templates provided by Tobiko",
                             const='list_templates',
                             action='store_const', dest='action')
+        parser.add_argument('--playbooks', '-p',
+                            help="List playbooks provided by Tobiko",
+                            const='list_playbooks',
+                            action='store_const', dest='action')
         return parser
 
     def list_stacks(self):
@@ -47,9 +51,14 @@ class ListUtil(base.TobikoCMD):
             sys.stdout.write(stack + '\n')
 
     def list_templates(self):
-        """Lists stacks created by Tobiko."""
+        """Lists templates included in Tobiko."""
         for template in self.stackManager.get_templates_names():
             sys.stdout.write(template + '\n')
+
+    def list_playbooks(self):
+        """Lists playbooks included in Tobiko."""
+        for playbook in self.ansibleManager.get_playbooks_names():
+            sys.stdout.write(playbook + '\n')
 
 
 def main():
