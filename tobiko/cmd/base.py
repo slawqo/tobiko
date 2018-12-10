@@ -20,6 +20,7 @@ from oslo_log import log
 
 from tobiko.common import clients
 from tobiko.common.managers import stack
+from tobiko.common.managers import ansible
 from tobiko import config
 
 
@@ -34,5 +35,9 @@ class TobikoCMD(object):
         curr_dir = os.path.dirname(__file__)
         self.templates_dir = os.path.join(curr_dir,
                                           "../tests/scenario/templates")
+        self.playbooks_dir = os.path.join(curr_dir,
+                                          "../tests/scenario/playbooks")
         self.stackManager = stack.StackManager(self.clientManager,
                                                self.templates_dir)
+        self.ansibleManager = ansible.AnsibleManager(self.clientManager,
+                                                     self.playbooks_dir)
