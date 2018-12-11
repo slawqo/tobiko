@@ -15,6 +15,12 @@ from __future__ import absolute_import
 
 import os
 
+from collections import namedtuple
+
+from ansible.executor import playbook_executor
+from ansible.inventory.manager import InventoryManager
+from ansible.parsing.dataloader import DataLoader
+from ansible.vars.manager import VariableManager
 from oslo_log import log
 
 from tobiko.common import constants
@@ -26,9 +32,16 @@ LOG = log.getLogger(__name__)
 class AnsibleManager(object):
     """Manages Ansible entities."""
 
-    def __init__(self, client_manager, templates_dir):
-        self.client_manager = client_manager.heat_client
-        self.playbooks_dir = templates_dir
+    def __init__(self, client_manager, playbooks_dir):
+        self.client_manager = client_manager
+        self.playbooks_dir = playbooks_dir
+        self.loader = DataLoader()
+        self.inventory = InventoryManager(loader=self.loader,
+                                          sources='localhost,')
+        self.variable_manager = VariableManager(loader=self.loader,
+                                                inventory=self.inventory)
+        self.options = self.get_options()
+        self.passwords = dict(vault_pass='secret')
 
     def get_playbooks_names(self, strip_suffix=False):
         """Returns a list of all the files in playbooks dir."""
@@ -39,3 +52,44 @@ class AnsibleManager(object):
             playbooks = [
                 f[:-len(constants.TEMPLATE_SUFFIX)] for f in playbooks]
         return playbooks
+
+    def get_options(self):
+        """Returns namedtuple of Ansible options."""
+        Options = namedtuple('Options', ['connection', 'module_path',
+                                         'forks', 'become', 'become_method',
+                                         'become_user', 'check', 'diff',
+                                         'listhosts', 'listtasks',
+                                         'listtags', 'syntax'])
+
+        options = Options(connection='local', module_path=['/to/mymodules'],
+                          forks=10, become=None, become_method=None,
+                          become_user=None, check=False, diff=False,
+                          listhosts=False,
+                          listtasks=False, listtags=False, syntax=False)
+
+        return options
+
+    def run_playbook(self, playbook, mode='create'):
+        """Executes given playbook."""
+        playbook_path = self.playbooks_dir + '/' + playbook
+
+        extra_vars = {'mode': mode,
+                      'auth_url': self.client_manager.credentials['auth_url'],
+                      'username': self.client_manager.credentials['username'],
+                      'project_name': self.client_manager.credentials[
+                          'project_name'],
+                      'image': constants.DEFAULT_PARAMS['image'],
+                      'flavor': constants.DEFAULT_PARAMS['flavor'],
+                      'password': self.client_manager.credentials['password']}
+
+        self.variable_manager.extra_vars = extra_vars
+
+        pb_executor = playbook_executor.PlaybookExecutor(
+            playbooks=[playbook_path],
+            inventory=self.inventory,
+            variable_manager=self.variable_manager,
+            loader=self.loader,
+            options=self.options,
+            passwords=self.passwords)
+
+        pb_executor.run()
