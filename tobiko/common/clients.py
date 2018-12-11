@@ -55,7 +55,8 @@ def get_default_credentials(api_version=None, username=None, password=None,
                     'environ.OS_PASSWORD',
                     'tobiko.identity.password',
                     'tempest.auth.password',
-                    'tempest.auth.admin_password'))
+                    'tempest.auth.admin_password',
+                    'tempest.identity.admin_password'))
     project_name = (project_name or
                     config.get_any_option(
                         'environ.OS_PROJECT_NAME',
