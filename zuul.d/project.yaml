@@ -9,6 +9,7 @@
         - openstack-tox-pylint
         - openstack-tox-py35
         - openstack-tox-py36
+        - openstack-tox-py37
         - openstack-tox-py27
         - tobiko-devstack-neutron
     gate:
@@ -17,5 +18,6 @@
         - openstack-tox-pylint
         - openstack-tox-py35
         - openstack-tox-py36
+        - openstack-tox-py37
         - openstack-tox-py27
         - tobiko-devstack-neutron
