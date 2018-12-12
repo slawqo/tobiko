@@ -79,7 +79,7 @@ class ListTest(test_base.TobikoCMDTest):
                 [mock.call(stack_name + '.yaml\n')
                  for stack_name in stack_names])
 
-        mock_walk.assert_called_once_with(mock.ANY)
+        mock_walk.assert_called()
 
     def test_main_with_stacks(self):
         self.test_main(argv=['--stack'],

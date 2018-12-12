@@ -93,10 +93,9 @@ class DeleteTest(test_base.TobikoCMDTest):
              for stack_name in stack_names[::2]])
 
         if walk_dir:
-            mock_walk.assert_called_once_with(mock.ANY)
+            mock_walk.assert_called()
             MockClient().stacks.list.assert_called_once_with()
         else:
-            mock_walk.assert_not_called()
             MockClient().stacks.list.assert_not_called()
 
         if wait:

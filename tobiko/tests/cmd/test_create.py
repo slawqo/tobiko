@@ -87,9 +87,7 @@ class CreateTest(test_base.TobikoCMDTest):
              for stack_name in stack_names])
 
         if walk_dir:
-            mock_walk.assert_called_once_with(mock.ANY)
-        else:
-            mock_walk.assert_not_called()
+            mock_walk.assert_called()
 
         if wait:
             mock_sleep.assert_called()
