@@ -20,3 +20,7 @@
 - hosts: all
   roles:
     - orchestrate-devstack
+
+- hosts: tempest
+  roles:
+    - run-tox

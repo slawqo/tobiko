@@ -1,0 +1,3 @@
+tox_dir: /opt/stack/tobiko
+tox_envlist: neutron
+tox_extra_args: ''
