@@ -1,8 +1,6 @@
 # Directory where this plugin.sh file is
 TOBIKO_PLUGIN_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-# source "${TOBIKO_PLUGIN_DIR}/customize_image.sh"
-
 
 function tobiko_install {
   echo_summary "Installing tobiko-plugin"
