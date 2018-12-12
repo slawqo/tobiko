@@ -116,7 +116,7 @@ class EnvironConfig(object):
 
     def __getattr__(self, name):
         try:
-            os.environ[name]
+            return os.environ[name]
         except KeyError:
             msg = "Environment variable not found: {!r}".format(name)
             raise cfg.NoSuchOptError(msg)
