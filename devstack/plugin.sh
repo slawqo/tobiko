@@ -6,7 +6,7 @@ TOBIKO_PLUGIN_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 function tobiko_install {
   echo_summary "Installing tobiko-plugin"
-
+  apt_get install python3-dev
   setup_dev_lib "tobiko"
 }
 
@@ -36,6 +36,7 @@ function tobiko_test_config {
   echo_summary "Apply changes to ${TOBIKO_CONF} file."
   sudo mkdir -p $(dirname "${TOBIKO_CONF}")
   sudo cp "${tobiko_conf}" "${TOBIKO_CONF}"
+  sudo chmod ugo+r "${TOBIKO_CONF}"
 }
 
 
