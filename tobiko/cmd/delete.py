@@ -40,6 +40,9 @@ class DeleteUtil(base.TobikoCMD):
         parser.add_argument(
             '--wait', '-w', action='store_true', dest='wait',
             help="Wait for stack to be deleted before exiting.")
+        parser.add_argument(
+            '--playbook', '-p',
+            help="The name of the playbook to execute in delete mode.")
         return parser
 
     def delete_stack(self, stack_name=None, all_stacks=False, wait=False):
@@ -53,13 +56,21 @@ class DeleteUtil(base.TobikoCMD):
             self.stackManager.delete_stack(stack_name, wait=wait)
             LOG.info("Deleted stack: %s", stack_name)
 
+    def run_playbook(self, playbook):
+        """Executes given playbook."""
+        self.ansibleManager.run_playbook(playbook, mode='delete')
+
 
 def main():
     """Delete CLI main entry."""
     delete_cmd = DeleteUtil()
-    delete_cmd.delete_stack(stack_name=delete_cmd.args.stack,
-                            all_stacks=delete_cmd.args.all,
-                            wait=delete_cmd.args.wait)
+
+    if delete_cmd.args.playbook:
+        delete_cmd.run_playbook(delete_cmd.args.playbook)
+    else:
+        delete_cmd.delete_stack(stack_name=delete_cmd.args.stack,
+                                all_stacks=delete_cmd.args.all,
+                                wait=delete_cmd.args.wait)
 
 
 if __name__ == '__main__':
