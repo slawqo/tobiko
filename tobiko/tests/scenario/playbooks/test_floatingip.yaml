@@ -11,8 +11,18 @@
           project_name: "{{ project_name }}"
         name: server1
         image: "{{ image }}"
-        key_name: "{{ key }}"
         timeout: 200
         flavor: "{{ flavor }}"
         security_groups: default
-        auto_ip: yes
+      when: mode == 'create'
+
+    - name: Remove instance
+      os_server:
+        state: absent
+        auth:
+          auth_url: "{{ auth_url }}"
+          username: "{{ username }}"
+          password: "{{ password }}"
+          project_name: "{{ project_name }}"
+        name: server1
+      when: mode == 'delete'

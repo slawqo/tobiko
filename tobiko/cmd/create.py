@@ -40,6 +40,10 @@ class CreateUtil(base.TobikoCMD):
             help="The name of the stack to create.\n"
                  "This is based on the template name in templates dir")
         parser.add_argument(
+            '--playbook', '-p',
+            help="The name of the playbook to execute.\n"
+                 "This is based on the playbook name in playbooks dir")
+        parser.add_argument(
             '--all', '-a', action='store_true', dest='all',
             help="Create all the stacks defined in Tobiko.")
         parser.add_argument(
@@ -62,6 +66,10 @@ class CreateUtil(base.TobikoCMD):
                 parameters=constants.DEFAULT_PARAMS,
                 wait=wait)
 
+    def run_playbook(self, playbook):
+        """Executes given playbook."""
+        self.ansibleManager.run_playbook(playbook, mode='create')
+
 
 class NoSuchTemplateError(exceptions.TobikoException):
     message = "No such template. Existing templates:\n%(templates)s"
@@ -70,9 +78,12 @@ class NoSuchTemplateError(exceptions.TobikoException):
 def main():
     """Create CLI main entry."""
     create_cmd = CreateUtil()
-    create_cmd.create_stacks(stack_name=create_cmd.args.stack,
-                             all_stacks=create_cmd.args.all,
-                             wait=create_cmd.args.wait)
+    if create_cmd.args.playbook:
+        create_cmd.run_playbook(create_cmd.args.playbook)
+    else:
+        create_cmd.create_stacks(stack_name=create_cmd.args.stack,
+                                 all_stacks=create_cmd.args.all,
+                                 wait=create_cmd.args.wait)
 
 
 if __name__ == '__main__':
