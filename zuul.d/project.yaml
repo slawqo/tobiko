@@ -20,4 +20,3 @@
         - openstack-tox-py36
         - openstack-tox-py37
         - openstack-tox-py27
-        - tobiko-devstack-neutron
