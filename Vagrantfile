@@ -8,7 +8,7 @@ VAGRANTFILE_API_VERSION = "2"
 CPUS = 2
 
 # Customize the amount of memory on the VM
-MEMORY = 8192
+MEMORY = 12288
 
 # Every Vagrant development environment requires a box. You can search for
 # boxes at https://vagrantcloud.com/search.
