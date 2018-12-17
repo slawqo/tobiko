@@ -102,6 +102,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # View the documentation for the provider you are using for more
   # information on available options.
 
+  # Use the same DNS server as the host machine
+  config.vm.provision "file", source: "/etc/resolv.conf",
+    destination: "~/resolv.conf"
+  config.vm.provision "shell", privileged: false,
+    inline: "sudo mv ~/resolv.conf /etc/resolv.conf"
+
   # Enable provisioning with a shell script. Additional provisioners such as
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
@@ -111,6 +117,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       # setup stack user
       sudo useradd -s /bin/bash -d '#{DEVSTACK_DEST_DIR}' -m stack
       echo "stack ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/stack
+    fi
+
+    if ! [ -d '#{DEVSTACK_DEST_DIR}/tobiko' ]; then
+      sudo mkdir -p '#{DEVSTACK_DEST_DIR}/tobiko'
+      sudo mount --bind /vagrant '#{DEVSTACK_DEST_DIR}/tobiko'
     fi
 
     # Generate provision RC file to pass variables to provision script
