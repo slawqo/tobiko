@@ -22,6 +22,7 @@ from oslo_log import log
 import yaml
 
 from tobiko.common import constants
+from tobiko.common import exceptions
 
 
 LOG = log.getLogger(__name__)
@@ -33,6 +34,7 @@ CREATE_COMPLETE = 'CREATE_COMPLETE'
 CREATE_FAILED = 'CREATE_FAILED'
 DELETE_IN_PROGRESS = 'DELETE_IN_PROGRESS'
 DELETE_COMPLETE = 'DELETE_COMPLETE'
+DELETE_FAILED = 'DELETE_FAILED'
 
 
 class StackManager(object):
@@ -51,9 +53,9 @@ class StackManager(object):
     def create_stack(self, stack_name, template_name, parameters, wait=True):
         """Creates stack based on passed parameters."""
         stack = self.wait_for_stack_status(
-            stack_name=stack_name, status={DELETE_COMPLETE,
-                                           CREATE_COMPLETE,
-                                           CREATE_FAILED})
+            stack_name=stack_name, expected_status={DELETE_COMPLETE,
+                                                    CREATE_COMPLETE,
+                                                    CREATE_FAILED})
         if stack and stack.stack_status == CREATE_COMPLETE:
             LOG.debug('Stack %r already exists.', stack_name)
             return stack
@@ -82,7 +84,8 @@ class StackManager(object):
         """Deletes stack."""
         self.client.stacks.delete(stack_name)
         if wait:
-            self.wait_for_stack_status(stack_name, status={DELETE_COMPLETE})
+            self.wait_for_stack_status(stack_name,
+                                       expected_status={DELETE_COMPLETE})
 
     def get_stack(self, stack_name):
         """Returns stack ID."""
@@ -99,39 +102,37 @@ class StackManager(object):
             time.sleep(self.wait_interval)
             res = self.client.resources.get(stack_id, resource_name)
 
-    def wait_for_stack_status(self, stack_name, status=None, stack=None,
-                              check=True):
+    def wait_for_stack_status(self, stack_name=None, stack=None,
+                              expected_status=None, check=True):
         """Waits for the stack to reach the given status."""
-        status = status or {CREATE_COMPLETE}
+        expected_status = expected_status or {CREATE_COMPLETE}
+        stack_name = stack_name or stack.stack_name
         stack = stack or self.get_stack(stack_name=stack_name)
         while (stack and stack.stack_status.endswith('_IN_PROGRESS') and
-               stack.stack_status not in status):
-            LOG.debug('Waiting for %r stack status (expected=%r, acual=%r)...',
-                      stack_name, status, stack.stack_status)
+               stack.stack_status not in expected_status):
+            LOG.debug("Waiting for %r stack status (observed=%r, expected=%r)",
+                      stack_name, stack.stack_status, expected_status)
             time.sleep(self.wait_interval)
             stack = self.get_stack(stack_name=stack_name)
 
         if check:
             if stack is None:
-                if DELETE_COMPLETE not in status:
-                    msg = "Stack {!r} not found".format(stack_name)
-                    raise RuntimeError(msg)
-            elif stack.stack_status not in status:
-                msg = ("Invalid stack {!r} status (expected={!r}, "
-                       "actual={!r})").format(stack_name, status,
-                                              stack.stack_status)
-                raise RuntimeError(msg)
+                if DELETE_COMPLETE not in expected_status:
+                    raise StackNotFound(name=stack_name)
+            else:
+                check_stack_status(stack, expected_status)
         return stack
 
     def get_output(self, stack, key):
         """Returns a specific value from stack outputs by using a given key."""
-        if stack.stack_status != CREATE_COMPLETE:
-            raise ValueError("Invalid stack status: {!r}".format(
-                stack.stack_status))
-        for output in stack.outputs:
-            if output['output_key'] == key:
-                return output['output_value']
-        raise KeyError("No such key: {!r}".format(key))
+        check_stack_status(stack, {CREATE_COMPLETE})
+        outputs = {output['output_key']: output['output_value']
+                   for output in stack.outputs}
+        try:
+            return outputs[key]
+        except KeyError:
+            raise InvalidOutputKey(name=stack.stack_name,
+                                   key=key)
 
     def get_templates_names(self, strip_suffix=False):
         """Returns a list of all the files in templates dir."""
@@ -156,3 +157,39 @@ class StackManager(object):
                 matched_stacks.append(stack.stack_name)
 
         return matched_stacks
+
+
+def check_stack_status(stack, expected):
+    observed = stack.stack_status
+    if observed not in expected:
+        if observed == CREATE_FAILED:
+            error_class = StackCreationFailed
+        elif observed == DELETE_FAILED:
+            error_class = StackDeletionFailed
+        else:
+            error_class = InvalidStackStatus
+        raise error_class(name=stack.stack_name,
+                          observed=observed,
+                          expected=expected,
+                          reason=stack.stack_status_reason)
+
+
+class InvalidOutputKey(exceptions.TobikoException):
+    msg = ("Output key %(key)r not found in stack %(name).")
+
+
+class StackNotFound(exceptions.TobikoException):
+    msg = ("Stack %(name)r not found")
+
+
+class InvalidStackStatus(exceptions.TobikoException):
+    msg = ("Stack %(name)r status %(observed)r not in %(expected)r "
+           "(reason=%(status_reason)r)")
+
+
+class StackCreationFailed(InvalidStackStatus):
+    pass
+
+
+class StackDeletionFailed(InvalidStackStatus):
+    pass
