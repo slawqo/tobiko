@@ -13,6 +13,7 @@
 from __future__ import absolute_import
 
 from tobiko.common.managers import fixture as fixture_manager
+from tobiko.common.managers import testcase as testcase_manager
 
 
 Fixture = fixture_manager.Fixture
@@ -20,3 +21,5 @@ Fixture = fixture_manager.Fixture
 get_fixture = fixture_manager.FIXTURES.get
 create_fixture = fixture_manager.FIXTURES.create
 delete_fixture = fixture_manager.FIXTURES.delete
+
+list_testcase_ids = testcase_manager.TESTCASES.list_ids
