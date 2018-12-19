@@ -19,17 +19,20 @@ from tobiko.tests import base
 
 class TestFixture(tobiko.Fixture):
 
-    def __init__(self):
+    created = False
+    deleted = False
+
+    def reset(self):
         self.created = False
         self.deleted = False
 
-    reset = __init__
-
     def create_fixture(self):
         self.created = True
+        return 'created'
 
     def delete_fixture(self):
         self.deleted = True
+        return 'deleted'
 
 
 class FixtureTypeTest(base.TobikoTest):
@@ -71,10 +74,10 @@ class FixtureTypeTest(base.TobikoTest):
         self._test_create_fixture(self.fixture_type)
 
     def _test_create_fixture(self, obj):
-        fixture = tobiko.create_fixture(obj)
-        self.assertIs(self.fixture, fixture)
-        self.assertTrue(fixture.created)
-        self.assertFalse(fixture.deleted)
+        result = tobiko.create_fixture(obj)
+        self.assertEqual('created', result)
+        self.assertTrue(self.fixture.created)
+        self.assertFalse(self.fixture.deleted)
 
     def test_delete_fixture_by_name(self):
         self._test_delete_fixture(self.fixture_name)
@@ -83,7 +86,17 @@ class FixtureTypeTest(base.TobikoTest):
         self._test_delete_fixture(self.fixture_type)
 
     def _test_delete_fixture(self, obj=TestFixture):
-        fixture = tobiko.delete_fixture(obj)
-        self.assertIs(self.fixture, fixture)
-        self.assertFalse(fixture.created)
-        self.assertTrue(fixture.deleted)
+        result = tobiko.delete_fixture(obj)
+        self.assertEqual('deleted', result)
+        self.assertFalse(self.fixture.created)
+        self.assertTrue(self.fixture.deleted)
+
+    def test_get_required_fixtures_from_method_by_type(
+            self, _required_fixture=TestFixture):
+        result = tobiko.get_required_fixtures(self.id())
+        self.assertEqual([self.fixture_name], result)
+
+    def test_get_required_fixtures_from_test_class(
+            self, _required_fixture=TestFixture):
+        result = tobiko.get_required_fixtures(FixtureTypeTest)
+        self.assertEqual([self.fixture_name], result)

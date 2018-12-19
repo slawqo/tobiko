@@ -20,11 +20,15 @@ from tobiko.common.managers import loader as loader_manager
 load_object = loader_manager.load_object
 load_module = loader_manager.load_module
 
+discover_testcases = testcase_manager.discover_testcases
 
 Fixture = fixture_manager.Fixture
-
-get_fixture = fixture_manager.FIXTURES.get
-create_fixture = fixture_manager.FIXTURES.create
-delete_fixture = fixture_manager.FIXTURES.delete
-
-discover_testcases = testcase_manager.discover_testcases
+fixture = fixture_manager.fixture
+is_fixture = fixture_manager.is_fixture
+get_fixture = fixture_manager.get_fixture
+create_fixture = fixture_manager.create_fixture
+delete_fixture = fixture_manager.delete_fixture
+get_required_fixtures = fixture_manager.get_required_fixtures
+discover_required_fixtures = fixture_manager.discover_required_fixtures
+create_fixtures = fixture_manager.create_fixtures
+delete_fixtures = fixture_manager.delete_fixtures
