@@ -19,6 +19,8 @@ import os
 from oslo_config import cfg
 from oslo_log import log
 
+LOG = log.getLogger(__name__)
+
 CONFIG_MODULES = ['tobiko.tests.config']
 
 CONFIG_DIRS = [os.getcwd(),
@@ -58,8 +60,9 @@ CONF = GlobalConfig()
 
 def init_config():
     init_tobiko_config()
-    init_tempest_config()
     init_environ_config()
+    if CONF.tobiko.tempest.enabled:
+        init_tempest_config()
 
 
 def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
@@ -81,6 +84,13 @@ def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
 
 
 def register_tobiko_options(conf):
+    conf.register_opts(
+        group=cfg.OptGroup('tempest'),
+        opts=[cfg.BoolOpt('enabled',
+                          default=True,
+                          help="Enables tempest integration if available"),
+              ])
+
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
         if hasattr(module, 'register_tobiko_options'):
@@ -97,15 +107,24 @@ def setup_tobiko_config():
 def init_tempest_config():
     try:
         from tempest import config
-    except ImportError:
-        return
 
-    tempest_conf = config.CONF
-    CONF.set_source('tempest', tempest_conf)
+        # checks tempest configuration is working
+        tempest_conf = config.CONF
+        tempest_logger = log.getLogger('tempest')
+        if tempest_conf.debug:
+            # Silence tempest logger
+            if not tempest_logger.isEnabledFor(log.DEBUG):
+                tempest_logger.logger.setLevel(log.DEBUG)
+        else:
+            # Silence tempest logger
+            if tempest_logger.isEnabledFor(log.INFO):
+                tempest_logger.logger.setLevel(log.WARNING)
 
-    logger = log.getLogger('tempest')
-    if logger.isEnabledFor(log.WARNING):
-        logger.logger.setLevel(log.INFO)
+    except Exception:
+        LOG.exception('Errors configuring tempest integration')
+
+    else:
+        CONF.set_source('tempest', tempest_conf)
 
 
 def init_environ_config():
