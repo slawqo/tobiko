@@ -13,7 +13,16 @@
 #    under the License.
 from __future__ import absolute_import
 
+import importlib
+import os
+import sys
+
+from oslo_log import log
 from stestr import config_file
+
+LOG = log.getLogger(__name__)
+
+os.environ.setdefault('PYTHON', sys.executable)
 
 
 class TestCaseManager(object):
@@ -60,7 +69,42 @@ class TestCaseManager(object):
         self.black_regex = black_regex
         self.filters = filters
 
-    def list_ids(self, **kwargs):
+    def load_modules(self, **kwargs):
+        failed = {}
+        imported = {}
+        modules = []
+        for testcase_id in self.discover(**kwargs):
+            id_parts = testcase_id.split('.')
+            for i in range(len(id_parts)):
+                module_id = '.'.join(id_parts[:i + 1])
+                if module_id in failed:
+                    # failed modules have no child modules to import
+                    break
+
+                # import every module only once
+                module = imported.get(module_id)
+                if module is None:
+                    try:
+                        module = importlib.import_module(module_id)
+                    except ImportError as ex:
+                        failed[module_id] = ex
+                        self.on_import_error(module_id)
+                        # failed modules have no child modules to import
+                        break
+                    assert module_id == module.__name__
+                    imported[module_id] = module
+
+                if is_leaf_module(module):
+                    # leaf modules have no child modules to import
+                    modules.append(module)
+                    break
+
+        return modules
+
+    def on_import_error(self, test_module_id):
+        LOG.exception("Error importing module %r", test_module_id)
+
+    def discover(self, **kwargs):
         """Iterate over test_ids for a project
         This method will print the test_ids for tests in a project. You can
         filter the output just like with the run command to see exactly what
@@ -89,6 +133,7 @@ class TestCaseManager(object):
             top_dir=params['top_dir'])
         not_filtered = filters is None and blacklist_file is None\
             and whitelist_file is None and black_regex is None
+
         try:
             cmd.setUp()
             # List tests if the fixture has not already needed to to filter.
@@ -96,10 +141,18 @@ class TestCaseManager(object):
                 ids = cmd.list_tests()
             else:
                 ids = cmd.test_ids
+        except SystemExit:
+            msg = ("Error discovering test cases IDs with parameters: "
+                   "{!r}").format(params)
+            raise RuntimeError(msg)
         finally:
             cmd.cleanUp()
 
-        return ids
+        return sorted(ids)
+
+
+def is_leaf_module(module):
+    return not os.path.basename(module.__file__).startswith('__init__.')
 
 
 TESTCASES = TestCaseManager()

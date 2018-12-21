@@ -22,4 +22,5 @@ get_fixture = fixture_manager.FIXTURES.get
 create_fixture = fixture_manager.FIXTURES.create
 delete_fixture = fixture_manager.FIXTURES.delete
 
-list_testcase_ids = testcase_manager.TESTCASES.list_ids
+discover_testcases = testcase_manager.TESTCASES.discover
+load_testcase_modules = testcase_manager.TESTCASES.load_modules
