@@ -4,8 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-tobiko = {editable = true, path = "."}
+tobiko = {editable = true,path = "."}
 ansible = "*"
+testscenarios = "*"
 
 [dev-packages]
 

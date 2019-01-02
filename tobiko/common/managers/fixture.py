@@ -73,7 +73,7 @@ FIXTURES = FixtureManager()
 
 class FixtureMeta(abc.ABCMeta):
 
-    def __new__(cls, name, bases, members):
+    def __new__(cls, name, bases, members):  # pylint: disable=arguments-differ
         fixture_class = super(FixtureMeta, cls).__new__(cls, name, bases,
                                                         members)
         if not inspect.isabstract(fixture_class):

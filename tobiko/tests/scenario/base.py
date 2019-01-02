@@ -32,6 +32,7 @@ class ScenarioTestsBase(base.TobikoTest):
     templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
     stacks = stack_manager.StackManager(clients, templates_dir)
     stack = None
+    fault = None
 
     @classmethod
     def setUpClass(cls):
