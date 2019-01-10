@@ -14,7 +14,6 @@
 from __future__ import absolute_import
 
 import os
-import sys
 
 import tobiko
 from tobiko.tests import unit
@@ -42,18 +41,9 @@ class TestCasesManagerTest(unit.TobikoUnitTest):
         os.chdir(self.top_dir)
         self.addCleanup(os.chdir, original_work_dir)
 
-    def test_discover(self):
+    def test_discover_testcases(self):
         testcases = tobiko.discover_testcases(test_path=self.test_path,
                                               top_dir=self.top_dir,
                                               repo_url=self.repo_url,
                                               filters=[self.id()])
         self.assertIn(self.id(), testcases)
-
-    def test_load_testcase_modules(self):
-        this_module = sys.modules[self.__module__]
-        modules = tobiko.load_testcase_modules(test_path=self.test_path,
-                                               top_dir=self.top_dir,
-                                               repo_url=self.repo_url,
-                                               filters=[self.id()])
-
-        self.assertIn(this_module, modules)
