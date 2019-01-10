@@ -14,6 +14,10 @@ from __future__ import absolute_import
 
 from tobiko.common.managers import fixture as fixture_manager
 from tobiko.common.managers import testcase as testcase_manager
+from tobiko.common.managers import loader as loader_manager
+
+
+load_object = loader_manager.load_object
 
 
 Fixture = fixture_manager.Fixture
