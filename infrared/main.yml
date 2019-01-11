@@ -1,0 +1,11 @@
+- name: Install Tobiko
+  import_playbook: tasks/install.yml
+
+- name: Set up os-faults configuration
+  import_playbook: tasks/configure.yml
+
+- name: Run Tobiko
+  import_playbook: tasks/run.yml
+  when:
+      - test.tests is defined
+      - test.tests

@@ -1,0 +1,12 @@
+---
+- name: Generate os-faults configuration
+  hosts: undercloud
+  any_errors_fatal: true
+  gather_facts: yes
+
+  tasks:
+      - name: Create os-faults configuration file
+        template:
+            src: "templates/os-faults.yaml.j2"
+            dest: "~/os-faults.yaml"
+            mode: 0755
