@@ -6,24 +6,29 @@
   register: sysctl_hw_logicalcpu
   when: ansible_processor_vcpus is not defined
 
-- name: Number of cores
+- name: Get number of cores
   set_fact:
     num_cores: "{{ansible_processor_vcpus|default(sysctl_hw_logicalcpu.stdout)}}"
 
-- name: Set concurrency for cores == 3 or less
+- name: Set default concurrency
   set_fact:
-    default_concurrency: "{{ num_cores }}"
-  when: num_cores|int <= 3
+    stestr_concurrency: "{{ num_cores|int // 2 }}"
 
-- name: Limit max concurrency when more than 3 vcpus are available
+- name: Limit min concurrency to 1
   set_fact:
-    default_concurrency: "{{ num_cores|int // 2 }}"
-  when: num_cores|int > 3
+    stestr_concurrency: 1
+  when:
+    stestr_concurrency|int < 1
+
+- name: Limit max concurrency to 2
+  set_fact:
+    stestr_concurrency: 2
+  when:
+    stestr_concurrency|int > 2
 
 - name: Run Tobiko
-  command: tox -e {{tox_envlist}} {{tox_extra_args}} -- --concurrency={{default_concurrency}}
+  command: tox -e {{tox_envlist}} {{tox_extra_args}} -- --concurrency={{stestr_concurrency}}
   args:
     chdir: "{{tox_dir}}"
   become: true
   become_user: stack
-
