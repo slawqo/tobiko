@@ -24,7 +24,7 @@
         neutron: git://git.openstack.org/openstack/neutron.git
         tobiko: git://git.openstack.org/openstack/tobiko.git
       devstack_services:
-        tls-proxy: false
+        tls-proxy: true
         neutron-dns: true
         neutron-qos: true
         neutron-segments: true
@@ -60,8 +60,17 @@
 
 
 - job:
-    name: tobiko-devstack-neutron
+    name: tobiko-devstack-multinode
     parent: tobiko-devstack
+    nodeset: openstack-two-node-bionic
+    abstract: true
+    description: |
+      Base Tobiko devstack job with multinode.
+
+
+- job:
+    name: tobiko-devstack-neutron
+    parent: tobiko-devstack-multinode
     description: |
       Integration test that runs all tests against DevStack provided cloud
     vars:
