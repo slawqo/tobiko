@@ -87,10 +87,11 @@ class StackManager(object):
             self.wait_for_stack_status(stack_name,
                                        expected_status={DELETE_COMPLETE})
 
-    def get_stack(self, stack_name):
+    def get_stack(self, stack_name, resolve_outputs=False):
         """Returns stack ID."""
         try:
-            return self.client.stacks.get(stack_name)
+            return self.client.stacks.get(stack_name,
+                                          resolve_outputs=resolve_outputs)
         except exc.HTTPNotFound:
             return None
 
@@ -126,6 +127,9 @@ class StackManager(object):
     def get_output(self, stack, key):
         """Returns a specific value from stack outputs by using a given key."""
         check_stack_status(stack, {CREATE_COMPLETE})
+        if not hasattr(stack, 'outputs'):
+            stack = self.get_stack(stack_name=stack.stack_name,
+                                   resolve_outputs=True)
         outputs = {output['output_key']: output['output_value']
                    for output in stack.outputs}
         try:
