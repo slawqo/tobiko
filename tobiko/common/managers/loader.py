@@ -19,13 +19,16 @@ import weakref
 import sys
 
 
-_REF_TO_NONE = object()
-
-
 def load_object(object_id, manager=None, new_loader=None, cached=True):
     manager = manager or LOADERS
     loader = manager.get_loader(object_id=object_id, new_loader=new_loader)
     return loader.load(manager=manager, cached=cached)
+
+
+def load_module(object_id, manager=None, new_loader=None, cached=True):
+    manager = manager or LOADERS
+    loader = manager.get_loader(object_id=object_id, new_loader=new_loader)
+    return loader.load_module(manager=manager, cached=cached)
 
 
 class ObjectLoader(object):
@@ -58,24 +61,44 @@ class ObjectLoader(object):
     def id(self):
         return self._id
 
+    def set(self, obj):
+        if obj is None:
+            self._is_module = False
+            self.get = self._get_none
+        elif inspect.ismodule(obj):
+            # Cannot create weak reference to modules on Python2
+            self._is_module = True
+            self.get = self._get_module
+        else:
+            self._is_module = False
+            self._ref = weakref.ref(obj)
+            self.get = self._get_object
+
     def __repr__(self):
         return '{cls!s}({id!r})'.format(cls=type(self).__name__, id=self._id)
 
-    def get(self):
-        if self._is_module:
-            return sys.modules.get(self._id)
-
-        ref = self._ref
-        if ref is _REF_TO_NONE:
-            return None
-
-        if callable(ref):
-            obj = ref()
-            if obj is not None:
-                return obj
-
+    def _get_not_cached(self):
         msg = "Object {!r} not cached".format(self._id)
         raise RuntimeError(msg)
+
+    get = _get_not_cached
+
+    @staticmethod
+    def _get_none():
+        return None
+
+    def _get_module(self):
+        try:
+            return sys.modules[self._id]
+        except KeyError:
+            pass
+        return self._get_not_cached()
+
+    def _get_object(self):
+        obj = self._ref()
+        if obj is None:
+            return self._get_not_cached()
+        return obj
 
     def load(self, manager, cached=True):
         if cached:
@@ -84,34 +107,51 @@ class ObjectLoader(object):
             except RuntimeError:
                 pass
 
-        obj = None
-        parent_id = self._parent_id
-        if parent_id:
-            parent_loader = manager.get_loader(object_id=parent_id,
-                                               new_loader=type(self))
+        parent_loader = self.get_parent(manager=manager)
+        if parent_loader:
             parent = parent_loader.load(manager=manager, cached=cached)
             name = self._name
             try:
                 obj = getattr(parent, name)
             except AttributeError:
-                if not parent_loader.is_module:
+                if parent_loader.is_module:
+                    return self._load_module()
+                else:
                     # Child cannot be a module if parent isn't a module
                     raise
             else:
-                if obj is None:
-                    # Cannot create weak reference to None
-                    self._ref = _REF_TO_NONE
-                elif inspect.ismodule(obj):
-                    # Cannot create weak reference to Module
-                    self._is_module = True
-                else:
-                    self._ref = weakref.ref(obj)
+                self.set(obj)
                 return obj
+        else:
+            # Root objects can only be modules
+            return self._load_module()
 
-        if obj is None:
-            obj = importlib.import_module(self._id)
-            self._is_module = True
+    def _load_module(self):
+        obj = importlib.import_module(self._id)
+        self.set(obj)
         return obj
+
+    def get_parent(self, manager):
+        parent_id = self._parent_id
+        if parent_id:
+            return manager.get_loader(object_id=parent_id)
+        else:
+            return None
+
+    def load_module(self, manager, cached=True):
+        if cached and self._is_module:
+            return self.get()
+
+        self.load(manager=manager, cached=cached)
+        if self._is_module:
+            return self.get()
+
+        parent = self.get_parent(manager=manager)
+        if parent:
+            return parent.load_module(manager=manager, cached=True)
+
+        msg = ("Non-module object {!r} has no parent").format(self._id)
+        raise RuntimeError(msg)
 
 
 class LoaderManager(object):
@@ -136,8 +176,7 @@ class LoaderManager(object):
         new_loader = new_loader or self.new_loader
         loader = new_loader(object_id=object_id)
         if not isinstance(loader, ObjectLoader):
-            msg = "{!r} is not instance of class ObjectLoader".format(
-                loader)
+            msg = "{!r} is not instance of class ObjectLoader".format(loader)
             raise TypeError(msg)
 
         self._loaders[object_id] = loader

@@ -18,6 +18,7 @@ from tobiko.common.managers import loader as loader_manager
 
 
 load_object = loader_manager.load_object
+load_module = loader_manager.load_module
 
 
 Fixture = fixture_manager.Fixture
