@@ -16,7 +16,6 @@ from __future__ import absolute_import
 import argparse
 import sys
 
-import crayons
 import paramiko
 
 from oslo_log import log
@@ -47,8 +46,7 @@ class Tobiko():
         try:
             self.ssh.connect(self.args.host)
         except paramiko.ssh_exception.AuthenticationException:
-            LOG.error("Unable to connect {}".format(
-                crayons.red(self.args.host)))
+            LOG.error("Unable to connect %r", self.args.host)
 
 
 def main():
