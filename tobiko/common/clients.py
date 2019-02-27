@@ -129,6 +129,7 @@ class ClientManager(object):
     _session = None
     _heat_client = None
     _neutron_client = None
+    _nova_client = None
 
     def __init__(self, credentials=None):
         if credentials:
@@ -161,3 +162,11 @@ class ClientManager(object):
             from neutronclient.v2_0 import client as neutron_client
             self._neutron_client = neutron_client.Client(session=self.session)
         return self._neutron_client
+
+    @property
+    def nova_client(self):
+        """Returns nova client."""
+        if self._nova_client is None:
+            from novaclient import client as nova_client
+            self._nova_client = nova_client.Client('2', session=self.session)
+        return self._nova_client
