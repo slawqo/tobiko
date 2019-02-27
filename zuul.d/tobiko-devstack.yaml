@@ -62,7 +62,7 @@
 - job:
     name: tobiko-devstack-multinode
     parent: tobiko-devstack
-    nodeset: openstack-two-node-bionic
+    nodeset: tobiko-multinode
     abstract: true
     description: |
       Base Tobiko devstack job with multinode.
