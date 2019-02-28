@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import importlib
+import logging
 import os
 
 from oslo_config import cfg
@@ -98,6 +99,17 @@ def register_tobiko_options(conf):
 
 
 def setup_tobiko_config():
+    # Redirect all warnings to logging library
+    logging.captureWarnings(True)
+    warnings_logger = log.getLogger('py.warnings')
+    if CONF.tobiko.debug:
+        if not warnings_logger.isEnabledFor(log.WARNING):
+            # Print Python warnings
+            warnings_logger.logger.setLevel(log.WARNING)
+    elif warnings_logger.isEnabledFor(log.WARNING):
+        # Silence Python warnings
+        warnings_logger.logger.setLevel(log.ERROR)
+
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
         if hasattr(module, 'setup_tobiko_config'):
@@ -112,7 +124,7 @@ def init_tempest_config():
         tempest_conf = config.CONF
         tempest_logger = log.getLogger('tempest')
         if tempest_conf.debug:
-            # Silence tempest logger
+            # Print tempest debug messages
             if not tempest_logger.isEnabledFor(log.DEBUG):
                 tempest_logger.logger.setLevel(log.DEBUG)
         else:
