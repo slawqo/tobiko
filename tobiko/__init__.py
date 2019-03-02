@@ -22,13 +22,12 @@ load_module = loader_manager.load_module
 
 discover_testcases = testcase_manager.discover_testcases
 
-Fixture = fixture_manager.Fixture
-fixture = fixture_manager.fixture
 is_fixture = fixture_manager.is_fixture
 get_fixture = fixture_manager.get_fixture
-create_fixture = fixture_manager.create_fixture
-delete_fixture = fixture_manager.delete_fixture
-get_required_fixtures = fixture_manager.get_required_fixtures
-discover_required_fixtures = fixture_manager.discover_required_fixtures
-create_fixtures = fixture_manager.create_fixtures
-delete_fixtures = fixture_manager.delete_fixtures
+get_fixture_name = fixture_manager.get_fixture_name
+setup_fixture = fixture_manager.setup_fixture
+cleanup_fixture = fixture_manager.cleanup_fixture
+list_required_fixtures = fixture_manager.list_required_fixtures
+iter_required_fixtures = fixture_manager.iter_required_fixtures
+setup_required_fixtures = fixture_manager.setup_required_fixtures
+cleanup_required_fixtures = fixture_manager.cleanup_required_fixtures

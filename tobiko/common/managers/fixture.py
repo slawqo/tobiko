@@ -13,22 +13,18 @@
 #    under the License.
 from __future__ import absolute_import
 
-import abc
-import contextlib
 import inspect
 
+import fixtures
 import six
 
 import tobiko
 
 
-def fixture(obj):
-    obj.__tobiko_fixture__ = True
-    return object
-
-
 def is_fixture(obj):
-    return getattr(obj, '__tobiko_fixture__', False)
+    return (getattr(obj, '__tobiko_fixture__', False) or
+            isinstance(obj, fixtures.Fixture) or
+            (inspect.isclass(obj) and issubclass(obj, fixtures.Fixture)))
 
 
 def get_fixture(obj, manager=None):
@@ -36,183 +32,109 @@ def get_fixture(obj, manager=None):
     return manager.get_fixture(obj)
 
 
-def create_fixture(obj, manager=None):
-    manager = manager or FIXTURES
-    return manager.create_fixture(obj)
+def get_fixture_name(obj):
+    return get_fixture(obj).__tobiko_fixture_name__
 
 
-def delete_fixture(obj, manager=None):
-    manager = manager or FIXTURES
-    return manager.delete_fixture(obj)
+def setup_fixture(obj, manager=None):
+    get_fixture(obj, manager=manager).setUp()
 
 
-def get_required_fixtures(obj, manager=None):
-    manager = manager or FIXTURES
-    return manager.get_required_fixtures(obj)
+def cleanup_fixture(obj, manager=None):
+    get_fixture(obj, manager=manager).cleanUp()
 
 
-def discover_required_fixtures(objects, manager=None):
-    manager = manager or FIXTURES
-    return sorted(set(manager.discover_required_fixtures(objects, manager)))
-
-
-def create_fixtures(objects, manager=None):
-    manager = manager or FIXTURES
-    for _fixture in discover_required_fixtures(objects=objects,
-                                              manager=manager):
-        manager.create_fixture(_fixture)
-
-
-def delete_fixtures(objects, manager=None):
-    manager = manager or FIXTURES
-    for _fixture in discover_required_fixtures(objects=objects,
-                                              manager=manager):
-        return manager.delete_fixture(_fixture)
-
-
-class FixtureManager(object):
-
-    def __init__(self):
-        self.fixtures = {}
-
-    def get_fixture(self, obj):
-        name = get_object_name(obj)
-        _fixture = self.fixtures.get(name)
-        if _fixture is None:
-            _fixture = self.init_fixture(name=name, obj=obj)
-            assert isinstance(_fixture, Fixture)
-            self.fixtures[name] = _fixture
-        return _fixture
-
-    def create_fixture(self, obj):
-        return self.get_fixture(obj).create_fixture()
-
-    def delete_fixture(self, obj):
-        return self.get_fixture(obj).delete_fixture()
-
-    def init_fixture(self, obj, name):
+def iter_required_fixtures(objects):
+    objects = list(objects)
+    while objects:
+        obj = objects.pop()
         if isinstance(obj, six.string_types):
-            if name != obj:
-                msg = ("Fixture name mismatch: "
-                       "{!r} != {!r}").format(name, obj.fixture_name)
-                raise ValueError(msg)
-            obj = tobiko.load_object(name)
+            object_id = obj
+            obj = tobiko.load_object(object_id)
+        else:
+            object_id = get_object_name(obj)
 
-        if isinstance(obj, Fixture):
-            if name != obj.fixture_name:
-                msg = ("Fixture name mismatch: "
-                       "{!r} != {!r}").format(name, obj.fixture_name)
-                raise ValueError(msg)
-            return obj
+        if is_fixture(obj):
+            yield object_id
+
+        elif inspect.isfunction(obj) or inspect.ismethod(obj):
+            for default in get_default_param_values(obj):
+                if is_fixture(default):
+                    yield get_object_name(default)
+
+        if inspect.ismodule(obj):
+            members = [obj for _, obj in inspect.getmembers(obj)
+                       if (inspect.isfunction(obj) or
+                           inspect.isclass(obj))]
+            objects.extend(members)
+
         elif inspect.isclass(obj):
-            if issubclass(obj, Fixture):
-                return obj(fixture_name=name)
-        elif inspect.isgeneratorfunction(obj):
-            return ContextFixture(
-                fixture_name=name, context=contextlib.contextmanager(obj))
-        elif inspect.isfunction(obj):
-            return FunctionFixture(fixture_name=name, function=obj)
-        raise TypeError("Invalid fixture object type: {!r}".format(object))
-
-    def get_required_fixtures(self, obj):
-        return sorted(set(self.discover_required_fixtures([obj])))
-
-    def discover_required_fixtures(self, objects):
-        objects = list(objects)
-        while objects:
-            obj = objects.pop()
-            if isinstance(obj, six.string_types):
-                object_id = obj
-                obj = tobiko.load_object(object_id)
-            else:
-                object_id = get_object_name(obj)
-
-            if is_fixture(obj):
-                yield object_id
-
-            elif inspect.isfunction(obj) or inspect.ismethod(obj):
-                for default in get_default_param_values(obj):
-                    if is_fixture(default):
-                        yield get_object_name(default)
-
-            if inspect.ismodule(obj):
-                members = [obj for _, obj in inspect.getmembers(obj)
-                           if (inspect.isfunction(obj) or
-                               inspect.isclass(obj))]
-                objects.extend(members)
-
-            elif inspect.isclass(obj):
-                members = [obj for _, obj in inspect.getmembers(obj)
-                           if (inspect.isfunction(obj) or
-                               inspect.ismethod(obj))]
-                objects.extend(members)
+            members = [obj for _, obj in inspect.getmembers(obj)
+                       if (inspect.isfunction(obj) or
+                           inspect.ismethod(obj))]
+            objects.extend(members)
 
 
-FIXTURES = FixtureManager()
+def list_required_fixtures(objects):
+    return sorted(set(iter_required_fixtures(objects)))
 
 
-class Fixture(object):
-
-    __tobiko_fixture__ = True
-
-    def __init__(self, fixture_name):
-        self.fixture_name = fixture_name
-
-    @abc.abstractmethod
-    def create_fixture(self):
-        pass
-
-    def delete_fixture(self):
-        pass
+def setup_required_fixtures(objects, manager=None):
+    manager = manager or FIXTURES
+    for _fixture in iter_required_fixtures(objects=objects):
+        manager.get_fixture(_fixture).setUp()
 
 
-class FunctionFixture(Fixture):
-
-    def __init__(self, fixture_name, function):
-        super(FunctionFixture, self).__init__(fixture_name=fixture_name)
-        assert callable(function)
-        self.function = function
-
-    def create_fixture(self):
-        return self.function()
+def cleanup_required_fixtures(objects, manager=None):
+    manager = manager or FIXTURES
+    for _fixture in iter_required_fixtures(objects=objects):
+        manager.get_fixture(_fixture).cleanUp()
 
 
-class ContextFixture(Fixture):
+def init_fixture(obj, name):
+    if isinstance(obj, six.string_types):
+        obj = tobiko.load_object(name)
 
-    def __init__(self, fixture_name, context):
-        super(ContextFixture, self).__init__(fixture_name=fixture_name)
-        self.context = context
+    if (inspect.isclass(obj) and issubclass(obj, fixtures.Fixture)):
+        obj = obj()
 
-    def create_fixture(self):
-        return self.context.__enter__()
+    if isinstance(obj, fixtures.Fixture):
+        obj.__tobiko_fixture__ = True
+        obj.__tobiko_fixture_name__ = name
+        return obj
 
-    def delete_fixture(self):
-        return self.context.__exit__(None, None, None)
+    raise TypeError("Invalid fixture object type: {!r}".format(object))
 
 
 def get_object_name(obj):
     if isinstance(obj, six.string_types):
         return obj
 
-    if is_fixture(obj):
-        name = getattr(obj, 'fixture_name', None)
-        if name:
-            return name
-
-    name = getattr(obj, '__qualname__', None)
+    name = getattr(obj, '__tobiko_fixture_name__', None)
     if name:
-        return obj.__module__ + '.' + name
+        return name
 
     module = inspect.getmodule(obj).__name__
-    if inspect.isclass(obj):
-        return module + '.' + obj.__name__
 
-    parent_class = getattr(obj, 'im_class', None)
-    if parent_class:
-        return module + parent_class.__name__ + '.' + obj.__name__
+    if six.PY2:
+        # Below code is only for old Python versions
+        if inspect.isclass(obj):
+            # This doesn't work for nested classes
+            return module + '.' + obj.__name__
 
-    if inspect.isfunction(obj):
-        return module + '.' + obj.func_name
+        method_class = getattr(obj, 'im_class', None)
+        if method_class:
+            # This doesn't work for nested classes
+            return module + method_class.__name__ + '.' + obj.__name__
+
+        if inspect.isfunction(obj):
+            return module + '.' + obj.func_name
+
+    else:
+        # Only Python 3 defines __qualname__
+        name = getattr(obj, '__qualname__', None)
+        if name:
+            return module + '.' + name
 
     msg = "Unable to get fixture name from object {!r}".format(obj)
     raise TypeError(msg)
@@ -231,3 +153,20 @@ def get_default_param_values(obj):
     # Use old deprecated function 'getargspec'
     return list(inspect.getargspec(obj).defaults or  # pylint: disable=W1505
                 tuple())
+
+
+class FixtureManager(object):
+
+    def __init__(self):
+        self.fixtures = {}
+
+    def get_fixture(self, obj, init=init_fixture):
+        name = get_object_name(obj)
+        _fixture = self.fixtures.get(name)
+        if _fixture is None:
+            self.fixtures[name] = _fixture = init(name=name, obj=obj)
+            assert isinstance(_fixture, fixtures.Fixture)
+        return _fixture
+
+
+FIXTURES = FixtureManager()

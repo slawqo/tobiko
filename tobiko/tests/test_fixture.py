@@ -13,90 +13,109 @@
 #    under the License.
 from __future__ import absolute_import
 
+import fixtures
+
 import tobiko
 from tobiko.tests import base
 
 
-class TestFixture(tobiko.Fixture):
+class MyFixtureClass(fixtures.Fixture):
 
-    created = False
-    deleted = False
+    def _setUp(self):
+        self.setup_executed = True
+        self.addCleanup(self._cleanUp)
 
-    def reset(self):
-        self.created = False
-        self.deleted = False
+    def _cleanUp(self):
+        self.cleanup_executed = True
 
-    def create_fixture(self):
-        self.created = True
-        return 'created'
 
-    def delete_fixture(self):
-        self.deleted = True
-        return 'deleted'
+MY_FIXTURE_NAME = __name__ + '.' + MyFixtureClass.__name__
 
 
 class FixtureTypeTest(base.TobikoTest):
 
-    fixture_type = TestFixture
-    fixture_name = __name__ + '.' + TestFixture.__name__
-
-    @classmethod
-    def setUpClass(cls):
-        super(FixtureTypeTest, cls).setUpClass()
-        cls.fixture = tobiko.get_fixture(cls.fixture_name)
-
-    def setUp(self):
-        super(FixtureTypeTest, self).setUp()
-        self.fixture.reset()
-
-    def test_fixture_type(self):
-        self.assertIsInstance(self.fixture, self.fixture_type)
-
-    def test_fixture_name(self):
-        self.assertEqual(self.fixture_name, self.fixture.fixture_name)
-
     def test_get_fixture_by_name(self):
-        self._test_get_fixture(self.fixture_name)
+        self._test_get_fixture(MY_FIXTURE_NAME, fixture_type=MyFixtureClass)
 
     def test_get_fixture_by_type(self):
-        self._test_get_fixture(self.fixture_type)
+        self._test_get_fixture(MyFixtureClass, fixture_type=MyFixtureClass)
 
-    def _test_get_fixture(self, obj):
+    def _test_get_fixture(self, obj, fixture_type):
         fixture = tobiko.get_fixture(obj)
-        self.assertIs(self.fixture, fixture)
-        self.assertFalse(fixture.created)
-        self.assertFalse(fixture.deleted)
+        self.assertIsInstance(fixture, fixture_type)
+        self.assertIs(fixture, tobiko.get_fixture(obj))
 
-    def test_create_fixture_by_name(self):
-        self._test_create_fixture(self.fixture_name)
+    def test_get_name(self):
+        fixture = tobiko.get_fixture(MY_FIXTURE_NAME)
+        result = tobiko.get_fixture_name(fixture)
+        self.assertEqual(MY_FIXTURE_NAME, result)
 
-    def test_create_fixture_by_type(self):
-        self._test_create_fixture(self.fixture_type)
+    def test_setup_fixture_by_name(self):
+        self._test_setup_fixture(MY_FIXTURE_NAME)
 
-    def _test_create_fixture(self, obj):
-        result = tobiko.create_fixture(obj)
-        self.assertEqual('created', result)
-        self.assertTrue(self.fixture.created)
-        self.assertFalse(self.fixture.deleted)
+    def test_setup_fixture_by_type(self):
+        self._test_setup_fixture(MyFixtureClass)
 
-    def test_delete_fixture_by_name(self):
-        self._test_delete_fixture(self.fixture_name)
+    def _test_setup_fixture(self, obj):
+        fixture = tobiko.get_fixture(obj)
+        fixture.setup_executed = False
 
-    def test_delete_fixture_by_type(self):
-        self._test_delete_fixture(self.fixture_type)
+        tobiko.setup_fixture(obj)
 
-    def _test_delete_fixture(self, obj=TestFixture):
-        result = tobiko.delete_fixture(obj)
-        self.assertEqual('deleted', result)
-        self.assertFalse(self.fixture.created)
-        self.assertTrue(self.fixture.deleted)
+        self.assertTrue(fixture.setup_executed)
 
-    def test_get_required_fixtures_from_method_by_type(
-            self, _required_fixture=TestFixture):
-        result = tobiko.get_required_fixtures(self.id())
-        self.assertEqual([self.fixture_name], result)
+    def test_cleanup_fixture_by_name(self):
+        self._test_cleanup_fixture(MY_FIXTURE_NAME)
 
-    def test_get_required_fixtures_from_test_class(
-            self, _required_fixture=TestFixture):
-        result = tobiko.get_required_fixtures(FixtureTypeTest)
-        self.assertEqual([self.fixture_name], result)
+    def test_cleanup_fixture_by_type(self):
+        self._test_cleanup_fixture(MyFixtureClass)
+
+    def _test_cleanup_fixture(self, obj):
+        fixture = tobiko.get_fixture(obj)
+        fixture.setUp()
+
+        tobiko.cleanup_fixture(obj)
+
+        self.assertTrue(fixture.cleanup_executed)
+
+    def test_list_required_fixtures_from_module(self):
+        result = tobiko.list_required_fixtures([__name__])
+        self.assertEqual([MY_FIXTURE_NAME], result)
+
+    def test_list_required_fixtures_from_testcase_type(self):
+        result = tobiko.list_required_fixtures([FixtureTypeTest])
+        self.assertEqual([MY_FIXTURE_NAME], result)
+
+    def test_list_required_fixtures_from_fixture_type(self):
+        result = tobiko.list_required_fixtures([MyFixtureClass])
+        self.assertEqual([MY_FIXTURE_NAME], result)
+
+    def test_list_required_fixtures_from_fixture_name(self):
+        result = tobiko.list_required_fixtures([MY_FIXTURE_NAME])
+        self.assertEqual([MY_FIXTURE_NAME], result)
+
+    def test_list_required_fixtures_from_method(
+            self, fixture_type=MyFixtureClass):
+        result = tobiko.list_required_fixtures([self.id()])
+        self.assertEqual([MY_FIXTURE_NAME], result)
+        self.assertIsInstance(tobiko.get_fixture(MY_FIXTURE_NAME),
+                              fixture_type)
+
+    def test_list_required_fixtures_from_fixture_object(self):
+        fixture = tobiko.get_fixture(MY_FIXTURE_NAME)
+        result = tobiko.list_required_fixtures([fixture])
+        self.assertEqual([MY_FIXTURE_NAME], result)
+
+    def test_setup_required_fixtures(self, fixture_type=MyFixtureClass):
+        fixture = tobiko.get_fixture(fixture_type)
+        fixture.setup_executed = False
+        tobiko.setup_required_fixtures([self.id()])
+        self.assertTrue(fixture.setup_executed)
+
+    def test_cleanup_required_fixtures(self, fixture_type=MyFixtureClass):
+        fixture = tobiko.get_fixture(fixture_type)
+        fixture.cleanup_executed = False
+        fixture.setUp()
+        tobiko.cleanup_required_fixtures([self.id()])
+        self.assertTrue(fixture.setup_executed)
+        self.assertTrue(fixture.cleanup_executed)
