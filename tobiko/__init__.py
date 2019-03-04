@@ -12,7 +12,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.common.managers import fixture as fixture_manager
+from tobiko.common.managers import fixture
 from tobiko.common.managers import testcase as testcase_manager
 from tobiko.common.managers import loader as loader_manager
 
@@ -22,12 +22,16 @@ load_module = loader_manager.load_module
 
 discover_testcases = testcase_manager.discover_testcases
 
-is_fixture = fixture_manager.is_fixture
-get_fixture = fixture_manager.get_fixture
-get_fixture_name = fixture_manager.get_fixture_name
-setup_fixture = fixture_manager.setup_fixture
-cleanup_fixture = fixture_manager.cleanup_fixture
-list_required_fixtures = fixture_manager.list_required_fixtures
-iter_required_fixtures = fixture_manager.iter_required_fixtures
-setup_required_fixtures = fixture_manager.setup_required_fixtures
-cleanup_required_fixtures = fixture_manager.cleanup_required_fixtures
+is_fixture = fixture.is_fixture
+get_fixture = fixture.get_fixture
+get_fixture_name = fixture.get_fixture_name
+remove_fixture = fixture.remove_fixture
+setup_fixture = fixture.setup_fixture
+setup_shared_fixture = fixture.setup_shared_fixture
+cleanup_fixture = fixture.cleanup_fixture
+cleanup_shared_fixture = fixture.cleanup_shared_fixture
+list_required_fixtures = fixture.list_required_fixtures
+iter_required_fixtures = fixture.iter_required_fixtures
+setup_required_fixtures = fixture.setup_required_fixtures
+cleanup_required_fixtures = fixture.cleanup_required_fixtures
+SharedFixture = fixture.SharedFixture

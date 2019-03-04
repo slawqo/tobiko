@@ -36,12 +36,33 @@ def get_fixture_name(obj):
     return get_fixture(obj).__tobiko_fixture_name__
 
 
+def remove_fixture(obj, manager=None):
+    manager = manager or FIXTURES
+    return manager.remove_fixture(obj)
+
+
 def setup_fixture(obj, manager=None):
-    get_fixture(obj, manager=manager).setUp()
+    fixture = get_fixture(obj, manager=manager)
+    fixture.setUp()
+    return fixture
+
+
+def setup_shared_fixture(obj, manager=None):
+    fixture = get_fixture(obj, manager=manager)
+    fixture.setup_shared_fixture()
+    return fixture
 
 
 def cleanup_fixture(obj, manager=None):
-    get_fixture(obj, manager=manager).cleanUp()
+    fixture = get_fixture(obj, manager=manager)
+    fixture.cleanUp()
+    return fixture
+
+
+def cleanup_shared_fixture(obj, manager=None):
+    fixture = get_fixture(obj, manager=manager)
+    fixture.cleanup_shared_fixture()
+    return fixture
 
 
 def iter_required_fixtures(objects):
@@ -80,15 +101,14 @@ def list_required_fixtures(objects):
 
 
 def setup_required_fixtures(objects, manager=None):
-    manager = manager or FIXTURES
-    for _fixture in iter_required_fixtures(objects=objects):
-        manager.get_fixture(_fixture).setUp()
+    for name in iter_required_fixtures(objects=objects):
+        yield setup_fixture(name, manager=manager)
 
 
 def cleanup_required_fixtures(objects, manager=None):
     manager = manager or FIXTURES
-    for _fixture in iter_required_fixtures(objects=objects):
-        manager.get_fixture(_fixture).cleanUp()
+    for name in iter_required_fixtures(objects=objects):
+        yield cleanup_fixture(name, manager=manager)
 
 
 def init_fixture(obj, name):
@@ -168,5 +188,52 @@ class FixtureManager(object):
             assert isinstance(fixture, fixtures.Fixture)
         return fixture
 
+    def remove_fixture(self, obj):
+        name = get_object_name(obj)
+        return self.fixtures.pop(name, None)
+
 
 FIXTURES = FixtureManager()
+
+
+class SharedFixture(fixtures.Fixture):
+    """Base class for fixtures intended to be shared between multiple tests
+
+    Make sure that fixture setUp method can be called more than once, but
+    actually executing _setUp method only the first time. This allows the
+    fixture to be passed to useFixture methods multiple times without caring
+    about if has already been used before.
+
+    Fixture set up can anyway be forced by calling 'setup_shared_fixture'
+    method.
+
+    Because cleanup policy in a shared fixture is different from a common
+    fixture, cleanUp method simply doesn't nothing.
+
+    Actual fixture cleanup is executed by calling
+    cleanup_shared_fixture method.
+
+    """
+
+    _setup_executed = False
+
+    def __init__(self):
+        self._clear_cleanups()
+
+    def setUp(self):
+        """Executes _setUp method only the first time setUp is called"""
+        if not self._setup_executed:
+            self.setup_shared_fixture()
+
+    def setup_shared_fixture(self):
+        """Forces execution of _setUp method"""
+        super(SharedFixture, self).setUp()
+        self._setup_executed = True
+
+    def cleanUp(self, raise_first=True):
+        """Id doesn't nothing"""
+
+    def cleanup_shared_fixture(self, raise_first=True):
+        """Executes registered cleanups"""
+        super(SharedFixture, self).cleanUp(raise_first)
+        self._setup_executed = False
