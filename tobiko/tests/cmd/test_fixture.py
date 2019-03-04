@@ -47,17 +47,26 @@ class FixtureUtilTest(unit.TobikoUnitTest):
         argv = [self.command_name, subcommand] + list(argv or [])
         return self.patch('sys.argv', argv)
 
-    def test_init(self, argv=None, subcommand=None,
+    def test_init(self, argv=None, subcommand=None, filters=None,
                   config_file='.stestr.conf', repo_type='file',
-                  repo_url=None):
+                  repo_url=None, test_path=None, top_dir=None,
+                  group_regex=None, blacklist_file=None,
+                  whitelist_file=None, black_regex=None):
         self.patch_argv(argv=argv, subcommand=subcommand)
         cmd = self.command_class()
         self.mock_error.assert_not_called()
         self.assertIsNotNone(cmd.args)
+        self.assertEqual(filters or [], cmd.args.filters)
         self.assertEqual(config_file, cmd.args.config)
         self.assertEqual(subcommand or 'list', cmd.args.subcommand)
         self.assertEqual(repo_type, cmd.args.repo_type)
         self.assertEqual(repo_url, cmd.args.repo_url)
+        self.assertEqual(test_path, cmd.args.test_path)
+        self.assertEqual(top_dir, cmd.args.top_dir)
+        self.assertEqual(group_regex, cmd.args.group_regex)
+        self.assertEqual(blacklist_file, cmd.args.blacklist_file)
+        self.assertEqual(whitelist_file, cmd.args.whitelist_file)
+        self.assertEqual(black_regex, cmd.args.black_regex)
 
     def test_init_with_c(self):
         self.test_init(argv=['-c', 'some-config-file'],
@@ -91,3 +100,54 @@ class FixtureUtilTest(unit.TobikoUnitTest):
 
     def test_init_with_cleanup(self):
         self.test_init(subcommand='cleanup')
+
+    def test_init_with_filters(self):
+        self.test_init(argv=['a', 'b', 'c'], filters=['a', 'b', 'c'])
+
+    def test_init_with_t(self):
+        self.test_init(argv=['-t', 'some/test/path'],
+                       test_path='some/test/path')
+
+    def test_init_with_test_path(self):
+        self.test_init(argv=['--test-path', 'some/test/path'],
+                       test_path='some/test/path')
+
+    def test_init_with_top_dir(self):
+        self.test_init(argv=['--top-dir', 'some/top/dir'],
+                       top_dir='some/top/dir')
+
+    def test_init_with_g(self):
+        self.test_init(argv=['-g', 'some-regex'],
+                       group_regex='some-regex')
+
+    def test_init_with_group_regex(self):
+        self.test_init(argv=['--group-regex', 'some-regex'],
+                       group_regex='some-regex')
+
+    def test_init_with_group_regex2(self):
+        self.test_init(argv=['--group_regex', 'some-regex'],
+                       group_regex='some-regex')
+
+    def test_init_with_b(self):
+        self.test_init(argv=['-b', 'some/blacklist-file'],
+                       blacklist_file='some/blacklist-file')
+
+    def test_init_with_blacklist_file(self):
+        self.test_init(argv=['--blacklist-file', 'some/blacklist-file'],
+                       blacklist_file='some/blacklist-file')
+
+    def test_init_with_w(self):
+        self.test_init(argv=['-w', 'some/whitelist-file'],
+                       whitelist_file='some/whitelist-file')
+
+    def test_init_with_whitelist_file(self):
+        self.test_init(argv=['--whitelist-file', 'some/whitelist-file'],
+                       whitelist_file='some/whitelist-file')
+
+    def test_init_with_B(self):
+        self.test_init(argv=['-B', 'some-black-regex'],
+                       black_regex='some-black-regex')
+
+    def test_init_with_blacklist_regex(self):
+        self.test_init(argv=['--black-regex', 'some-black-regex'],
+                       black_regex='some-black-regex')

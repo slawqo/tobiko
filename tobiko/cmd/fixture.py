@@ -41,6 +41,13 @@ class FixtureUtil(base.TobikoCMD):
                 subcommand_name, help=(subcommand_name + ' fixtures'))
             subcommand_parser.set_defaults(subcommand=subcommand_name)
             subcommand_parser.add_argument(
+                'filters',
+                nargs='*',
+                help=("A list of string regex filters to initially apply "
+                      "on the test list. Tests that match any of the "
+                      "regexes will be used. (assuming any other filtering "
+                      "specified also uses it)."))
+            subcommand_parser.add_argument(
                 '--config', '-c',
                 default='.stestr.conf',
                 help=("Set a stestr config file to use with this command. "
@@ -53,10 +60,41 @@ class FixtureUtil(base.TobikoCMD):
                 help=("Select the repo backend to use"))
             subcommand_parser.add_argument(
                 '--repo-url', '-u',
-                default=None,
                 help=("Set the repo url to use. An acceptable value for "
                       "this depends on the repository type used."))
-
+            subcommand_parser.add_argument(
+                '--test-path', '-t',
+                help=("Set the test path to use for unittest discovery. If "
+                      "both this and the corresponding config file option "
+                      "are set, this value will be used."))
+            subcommand_parser.add_argument(
+                '--top-dir',
+                help=("Set the top dir to use for unittest discovery. If "
+                      "both this and the corresponding config file option "
+                      "are set, this value will be used."))
+            subcommand_parser.add_argument(
+                '--group-regex', '--group_regex', '-g',
+                help=("Set a group regex to use for grouping tests together "
+                      "in the stestr scheduler. If both this and the "
+                      "corresponding config file option are set this value "
+                      "will be used."))
+            subcommand_parser.add_argument(
+                '--blacklist-file', '-b',
+                help=("Path to a blacklist file, this file contains a "
+                      "separate regex exclude on each newline."))
+            subcommand_parser.add_argument(
+                '--whitelist-file', '-w',
+                help=("Path to a whitelist file, this file contains a "
+                      "separate regex on each newline."))
+            subcommand_parser.add_argument(
+                '--black-regex', '-B',
+                help=("Test rejection regex. If a test cases name matches "
+                      "on re.search() operation , it will be removed from "
+                      "the final test list. Effectively the black-regexp is "
+                      "added to black regexp list, but you do need to edit "
+                      "a file. The black filtering happens after the "
+                      "initial white selection, which by default is "
+                      "everything."))
         return parser
 
     def execute(self):
@@ -69,7 +107,17 @@ class FixtureUtil(base.TobikoCMD):
             return self.cleanup_fixtures()
 
     def discovertest_cases(self):
-        return tobiko.discover_testcases(config=self.args.config)
+        return tobiko.discover_testcases(
+            config=self.args.config,
+            repo_type=self.args.repo_type,
+            repo_url=self.args.repo_url,
+            test_path=self.args.test_path,
+            top_dir=self.args.top_dir,
+            group_regex=self.args.group_regex,
+            blacklist_file=self.args.blacklist_file,
+            whitelist_file=self.args.whitelist_file,
+            black_regex=self.args.black_regex,
+            filters=self.args.filters)
 
     def list_fixtures(self, stream=sys.stdout):
         stream = stream or sys.stdout
