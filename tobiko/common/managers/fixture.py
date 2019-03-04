@@ -162,11 +162,11 @@ class FixtureManager(object):
 
     def get_fixture(self, obj, init=init_fixture):
         name = get_object_name(obj)
-        _fixture = self.fixtures.get(name)
-        if _fixture is None:
-            self.fixtures[name] = _fixture = init(name=name, obj=obj)
-            assert isinstance(_fixture, fixtures.Fixture)
-        return _fixture
+        fixture = self.fixtures.get(name)
+        if fixture is None:
+            self.fixtures[name] = fixture = init(name=name, obj=obj)
+            assert isinstance(fixture, fixtures.Fixture)
+        return fixture
 
 
 FIXTURES = FixtureManager()

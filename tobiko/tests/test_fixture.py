@@ -14,19 +14,14 @@
 from __future__ import absolute_import
 
 import fixtures
+import mock
 
 import tobiko
 from tobiko.tests import base
 
 
 class MyFixtureClass(fixtures.Fixture):
-
-    def _setUp(self):
-        self.setup_executed = True
-        self.addCleanup(self._cleanUp)
-
-    def _cleanUp(self):
-        self.cleanup_executed = True
+    pass
 
 
 MY_FIXTURE_NAME = __name__ + '.' + MyFixtureClass.__name__
@@ -58,11 +53,11 @@ class FixtureTypeTest(base.TobikoTest):
 
     def _test_setup_fixture(self, obj):
         fixture = tobiko.get_fixture(obj)
-        fixture.setup_executed = False
+        fixture.setUp = setup = mock.MagicMock()
 
         tobiko.setup_fixture(obj)
 
-        self.assertTrue(fixture.setup_executed)
+        setup.assert_called_once_with()
 
     def test_cleanup_fixture_by_name(self):
         self._test_cleanup_fixture(MY_FIXTURE_NAME)
@@ -71,12 +66,14 @@ class FixtureTypeTest(base.TobikoTest):
         self._test_cleanup_fixture(MyFixtureClass)
 
     def _test_cleanup_fixture(self, obj):
+        cleanup = mock.MagicMock()
         fixture = tobiko.get_fixture(obj)
         fixture.setUp()
+        fixture.addCleanup(cleanup)
 
         tobiko.cleanup_fixture(obj)
 
-        self.assertTrue(fixture.cleanup_executed)
+        cleanup.assert_called_once_with()
 
     def test_list_required_fixtures_from_module(self):
         result = tobiko.list_required_fixtures([__name__])
@@ -108,14 +105,18 @@ class FixtureTypeTest(base.TobikoTest):
 
     def test_setup_required_fixtures(self, fixture_type=MyFixtureClass):
         fixture = tobiko.get_fixture(fixture_type)
-        fixture.setup_executed = False
+        fixture.setUp = setup = mock.MagicMock()
+
         tobiko.setup_required_fixtures([self.id()])
-        self.assertTrue(fixture.setup_executed)
+
+        setup.assert_called_once_with()
 
     def test_cleanup_required_fixtures(self, fixture_type=MyFixtureClass):
+        cleanup = mock.MagicMock()
         fixture = tobiko.get_fixture(fixture_type)
-        fixture.cleanup_executed = False
         fixture.setUp()
+        fixture.addCleanup(cleanup)
+
         tobiko.cleanup_required_fixtures([self.id()])
-        self.assertTrue(fixture.setup_executed)
-        self.assertTrue(fixture.cleanup_executed)
+
+        cleanup.assert_called_once_with()
