@@ -31,7 +31,7 @@ def discover_testcases(manager=None, **kwargs):
 
 class TestCaseManager(object):
 
-    def __init__(self, config='.stestr.conf', repo_type='file', repo_url=None,
+    def __init__(self, config=None, repo_type=None, repo_url=None,
                  test_path=None, top_dir=None, group_regex=None,
                  blacklist_file=None, whitelist_file=None, black_regex=None,
                  filters=None):
@@ -62,8 +62,8 @@ class TestCaseManager(object):
             (assuming any other filtering specified also uses it)
         """
 
-        self.config = config
-        self.repo_type = repo_type
+        self.config = config or '.stestr.conf'
+        self.repo_type = repo_type or 'file'
         self.repo_url = repo_url
         self.test_path = test_path
         self.top_dir = top_dir
