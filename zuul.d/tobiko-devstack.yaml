@@ -30,6 +30,10 @@
         neutron-segments: true
         neutron-trunk: true
         neutron-uplink-status-propagation: true
+        heat: true
+        h-api: true
+        h-api-cfn: true
+        h-eng: true
         tempest: false
       devstack_local_conf:
         test-config:
@@ -49,6 +53,14 @@
         log: true
         yaml: true
         yml: true
+    group-vars:
+      subnode:
+        devstack_services:
+          heat: false
+          h-api: false
+          h-api-cfn: false
+          h-eng: false
+          tempest: false
     run: playbooks/tobiko-devstack.yaml
     # post-run: playbooks/post-tobiko-devstack.yaml
     irrelevant-files:
@@ -66,7 +78,8 @@
     abstract: true
     description: |
       Base Tobiko devstack job with multinode.
-
+    vars:
+      topology: multinode
 
 - job:
     name: tobiko-devstack-neutron
