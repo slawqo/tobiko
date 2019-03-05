@@ -12,6 +12,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import shutil
+import tempfile
 
 import mock
 
@@ -31,3 +33,8 @@ class TobikoUnitTest(base.TobikoTest):
         mock_object = context.start()
         self.addCleanup(context.stop)
         return mock_object
+
+    def create_temdir(self, *args, **kwargs):
+        dir_path = tempfile.mkdtemp(*args, **kwargs)
+        self.addCleanup(shutil.rmtree(dir_path, ignore_errors=True))
+        return dir_path

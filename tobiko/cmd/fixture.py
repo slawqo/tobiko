@@ -17,6 +17,7 @@ import argparse
 import sys
 
 from oslo_log import log
+import six
 
 import tobiko
 from tobiko.cmd import base
@@ -119,20 +120,33 @@ class FixtureUtil(base.TobikoCMD):
             black_regex=self.args.black_regex,
             filters=self.args.filters)
 
-    def list_fixtures(self, stream=sys.stdout):
+    def discover_testcases(self):
+        args = self.args
+        return tobiko.discover_testcases(
+            config=args.config, repo_type=args.repo_type,
+            repo_url=args.repo_url, test_path=args.test_path,
+            top_dir=args.top_dir, group_regex=args.group_regex,
+            blacklist_file=args.blacklist_file,
+            whitelist_file=args.whitelist_file,
+            black_regex=args.black_regex, filters=args.filters)
+
+    def list_fixtures(self, stream=None):
         stream = stream or sys.stdout
-        test_cases = tobiko.discover_testcases()
+        test_cases = self.discover_testcases()
         fixtures_names = tobiko.list_required_fixtures(test_cases)
-        stream.write('\n'.join(fixtures_names) + '\n')
+        output = '\n'.join(fixtures_names) + '\n'
+        if six.PY2:
+            output = output.decode()
+        stream.write(output)
 
     def setup_fixtures(self):
-        test_cases = tobiko.discover_testcases()
+        test_cases = self.discover_testcases()
         for fixture in tobiko.setup_required_fixtures(test_cases):
             fixture_name = tobiko.get_fixture_name(fixture)
             LOG.debug("Fixture setUp called, %s", fixture_name)
 
     def cleanup_fixtures(self):
-        test_cases = tobiko.discover_testcases()
+        test_cases = self.discover_testcases()
         for fixture in tobiko.cleanup_required_fixtures(test_cases):
             fixture_name = tobiko.get_fixture_name(fixture)
             LOG.debug("Fixture cleanUp called, %s", fixture_name)
