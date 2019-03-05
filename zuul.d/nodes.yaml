@@ -15,13 +15,13 @@
       # Nodes running the compute service
       - name: compute
         nodes:
-          # - controller
           - compute1
           - compute2
       # Nodes that are not the controller
       - name: subnode
         nodes:
           - compute1
+          - compute2
       # Switch node for multinode networking setup
       - name: switch
         nodes:
@@ -30,3 +30,4 @@
       - name: peers
         nodes:
           - compute1
+          - compute2
