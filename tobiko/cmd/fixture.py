@@ -34,20 +34,17 @@ class FixtureUtil(base.TobikoCMD):
 
     def get_parser(self):
         parser = argparse.ArgumentParser(add_help=True)
-
         subparsers_params = {}
         subparsers = parser.add_subparsers(**subparsers_params)
+
+        parser.set_defaults(subcommand='help')
+        subcommand_parser = subparsers.add_parser(
+            'help', help=('show this help message'))
+
         for subcommand_name in ['cleanup', 'list', 'setup']:
             subcommand_parser = subparsers.add_parser(
                 subcommand_name, help=(subcommand_name + ' fixtures'))
             subcommand_parser.set_defaults(subcommand=subcommand_name)
-            subcommand_parser.add_argument(
-                'filters',
-                nargs='*',
-                help=("A list of string regex filters to initially apply "
-                      "on the test list. Tests that match any of the "
-                      "regexes will be used. (assuming any other filtering "
-                      "specified also uses it)."))
             subcommand_parser.add_argument(
                 '--config', '-c',
                 default='.stestr.conf',
@@ -96,16 +93,29 @@ class FixtureUtil(base.TobikoCMD):
                       "a file. The black filtering happens after the "
                       "initial white selection, which by default is "
                       "everything."))
+            subcommand_parser.add_argument(
+                'filters',
+                nargs='*',
+                help=("A list of string regex filters to initially apply "
+                      "on the test list. Tests that match any of the "
+                      "regexes will be used. (assuming any other filtering "
+                      "specified also uses it)."))
         return parser
 
     def execute(self):
         action = self.args.subcommand or 'list'
+        if action == 'help':
+            return self.show_help()
         if action == 'list':
             return self.list_fixtures()
         elif action == 'setup':
             return self.setup_fixtures()
         elif action == 'cleanup':
             return self.cleanup_fixtures()
+
+    def show_help(self, stream=None):
+        stream = stream or sys.stdout
+        self.parser.print_help(stream)
 
     def discovertest_cases(self):
         return tobiko.discover_testcases(
@@ -134,30 +144,45 @@ class FixtureUtil(base.TobikoCMD):
         stream = stream or sys.stdout
         test_cases = self.discover_testcases()
         fixtures_names = tobiko.list_required_fixtures(test_cases)
-        output = '\n'.join(fixtures_names) + '\n'
-        if six.PY2:
-            output = output.decode()
-        stream.write(output)
+        if fixtures_names:
+            output = '\n'.join(fixtures_names) + '\n'
+            if six.PY2:
+                output = output.decode()
+            stream.write(output)
 
     def setup_fixtures(self, stream=None):
         stream = stream or sys.stdout
         test_cases = self.discover_testcases()
+        success = True
         for fixture_name in tobiko.list_required_fixtures(test_cases):
             output = fixture_name + '\n'
             if six.PY2:
                 output = output.decode()
             stream.write(output)
-            tobiko.setup_fixture(fixture_name)
+            try:
+                tobiko.setup_fixture(fixture_name)
+            except Exception:
+                LOG.exception('Fixture %r setup failed', fixture_name)
+                success = False
+        if not success:
+            sys.exit(1)
 
     def cleanup_fixtures(self, stream=None):
         stream = stream or sys.stdout
         test_cases = self.discover_testcases()
+        success = True
         for fixture_name in tobiko.list_required_fixtures(test_cases):
             output = fixture_name + '\n'
             if six.PY2:
                 output = output.decode()
             stream.write(output)
-            tobiko.cleanup_fixture(fixture_name)
+            try:
+                tobiko.cleanup_fixture(fixture_name)
+            except Exception:
+                LOG.exception('Fixture %r cleanup failed', fixture_name)
+                success = False
+        if not success:
+            sys.exit(1)
 
 
 def main():
