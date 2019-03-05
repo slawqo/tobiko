@@ -31,7 +31,4 @@ setup_shared_fixture = fixture.setup_shared_fixture
 cleanup_fixture = fixture.cleanup_fixture
 cleanup_shared_fixture = fixture.cleanup_shared_fixture
 list_required_fixtures = fixture.list_required_fixtures
-iter_required_fixtures = fixture.iter_required_fixtures
-setup_required_fixtures = fixture.setup_required_fixtures
-cleanup_required_fixtures = fixture.cleanup_required_fixtures
 SharedFixture = fixture.SharedFixture

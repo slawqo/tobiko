@@ -121,24 +121,6 @@ class FixtureManagerTest(unit.TobikoUnitTest):
         result = tobiko.list_required_fixtures([fixture])
         self.assertEqual([MY_FIXTURE_NAME], result)
 
-    def test_setup_required_fixtures(self, fixture_type=MyFixture):
-        setup = self.patch('fixtures.Fixture.setUp')
-
-        result = list(tobiko.setup_required_fixtures([self.id()]))
-
-        setup.assert_called_once_with()
-        self.assertEqual([tobiko.get_fixture(fixture_type)], result)
-
-    def test_cleanup_required_fixtures(self, fixture_type=MyFixture):
-        cleanup = mock.MagicMock()
-        fixture = tobiko.setup_fixture(fixture_type)
-        fixture.addCleanup(cleanup)
-
-        result = list(tobiko.cleanup_required_fixtures([self.id()]))
-
-        cleanup.assert_called_once_with()
-        self.assertEqual([tobiko.get_fixture(fixture_type)], result)
-
 
 class MySharedFixture(tobiko.SharedFixture):
     pass

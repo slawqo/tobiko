@@ -100,17 +100,6 @@ def list_required_fixtures(objects):
     return sorted(set(iter_required_fixtures(objects)))
 
 
-def setup_required_fixtures(objects, manager=None):
-    for name in list_required_fixtures(objects=objects):
-        yield setup_fixture(name, manager=manager)
-
-
-def cleanup_required_fixtures(objects, manager=None):
-    manager = manager or FIXTURES
-    for name in list_required_fixtures(objects=objects):
-        yield cleanup_fixture(name, manager=manager)
-
-
 def init_fixture(obj, name):
     if isinstance(obj, six.string_types):
         obj = tobiko.load_object(name)

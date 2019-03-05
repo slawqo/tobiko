@@ -139,17 +139,25 @@ class FixtureUtil(base.TobikoCMD):
             output = output.decode()
         stream.write(output)
 
-    def setup_fixtures(self):
+    def setup_fixtures(self, stream=None):
+        stream = stream or sys.stdout
         test_cases = self.discover_testcases()
-        for fixture in tobiko.setup_required_fixtures(test_cases):
-            fixture_name = tobiko.get_fixture_name(fixture)
-            LOG.debug("Fixture setUp called, %s", fixture_name)
+        for fixture_name in tobiko.list_required_fixtures(test_cases):
+            output = fixture_name + '\n'
+            if six.PY2:
+                output = output.decode()
+            stream.write(output)
+            tobiko.setup_fixture(fixture_name)
 
-    def cleanup_fixtures(self):
+    def cleanup_fixtures(self, stream=None):
+        stream = stream or sys.stdout
         test_cases = self.discover_testcases()
-        for fixture in tobiko.cleanup_required_fixtures(test_cases):
-            fixture_name = tobiko.get_fixture_name(fixture)
-            LOG.debug("Fixture cleanUp called, %s", fixture_name)
+        for fixture_name in tobiko.list_required_fixtures(test_cases):
+            output = fixture_name + '\n'
+            if six.PY2:
+                output = output.decode()
+            stream.write(output)
+            tobiko.cleanup_fixture(fixture_name)
 
 
 def main():

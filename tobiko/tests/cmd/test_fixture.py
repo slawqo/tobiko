@@ -189,8 +189,7 @@ class FixtureUtilTest(unit.TobikoUnitTest):
     def test_main(self, subcommand=None, config_file=None, repo_type=None,
                   repo_url=None, test_path=None, top_dir=None,
                   group_regex=None, blacklist_file=None, whitelist_file=None,
-                  black_regex=None, filters=None, fixture1=MyFixture1,
-                  fixture2=MyFixture2):
+                  black_regex=None, filters=None):
         test_path = test_path or self.test_path
         top_dir = top_dir or self.top_dir
         self.setup_file_repo(top_dir=top_dir)
@@ -202,12 +201,43 @@ class FixtureUtilTest(unit.TobikoUnitTest):
                         whitelist_file=whitelist_file,
                         black_regex=black_regex, filters=filters)
         stdout = self.patch('sys.stdout', io.StringIO())
-
         fixture.main()
+        self.mock_error.assert_not_called()
+        return stdout
+
+    def test_list(self, fixture1=MyFixture1, fixture2=MyFixture2):
+        stdout = self.test_main(subcommand='list')
+        written_lines = stdout.getvalue().splitlines()
+        self.assertIn(tobiko.get_fixture_name(fixture1), written_lines)
+        self.assertIn(tobiko.get_fixture_name(fixture2), written_lines)
+
+    def test_setup(self, fixture1=MyFixture1, fixture2=MyFixture2):
+        setup1 = self.patch(tobiko.get_fixture_name(fixture1) + '.setUp')
+        setup2 = self.patch(tobiko.get_fixture_name(fixture2) + '.setUp')
+        setup1.assert_not_called()
+        setup2.assert_not_called()
+
+        stdout = self.test_main(subcommand='setup')
+        written_lines = stdout.getvalue().splitlines()
+
+        self.assertIn(tobiko.get_fixture_name(fixture1), written_lines)
+        self.assertIn(tobiko.get_fixture_name(fixture2), written_lines)
+        setup1.assert_called_with()
+        setup2.assert_called_with()
+
+    def test_cleanup(self, fixture1=MyFixture1, fixture2=MyFixture2):
+        cleanup1 = self.patch(tobiko.get_fixture_name(fixture1) + '.cleanUp')
+        cleanup2 = self.patch(tobiko.get_fixture_name(fixture2) + '.cleanUp')
+        cleanup1.assert_not_called()
+        cleanup2.assert_not_called()
+
+        stdout = self.test_main(subcommand='cleanup')
 
         written_lines = stdout.getvalue().splitlines()
         self.assertIn(tobiko.get_fixture_name(fixture1), written_lines)
         self.assertIn(tobiko.get_fixture_name(fixture2), written_lines)
+        cleanup1.assert_called_with()
+        cleanup2.assert_called_with()
 
     def setup_file_repo(self, top_dir):
         if not os.path.isdir(os.path.join(top_dir, '.stestr')):
