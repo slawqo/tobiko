@@ -47,21 +47,9 @@ def setup_fixture(obj, manager=None):
     return fixture
 
 
-def setup_shared_fixture(obj, manager=None):
-    fixture = get_fixture(obj, manager=manager)
-    fixture.setup_shared_fixture()
-    return fixture
-
-
 def cleanup_fixture(obj, manager=None):
     fixture = get_fixture(obj, manager=manager)
     fixture.cleanUp()
-    return fixture
-
-
-def cleanup_shared_fixture(obj, manager=None):
-    fixture = get_fixture(obj, manager=manager)
-    fixture.cleanup_shared_fixture()
     return fixture
 
 
@@ -122,6 +110,9 @@ def get_object_name(obj):
     name = getattr(obj, '__tobiko_fixture_name__', None)
     if name:
         return name
+
+    if not inspect.isclass(obj):
+        obj = type(obj)
 
     module = inspect.getmodule(obj).__name__
 
@@ -205,24 +196,46 @@ class SharedFixture(fixtures.Fixture):
     """
 
     _setup_executed = False
+    _cleanup_executed = False
 
     def __init__(self):
+        # make sure class states can be used before setUp
         self._clear_cleanups()
 
-    def setUp(self):
-        """Executes _setUp method only the first time setUp is called"""
-        if not self._setup_executed:
-            self.setup_shared_fixture()
+    def _remove_state(self):
+        # make sure class states can be used after cleanUp
+        super(SharedFixture, self)._clear_cleanups()
 
-    def setup_shared_fixture(self):
-        """Forces execution of _setUp method"""
-        super(SharedFixture, self).setUp()
-        self._setup_executed = True
+    def setUp(self):
+        """Executes _setUp/setup_fixture method only the first time is called
+
+        """
+        if not self._setup_executed:
+            try:
+                super(SharedFixture, self).setUp()
+            finally:
+                self._cleanup_executed = False
+                self._setup_executed = True
 
     def cleanUp(self, raise_first=True):
-        """Id doesn't nothing"""
+        """Executes registered cleanups if any"""
+        try:
+            if not self._cleanup_executed:
+                self.addCleanup(self.cleanup_fixture)
+            super(SharedFixture, self).cleanUp(raise_first=raise_first)
+        finally:
+            self._setup_executed = False
+            self._cleanup_executed = True
 
-    def cleanup_shared_fixture(self, raise_first=True):
-        """Executes registered cleanups"""
-        super(SharedFixture, self).cleanUp(raise_first)
-        self._setup_executed = False
+    def _setUp(self):
+        self.setup_fixture()
+
+    @property
+    def fixture_name(self):
+        return get_fixture_name(self)
+
+    def setup_fixture(self):
+        pass
+
+    def cleanup_fixture(self):
+        pass
