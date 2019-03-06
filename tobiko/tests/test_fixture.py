@@ -13,14 +13,14 @@
 #    under the License.
 from __future__ import absolute_import
 
-import fixtures
+# import fixtures
 import mock
 
 import tobiko
 from tobiko.tests import unit
 
 
-class MyFixture(fixtures.Fixture):
+class MyFixture(tobiko.SharedFixture):
     pass
 
 
@@ -134,15 +134,17 @@ class SharedFixtureTest(unit.TobikoUnitTest):
     def setUp(self):
         super(SharedFixtureTest, self).setUp()
         tobiko.remove_fixture(MySharedFixture)
-        self.mock_setup = self.patch('fixtures.Fixture.setUp')
-        self.mock_cleanup = self.patch('fixtures.Fixture.cleanUp')
+        self.mock_setup = self.patch_object(
+            tobiko.SharedFixture, 'setup_fixture')
+        self.mock_cleanup = self.patch_object(
+            tobiko.SharedFixture, 'cleanup_fixture')
 
     def test_initial_state(self):
         self.mock_setup.assert_not_called()
         self.mock_cleanup.assert_not_called()
 
     def test_use_fixture(self):
-        self.addCleanup(self.mock_cleanup.assert_not_called)
+        self.addCleanup(self.mock_cleanup.assert_called_once_with)
         fixture = tobiko.get_fixture(MySharedFixture)
 
         self.useFixture(fixture)
@@ -151,6 +153,12 @@ class SharedFixtureTest(unit.TobikoUnitTest):
         self.useFixture(fixture)
         self.mock_setup.assert_called_once_with()
 
+    def test_add_cleanup(self):
+        self.addCleanup(self.mock_cleanup.assert_called_once_with)
+        fixture = tobiko.get_fixture(MySharedFixture)
+        self.addCleanup(fixture.cleanUp)
+        self.addCleanup(fixture.cleanUp)
+
     def test_setup_fixture(self):
         tobiko.setup_fixture(MySharedFixture)
         tobiko.setup_fixture(MySharedFixture)
@@ -158,23 +166,14 @@ class SharedFixtureTest(unit.TobikoUnitTest):
 
     def test_cleanup_fixture(self):
         tobiko.cleanup_fixture(MySharedFixture)
-        self.mock_cleanup.assert_not_called()
-
-    def test_setup_shared_fixture(self):
-        tobiko.setup_shared_fixture(MySharedFixture)
-        tobiko.setup_shared_fixture(MySharedFixture)
-        self.mock_setup.assert_has_calls([mock.call(), mock.call()])
-
-    def test_cleanup_shared_fixture(self):
-        tobiko.cleanup_shared_fixture(MySharedFixture)
-        self.mock_cleanup.assert_called_once()
+        self.mock_cleanup.assert_called_once_with()
 
     def test_cleanup_shared_fixture_workflow(self):
         tobiko.setup_fixture(MySharedFixture)
         tobiko.setup_fixture(MySharedFixture)
         self.mock_setup.assert_called_once_with()
 
-        tobiko.cleanup_shared_fixture(MySharedFixture)
+        tobiko.cleanup_fixture(MySharedFixture)
         self.mock_cleanup.assert_called_once()
 
         tobiko.setup_fixture(MySharedFixture)

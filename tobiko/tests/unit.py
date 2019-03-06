@@ -28,8 +28,13 @@ class TobikoUnitTest(base.TobikoTest):
         self.patch('oslo_log.log.setup')
 
     def patch(self, target, *args, **kwargs):
-        # pylint: disable=arguments-differ
         context = mock.patch(target, *args, **kwargs)
+        mock_object = context.start()
+        self.addCleanup(context.stop)
+        return mock_object
+
+    def patch_object(self, target, attribute, *args, **kwargs):
+        context = mock.patch.object(target, attribute, *args, **kwargs)
         mock_object = context.start()
         self.addCleanup(context.stop)
         return mock_object
