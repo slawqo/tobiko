@@ -18,8 +18,6 @@ import io
 import os
 import subprocess
 
-import fixtures
-
 import tobiko
 from tobiko.cmd import fixture
 from tobiko.tests import unit
@@ -29,11 +27,11 @@ class ExitCalled(Exception):
     pass
 
 
-class MyFixture1(fixtures.Fixture):
+class MyFixture1(tobiko.SharedFixture):
     pass
 
 
-class MyFixture2(fixtures.Fixture):
+class MyFixture2(tobiko.SharedFixture):
     pass
 
 

@@ -13,7 +13,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-# import fixtures
 import mock
 
 import tobiko
@@ -21,7 +20,13 @@ from tobiko.tests import unit
 
 
 class MyFixture(tobiko.SharedFixture):
-    pass
+
+    def __init__(self):
+        super(MyFixture, self).__init__()
+        self.setup_fixture = mock.MagicMock(
+            specs=tobiko.SharedFixture.setup_fixture)
+        self.cleanup_fixture = mock.MagicMock(
+            specs=tobiko.SharedFixture.cleanup_fixture)
 
 
 MY_FIXTURE_NAME = __name__ + '.' + MyFixture.__name__
@@ -43,6 +48,7 @@ class FixtureManagerTest(unit.TobikoUnitTest):
         fixture = tobiko.get_fixture(obj)
         self.assertIsInstance(fixture, fixture_type)
         self.assertIs(fixture, tobiko.get_fixture(obj))
+        self.assertIs(fixture, tobiko.get_fixture(MY_FIXTURE_NAME))
 
     def test_remove_fixture_by_name(self):
         self._test_remove_fixture(MY_FIXTURE_NAME)
@@ -70,12 +76,9 @@ class FixtureManagerTest(unit.TobikoUnitTest):
         self._test_setup_fixture(MyFixture)
 
     def _test_setup_fixture(self, obj):
-        setup = self.patch('fixtures.Fixture.setUp')
-
         result = tobiko.setup_fixture(obj)
-
-        setup.assert_called_once_with()
-        self.assertIs(tobiko.get_fixture(obj), result)
+        self.assertIs(tobiko.get_fixture(MY_FIXTURE_NAME), result)
+        result.setup_fixture.assert_called_once_with()
 
     def test_cleanup_fixture_by_name(self):
         self._test_cleanup_fixture(MY_FIXTURE_NAME)
@@ -84,18 +87,13 @@ class FixtureManagerTest(unit.TobikoUnitTest):
         self._test_cleanup_fixture(MyFixture)
 
     def _test_cleanup_fixture(self, obj):
-        cleanup = mock.MagicMock()
-        fixture = tobiko.setup_fixture(obj)
-        fixture.addCleanup(cleanup)
-
         result = tobiko.cleanup_fixture(obj)
-
-        cleanup.assert_called_once_with()
-        self.assertIs(tobiko.get_fixture(obj), result)
+        self.assertIs(tobiko.get_fixture(MY_FIXTURE_NAME), result)
+        result.cleanup_fixture.assert_called_once_with()
 
     def test_list_required_fixtures_from_module(self):
         result = tobiko.list_required_fixtures([__name__])
-        self.assertEqual([MY_FIXTURE_NAME, MY_SHARED_FIXTURE_NAME], result)
+        self.assertEqual([MY_FIXTURE_NAME], result)
 
     def test_list_required_fixtures_from_testcase_type(self):
         result = tobiko.list_required_fixtures([FixtureManagerTest])
@@ -122,59 +120,64 @@ class FixtureManagerTest(unit.TobikoUnitTest):
         self.assertEqual([MY_FIXTURE_NAME], result)
 
 
-class MySharedFixture(tobiko.SharedFixture):
-    pass
-
-
-MY_SHARED_FIXTURE_NAME = __name__ + '.' + MySharedFixture.__name__
-
-
 class SharedFixtureTest(unit.TobikoUnitTest):
 
-    def setUp(self):
-        super(SharedFixtureTest, self).setUp()
-        tobiko.remove_fixture(MySharedFixture)
-        self.mock_setup = self.patch_object(
-            tobiko.SharedFixture, 'setup_fixture')
-        self.mock_cleanup = self.patch_object(
-            tobiko.SharedFixture, 'cleanup_fixture')
-
-    def test_initial_state(self):
-        self.mock_setup.assert_not_called()
-        self.mock_cleanup.assert_not_called()
+    def test_init(self):
+        fixture = MyFixture()
+        fixture.setup_fixture.assert_not_called()
+        fixture.cleanup_fixture.assert_not_called()
 
     def test_use_fixture(self):
-        self.addCleanup(self.mock_cleanup.assert_called_once_with)
-        fixture = tobiko.get_fixture(MySharedFixture)
+        fixture = MyFixture()
+        self.addCleanup(fixture.cleanup_fixture.assert_called_once_with)
 
         self.useFixture(fixture)
-        self.mock_setup.assert_called_once_with()
+        fixture.setup_fixture.assert_called_once_with()
+        fixture.cleanup_fixture.assert_not_called()
 
         self.useFixture(fixture)
-        self.mock_setup.assert_called_once_with()
+        fixture.setup_fixture.assert_called_once_with()
+        fixture.cleanup_fixture.assert_not_called()
 
     def test_add_cleanup(self):
-        self.addCleanup(self.mock_cleanup.assert_called_once_with)
-        fixture = tobiko.get_fixture(MySharedFixture)
+        fixture = MyFixture()
+        self.addCleanup(fixture.cleanup_fixture.assert_called_once_with)
         self.addCleanup(fixture.cleanUp)
         self.addCleanup(fixture.cleanUp)
 
-    def test_setup_fixture(self):
-        tobiko.setup_fixture(MySharedFixture)
-        tobiko.setup_fixture(MySharedFixture)
-        self.mock_setup.assert_called_once_with()
+    def test_setup(self):
+        fixture = MyFixture()
+        fixture.setUp()
+        fixture.setup_fixture.assert_called_once_with()
 
-    def test_cleanup_fixture(self):
-        tobiko.cleanup_fixture(MySharedFixture)
-        self.mock_cleanup.assert_called_once_with()
+    def test_setup_twice(self):
+        fixture = MyFixture()
+        fixture.setUp()
+        fixture.setUp()
+        fixture.setup_fixture.assert_called_once_with()
 
-    def test_cleanup_shared_fixture_workflow(self):
-        tobiko.setup_fixture(MySharedFixture)
-        tobiko.setup_fixture(MySharedFixture)
-        self.mock_setup.assert_called_once_with()
+    def test_cleanup(self):
+        fixture = MyFixture()
+        fixture.cleanUp()
+        fixture.cleanup_fixture.assert_called_once_with()
 
-        tobiko.cleanup_fixture(MySharedFixture)
-        self.mock_cleanup.assert_called_once()
+    def test_cleanup_twice(self):
+        fixture = MyFixture()
+        fixture.cleanUp()
+        fixture.cleanup_fixture.assert_called_once_with()
 
-        tobiko.setup_fixture(MySharedFixture)
-        self.mock_setup.assert_has_calls([mock.call(), mock.call()])
+    def test_lifecycle(self):
+        fixture = MyFixture()
+
+        for call_count in range(3):
+            fixture.setUp()
+            fixture.setup_fixture.assert_has_calls([mock.call()] * call_count)
+            fixture.setUp()
+            fixture.setup_fixture.assert_has_calls([mock.call()] * call_count)
+
+            fixture.cleanUp()
+            fixture.cleanup_fixture.assert_has_calls(
+                [mock.call()] * call_count)
+            fixture.cleanUp()
+            fixture.cleanup_fixture.assert_has_calls(
+                [mock.call()] * call_count)
