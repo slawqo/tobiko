@@ -24,17 +24,18 @@
         neutron: git://git.openstack.org/openstack/neutron.git
         tobiko: git://git.openstack.org/openstack/tobiko.git
       devstack_services:
-        tls-proxy: true
+        heat: true
+        h-api: true
+        h-api-cfn: true
+        h-eng: true
+        n-cpu: false
         neutron-dns: true
         neutron-qos: true
         neutron-segments: true
         neutron-trunk: true
         neutron-uplink-status-propagation: true
-        heat: true
-        h-api: true
-        h-api-cfn: true
-        h-eng: true
         tempest: false
+        tls-proxy: true
       devstack_local_conf:
         test-config:
           $TEMPEST_CONFIG:
@@ -60,6 +61,7 @@
           h-api: false
           h-api-cfn: false
           h-eng: false
+          n-cpu: true
           tempest: false
     run: playbooks/tobiko-devstack.yaml
     # post-run: playbooks/post-tobiko-devstack.yaml
