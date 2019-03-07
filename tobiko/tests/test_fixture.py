@@ -122,10 +122,18 @@ class FixtureManagerTest(unit.TobikoUnitTest):
 
 class SharedFixtureTest(unit.TobikoUnitTest):
 
+    def setUp(self):
+        super(SharedFixtureTest, self).setUp()
+        tobiko.remove_fixture(MyFixture)
+
     def test_init(self):
         fixture = MyFixture()
         fixture.setup_fixture.assert_not_called()
         fixture.cleanup_fixture.assert_not_called()
+
+    def test_get(self):
+        fixture = MyFixture.get()
+        self.assertIs(tobiko.get_fixture(MyFixture), fixture)
 
     def test_use_fixture(self):
         fixture = MyFixture()

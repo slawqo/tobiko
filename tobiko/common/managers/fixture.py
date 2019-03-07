@@ -16,9 +16,12 @@ from __future__ import absolute_import
 import inspect
 
 import fixtures
+from oslo_log import log
 import six
 
 import tobiko
+
+LOG = log.getLogger(__name__)
 
 
 def is_fixture(obj):
@@ -43,12 +46,14 @@ def remove_fixture(obj, manager=None):
 
 def setup_fixture(obj, manager=None):
     fixture = get_fixture(obj, manager=manager)
+    LOG.info('Set up fixture %r', fixture.__tobiko_fixture_name__)
     fixture.setUp()
     return fixture
 
 
 def cleanup_fixture(obj, manager=None):
     fixture = get_fixture(obj, manager=manager)
+    LOG.info('Clean up fixture %r', fixture.__tobiko_fixture_name__)
     fixture.cleanUp()
     return fixture
 
@@ -201,6 +206,10 @@ class SharedFixture(fixtures.Fixture):
     def __init__(self):
         # make sure class states can be used before setUp
         self._clear_cleanups()
+
+    @classmethod
+    def get(cls, manager=None):
+        return get_fixture(cls, manager=manager)
 
     def _remove_state(self):
         # make sure class states can be used after cleanUp
