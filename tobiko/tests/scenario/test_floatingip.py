@@ -14,23 +14,12 @@
 #    under the License.
 from __future__ import absolute_import
 
-import testscenarios
-from testscenarios.scenarios import multiply_scenarios
-
 from tobiko.tests.scenario import base
 from tobiko.common.asserts import assert_ping
-from tobiko.common.managers import fault
-
-load_tests = testscenarios.load_tests_apply_scenarios
 
 
 class FloatingIPTest(base.ScenarioTestsBase):
     """Tests server connectivity"""
-
-    fault_manager = fault.FaultManager(__file__)
-    test_faults = fault_manager.scenarios
-    if test_faults:
-        scenarios = multiply_scenarios(test_faults)
 
     @classmethod
     def setUpClass(cls):
@@ -40,9 +29,7 @@ class FloatingIPTest(base.ScenarioTestsBase):
 
     def test_ping_floating_ip(self):
         """Validates connectivity to a server post upgrade."""
-        self.fault_manager.run_fault(self.fault)
         assert_ping(self.fip)
 
     def test_ping_unreachable_floating_ip(self):
-        self.fault_manager.run_fault(self.fault)
         assert_ping(self.unreachable_fip, should_fail=True)
