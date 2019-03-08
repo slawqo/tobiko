@@ -231,7 +231,7 @@ class SharedFixture(fixtures.Fixture):
         try:
             if not self._cleanup_executed:
                 self.addCleanup(self.cleanup_fixture)
-            super(SharedFixture, self).cleanUp(raise_first=raise_first)
+            return super(SharedFixture, self).cleanUp(raise_first=raise_first)
         finally:
             self._setup_executed = False
             self._cleanup_executed = True
