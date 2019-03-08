@@ -22,7 +22,7 @@ from oslo_log import log
 
 LOG = log.getLogger(__name__)
 
-CONFIG_MODULES = ['tobiko.tests.config']
+CONFIG_MODULES = ['tobiko.openstack.config']
 
 CONFIG_DIRS = [os.getcwd(),
                os.path.expanduser("~/.tobiko"),

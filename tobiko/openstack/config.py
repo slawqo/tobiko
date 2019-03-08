@@ -20,17 +20,22 @@ def register_tobiko_options(conf):
 
     conf.register_opts(
         group=cfg.OptGroup('identity'),
-        opts=[cfg.StrOpt('auth_url',
-                         help="Default identity service URL"),
+        opts=[cfg.StrOpt('http_proxy',
+                         help="HTTP proxy URL for Rest APIs"),
+              cfg.IntOpt('api_version',
+                         help="Identity API version"),
+              cfg.StrOpt('auth_url',
+                         help="Identity service URL"),
               cfg.StrOpt('username',
-                         help="Default username"),
+                         help="Username"),
               cfg.StrOpt('password',
-                         help="Default password"),
-              cfg.StrOpt('domain_name',
-                         help="Default domain name"),
+                         help="Password"),
               cfg.StrOpt('project_name',
-                         help="Default project name"),
-              ])
+                         help="Project name"),
+              cfg.StrOpt('user_domain_name',
+                         help="User domain name"),
+              cfg.StrOpt('project_domain_name',
+                         help="Project domain name")])
 
     conf.register_opts(
         group=cfg.OptGroup('compute'),
