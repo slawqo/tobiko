@@ -38,6 +38,13 @@
         tempest: false
         tls-proxy: true
       devstack_local_conf:
+        post-config:
+          $NEUTRON_CONF:
+            QUOTAS:
+              quota_router: 100
+              quota_floatingip: 500
+              quota_security_group: 100
+              quota_security_group_rule: 1000
         test-config:
           $TEMPEST_CONFIG:
             compute:
@@ -83,7 +90,7 @@
 - job:
     name: tobiko-devstack-multinode
     parent: tobiko-devstack
-    nodeset: tobiko-multinode
+    nodeset: openstack-three-node-bionic
     abstract: true
     description: |
       Base Tobiko devstack job with multinode.
