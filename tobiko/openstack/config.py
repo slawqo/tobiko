@@ -20,9 +20,7 @@ def register_tobiko_options(conf):
 
     conf.register_opts(
         group=cfg.OptGroup('identity'),
-        opts=[cfg.StrOpt('http_proxy',
-                         help="HTTP proxy URL for Rest APIs"),
-              cfg.IntOpt('api_version',
+        opts=[cfg.IntOpt('api_version',
                          help="Identity API version"),
               cfg.StrOpt('auth_url',
                          help="Identity service URL"),

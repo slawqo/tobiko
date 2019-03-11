@@ -20,6 +20,8 @@ import os
 from oslo_config import cfg
 from oslo_log import log
 
+import tobiko
+
 LOG = log.getLogger(__name__)
 
 CONFIG_MODULES = ['tobiko.openstack.config']
@@ -85,12 +87,22 @@ def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
 
 
 def register_tobiko_options(conf):
+
+    conf.register_opts(
+        group=cfg.OptGroup('http'),
+        opts=[cfg.StrOpt('http_proxy',
+                         help="HTTP proxy URL for Rest APIs"),
+              cfg.StrOpt('https_proxy',
+                         help="HTTPS proxy URL for Rest APIs"),
+              cfg.StrOpt('no_proxy',
+                         help="Don't use proxy server to connect to listed "
+                         "hosts")])
+
     conf.register_opts(
         group=cfg.OptGroup('tempest'),
         opts=[cfg.BoolOpt('enabled',
                           default=True,
-                          help="Enables tempest integration if available"),
-              ])
+                          help="Enables tempest integration if available")])
 
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
@@ -110,10 +122,59 @@ def setup_tobiko_config():
         # Silence Python warnings
         warnings_logger.logger.setLevel(log.ERROR)
 
+    tobiko.setup_fixture(HttpProxyFixture)
+
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
         if hasattr(module, 'setup_tobiko_config'):
             module.setup_tobiko_config()
+
+
+class HttpProxyFixture(tobiko.SharedFixture):
+    """Make sure we have http proxy environment variables defined when required
+    """
+
+    http_proxy = None
+    https_proxy = None
+    no_proxy = None
+    source = None
+
+    def setup_fixture(self):
+        source = None
+        http_proxy = os.environ.get('http_proxy')
+        https_proxy = os.environ.get('https_proxy')
+        no_proxy = os.environ.get('no_proxy')
+        if http_proxy or https_proxy:
+            source = 'environment'
+        else:
+            http_conf = CONF.tobiko.http
+            http_proxy = http_conf.http_proxy
+            https_proxy = http_conf.https_proxy
+            no_proxy = http_conf.no_proxy
+            if http_proxy:
+                os.environ['http_proxy'] = http_proxy
+            if https_proxy:
+                os.environ['https_proxy'] = https_proxy
+            if http_proxy or https_proxy:
+                source = 'tobiko.conf'
+                if no_proxy:
+                    os.environ['no_proxy'] = no_proxy
+
+        if source:
+            LOG.info("Using HTTP proxy configuration defined in %s:\n"
+                     "  http_proxy: %r\n"
+                     "  https_proxy: %r\n"
+                     "  no_proxy: %r",
+                     source, os.environ.get('http_proxy'),
+                     os.environ.get('https_proxy'), os.environ.get('no_proxy'))
+        else:
+            LOG.debug("Connecting to REST API services without a proxy "
+                      "server")
+
+        self.source = source
+        self.http_proxy = os.environ.get('http_proxy')
+        self.https_proxy = os.environ.get('https_proxy')
+        self.no_proxy = os.environ.get('no_proxy')
 
 
 def init_tempest_config():
