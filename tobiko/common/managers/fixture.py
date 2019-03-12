@@ -46,14 +46,14 @@ def remove_fixture(obj, manager=None):
 
 def setup_fixture(obj, manager=None):
     fixture = get_fixture(obj, manager=manager)
-    LOG.info('Set up fixture %r', fixture.__tobiko_fixture_name__)
+    LOG.debug('Set up fixture %r', fixture.__tobiko_fixture_name__)
     fixture.setUp()
     return fixture
 
 
 def cleanup_fixture(obj, manager=None):
     fixture = get_fixture(obj, manager=manager)
-    LOG.info('Clean up fixture %r', fixture.__tobiko_fixture_name__)
+    LOG.debug('Clean up fixture %r', fixture.__tobiko_fixture_name__)
     fixture.cleanUp()
     return fixture
 
