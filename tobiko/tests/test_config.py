@@ -28,8 +28,8 @@ class HttpProxyFixtureTest(unit.TobikoUnitTest):
     def setUp(self):
         super(HttpProxyFixtureTest, self).setUp()
         self.patch('os.environ', {})
-        tempest_conf = self.patch('tobiko.config.CONF.tempest')
-        tempest_conf.service_clients.proxy_url = None
+        self.patch('tobiko.config.CONF.tobiko.http',
+                   http_proxy=None, https_proxy=None, no_proxy=None)
 
     def test_init(self):
         fixture = config.HttpProxyFixture()
