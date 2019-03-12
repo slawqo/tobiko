@@ -207,11 +207,11 @@ def init_environ_config():
 class EnvironConfig(object):
 
     def __getattr__(self, name):
-        try:
-            return os.environ[name]
-        except KeyError:
-            msg = "Environment variable not found: {!r}".format(name)
+        value = get_env(name)
+        if value is None:
+            msg = "Environment variable not defined: {!r}".format(name)
             raise cfg.NoSuchOptError(msg)
+        return value
 
 
 class NoSuchConfigSource(AttributeError):
@@ -227,13 +227,33 @@ def get_any_option(*sources, **kwargs):
                 value = getattr(value, name)
             except (NoSuchConfigSource,
                     cfg.NoSuchOptError,
-                    cfg.NoSuchGroupError):
+                    cfg.NoSuchGroupError) as ex:
+                LOG.debug("No such option value for %r: %s", source, ex)
                 break
-
         else:
             if value != default:
                 return value
     return default
+
+
+def get_env(name):
+    value = os.environ.get(name)
+    if value:
+        return value
+    else:
+        LOG.debug("Environment variable %r is not defined")
+        return None
+
+
+def get_int_env(name):
+    value = get_env(name)
+    if value:
+        try:
+            return int(value)
+        except TypeError:
+            LOG.exception("Environment variable %r is not an integer: %r",
+                          name, value)
+    return None
 
 
 init_config()
