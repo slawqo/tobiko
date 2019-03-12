@@ -18,12 +18,13 @@ function configure_tobiko {
   fi
 
   # See ``lib/keystone`` where these users and tenants are set up
-  echo_summary "Write identity service options to ${TOBIKO_CONF}"
-  iniset "${tobiko_conf}" identity auth_url "$(get_auth_url)"
-  iniset "${tobiko_conf}" identity username "${ADMIN_USERNAME:-admin}"
-  iniset "${tobiko_conf}" identity password "${ADMIN_PASSWORD:-secret}"
-  iniset "${tobiko_conf}" identity project "${ADMIN_TENANT_NAME:-admin}"
-  iniset "${tobiko_conf}" identity domain "${ADMIN_DOMAIN_NAME:-Default}"
+  echo_summary "Write Keystone service options to ${TOBIKO_CONF}"
+  iniset "${tobiko_conf}" keystone auth_url "$(get_keystone_auth_url)"
+  iniset "${tobiko_conf}" keystone username "${ADMIN_USERNAME:-admin}"
+  iniset "${tobiko_conf}" keystone password "${ADMIN_PASSWORD:-secret}"
+  iniset "${tobiko_conf}" keystone project_name "${ADMIN_TENANT_NAME:-admin}"
+  iniset "${tobiko_conf}" keystone user_domain_name "${ADMIN_DOMAIN_NAME:-Default}"
+  iniset "${tobiko_conf}" keystone project_domain_name "${ADMIN_DOMAIN_NAME:-Default}"
 
   echo_summary "Write compute service options to ${TOBIKO_CONF}"
   iniset "${tobiko_conf}" compute image_ref "$(get_image_ref)"
@@ -40,8 +41,8 @@ function configure_tobiko {
 }
 
 
-function get_auth_url {
-  echo "${KEYSTONE_SERVICE_URI_V3:-${KEYSTONE_SERVICE_URI/v2.0/}}"
+function get_keystone_auth_url {
+  echo "${KEYSTONE_AUTH_URI_V3:-${KEYSTONE_AUTH_URI/v2.0}}"
 }
 
 

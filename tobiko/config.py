@@ -24,7 +24,8 @@ import tobiko
 
 LOG = log.getLogger(__name__)
 
-CONFIG_MODULES = ['tobiko.openstack.config']
+CONFIG_MODULES = ['tobiko.openstack.config',
+                  'tobiko.openstack.keystone.config']
 
 CONFIG_DIRS = [os.getcwd(),
                os.path.expanduser("~/.tobiko"),

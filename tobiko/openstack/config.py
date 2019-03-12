@@ -19,23 +19,6 @@ from oslo_config import cfg
 def register_tobiko_options(conf):
 
     conf.register_opts(
-        group=cfg.OptGroup('identity'),
-        opts=[cfg.IntOpt('api_version',
-                         help="Identity API version"),
-              cfg.StrOpt('auth_url',
-                         help="Identity service URL"),
-              cfg.StrOpt('username',
-                         help="Username"),
-              cfg.StrOpt('password',
-                         help="Password"),
-              cfg.StrOpt('project_name',
-                         help="Project name"),
-              cfg.StrOpt('user_domain_name',
-                         help="User domain name"),
-              cfg.StrOpt('project_domain_name',
-                         help="Project domain name")])
-
-    conf.register_opts(
         group=cfg.OptGroup('compute'),
         opts=[cfg.StrOpt('image_ref',
                          help="Default image reference"),
