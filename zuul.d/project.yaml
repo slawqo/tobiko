@@ -12,6 +12,7 @@
         - openstack-tox-py37
         - openstack-tox-py27
         - tobiko-devstack-neutron
+        - tobiko-devstack-neutron-fedora
     gate:
       jobs:
         - openstack-tox-pep8

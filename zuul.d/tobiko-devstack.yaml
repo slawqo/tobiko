@@ -71,18 +71,23 @@
         yml: true
     group-vars:
       subnode:
+        devstack_localrc:
+          USE_PYTHON3: true
+        devstack_plugins:
+          neutron: git://git.openstack.org/openstack/neutron.git
         devstack_services:
-          base: false
+          tempest: false
           heat: false
-          c-vol: true
           h-api: false
           h-api-cfn: false
           h-eng: false
+          n-api-meta: false
           n-cpu: true
-          n-api-meta: true
           placement-client: true
-          q-agt: true
-          tempest: false
+          neutron-agent: true
+          c-vol: true
+          peakmem_tracker: true
+          dstat: true
 
     run: playbooks/tobiko-devstack.yaml
     post-run: playbooks/post-tobiko-devstack.yaml
@@ -113,3 +118,15 @@
       tox_envlist: neutron
       devstack_localrc:
         ENABLE_FILE_INJECTION: true
+
+- job:
+    name: tobiko-devstack-neutron-fedora
+    parent: tobiko-devstack-neutron
+    nodeset: openstack-three-node-fedora-28
+    vars:
+      devstack_services:
+        tls-proxy: false
+    group-vars:
+      subnode:
+        devstack_services:
+          tls-proxy: false

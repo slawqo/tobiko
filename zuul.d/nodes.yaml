@@ -1,0 +1,33 @@
+- nodeset:
+     name: openstack-three-node-fedora-28
+     nodes:
+       - name: controller
+         label: fedora-28
+       - name: compute1
+         label: fedora-28
+       - name: compute2
+         label: fedora-28
+     groups:
+       # Node where tests are executed and test results collected
+       - name: tempest
+         nodes:
+           - controller
+       # Nodes running the compute service
+       - name: compute
+         nodes:
+           - compute1
+           - compute2
+       # Nodes that are not the controller
+       - name: subnode
+         nodes:
+           - compute1
+           - compute2
+       # Switch node for multinode networking setup
+       - name: switch
+         nodes:
+           - controller
+       # Peer nodes for multinode networking setup
+       - name: peers
+         nodes:
+           - compute1
+           - compute2
