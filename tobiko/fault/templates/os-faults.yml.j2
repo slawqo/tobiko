@@ -1,0 +1,31 @@
+cloud_management:
+  driver: universal
+
+node_discover:
+  driver: node_list
+  args:
+{% for node in nodes %}
+    - fqdn: {{ node['name'] }}
+      ip: {{ node['address'] }}
+      auth:
+        username: heat-admin
+        private_key_file: /home/stack/.ssh/id_rsa
+        become: true
+{% endfor %}
+
+services:
+{% for service in services %}
+  {{ service }}:
+    driver: system_service
+    args:
+      service_name: {{ service }}
+      grep: {{ service }}
+{% endfor %}
+
+containers:
+{% for container in containers %}
+  {{ container }}:
+    driver: docker_container
+    args:
+      container_name: {{ container }}
+{% endfor %}

@@ -8,7 +8,8 @@ tobiko = {editable = true,path = "."}
 ansible = "*"
 testscenarios = "*"
 crayons = "*"
-cryptography = "2.2.2"
+os-faults = "*"
+tempest = "*"
 
 [dev-packages]
 

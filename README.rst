@@ -8,7 +8,6 @@ Tempest plugin for testing upgrades
 * Source: https://git.openstack.org/cgit/openstack/tobiko
 * Bugs: https://bugs.launchpad.net/tobiko
 
-
 Usage
 -----
 
