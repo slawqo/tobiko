@@ -18,5 +18,5 @@
   become: true
   roles:
     - role: fetch-subunit-output
-      zuul_work_dir: '{{ devstack_base_dir }}/tempest'
+      zuul_work_dir: '{{ devstack_base_dir }}/tobiko'
     - role: process-stackviz

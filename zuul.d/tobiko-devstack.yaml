@@ -78,7 +78,7 @@
           tempest: false
 
     run: playbooks/tobiko-devstack.yaml
-    # post-run: playbooks/post-tobiko-devstack.yaml
+    post-run: playbooks/post-tobiko-devstack.yaml
     irrelevant-files:
       - ^.*\.rst$
       - ^api-ref/.*$
