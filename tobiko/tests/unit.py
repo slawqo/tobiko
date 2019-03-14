@@ -39,7 +39,7 @@ class TobikoUnitTest(base.TobikoTest):
         self.addCleanup(context.stop)
         return mock_object
 
-    def create_temdir(self, *args, **kwargs):
+    def create_tempdir(self, *args, **kwargs):
         dir_path = tempfile.mkdtemp(*args, **kwargs)
         self.addCleanup(shutil.rmtree(dir_path, ignore_errors=True))
         return dir_path
