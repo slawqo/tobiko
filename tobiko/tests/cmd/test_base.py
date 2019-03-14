@@ -18,12 +18,27 @@ import os.path
 
 from tobiko.cmd import base
 from tobiko.tests.unit import TobikoUnitTest
+from tobiko.openstack import keystone
 
 
 class TobikoCMDTest(TobikoUnitTest):
 
     command_name = None
     command_class = base.TobikoCMD
+
+    default_credentials = keystone.keystone_credentials(
+        api_version=3,
+        auth_url='http://127.0.0.1:5000/identiy/v3',
+        username='demo',
+        project_name='demo',
+        password='this is a secret',
+        user_domain_name='Default',
+        project_domain_name='Default')
+
+    def setUp(self):
+        TobikoUnitTest.setUp(self)
+        self.patch('tobiko.openstack.keystone.default_keystone_credentials',
+                   return_value=self.default_credentials)
 
     def test_init(self, argv=None):
         self.patch_argv(argv=argv)
