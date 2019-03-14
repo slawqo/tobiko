@@ -41,9 +41,17 @@ class StackManager(object):
     """Manages Heat stacks."""
 
     def __init__(self, client_manager, templates_dir, wait_interval=5):
-        self.client = client_manager.heat_client
+        self._client_manager = client_manager
         self.templates_dir = templates_dir
         self.wait_interval = wait_interval
+
+    _client = None
+
+    @property
+    def client(self):
+        if not self._client:
+            self._client = self._client_manager.heat_client
+        return self._client
 
     def load_template(self, template_path):
         """Loads template from a given file."""
