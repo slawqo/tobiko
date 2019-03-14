@@ -4,7 +4,7 @@ TOBIKO_PLUGIN_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 function install_tobiko {
   echo_summary "Installing tobiko-plugin"
-  apt_get install python3-dev
+  install_python3
   setup_dev_lib tobiko
 }
 
