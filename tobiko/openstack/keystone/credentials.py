@@ -15,7 +15,18 @@ from __future__ import absolute_import
 
 import collections
 
+from oslo_log import log
+
+import tobiko
 from tobiko.common import exceptions
+
+
+LOG = log.getLogger(__name__)
+
+
+def default_keystone_credentials():
+    return tobiko.setup_fixture(
+        DefaultKeystoneCredentialsFixture).credentials
 
 
 class KeystoneCredentials(collections.namedtuple(
@@ -66,3 +77,116 @@ def keystone_credentials(api_version=None, auth_url=None,
 
 class InvalidKeystoneCredentials(exceptions.TobikoException):
     message = "Invalid Keystone credentials (%(credentials)r): %(reason)s."
+
+
+class EnvironKeystoneCredentialsFixture(tobiko.SharedFixture):
+
+    credentials = None
+
+    def setup_fixture(self):
+        from tobiko import config
+        auth_url = config.get_env('OS_AUTH_URL')
+        if not auth_url:
+            LOG.debug("OS_AUTH_URL environment variable not defined")
+            return
+
+        api_version = (config.get_int_env('OS_IDENTITY_API_VERSION') or
+                       api_version_from_url(auth_url))
+        if api_version == 2:
+            credentials = keystone_credentials(
+                api_version=api_version, auth_url=auth_url,
+                username=config.get_env('OS_USERNAME'),
+                password=config.get_env('OS_PASSWORD'),
+                project_name=(config.get_env('OS_PROJECT_NAME') or
+                              config.get_env('OS_TENANT_NAME')))
+        else:
+            credentials = keystone_credentials(
+                api_version=api_version, auth_url=auth_url,
+                username=config.get_env('OS_USERNAME'),
+                password=config.get_env('OS_PASSWORD'),
+                project_name=(config.get_env('OS_PROJECT_NAME') or
+                              config.get_env('OS_TENANT_NAME')),
+                user_domain_name=config.get_env('OS_USER_DOMAIN_NAME'),
+                project_domain_name=config.get_env('OS_PROJECT_DOMAIN_NAME'))
+        try:
+            credentials.validate()
+        except InvalidKeystoneCredentials as ex:
+            LOG.info("No such valid credentials from environment: %r", ex)
+        else:
+            self.credentials = credentials
+
+
+class ConfigKeystoneCredentialsFixture(tobiko.SharedFixture):
+
+    credentials = None
+
+    def setup_fixture(self):
+        from tobiko import config
+        conf = config.CONF.tobiko.keystone
+        auth_url = conf.auth_url
+        if not auth_url:
+            LOG.debug("auth_url option not defined in 'keystone' section of "
+                     "tobiko.conf")
+            return
+
+        api_version = (conf.api_version or
+                       api_version_from_url(auth_url))
+        if api_version == 2:
+            credentials = keystone_credentials(
+                api_version=api_version, auth_url=auth_url,
+                username=conf.username, password=conf.password,
+                project_name=conf.project_name)
+        else:
+            credentials = keystone_credentials(
+                api_version=api_version, auth_url=auth_url,
+                username=conf.username, password=conf.password,
+                project_name=conf.project_name,
+                user_domain_name=conf.user_domain_name,
+                project_domain_name=conf.project_domain_name)
+        try:
+            credentials.validate()
+        except InvalidKeystoneCredentials as ex:
+            LOG.info("No such valid credentials from tobiko.conf: %r", ex)
+        else:
+            self.credentials = credentials
+
+
+DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES = [
+    EnvironKeystoneCredentialsFixture,
+    ConfigKeystoneCredentialsFixture]
+
+
+class DefaultKeystoneCredentialsFixture(tobiko.SharedFixture):
+
+    fixtures = DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES
+    credentials = None
+
+    def setup_fixture(self):
+
+        for fixture in self.fixtures:
+            try:
+                credentials = tobiko.setup_fixture(fixture).credentials
+            except Exception:
+                LOG.exception("Error setting up fixture %r", fixture)
+            else:
+                if credentials:
+                    LOG.info("Got default credentials from %r: %r",
+                             fixture, credentials)
+                    self.credentials = credentials
+                    return credentials
+
+        raise RuntimeError('Unable to found any valid credentials')
+
+
+def api_version_from_url(auth_url):
+    if auth_url.endswith('/v2.0'):
+        LOG.info('Got Keystone API version 2 from auth_url: %r', auth_url)
+        return 2
+    elif auth_url.endswith('/v3'):
+        LOG.info('Got Keystone API version 3 from auth_url: %r', auth_url)
+        return 3
+
+    else:
+        LOG.warning('Unable to get Keystone API version from auth_url:  %r',
+                    auth_url)
+        return None

@@ -16,5 +16,6 @@ from __future__ import absolute_import
 from tobiko.openstack.keystone import credentials
 
 keystone_credentials = credentials.keystone_credentials
+default_keystone_credentials = credentials.default_keystone_credentials
 KeystoneCredentials = credentials.KeystoneCredentials
 InvalidKeystoneCredentials = credentials.InvalidKeystoneCredentials
