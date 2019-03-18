@@ -13,7 +13,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import argparse
 import logging
 import sys
 
@@ -24,13 +23,8 @@ LOG = logging.getLogger(__name__)
 
 class DeleteUtil(base.TobikoCMD):
 
-    def __init__(self):
-        super(DeleteUtil, self).__init__()
-        self.parser = self.get_parser()
-        self.args = (self.parser).parse_args()
-
     def get_parser(self):
-        parser = argparse.ArgumentParser(add_help=True)
+        parser = super(DeleteUtil, self).get_parser()
         parser.add_argument(
             '--stack', '-s',
             help="The name of the stack to remove.")
@@ -64,7 +58,7 @@ class DeleteUtil(base.TobikoCMD):
 def main():
     """Delete CLI main entry."""
     delete_cmd = DeleteUtil()
-
+    delete_cmd.set_stream_handler_logging_level()
     if delete_cmd.args.playbook:
         delete_cmd.run_playbook(delete_cmd.args.playbook)
     else:
