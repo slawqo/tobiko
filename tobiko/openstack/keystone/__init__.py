@@ -14,8 +14,11 @@
 from __future__ import absolute_import
 
 from tobiko.openstack.keystone import credentials
+from tobiko.openstack.keystone import session
 
 keystone_credentials = credentials.keystone_credentials
 default_keystone_credentials = credentials.default_keystone_credentials
 KeystoneCredentials = credentials.KeystoneCredentials
 InvalidKeystoneCredentials = credentials.InvalidKeystoneCredentials
+
+KeystoneSessionFixture = session.KeystoneSessionFixture
