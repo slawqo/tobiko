@@ -31,14 +31,8 @@ class ClientManager(object):
     def session(self):
         """Returns keystone session."""
         if self._session is None:
-            from keystoneauth1 import loading
-            from keystoneauth1 import session
-            loader = loading.get_plugin_loader('password')
-            credentials = (self.credentials or
-                           keystone.default_keystone_credentials()).to_dict()
-            del credentials['api_version']  # this parameter is not accepted
-            auth = loader.load_from_options(**credentials)
-            self._session = session.Session(auth=auth, verify=False)
+            self._session = keystone.get_keystone_session(
+                credentials=self.credentials)
         return self._session
 
     @property

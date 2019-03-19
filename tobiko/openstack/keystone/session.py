@@ -87,3 +87,11 @@ class KeystoneSessionManager(object):
 
 
 SESSIONS = KeystoneSessionManager()
+
+
+def get_keystone_session(credentials=None, shared=True, init_session=None,
+                         manager=None):
+    manager = manager or SESSIONS
+    session = manager.get_session(credentials=credentials, shared=shared,
+                                  init_session=init_session)
+    return tobiko.setup_fixture(session).session
