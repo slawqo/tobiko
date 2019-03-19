@@ -57,3 +57,33 @@ class KeystoneSessionFixture(tobiko.SharedFixture):
         del params['api_version']  # parameter not required
         auth = loader.load_from_options(**params)
         self.session = _session.Session(auth=auth, verify=False)
+
+
+class KeystoneSessionManager(object):
+
+    def __init__(self):
+        self._sessions = {}
+
+    def get_session(self, credentials=None, shared=True, init_session=None):
+        if shared:
+            key = credentials
+            if credentials:
+                if tobiko.is_fixture(credentials):
+                    key = tobiko.get_fixture_name(credentials)
+
+            session = self._sessions.get(key)
+            if session:
+                return session
+
+        init_session = init_session or KeystoneSessionFixture
+        assert callable(init_session)
+        LOG.debug('Initialize Keystone session: %r(credentials=%r)',
+                  init_session, credentials)
+        session = init_session(credentials=credentials)
+
+        if shared:
+            self._sessions[key] = session
+        return session
+
+
+SESSIONS = KeystoneSessionManager()

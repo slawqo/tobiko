@@ -16,8 +16,9 @@ from __future__ import absolute_import
 
 import inspect
 
-import tobiko
+import mock
 
+import tobiko
 from tobiko.openstack import keystone
 from tobiko.tests import unit
 
@@ -56,7 +57,23 @@ DEFAULT_CREDENTIALS = keystone.keystone_credentials(
     password='this is a secret')
 
 
-class KeystoneSessionFixtureTest(unit.TobikoUnitTest):
+class CheckSessionCredentialsMixin(object):
+
+    def check_session_credentials(self, session, credentials):
+        if credentials:
+            if tobiko.is_fixture(credentials):
+                self.assertIsNone(session.credentials)
+                self.assertIs(credentials, session.credentials_fixture)
+            else:
+                self.assertIs(credentials, session.credentials)
+                self.assertIsNone(session.credentials_fixture)
+        else:
+            self.assertIsNone(session.credentials)
+            self.assertIsNone(session.credentials_fixture)
+
+
+class KeystoneSessionFixtureTest(CheckSessionCredentialsMixin,
+                                 unit.TobikoUnitTest):
 
     default_credentials_fixture = (
         'tobiko.openstack.keystone.credentials.'
@@ -70,17 +87,8 @@ class KeystoneSessionFixtureTest(unit.TobikoUnitTest):
 
     def test_init(self, credentials=None):
         session = keystone.KeystoneSessionFixture(credentials=credentials)
-        if credentials:
-            if tobiko.is_fixture(credentials):
-                self.assertIsNone(session.credentials)
-                self.assertIs(credentials, session.credentials_fixture)
-            else:
-                self.assertIs(credentials, session.credentials)
-                self.assertIsNone(session.credentials_fixture)
-        else:
-            self.assertIsNone(session.credentials)
-            self.assertIsNone(session.credentials_fixture)
-        return session
+        self.check_session_credentials(session=session,
+                                       credentials=credentials)
 
     def test_init_with_credentials(self):
         self.test_init(credentials=CREDENTIALS)
@@ -112,3 +120,47 @@ class KeystoneSessionFixtureTest(unit.TobikoUnitTest):
 
     def test_setup_with_credentials_fixture_type(self):
         self.test_setup(credentials=CredentialsFixture)
+
+
+class KeystoneSessionManagerTest(CheckSessionCredentialsMixin,
+                                 unit.TobikoUnitTest):
+
+    def test_init(self):
+        manager = keystone.KeystoneSessionManager()
+
+        self.assertTrue(manager)
+
+    def test_get_session(self, credentials=None, shared=True):
+        manager = keystone.KeystoneSessionManager()
+        session = manager.get_session(credentials=credentials,
+                                      shared=shared)
+        self.assertIsInstance(session, keystone.KeystoneSessionFixture)
+        self.check_session_credentials(session=session,
+                                       credentials=credentials)
+        if shared:
+            self.assertIs(session, manager.get_session(
+                credentials=credentials))
+        else:
+            self.assertIsNot(session, manager.get_session(
+                credentials=credentials))
+
+    def test_get_session_with_credentials(self):
+        self.test_get_session(credentials=CREDENTIALS)
+
+    def test_get_session_with_not_shared(self):
+        self.test_get_session(shared=False)
+
+    def test_get_session_with_credentials_fixture(self):
+        self.test_get_session(credentials=CredentialsFixture())
+
+    def test_get_session_with_credentials_fixture_type(self):
+        self.test_get_session(credentials=CredentialsFixture)
+
+    def test_get_session_with_init_session(self):
+        mock_session = mock.MagicMock(specs=keystone.KeystoneSessionFixture)
+        init_session = mock.MagicMock(return_value=mock_session)
+        manager = keystone.KeystoneSessionManager()
+        session = manager.get_session(credentials=CREDENTIALS,
+                                      init_session=init_session)
+        self.assertIs(mock_session, session)
+        init_session.assert_called_once_with(credentials=CREDENTIALS)

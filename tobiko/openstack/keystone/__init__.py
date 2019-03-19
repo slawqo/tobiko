@@ -22,3 +22,4 @@ KeystoneCredentials = credentials.KeystoneCredentials
 InvalidKeystoneCredentials = credentials.InvalidKeystoneCredentials
 
 KeystoneSessionFixture = session.KeystoneSessionFixture
+KeystoneSessionManager = session.KeystoneSessionManager
