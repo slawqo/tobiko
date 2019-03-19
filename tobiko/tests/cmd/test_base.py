@@ -37,8 +37,8 @@ class TobikoCMDTest(TobikoUnitTest):
 
     def setUp(self):
         TobikoUnitTest.setUp(self)
-        self.patch('tobiko.openstack.keystone.default_keystone_credentials',
-                   return_value=self.default_credentials)
+        self.patch('tobiko.config.CONF.tobiko.keystone',
+                   self.default_credentials)
 
     def test_init(self, argv=None):
         self.patch_argv(argv=argv)

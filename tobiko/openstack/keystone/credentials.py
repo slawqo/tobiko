@@ -25,8 +25,7 @@ LOG = log.getLogger(__name__)
 
 
 def default_keystone_credentials():
-    return tobiko.setup_fixture(
-        DefaultKeystoneCredentialsFixture).credentials
+    return tobiko.setup_fixture(DefaultKeystoneCredentialsFixture).credentials
 
 
 class KeystoneCredentials(collections.namedtuple(
