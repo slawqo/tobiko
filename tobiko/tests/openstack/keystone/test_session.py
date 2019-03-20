@@ -164,3 +164,26 @@ class KeystoneSessionManagerTest(CheckSessionCredentialsMixin,
                                       init_session=init_session)
         self.assertIs(mock_session, session)
         init_session.assert_called_once_with(credentials=CREDENTIALS)
+
+
+class GetKeystomeSessionTest(base.OpenstackTest):
+
+    def test_get_keystone_session(self, credentials=None, shared=True):
+        session1 = keystone.get_keystone_session(credentials=credentials,
+                                                 shared=shared)
+        session2 = keystone.get_keystone_session(credentials=credentials,
+                                                 shared=shared)
+        if shared:
+            self.assertIs(session1, session2)
+            self.assertIsNotNone(session1)
+        else:
+            self.assertIsNot(session1, session2)
+            self.assertIsNotNone(session1)
+            self.assertIsNotNone(session2)
+
+    def test_get_keystone_session_with_not_shared(self):
+        self.test_get_keystone_session(shared=False)
+
+    def test_get_keystone_session_with_credentials(self):
+        credentials = keystone.default_keystone_credentials()
+        self.test_get_keystone_session(credentials=credentials)
