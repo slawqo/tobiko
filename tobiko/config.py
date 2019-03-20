@@ -65,8 +65,6 @@ CONF = GlobalConfig()
 def init_config():
     init_tobiko_config()
     init_environ_config()
-    if CONF.tobiko.tempest.enabled:
-        init_tempest_config()
 
 
 def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
@@ -176,29 +174,6 @@ class HttpProxyFixture(tobiko.SharedFixture):
         self.http_proxy = os.environ.get('http_proxy')
         self.https_proxy = os.environ.get('https_proxy')
         self.no_proxy = os.environ.get('no_proxy')
-
-
-def init_tempest_config():
-    try:
-        from tempest import config
-
-        # checks tempest configuration is working
-        tempest_conf = config.CONF
-        tempest_logger = log.getLogger('tempest')
-        if tempest_conf.debug:
-            # Print tempest debug messages
-            if not tempest_logger.isEnabledFor(log.DEBUG):
-                tempest_logger.logger.setLevel(log.DEBUG)
-        else:
-            # Silence tempest logger
-            if tempest_logger.isEnabledFor(log.INFO):
-                tempest_logger.logger.setLevel(log.WARNING)
-
-    except Exception:
-        LOG.exception('Errors configuring tempest integration')
-
-    else:
-        CONF.set_source('tempest', tempest_conf)
 
 
 def init_environ_config():
