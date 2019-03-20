@@ -20,7 +20,7 @@ import mock
 
 import tobiko
 from tobiko.openstack import keystone
-from tobiko.tests import unit
+from tobiko.tests.openstack import base
 
 
 CREDENTIALS = keystone.keystone_credentials(
@@ -73,7 +73,7 @@ class CheckSessionCredentialsMixin(object):
 
 
 class KeystoneSessionFixtureTest(CheckSessionCredentialsMixin,
-                                 unit.TobikoUnitTest):
+                                 base.OpenstackTest):
 
     default_credentials_fixture = (
         'tobiko.openstack.keystone.credentials.'
@@ -123,7 +123,7 @@ class KeystoneSessionFixtureTest(CheckSessionCredentialsMixin,
 
 
 class KeystoneSessionManagerTest(CheckSessionCredentialsMixin,
-                                 unit.TobikoUnitTest):
+                                 base.OpenstackTest):
 
     def test_init(self):
         manager = keystone.KeystoneSessionManager()

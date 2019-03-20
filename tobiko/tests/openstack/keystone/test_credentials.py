@@ -16,10 +16,9 @@ from __future__ import absolute_import
 
 import tobiko
 from tobiko import config
-from tobiko.tests import unit
 from tobiko.openstack import keystone
 from tobiko.openstack.keystone import credentials as _credentials
-
+from tobiko.tests.openstack import base
 
 V2_PARAMS = {
     'api_version': 2,
@@ -69,7 +68,7 @@ def make_credentials(params, **kwargs):
     return keystone.keystone_credentials(**params)
 
 
-class KeystoneCredentialsTest(unit.TobikoUnitTest):
+class KeystoneCredentialsTest(base.OpenstackTest):
 
     def test_validate_from_params_v2(self):
         credentials = make_credentials(V2_PARAMS)
@@ -113,7 +112,7 @@ class KeystoneCredentialsTest(unit.TobikoUnitTest):
                           credentials.validate)
 
 
-class EnvironKeystoneCredentialsFixtureTest(unit.TobikoUnitTest):
+class EnvironKeystoneCredentialsFixtureTest(base.OpenstackTest):
 
     def test_init(self):
         fixture = _credentials.EnvironKeystoneCredentialsFixture()
@@ -155,7 +154,7 @@ class EnvironKeystoneCredentialsFixtureTest(unit.TobikoUnitTest):
         self.assertEqual(V3_PARAMS, fixture.credentials.to_dict())
 
 
-class ConfigKeystoneCredentialsFixtureTest(unit.TobikoUnitTest):
+class ConfigKeystoneCredentialsFixtureTest(base.OpenstackTest):
 
     def patch_config(self, params, **kwargs):
         credentials = make_credentials(params, **kwargs)
@@ -194,7 +193,7 @@ class ConfigKeystoneCredentialsFixtureTest(unit.TobikoUnitTest):
         self.assertEqual(V3_PARAMS, fixture.credentials.to_dict())
 
 
-class DefaultKeystoneCredentialsFixtureTest(unit.TobikoUnitTest):
+class DefaultKeystoneCredentialsFixtureTest(base.OpenstackTest):
 
     def setUp(self):
         super(DefaultKeystoneCredentialsFixtureTest, self).setUp()
