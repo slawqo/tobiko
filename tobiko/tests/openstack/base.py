@@ -14,20 +14,28 @@
 #    under the License.
 from __future__ import absolute_import
 
+import mock
+
 from tobiko.config import CONF
 from tobiko.openstack import keystone
+from tobiko.openstack import heat
 from tobiko.tests import unit
-
-
-DEFAULT_CREDENTIALS = keystone.keystone_credentials(
-    auth_url='http://127.0.0.1:5000/identiy/v3',
-    username='default',
-    project_name='default',
-    password='this is a secret')
 
 
 class OpenstackTest(unit.TobikoUnitTest):
 
+    default_keystone_credentials = keystone.keystone_credentials(
+        auth_url='http://127.0.0.1:5000/identiy/v3',
+        username='default',
+        project_name='default',
+        password='this is a secret')
+
     def setUp(self):
         super(OpenstackTest, self).setUp()
-        self.patch_object(CONF.tobiko, 'keystone', DEFAULT_CREDENTIALS)
+        self.patch_object(CONF.tobiko, 'keystone',
+                          self.default_keystone_credentials)
+
+    def patch_get_heat_client(self, *args, **kwargs):
+        from heatclient import client
+        kwargs.setdefault('return_value', mock.MagicMock(specs=client.Client))
+        return self.patch_object(heat, 'get_heat_client', *args, **kwargs)

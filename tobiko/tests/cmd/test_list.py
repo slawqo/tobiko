@@ -55,10 +55,11 @@ class ListTest(test_base.TobikoCMDTest):
 
         self.patch_argv(argv=argv)
 
-        MockClient = self.patch('heatclient.client.Client')
+        client = self.patch_get_heat_client().return_value
+
         # Break wait for stack status loop
-        MockClient().stacks.get().stack_status = stack.CREATE_COMPLETE
-        MockClient().stacks.list.return_value = [
+        client.stacks.get().stack_status = stack.CREATE_COMPLETE
+        client.stacks.list.return_value = [
             mock.Mock(stack_name=stack_name)
             for stack_name in stack_names[::2]]
 

@@ -14,6 +14,9 @@
 from __future__ import absolute_import
 
 from tobiko.openstack import keystone
+from tobiko.openstack import heat
+from tobiko.openstack import neutron
+from tobiko.openstack import nova
 
 
 class ClientManager(object):
@@ -38,24 +41,20 @@ class ClientManager(object):
     @property
     def heat_client(self):
         if self._heat_client is None:
-            from heatclient import client as heat_client
-            self._heat_client = heat_client.Client(
-                '1', session=self.session, endpoint_type='public',
-                service_type='orchestration')
+            self._heat_client = heat.get_heat_client(session=self.session)
         return self._heat_client
 
     @property
     def neutron_client(self):
         """Returns neutron client."""
         if self._neutron_client is None:
-            from neutronclient.v2_0 import client as neutron_client
-            self._neutron_client = neutron_client.Client(session=self.session)
+            self._neutron_client = neutron.get_neutron_client(
+                session=self.session)
         return self._neutron_client
 
     @property
     def nova_client(self):
         """Returns nova client."""
         if self._nova_client is None:
-            from novaclient import client as nova_client
-            self._nova_client = nova_client.Client('2', session=self.session)
+            self._nova_client = nova.get_nova_client(session=self.session)
         return self._nova_client

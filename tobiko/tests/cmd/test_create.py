@@ -74,13 +74,13 @@ class CreateTest(test_base.TobikoCMDTest):
                     yield mock.Mock(stack_status=stack_manager.CREATE_COMPLETE,
                                     name=name)
 
-        MockClient = self.patch('heatclient.client.Client')
-        MockClient().stacks.get.side_effect = mock_client_get()
+        client = self.patch_get_heat_client().return_value
+        client.stacks.get.side_effect = mock_client_get()
 
         create.main()
 
         # Check stack is created
-        MockClient().stacks.create.assert_has_calls(
+        client.stacks.create.assert_has_calls(
             [mock.call(parameters=constants.DEFAULT_PARAMS,
                        stack_name=stack_name,
                        template=mock.ANY)

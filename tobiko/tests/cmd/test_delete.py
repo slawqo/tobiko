@@ -61,12 +61,11 @@ class DeleteTest(test_base.TobikoCMDTest):
         mock_walk = self.patch('os.walk', return_value=[
             (None, None, [(name + '.yaml') for name in stack_names])])
 
-        MockClient = self.patch('heatclient.client.Client')
-        MockClient().stacks.list.return_value = [
-            mock.Mock(stack_name=stack_name)
-            for stack_name in stack_names[::2]]
+        client = self.patch_get_heat_client().return_value
+        client.stacks.list.return_value = [mock.Mock(stack_name=stack_name)
+                                           for stack_name in stack_names[::2]]
 
-        def mock_client_get():
+        def client_get():
 
             for i, name in enumerate(stack_names):
                 if wait:
@@ -83,20 +82,20 @@ class DeleteTest(test_base.TobikoCMDTest):
                         # Break wait for stack status loop with HTTPNotFound
                         yield exc.HTTPNotFound
 
-        MockClient().stacks.get.side_effect = mock_client_get()
+        client.stacks.get.side_effect = client_get()
 
         delete.main()
 
         # Check stack is deleted
-        MockClient().stacks.delete.assert_has_calls(
+        client.stacks.delete.assert_has_calls(
             [mock.call(stack_name)
              for stack_name in stack_names[::2]])
 
         if walk_dir:
             mock_walk.assert_called()
-            MockClient().stacks.list.assert_called_once_with()
+            client.stacks.list.assert_called_once_with()
         else:
-            MockClient().stacks.list.assert_not_called()
+            client.stacks.list.assert_not_called()
 
         if wait:
             mock_sleep.assert_called()
