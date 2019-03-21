@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+from heatclient.v1 import client as heatclient
+
 from tobiko.openstack import keystone
 from tobiko.openstack import heat
 from tobiko.tests.openstack import base
@@ -32,11 +34,10 @@ class GetHeatClientTest(base.OpenstackTest):
         client2 = heat.get_heat_client(session=session, shared=shared)
         if shared:
             self.assertIs(client1, client2)
-            self.assertIsNotNone(client1)
         else:
             self.assertIsNot(client1, client2)
-            self.assertIsNotNone(client1)
-            self.assertIsNotNone(client2)
+        self.assertIsInstance(client1, heatclient.Client)
+        self.assertIsInstance(client2, heatclient.Client)
 
     def test_get_heat_client_with_not_shared(self):
         self.test_get_heat_client(shared=False)
