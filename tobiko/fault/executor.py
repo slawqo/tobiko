@@ -25,8 +25,8 @@ LOG = log.getLogger(__name__)
 class FaultExecutor(object):
     """Responsible for executing faults."""
 
-    def __init__(self, conf_file=None, clients=None):
-        self.config = FaultConfig(conf_file=conf_file, clients=clients)
+    def __init__(self, conf_file=None):
+        self.config = FaultConfig(conf_file=conf_file)
         try:
             self.connect()
             LOG.info("os-faults connected.")

@@ -28,7 +28,6 @@ class TobikoCMDTest(test_base.OpenstackTest):
     def test_init(self, argv=None):
         self.patch_argv(argv=argv)
         cmd = self.command_class()
-        self.assertIsNotNone(cmd.clientManager)
         self.assertTrue(os.path.isdir(cmd.templates_dir))
         self.assertIsNotNone(cmd.stackManager)
         return cmd

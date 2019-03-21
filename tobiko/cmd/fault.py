@@ -17,7 +17,6 @@ import argparse
 import logging
 import sys
 
-from tobiko.common import clients
 from tobiko.fault import executor
 
 
@@ -29,7 +28,6 @@ class FaultCMD(object):
     def __init__(self):
         self.parser = self.get_parser()
         self.args = self.parser.parse_args()
-        self.clients = clients.ClientManager()
 
     def get_parser(self):
         parser = argparse.ArgumentParser(add_help=True)
@@ -41,7 +39,7 @@ class FaultCMD(object):
 
     def run(self):
         """Run faults."""
-        fault_exec = executor.FaultExecutor(clients=self.clients)
+        fault_exec = executor.FaultExecutor()
         fault_exec.execute(self.args.fault)
 
 

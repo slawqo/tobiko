@@ -19,18 +19,16 @@ import os
 from tobiko.tests import base
 from tobiko.common.managers import stack as stack_manager
 from tobiko.common.managers import network
-from tobiko.common import clients
 from tobiko.common import constants
 
 
 class ScenarioTestsBase(base.TobikoTest):
     """All scenario tests inherit from this scenario base class."""
 
-    clients = clients.ClientManager()
     default_params = constants.DEFAULT_PARAMS
-    networks = network.NetworkManager(clients)
+    networks = network.NetworkManager()
     templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
-    stacks = stack_manager.StackManager(clients, templates_dir)
+    stacks = stack_manager.StackManager(templates_dir=templates_dir)
     stack = None
     fault = None
 

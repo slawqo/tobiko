@@ -13,9 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
-import os
-
 from collections import namedtuple
+import os
 
 from ansible.executor import playbook_executor
 from ansible.inventory.manager import InventoryManager
@@ -24,6 +23,7 @@ from ansible.vars.manager import VariableManager
 from oslo_log import log
 
 from tobiko.common import constants
+from tobiko.openstack import keystone
 
 
 LOG = log.getLogger(__name__)
@@ -32,8 +32,7 @@ LOG = log.getLogger(__name__)
 class AnsibleManager(object):
     """Manages Ansible entities."""
 
-    def __init__(self, client_manager, playbooks_dir):
-        self.client_manager = client_manager
+    def __init__(self, playbooks_dir):
         self.playbooks_dir = playbooks_dir
         self.loader = DataLoader()
         self.inventory = InventoryManager(loader=self.loader,
@@ -73,14 +72,14 @@ class AnsibleManager(object):
         """Executes given playbook."""
         playbook_path = self.playbooks_dir + '/' + playbook
 
+        credentials = keystone.default_keystone_credentials()
         extra_vars = {'mode': mode,
-                      'auth_url': self.client_manager.credentials['auth_url'],
-                      'username': self.client_manager.credentials['username'],
-                      'project_name': self.client_manager.credentials[
-                          'project_name'],
+                      'auth_url': credentials.auth_url,
+                      'username': credentials.username,
+                      'project_name': credentials.project_name,
+                      'password': credentials.project_name.password,
                       'image': constants.DEFAULT_PARAMS['image'],
-                      'flavor': constants.DEFAULT_PARAMS['flavor'],
-                      'password': self.client_manager.credentials['password']}
+                      'flavor': constants.DEFAULT_PARAMS['flavor']}
 
         self.variable_manager.extra_vars = extra_vars
 

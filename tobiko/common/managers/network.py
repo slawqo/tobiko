@@ -13,19 +13,18 @@
 #    under the License.
 from __future__ import absolute_import
 
+from tobiko.openstack import neutron
+
 
 class NetworkManager(object):
     """Manages Neutron Resources."""
-
-    def __init__(self, client_manager):
-        self._client_manager = client_manager
 
     _client = None
 
     @property
     def client(self):
         if not self._client:
-            self._client = self._client_manager.network_client
+            self._client = neutron.get_neutron_client()
         return self._client
 
     def create_sg_rules(self, rules, sg_id):
