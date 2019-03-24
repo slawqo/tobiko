@@ -21,9 +21,9 @@
         NETWORK_API_EXTENSIONS: address-scope,agent,allowed-address-pairs,auto-allocated-topology,availability_zone,binding,default-subnetpools,dhcp_agent_scheduler,dns-domain-ports,dns-integration,dvr,empty-string-filtering,ext-gw-mode,external-net,extra_dhcp_opt,extraroute,filter-validation,fip-port-details,flavors,ip-substring-filtering,l3-flavors,l3-ha,l3_agent_scheduler,logging,metering,multi-provider,net-mtu,net-mtu-writable,network-ip-availability,network_availability_zone,pagination,port-security,project-id,provider,qos,qos-bw-minimum-ingress,qos-fip,quotas,quota_details,rbac-policies,router,router_availability_zone,security-group,port-mac-address-regenerate,port-security-groups-filtering,segment,service-type,sorting,standard-attr-description,standard-attr-revisions,standard-attr-segment,standard-attr-timestamp,standard-attr-tag,subnet_allocation,trunk,trunk-details,uplink-status-propagation
         MULTI_HOST: 1
       devstack_plugins:
-        heat: git://git.openstack.org/openstack/heat.git
-        neutron: git://git.openstack.org/openstack/neutron.git
-        tobiko: git://git.openstack.org/openstack/tobiko.git
+        heat: https://git.openstack.org/openstack/heat.git
+        neutron: https://git.openstack.org/openstack/neutron.git
+        tobiko: https://git.openstack.org/openstack/tobiko.git
       devstack_services:
         heat: true
         h-api: true
