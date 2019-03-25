@@ -15,7 +15,6 @@ from __future__ import absolute_import
 
 import abc
 
-import fixtures
 from oslo_log import log
 
 import tobiko
@@ -46,10 +45,7 @@ class OpenstackClientFixture(tobiko.SharedFixture):
     def setup_session(self):
         session_fixture = self.session_fixture
         if session_fixture:
-            if not isinstance(session_fixture, fixtures.Fixture):
-                session_fixture = tobiko.get_fixture(session_fixture)
-            session_fixture.setUp()
-            self.session = session_fixture.session
+            self.session = tobiko.setup_fixture(session_fixture).session
         elif not self.session:
             self.session = keystone.get_keystone_session()
 

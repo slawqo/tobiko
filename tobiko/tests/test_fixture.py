@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import fixtures
 import mock
 
 import tobiko
@@ -48,7 +49,13 @@ class FixtureManagerTest(unit.TobikoUnitTest):
         fixture = tobiko.get_fixture(obj)
         self.assertIsInstance(fixture, fixture_type)
         self.assertIs(fixture, tobiko.get_fixture(obj))
-        self.assertIs(fixture, tobiko.get_fixture(MY_FIXTURE_NAME))
+        if isinstance(obj, fixtures.Fixture):
+            self.assertIs(obj, fixture)
+        else:
+            self.assertIs(fixture, tobiko.get_fixture(MY_FIXTURE_NAME))
+
+    def test_get_fixture_by_instance(self):
+        self._test_get_fixture(MyFixture(), fixture_type=MyFixture)
 
     def test_remove_fixture_by_name(self):
         self._test_remove_fixture(MY_FIXTURE_NAME)
@@ -75,9 +82,12 @@ class FixtureManagerTest(unit.TobikoUnitTest):
     def test_setup_fixture_by_type(self):
         self._test_setup_fixture(MyFixture)
 
+    def test_setup_fixture_by_instance(self):
+        self._test_setup_fixture(MyFixture())
+
     def _test_setup_fixture(self, obj):
         result = tobiko.setup_fixture(obj)
-        self.assertIs(tobiko.get_fixture(MY_FIXTURE_NAME), result)
+        self.assertIs(tobiko.get_fixture(obj), result)
         result.setup_fixture.assert_called_once_with()
 
     def test_cleanup_fixture_by_name(self):
@@ -86,9 +96,12 @@ class FixtureManagerTest(unit.TobikoUnitTest):
     def test_cleanup_fixture_by_type(self):
         self._test_cleanup_fixture(MyFixture)
 
+    def test_cleanup_fixture_by_instance(self):
+        self._test_cleanup_fixture(MyFixture())
+
     def _test_cleanup_fixture(self, obj):
         result = tobiko.cleanup_fixture(obj)
-        self.assertIs(tobiko.get_fixture(MY_FIXTURE_NAME), result)
+        self.assertIs(tobiko.get_fixture(obj), result)
         result.cleanup_fixture.assert_called_once_with()
 
     def test_list_required_fixtures_from_module(self):

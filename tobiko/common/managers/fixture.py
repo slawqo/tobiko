@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
 import inspect
 
 import fixtures
@@ -31,12 +32,37 @@ def is_fixture(obj):
 
 
 def get_fixture(obj, manager=None):
-    manager = manager or FIXTURES
-    return manager.get_fixture(obj)
+    if isinstance(obj, fixtures.Fixture):
+        return obj
+    else:
+        manager = manager or FIXTURES
+        return manager.get_fixture(obj)
 
 
 def get_fixture_name(obj):
-    return get_fixture(obj).__tobiko_fixture_name__
+    try:
+        return obj.__tobiko_fixture_name__
+    except AttributeError:
+        name = get_object_name(obj)
+        if is_fixture(obj):
+            obj.__tobiko_fixture__ = True
+            obj.__tobiko_fixture_name__ = name
+        return name
+
+
+def get_fixture_class(obj):
+    if isinstance(obj, six.string_types):
+        obj = tobiko.load_object(obj)
+
+    if not inspect.isclass(obj):
+        obj = type(obj)
+
+    assert issubclass(obj, fixtures.Fixture)
+    return obj
+
+
+def get_fixture_dir(obj):
+    return os.path.dirname(inspect.getfile(get_fixture_class(obj)))
 
 
 def remove_fixture(obj, manager=None):
@@ -46,14 +72,14 @@ def remove_fixture(obj, manager=None):
 
 def setup_fixture(obj, manager=None):
     fixture = get_fixture(obj, manager=manager)
-    LOG.debug('Set up fixture %r', fixture.__tobiko_fixture_name__)
+    LOG.debug('Set up fixture %r', get_fixture_name(fixture))
     fixture.setUp()
     return fixture
 
 
 def cleanup_fixture(obj, manager=None):
     fixture = get_fixture(obj, manager=manager)
-    LOG.debug('Clean up fixture %r', fixture.__tobiko_fixture_name__)
+    LOG.debug('Clean up fixture %r', get_fixture_name(fixture))
     fixture.cleanUp()
     return fixture
 
