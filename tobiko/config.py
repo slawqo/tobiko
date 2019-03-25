@@ -24,8 +24,9 @@ import tobiko
 
 LOG = log.getLogger(__name__)
 
-CONFIG_MODULES = ['tobiko.openstack.config',
-                  'tobiko.openstack.keystone.config']
+CONFIG_MODULES = ['tobiko.openstack.keystone.config',
+                  'tobiko.openstack.neutron.config',
+                  'tobiko.openstack.nova.config']
 
 CONFIG_DIRS = [os.getcwd(),
                os.path.expanduser("~/.tobiko"),
@@ -88,6 +89,12 @@ def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
 def register_tobiko_options(conf):
 
     conf.register_opts(
+        group=cfg.OptGroup('shell'),
+        opts=[cfg.StrOpt('command',
+                         help="Default shell command used for executing "
+                              "local commands")])
+
+    conf.register_opts(
         group=cfg.OptGroup('http'),
         opts=[cfg.StrOpt('http_proxy',
                          help="HTTP proxy URL for Rest APIs"),
@@ -96,12 +103,6 @@ def register_tobiko_options(conf):
               cfg.StrOpt('no_proxy',
                          help="Don't use proxy server to connect to listed "
                          "hosts")])
-
-    conf.register_opts(
-        group=cfg.OptGroup('tempest'),
-        opts=[cfg.BoolOpt('enabled',
-                          default=True,
-                          help="Enables tempest integration if available")])
 
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)

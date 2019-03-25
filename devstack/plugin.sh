@@ -23,16 +23,18 @@ function configure_tobiko {
   iniset "${tobiko_conf}" keystone username "${ADMIN_USERNAME:-admin}"
   iniset "${tobiko_conf}" keystone password "${ADMIN_PASSWORD:-secret}"
   iniset "${tobiko_conf}" keystone project_name "${ADMIN_TENANT_NAME:-admin}"
-  iniset "${tobiko_conf}" keystone user_domain_name "${ADMIN_DOMAIN_NAME:-Default}"
-  iniset "${tobiko_conf}" keystone project_domain_name "${ADMIN_DOMAIN_NAME:-Default}"
+  iniset "${tobiko_conf}" keystone user_domain_name \
+    "${ADMIN_DOMAIN_NAME:-Default}"
+  iniset "${tobiko_conf}" keystone project_domain_name \
+    "${ADMIN_DOMAIN_NAME:-Default}"
 
   echo_summary "Write compute service options to ${TOBIKO_CONF}"
-  iniset "${tobiko_conf}" compute image_ref "$(get_image_ref)"
-  iniset "${tobiko_conf}" compute flavor_ref "$(get_flavor_ref)"
+  iniset "${tobiko_conf}" nova image "$(get_image)"
+  iniset "${tobiko_conf}" nova flavor "$(get_flavor)"
 
   echo_summary "Write networking options to ${TOBIKO_CONF}"
-  iniset "${tobiko_conf}" network floating_network_name \
-    "$(get_floating_network_name)"
+  iniset "${tobiko_conf}" neutron floating_network \
+    "$(get_floating_network)"
 
   echo_summary "Apply changes to ${TOBIKO_CONF} file."
   sudo mkdir -p $(dirname "${TOBIKO_CONF}")
@@ -46,7 +48,7 @@ function get_keystone_auth_url {
 }
 
 
-function get_image_ref {
+function get_image {
   local name=${DEFAULT_IMAGE_NAME:-}
   if [ "${name}" != "" ]; then
     openstack image show -f value -c id "${name}"
@@ -56,7 +58,7 @@ function get_image_ref {
 }
 
 
-function get_flavor_ref {
+function get_flavor {
   local name=${DEFAULT_INSTANCE_TYPE:-}
   if [ "${name}" != "" ]; then
     openstack flavor show -f value -c id "${name}"
@@ -66,7 +68,7 @@ function get_flavor_ref {
 }
 
 
-function get_floating_network_name {
+function get_floating_network {
   # the public network (for floating ip access) is only available
   # if the extension is enabled.
   # If NEUTRON_CREATE_INITIAL_NETWORKS is not true, there is no network created

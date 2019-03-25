@@ -1,4 +1,4 @@
-# Copyright 2018 Red Hat
+# Copyright 2019 Red Hat
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,18 +13,11 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko import config
+from oslo_config import cfg
 
-CONF = config.CONF
 
-TEMPLATE_SUFFIX = ".yaml"
-
-DEFAULT_PARAMS = {
-
-    # Nova
-    'image': CONF.tobiko.nova.image,
-    'flavor': CONF.tobiko.nova.flavor,
-
-    # Neutron
-    'public_net': CONF.tobiko.neutron.floating_network,
-}
+def register_tobiko_options(conf):
+    conf.register_opts(
+        group=cfg.OptGroup('neutron'),
+        opts=[cfg.StrOpt('floating_network',
+                         help="Network for creating floating IPs")])
