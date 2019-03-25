@@ -37,6 +37,13 @@
         neutron-uplink-status-propagation: true
         tempest: false
         tls-proxy: true
+        # NOTE(slaweq): Swift can't run with python3 currently
+        s-account: false
+        s-container: false
+        s-object: false
+        s-proxy: false
+        # NOTE(slaweq): without Swift, c-bak cannot run (in the Gate at least)
+        c-bak: false
       devstack_local_conf:
         post-config:
           $NEUTRON_CONF:
