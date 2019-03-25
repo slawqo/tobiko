@@ -16,6 +16,7 @@ from __future__ import absolute_import
 
 import inspect
 
+from keystoneauth1 import session as keystonesession
 import mock
 
 import tobiko
@@ -175,11 +176,10 @@ class GetKeystomeSessionTest(base.OpenstackTest):
                                                  shared=shared)
         if shared:
             self.assertIs(session1, session2)
-            self.assertIsNotNone(session1)
         else:
             self.assertIsNot(session1, session2)
-            self.assertIsNotNone(session1)
-            self.assertIsNotNone(session2)
+        self.assertIsInstance(session1, keystonesession.Session)
+        self.assertIsInstance(session2, keystonesession.Session)
 
     def test_get_keystone_session_with_not_shared(self):
         self.test_get_keystone_session(shared=False)
