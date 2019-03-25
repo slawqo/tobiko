@@ -1,0 +1,27 @@
+---
+- name: Install Tobiko
+  hosts: undercloud
+  any_errors_fatal: true
+  gather_facts: yes
+  tasks:
+      - name: Install required packages
+        become: yes
+        yum:
+            name: "{{ item }}"
+            state: present
+        with_items:
+            - 'python-virtualenv'
+            - 'git'
+
+      - name: Create Virtualenv
+        vars:
+            packages: ['pip', 'setuptools', 'pbr', 'tox']
+        pip:
+            virtualenv: "{{ test.venv }}"
+            name: "{{ packages }}"
+            state: latest
+
+      - name: Create virtual env for Tobiko test cases
+        shell: |
+           "source {{ test.venv }}/bin/activate"
+           "tox -e {{ test.environment }} --notest"
