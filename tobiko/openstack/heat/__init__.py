@@ -14,6 +14,12 @@
 from __future__ import absolute_import
 
 from tobiko.openstack.heat import client
+from tobiko.openstack.heat import template
+
 
 get_heat_client = client.get_heat_client
 HeatClientFixture = client.HeatClientFixture
+
+HeatTemplate = template.HeatTemplate
+get_heat_template = template.get_heat_template
+heat_template_file = template.heat_template_file
