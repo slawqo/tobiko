@@ -1,0 +1,56 @@
+heat_template_version: newton
+
+
+description: |
+  Stack of resources used to test floating IP
+
+
+parameters:
+  flavor:
+    type: string
+  image:
+    type: string
+  floating_network:
+    type: string
+  internal_network:
+    type: string
+  port_security_enabled:
+    type: boolean
+    default: false
+  security_groups:
+    type: comma_delimited_list
+    default: []
+
+
+resources:
+
+  port:
+    type: OS::Neutron::Port
+    properties:
+      network: {get_param: internal_network}
+      port_security_enabled: {get_param: port_security_enabled}
+      security_groups: {get_param: security_groups}
+
+  server:
+    type: OS::Nova::Server
+    properties:
+      image: {get_param: image}
+      flavor: {get_param: flavor}
+      networks:
+        - port: {get_resource: port}
+
+  floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: {get_param: floating_network}
+
+  floating_ip_association:
+    type: OS::Neutron::FloatingIPAssociation
+    properties:
+      floatingip_id: {get_resource: floating_ip}
+      port_id: {get_resource: port}
+
+
+outputs:
+  floating_ip_address:
+    value: {get_attr: [floating_ip, floating_ip_address]}

@@ -1,0 +1,47 @@
+heat_template_version: newton
+
+
+description: |
+  Creates an internal network with a route to a floating IP external network
+
+
+parameters:
+  floating_network:
+    type: string
+  subnet_ipv4_cidr:
+    type: string
+    default: 190.40.2.0/24
+  dns_nameservers:
+    type: comma_delimited_list
+    default: ["8.8.8.8", "8.8.4.4"]
+
+
+resources:
+
+  network:
+    type: OS::Neutron::Net
+
+  subnet_ipv4:
+    type: OS::Neutron::Subnet
+    properties:
+      network: {get_resource: network}
+      ip_version: 4
+      cidr: {get_param: subnet_ipv4_cidr}
+      dns_nameservers: {get_param: dns_nameservers}
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+      external_gateway_info:
+        network: {get_param: floating_network}
+
+  router_interface_ipv4:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router: {get_resource: router}
+      subnet: {get_resource: subnet_ipv4}
+
+
+outputs:
+  network_id:
+    value: {get_resource: network}

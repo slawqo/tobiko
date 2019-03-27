@@ -1,0 +1,32 @@
+heat_template_version: newton
+
+
+description: |
+  Stack of resources used to test floating IP
+
+
+resources:
+
+  icmp_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: icmp
+      rules:
+      - protocol: icmp
+
+  ssh_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: ssh
+      rules:
+      - protocol: tcp
+        port_range_min: 22
+        port_range_max: 22
+
+outputs:
+
+  icmp_security_group_id:
+    value: {get_resource: icmp_security_group}
+
+  ssh_security_group_id:
+    value: {get_resource: ssh_security_group}
