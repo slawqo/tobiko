@@ -13,12 +13,10 @@
 #    under the License.
 from __future__ import absolute_import
 
-import argparse
 import os
 import sys
 
 from oslo_log import log
-
 from tobiko.cmd import base
 from tobiko.common import constants
 from tobiko.common import exceptions
@@ -28,13 +26,8 @@ LOG = log.getLogger(__name__)
 
 class CreateUtil(base.TobikoCMD):
 
-    def __init__(self):
-        super(CreateUtil, self).__init__()
-        self.parser = self.get_parser()
-        self.args = (self.parser).parse_args()
-
     def get_parser(self):
-        parser = argparse.ArgumentParser(add_help=True)
+        parser = super(CreateUtil, self).get_parser()
         parser.add_argument(
             '--stack', '-s',
             help="The name of the stack to create.\n"
@@ -78,6 +71,7 @@ class NoSuchTemplateError(exceptions.TobikoException):
 def main():
     """Create CLI main entry."""
     create_cmd = CreateUtil()
+    create_cmd.set_stream_handler_logging_level()
     if create_cmd.args.playbook:
         create_cmd.run_playbook(create_cmd.args.playbook)
     else:

@@ -22,7 +22,7 @@ from tobiko.tests.openstack import base as test_base
 
 class TobikoCMDTest(test_base.OpenstackTest):
 
-    command_name = None
+    command_name = 'tobiko-base'
     command_class = base.TobikoCMD
 
     def test_init(self, argv=None):

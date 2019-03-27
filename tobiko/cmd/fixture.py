@@ -13,7 +13,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import argparse
 import sys
 
 from oslo_log import log
@@ -27,13 +26,9 @@ LOG = log.getLogger(__name__)
 
 class FixtureUtil(base.TobikoCMD):
 
-    def __init__(self):
-        super(FixtureUtil, self).__init__()
-        self.parser = self.get_parser()
-        self.args = self.parser.parse_args()
-
     def get_parser(self):
-        parser = argparse.ArgumentParser(add_help=True)
+        parser = super(FixtureUtil, self).get_parser()
+
         subparsers_params = {}
         subparsers = parser.add_subparsers(**subparsers_params)
 
@@ -188,6 +183,7 @@ class FixtureUtil(base.TobikoCMD):
 def main():
     """Create CLI main entry."""
     fixture_util = FixtureUtil()
+    fixture_util.set_stream_handler_logging_level()
     fixture_util.execute()
 
 
