@@ -126,7 +126,8 @@ class OpenstackClientManagerTest(base.OpenstackTest):
         else:
             self.assertIsNot(client1, client2)
             default_init_client.assert_has_calls(
-                [mock.call(session=(session or DEFAULT_SESSION))] * 2)
+                [mock.call(session=(session or DEFAULT_SESSION))] * 2,
+                any_order=True)
 
     def test_get_client_with_not_shared(self):
         self.test_get_client(shared=False)
