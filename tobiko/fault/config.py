@@ -21,6 +21,7 @@ from oslo_log import log
 
 from tobiko.fault import constants as fault_const
 from tobiko.common.utils import file as file_utils
+from tobiko.openstack import nova
 
 
 LOG = log.getLogger(__name__)
@@ -33,10 +34,9 @@ class FaultConfig(object):
     DEFAULT_CONF_NAME = "os-faults.yml"
     DEFAULT_CONF_FILE = os.path.join(DEFAULT_CONF_PATH, DEFAULT_CONF_NAME)
 
-    def __init__(self, conf_file, clients):
+    def __init__(self, conf_file):
         self.templates_dir = os.path.join(os.path.dirname(__file__),
                                           'templates')
-        self.clients = clients
         if conf_file:
             self.conf_file = conf_file
         else:
@@ -68,6 +68,7 @@ class FaultConfig(object):
 
     def get_nodes(self):
         """Returns a list of dictonaries with nodes name and address."""
+        client = nova.get_nova_client()
         return [{'name': server.name,
                  'address': server.addresses['ctlplane'][0]['addr']}
-                for server in self.clients.nova_client.servers.list()]
+                for server in client.servers.list()]
