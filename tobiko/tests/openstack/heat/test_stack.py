@@ -141,7 +141,7 @@ class HeatStackFixtureTest(base.OpenstackTest):
                    call_create=True, call_delete=False, call_sleep=False):
         client = mock.MagicMock(specs=heatclient.Client)
         get_heat_client = self.patch(
-            'tobiko.openstack.heat.client.get_heat_client',
+            'tobiko.openstack.heat._client.get_heat_client',
             return_value=client)
         if stack_states:
             client.stacks.get.side_effect = [
@@ -160,7 +160,7 @@ class HeatStackFixtureTest(base.OpenstackTest):
         default_template = heat.HeatTemplate.from_dict(
             {'default': 'template'})
         get_heat_template = self.patch(
-            'tobiko.openstack.heat.template.get_heat_template',
+            'tobiko.openstack.heat._template.get_heat_template',
             return_value=default_template)
 
         stack.setUp()

@@ -17,9 +17,10 @@ import collections
 import os
 import sys
 
-import tobiko
 from heatclient.common import template_utils
 import yaml
+
+import tobiko
 
 
 TEMPLATE_SUFFIX = '.yaml'

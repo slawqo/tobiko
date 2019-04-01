@@ -13,16 +13,16 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.openstack.heat import client
-from tobiko.openstack.heat import template
-from tobiko.openstack.heat import stack
+from tobiko.openstack.heat import _client
+from tobiko.openstack.heat import _template
+from tobiko.openstack.heat import _stack
 
 
-get_heat_client = client.get_heat_client
-HeatClientFixture = client.HeatClientFixture
+get_heat_client = _client.get_heat_client
+HeatClientFixture = _client.HeatClientFixture
 
-HeatTemplate = template.HeatTemplate
-get_heat_template = template.get_heat_template
-heat_template_file = template.heat_template_file
+HeatTemplate = _template.HeatTemplate
+get_heat_template = _template.get_heat_template
+heat_template_file = _template.heat_template_file
 
-HeatStackFixture = stack.HeatStackFixture
+HeatStackFixture = _stack.HeatStackFixture

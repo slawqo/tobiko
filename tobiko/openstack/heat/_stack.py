@@ -21,8 +21,8 @@ from oslo_log import log
 
 import tobiko
 from tobiko.common import exceptions
-from tobiko.openstack.heat import client as _client
-from tobiko.openstack.heat import template as _template
+from tobiko.openstack.heat import _client
+from tobiko.openstack.heat import _template
 
 
 LOG = log.getLogger(__name__)
