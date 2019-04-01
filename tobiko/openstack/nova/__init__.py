@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.openstack.nova import client
+from tobiko.openstack.nova import _client
 
-get_nova_client = client.get_nova_client
-NovaClientFixture = client.NovaClientFixture
+get_nova_client = _client.get_nova_client
+NovaClientFixture = _client.NovaClientFixture
