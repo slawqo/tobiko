@@ -13,14 +13,14 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.openstack.keystone import credentials
-from tobiko.openstack.keystone import session
+from tobiko.openstack.keystone import _credentials
+from tobiko.openstack.keystone import _session
 
-keystone_credentials = credentials.keystone_credentials
-default_keystone_credentials = credentials.default_keystone_credentials
-KeystoneCredentials = credentials.KeystoneCredentials
-InvalidKeystoneCredentials = credentials.InvalidKeystoneCredentials
+keystone_credentials = _credentials.keystone_credentials
+default_keystone_credentials = _credentials.default_keystone_credentials
+KeystoneCredentials = _credentials.KeystoneCredentials
+InvalidKeystoneCredentials = _credentials.InvalidKeystoneCredentials
 
-KeystoneSessionFixture = session.KeystoneSessionFixture
-KeystoneSessionManager = session.KeystoneSessionManager
-get_keystone_session = session.get_keystone_session
+KeystoneSessionFixture = _session.KeystoneSessionFixture
+KeystoneSessionManager = _session.KeystoneSessionManager
+get_keystone_session = _session.get_keystone_session

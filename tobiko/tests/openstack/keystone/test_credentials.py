@@ -17,7 +17,7 @@ from __future__ import absolute_import
 import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
-from tobiko.openstack.keystone import credentials as _credentials
+from tobiko.openstack.keystone import _credentials
 from tobiko.tests.openstack import base
 
 V2_PARAMS = {

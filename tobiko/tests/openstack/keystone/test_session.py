@@ -77,7 +77,7 @@ class KeystoneSessionFixtureTest(CheckSessionCredentialsMixin,
                                  base.OpenstackTest):
 
     default_credentials_fixture = (
-        'tobiko.openstack.keystone.credentials.'
+        'tobiko.openstack.keystone._credentials.'
         'DefaultKeystoneCredentialsFixture')
 
     def setUp(self):

@@ -18,7 +18,7 @@ from keystoneauth1 import session as _session
 from oslo_log import log
 
 import tobiko
-from tobiko.openstack.keystone import credentials as _credentials
+from tobiko.openstack.keystone import _credentials
 
 
 LOG = log.getLogger(__name__)
