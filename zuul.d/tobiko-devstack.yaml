@@ -123,6 +123,7 @@
     name: tobiko-devstack-neutron-fedora
     parent: tobiko-devstack-neutron
     nodeset: openstack-three-node-fedora-28
+    voting: false
     vars:
       devstack_services:
         tls-proxy: false
