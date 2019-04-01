@@ -11,6 +11,7 @@
         - openstack-tox-py36
         - openstack-tox-py37
         - openstack-tox-py27
+        - tobiko-devstack-neutron-centos
         - tobiko-devstack-neutron
         - tobiko-devstack-neutron-fedora
     gate:

@@ -131,3 +131,19 @@
       subnode:
         devstack_services:
           tls-proxy: false
+
+- job:
+    name: tobiko-devstack-neutron-centos
+    parent: tobiko-devstack-neutron
+    nodeset: openstack-three-node-centos-7
+    vars:
+      devstack_localrc:
+        USE_PYTHON3: false
+      devstack_services:
+        tls-proxy: false
+    group-vars:
+      subnode:
+        devstack_localrc:
+          USE_PYTHON3: false
+        devstack_services:
+          tls-proxy: false
