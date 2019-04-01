@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.openstack.neutron import client
+from tobiko.openstack.neutron import _client
 
-get_neutron_client = client.get_neutron_client
-NeutronClientFixture = client.NeutronClientFixture
+get_neutron_client = _client.get_neutron_client
+NeutronClientFixture = _client.NeutronClientFixture
