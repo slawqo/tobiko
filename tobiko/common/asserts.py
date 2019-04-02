@@ -24,8 +24,9 @@ class PingFailed(exceptions.TobikoException,
     message = "Failed pinging %(destination)r: %(reason)s"
 
 
-def assert_ping(ip, should_fail=False, mtu=None, fragmentation=True):
-    success = net_utils.ping_ip_address(ip, mtu=mtu,
+def assert_ping(ip, should_fail=False, fragmentation=True,
+                packet_size=None):
+    success = net_utils.ping_ip_address(ip, mtu=packet_size,
                                         fragmentation=fragmentation)
     if success:
         if should_fail:

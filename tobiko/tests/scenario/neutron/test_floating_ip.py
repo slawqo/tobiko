@@ -29,12 +29,17 @@ class FloatingIPFixture(heat.HeatStackFixture):
     parameters = {'floating_network': CONF.tobiko.neutron.floating_network,
                   'image': CONF.tobiko.nova.image,
                   'flavor': CONF.tobiko.nova.flavor}
+    internal_network_fixture = base.InternalNetworkFixture
+    internal_network = None
 
     def setup_parameters(self):
         super(FloatingIPFixture, self).setup_parameters()
-        internal_network = tobiko.setup_fixture(
-                base.InternalNetworkFixture).wait_for_outputs()
-        self.parameters['internal_network'] = internal_network.network_id
+        self.setup_internal_network()
+        self.parameters['internal_network'] = self.internal_network.network_id
+
+    def setup_internal_network(self):
+        self.internal_network = tobiko.setup_fixture(
+            self.internal_network_fixture).wait_for_outputs()
 
 
 class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
@@ -43,34 +48,43 @@ class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
 
 class FloatingIPWithSecurityGroupFixture(FloatingIPFixture):
     parameters = {'port_security_enabled': True}
+    security_groups_fixture = base.SecurityGroupsFixture
+    security_groups = None
 
     def setup_parameters(self):
         super(FloatingIPWithSecurityGroupFixture, self).setup_parameters()
-        security_groups = tobiko.setup_fixture(
-                base.SecurityGroupsFixture).wait_for_outputs()
+        self.setup_security_groups()
         self.parameters['security_groups'] = [
-            security_groups.icmp_security_group_id]
+            self.security_groups.icmp_security_group_id]
+
+    def setup_security_groups(self):
+        self.security_groups = tobiko.setup_fixture(
+                self.security_groups_fixture).wait_for_outputs()
 
 
 class FloatingIPTest(base.NeutronTest):
     """Tests server connectivity"""
 
-    def test_ping_floating_ip(self,
-                              fixture_type=FloatingIPFixture,
-                              should_fail=False):
+    def test_ping_floating_ip(self, fixture_type=FloatingIPFixture):
         """Validates connectivity to a server post upgrade."""
-        stack = tobiko.setup_fixture(fixture_type)
-        outputs = stack.wait_for_outputs()
-        asserts.assert_ping(outputs.floating_ip_address,
-                            should_fail=should_fail)
+        stack = self.setup_fixture(fixture_type)
+        asserts.assert_ping(stack.outputs.floating_ip_address)
 
-    def test_ping_floating_ip_with_port_security(self):
+    def test_ping_floating_ip_with_port_security(
+            self, fixture_type=FloatingIPWithPortSecurityFixture):
         """Validates connectivity to a server post upgrade."""
-        self.test_ping_floating_ip(
-            fixture_type=FloatingIPWithPortSecurityFixture,
-            should_fail=True)
+        stack = self.setup_fixture(fixture_type)
+        asserts.assert_ping(stack.outputs.floating_ip_address,
+                            should_fail=True)
 
-    def test_ping_floating_ip_security_group(self):
+    def test_ping_floating_ip_with_security_group(
+            self, fixture_type=FloatingIPWithSecurityGroupFixture):
         """Validates connectivity to a server post upgrade."""
-        self.test_ping_floating_ip(
-            fixture_type=FloatingIPWithSecurityGroupFixture)
+        stack = self.setup_fixture(fixture_type)
+        asserts.assert_ping(stack.outputs.floating_ip_address)
+
+    def test_ping_with_oversize_packet(self, fixture_type=FloatingIPFixture):
+        stack = self.setup_fixture(fixture_type)
+        asserts.assert_ping(stack.outputs.floating_ip_address,
+                            packet_size=stack.internal_network.mtu + 1,
+                            fragmentation=False, should_fail=True)

@@ -16,6 +16,7 @@ from __future__ import absolute_import
 
 import os
 
+import tobiko
 from tobiko import config
 from tobiko.openstack import heat
 from tobiko.tests import base
@@ -43,4 +44,8 @@ class SecurityGroupsFixture(heat.HeatStackFixture):
 
 
 class NeutronTest(base.TobikoTest):
-    pass
+
+    def setup_fixture(self, fixture_type):
+        stack = tobiko.setup_fixture(fixture_type)
+        stack.wait_for_outputs()
+        return stack

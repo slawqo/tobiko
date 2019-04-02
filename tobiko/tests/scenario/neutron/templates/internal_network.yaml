@@ -14,12 +14,17 @@ parameters:
   dns_nameservers:
     type: comma_delimited_list
     default: ["8.8.8.8", "8.8.4.4"]
+  value_specs:
+    type: json
+    default: {}
 
 
 resources:
 
   network:
     type: OS::Neutron::Net
+    properties:
+      value_specs: {get_param: value_specs}
 
   subnet_ipv4:
     type: OS::Neutron::Subnet
@@ -45,3 +50,5 @@ resources:
 outputs:
   network_id:
     value: {get_resource: network}
+  mtu:
+    value: {get_attr: [network, mtu]}
