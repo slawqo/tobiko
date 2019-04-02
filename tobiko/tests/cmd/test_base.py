@@ -14,8 +14,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import os.path
-
 from tobiko.cmd import base
 from tobiko.tests.openstack import base as test_base
 
@@ -28,7 +26,6 @@ class TobikoCMDTest(test_base.OpenstackTest):
     def test_init(self, argv=None):
         self.patch_argv(argv=argv)
         cmd = self.command_class()
-        self.assertTrue(os.path.isdir(cmd.templates_dir))
         self.assertIsNotNone(cmd.stackManager)
         return cmd
 
