@@ -3,6 +3,7 @@
     templates:
       - check-requirements
       - tempest-plugin-jobs
+      - release-notes-jobs-python3
     check:
       jobs:
         - openstack-tox-pep8
