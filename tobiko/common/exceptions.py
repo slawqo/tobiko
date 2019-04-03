@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import testtools
+
 
 class TobikoException(Exception):
     """Base Tobiko Exception.
@@ -20,23 +22,27 @@ class TobikoException(Exception):
     To use this class, inherit from it and define a 'message' property.
     """
 
-    message = "An unknown exception occurred."
+    message = None
 
     def __init__(self, **properties):
         super(TobikoException, self).__init__()
         self._properties = properties
         message = self.message  # pylint: disable=exception-message-attribute
-        if properties:
-            message = message % properties
-        self._message = message
+        if message:
+            if properties:
+                message = message % properties
+        self._message = message or "unknown reason"
 
     def __str__(self):
         return self._message
 
-    def __getattr(self, name):
+    def __getattr__(self, name):
         try:
             return self._properties[name]
         except KeyError:
-            pass
-        msg = ("'{!r}' object has no attribute {!r}").format(self, name)
-        raise AttributeError(msg)
+            msg = ("{!r} object has no attribute {!r}").format(self, name)
+            raise AttributeError(msg)
+
+
+class FailureException(TobikoException, testtools.TestCase.failureException):
+    pass

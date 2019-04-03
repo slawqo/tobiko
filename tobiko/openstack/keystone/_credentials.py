@@ -18,7 +18,6 @@ import collections
 from oslo_log import log
 
 import tobiko
-from tobiko.common import exceptions
 
 
 LOG = log.getLogger(__name__)
@@ -74,7 +73,7 @@ def keystone_credentials(api_version=None, auth_url=None,
                project_domain_name=project_domain_name)
 
 
-class InvalidKeystoneCredentials(exceptions.TobikoException):
+class InvalidKeystoneCredentials(tobiko.TobikoException):
     message = "Invalid Keystone credentials (%(credentials)r): %(reason)s."
 
 
