@@ -18,15 +18,7 @@ function configure_tobiko {
   fi
 
   # See ``lib/keystone`` where these users and tenants are set up
-  echo_summary "Write Keystone service options to ${TOBIKO_CONF}"
-  iniset "${tobiko_conf}" keystone auth_url "$(get_keystone_auth_url)"
-  iniset "${tobiko_conf}" keystone username "${ADMIN_USERNAME:-admin}"
-  iniset "${tobiko_conf}" keystone password "${ADMIN_PASSWORD:-secret}"
-  iniset "${tobiko_conf}" keystone project_name "${ADMIN_TENANT_NAME:-admin}"
-  iniset "${tobiko_conf}" keystone user_domain_name \
-    "${ADMIN_DOMAIN_NAME:-Default}"
-  iniset "${tobiko_conf}" keystone project_domain_name \
-    "${ADMIN_DOMAIN_NAME:-Default}"
+  configure_keystone_credentials
 
   echo_summary "Write compute service options to ${TOBIKO_CONF}"
   iniset "${tobiko_conf}" nova image "$(get_image)"
@@ -57,6 +49,31 @@ function get_image {
   fi
 }
 
+
+function configure_keystone_credentials {
+  echo_summary "Write Keystone service options to ${TOBIKO_CONF}"
+  iniset "${tobiko_conf}" keystone auth_url "$(get_keystone_auth_url)"
+
+  TOBIKO_PROJECT_ID=$(get_or_create_project \
+    "${TOBIKO_KEYSTONE_PROJECT_NAME}" "${TOBIKO_KEYSTONE_PROJECT_DOMAIN_NAME}")
+
+  TOBIKO_USER_ID=$(get_or_create_user ${TOBIKO_KEYSTONE_USERNAME} \
+    "${TOBIKO_KEYSTONE_PASSWORD}" "${TOBIKO_KEYSTONE_USER_DOMAIN_NAME}")
+
+  get_or_add_user_project_role "${TOBIKO_KEYSTONE_USER_ROLE}" \
+    "${TOBIKO_USER_ID}" "${TOBIKO_PROJECT_ID}"
+
+  get_or_add_user_domain_role "${TOBIKO_KEYSTONE_USER_ROLE}" \
+    "${TOBIKO_USER_ID}" "${TOBIKO_KEYSTONE_USER_DOMAIN_NAME}"
+
+  iniset "${tobiko_conf}" keystone username "${TOBIKO_KEYSTONE_USERNAME}"
+  iniset "${tobiko_conf}" keystone password "${TOBIKO_KEYSTONE_PASSWORD}"
+  iniset "${tobiko_conf}" keystone project_name "${TOBIKO_KEYSTONE_PROJECT_NAME}"
+  iniset "${tobiko_conf}" keystone user_domain_name \
+    "${TOBIKO_KEYSTONE_USER_DOMAIN_NAME}"
+  iniset "${tobiko_conf}" keystone project_domain_name \
+    "${TOBIKO_KEYSTONE_PROJECT_DOMAIN_NAME}"
+}
 
 function get_flavor {
   local name=${DEFAULT_INSTANCE_TYPE:-}
