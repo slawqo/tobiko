@@ -109,6 +109,14 @@ class HeatStackFixture(tobiko.SharedFixture):
         if self._parameters:
             self.parameters.update(self._parameters)
 
+        # Add template's missing stack parameters
+        if 'parameters' in self.template.template:
+            for name in self.template.template['parameters']:
+                if name not in self.parameters:
+                    value = getattr(self, name, None)
+                    if value is not None:
+                        self.parameters[name] = value
+
     def setup_client(self):
         client_fixture = self.client_fixture
         if client_fixture:
