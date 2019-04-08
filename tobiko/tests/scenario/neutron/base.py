@@ -34,9 +34,7 @@ def heat_template_file(template_file):
 
 class InternalNetworkFixture(heat.HeatStackFixture):
     template = heat_template_file('internal_network.yaml')
-    parameters = {
-        'floating_network': CONF.tobiko.neutron.floating_network,
-    }
+    floating_network = CONF.tobiko.neutron.floating_network
 
 
 class SecurityGroupsFixture(heat.HeatStackFixture):

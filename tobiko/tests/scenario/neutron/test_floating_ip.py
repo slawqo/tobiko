@@ -26,9 +26,9 @@ CONF = config.CONF
 
 class FloatingIPFixture(heat.HeatStackFixture):
     template = base.heat_template_file('floating_ip.yaml')
-    parameters = {'floating_network': CONF.tobiko.neutron.floating_network,
-                  'image': CONF.tobiko.nova.image,
-                  'flavor': CONF.tobiko.nova.flavor}
+    floating_network = CONF.tobiko.neutron.floating_network
+    image = CONF.tobiko.nova.image
+    flavor = CONF.tobiko.nova.flavor
     internal_network_fixture = base.InternalNetworkFixture
     internal_network = None
 
@@ -43,11 +43,11 @@ class FloatingIPFixture(heat.HeatStackFixture):
 
 
 class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
-    parameters = {'port_security_enabled': True}
+    port_security_enabled = True
 
 
 class FloatingIPWithSecurityGroupFixture(FloatingIPFixture):
-    parameters = {'port_security_enabled': True}
+    port_security_enabled = True
     security_groups_fixture = base.SecurityGroupsFixture
     security_groups = None
 
