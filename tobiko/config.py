@@ -26,7 +26,8 @@ LOG = log.getLogger(__name__)
 
 CONFIG_MODULES = ['tobiko.openstack.keystone.config',
                   'tobiko.openstack.neutron.config',
-                  'tobiko.openstack.nova.config']
+                  'tobiko.openstack.nova.config',
+                  'tobiko.shell.sh.config']
 
 CONFIG_DIRS = [os.getcwd(),
                os.path.expanduser("~/.tobiko"),
@@ -87,12 +88,6 @@ def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
 
 
 def register_tobiko_options(conf):
-
-    conf.register_opts(
-        group=cfg.OptGroup('shell'),
-        opts=[cfg.StrOpt('command',
-                         help="Default shell command used for executing "
-                              "local commands")])
 
     conf.register_opts(
         group=cfg.OptGroup('http'),
