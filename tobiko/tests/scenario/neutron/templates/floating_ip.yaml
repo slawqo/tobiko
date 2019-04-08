@@ -8,15 +8,20 @@ description: |
 parameters:
   flavor:
     type: string
+
   image:
     type: string
+
   floating_network:
     type: string
+
   internal_network:
     type: string
+
   port_security_enabled:
     type: boolean
     default: false
+
   security_groups:
     type: comma_delimited_list
     default: []
