@@ -21,8 +21,8 @@ from heatclient import exc
 from oslo_log import log
 import yaml
 
+import tobiko
 from tobiko.common import constants
-from tobiko.common import exceptions
 from tobiko.openstack import heat
 
 
@@ -186,15 +186,15 @@ def check_stack_status(stack, expected):
                           reason=stack.stack_status_reason)
 
 
-class InvalidOutputKey(exceptions.TobikoException):
+class InvalidOutputKey(tobiko.TobikoException):
     msg = ("Output key %(key)r not found in stack %(name).")
 
 
-class StackNotFound(exceptions.TobikoException):
+class StackNotFound(tobiko.TobikoException):
     msg = ("Stack %(name)r not found")
 
 
-class InvalidStackStatus(exceptions.TobikoException):
+class InvalidStackStatus(tobiko.TobikoException):
     msg = ("Stack %(name)r status %(observed)r not in %(expected)r "
            "(reason=%(status_reason)r)")
 

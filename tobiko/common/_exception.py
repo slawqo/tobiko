@@ -13,8 +13,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import testtools
-
 
 class TobikoException(Exception):
     """Base Tobiko Exception.
@@ -42,7 +40,3 @@ class TobikoException(Exception):
         except KeyError:
             msg = ("{!r} object has no attribute {!r}").format(self, name)
             raise AttributeError(msg)
-
-
-class FailureException(TobikoException, testtools.TestCase.failureException):
-    pass

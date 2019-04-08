@@ -16,7 +16,7 @@ from __future__ import absolute_import
 
 import tobiko
 from tobiko import config
-from tobiko.common import asserts
+from tobiko.common.utils import network
 from tobiko.openstack import heat
 from tobiko.tests.scenario.neutron import base
 
@@ -68,23 +68,23 @@ class FloatingIPTest(base.NeutronTest):
     def test_ping_floating_ip(self, fixture_type=FloatingIPFixture):
         """Validates connectivity to a server post upgrade."""
         stack = self.setup_fixture(fixture_type)
-        asserts.assert_ping(stack.outputs.floating_ip_address)
+        network.assert_ping(stack.outputs.floating_ip_address)
 
     def test_ping_floating_ip_with_port_security(
             self, fixture_type=FloatingIPWithPortSecurityFixture):
         """Validates connectivity to a server post upgrade."""
         stack = self.setup_fixture(fixture_type)
-        asserts.assert_ping(stack.outputs.floating_ip_address,
+        network.assert_ping(stack.outputs.floating_ip_address,
                             should_fail=True)
 
     def test_ping_floating_ip_with_security_group(
             self, fixture_type=FloatingIPWithSecurityGroupFixture):
         """Validates connectivity to a server post upgrade."""
         stack = self.setup_fixture(fixture_type)
-        asserts.assert_ping(stack.outputs.floating_ip_address)
+        network.assert_ping(stack.outputs.floating_ip_address)
 
     def test_ping_with_oversize_packet(self, fixture_type=FloatingIPFixture):
         stack = self.setup_fixture(fixture_type)
-        asserts.assert_ping(stack.outputs.floating_ip_address,
+        network.assert_ping(stack.outputs.floating_ip_address,
                             packet_size=stack.internal_network.mtu + 1,
                             fragmentation=False, should_fail=True)

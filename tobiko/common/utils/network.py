@@ -24,6 +24,7 @@ from oslo_log import log
 from tempest.common.utils import net_utils
 from tempest.lib.common.utils import test_utils
 
+import tobiko
 from tobiko import config
 
 LOG = log.getLogger(__name__)
@@ -126,3 +127,15 @@ def ping_ip_address(ip_address, should_succeed=True,
             return not should_succeed
 
     return test_utils.call_until_true(ping, timeout, 1)
+
+
+def assert_ping(ip, should_fail=False, fragmentation=True,
+                packet_size=None):
+    success = ping_ip_address(ip, mtu=packet_size,
+                              fragmentation=fragmentation)
+    if success:
+        if should_fail:
+            tobiko.fail("Host {!r} is reachable", ip)
+
+    elif not should_fail:
+        tobiko.fail("Host {!r} is not reachable", ip)

@@ -12,10 +12,13 @@
 #    under the License.
 from __future__ import absolute_import
 
+from tobiko.common import _asserts
+from tobiko.common import _exception
 from tobiko.common.managers import fixture
 from tobiko.common.managers import testcase as testcase_manager
 from tobiko.common.managers import loader as loader_manager
-from tobiko.common import exceptions
+from tobiko.common import _skip
+
 
 load_object = loader_manager.load_object
 load_module = loader_manager.load_module
@@ -33,5 +36,12 @@ cleanup_fixture = fixture.cleanup_fixture
 list_required_fixtures = fixture.list_required_fixtures
 SharedFixture = fixture.SharedFixture
 
-TobikoException = exceptions.TobikoException
-FailureException = exceptions.FailureException
+TobikoException = _exception.TobikoException
+
+FailureException = _asserts.FailureException
+fail = _asserts.fail
+
+SkipException = _skip.SkipException
+skip = _skip.skip
+skip_if = _skip.skip_if
+skip_until = _skip.skip_until

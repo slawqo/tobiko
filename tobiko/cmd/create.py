@@ -17,9 +17,10 @@ import os
 import sys
 
 from oslo_log import log
+
+import tobiko
 from tobiko.cmd import base
 from tobiko.common import constants
-from tobiko.common import exceptions
 
 LOG = log.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class CreateUtil(base.TobikoCMD):
         self.ansibleManager.run_playbook(playbook, mode='create')
 
 
-class NoSuchTemplateError(exceptions.TobikoException):
+class NoSuchTemplateError(tobiko.TobikoException):
     message = "No such template. Existing templates:\n%(templates)s"
 
 
