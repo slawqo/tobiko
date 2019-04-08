@@ -12,7 +12,7 @@ MEMORY = 12288
 
 # Every Vagrant development environment requires a box. You can search for
 # boxes at https://vagrantcloud.com/search.
-BOX = "generic/ubuntu1604"
+BOX = "generic/ubuntu1804"
 
 HOSTNAME = "tobiko"
 
@@ -24,7 +24,7 @@ OPENSTACK_GIT_BASE = "https://git.openstack.org"
 
 # DevStack Git repo URL and branch
 DEVSTACK_GIT_REPO = "#{OPENSTACK_GIT_BASE}/openstack-dev/devstack"
-DEVSTACK_GIT_BRANCH = "stable/queens"
+DEVSTACK_GIT_BRANCH = "master"
 
 # DevStack destination directory
 DEVSTACK_DEST_DIR = "/opt/stack"
