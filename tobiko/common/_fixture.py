@@ -19,6 +19,7 @@ import inspect
 import fixtures
 from oslo_log import log
 import six
+import testtools
 
 import tobiko
 
@@ -73,7 +74,13 @@ def remove_fixture(obj, manager=None):
 def setup_fixture(obj, manager=None):
     fixture = get_fixture(obj, manager=manager)
     LOG.debug('Set up fixture %r', get_fixture_name(fixture))
-    fixture.setUp()
+    try:
+        fixture.setUp()
+    except testtools.MultipleExceptions as ex:
+        for exc_info in ex.args[1:]:
+            LOG.exception("Error setting up fixture %r",
+                          fixture.fixture_name, exc_info=exc_info)
+        six.reraise(*ex.args[0])
     return fixture
 
 
