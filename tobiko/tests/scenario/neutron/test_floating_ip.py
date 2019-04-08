@@ -16,9 +16,9 @@ from __future__ import absolute_import
 
 import tobiko
 from tobiko import config
-from tobiko.common.utils import network
 from tobiko.openstack import heat
 from tobiko.tests.scenario.neutron import base
+from tobiko.shell import ping
 
 
 CONF = config.CONF
@@ -26,9 +26,12 @@ CONF = config.CONF
 
 class FloatingIPFixture(heat.HeatStackFixture):
     template = base.heat_template_file('floating_ip.yaml')
+
+    # template parameters
     floating_network = CONF.tobiko.neutron.floating_network
     image = CONF.tobiko.nova.image
     flavor = CONF.tobiko.nova.flavor
+
     internal_network_fixture = base.InternalNetworkFixture
     internal_network = None
 
@@ -42,12 +45,66 @@ class FloatingIPFixture(heat.HeatStackFixture):
             self.internal_network_fixture).wait_for_outputs()
 
 
+class FloatingIPTest(base.NeutronTest):
+    """Tests server connectivity"""
+
+    floating_ip_fixture = FloatingIPFixture
+
+    @classmethod
+    def setUpClass(cls):
+        super(FloatingIPTest, cls).setUpClass()
+        stack = tobiko.setup_fixture(cls.floating_ip_fixture)
+        outputs = stack.wait_for_outputs()
+        cls.floating_ip_address = outputs.floating_ip_address
+        cls.mtu = stack.internal_network.mtu
+
+    def test_ping(self):
+        ping.ping_until_received(self.floating_ip_address).assert_replied()
+
+    def test_ping_with_mtu_packet(self):
+        ping.ping_until_received(self.floating_ip_address,
+                                 packet_size=self.mtu,
+                                 fragmentation=False).assert_replied()
+
+    def test_ping_with_oversized_packet(self):
+        # Wait for VM to get ready
+        ping.ping_until_received(self.floating_ip_address)
+
+        # Send 5 over-sized packets
+        ping.ping(self.floating_ip_address, packet_size=self.mtu + 1,
+                  fragmentation=False, count=5,
+                  check=False).assert_not_replied()
+
+
 class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
     port_security_enabled = True
 
 
-class FloatingIPWithSecurityGroupFixture(FloatingIPFixture):
-    port_security_enabled = True
+class FloatingIPWithPortSecurityTest(base.NeutronTest):
+    floating_ip_fixture = FloatingIPFixture
+    floating_ip_with_securtity_fixture = FloatingIPWithPortSecurityFixture
+
+    @classmethod
+    def setUpClass(cls):
+        super(FloatingIPWithPortSecurityTest, cls).setUpClass()
+
+        # Setup VM with port security
+        stack = tobiko.setup_fixture(cls.floating_ip_with_securtity_fixture)
+        outputs = stack.wait_for_outputs()
+        cls.floating_ip_address_with_security = outputs.floating_ip_address
+
+        # Setup VM without port security
+        stack = tobiko.setup_fixture(cls.floating_ip_fixture)
+        outputs = stack.wait_for_outputs()
+        cls.floating_ip_address = outputs.floating_ip_address
+
+    def test_ping(self):
+        ping.ping_until_received(self.floating_ip_address).assert_replied()
+        ping.ping(self.floating_ip_address_with_security,
+                  count=5).assert_not_replied()
+
+
+class FloatingIPWithSecurityGroupFixture(FloatingIPWithPortSecurityFixture):
     security_groups_fixture = base.SecurityGroupsFixture
     security_groups = None
 
@@ -62,29 +119,5 @@ class FloatingIPWithSecurityGroupFixture(FloatingIPFixture):
                 self.security_groups_fixture).wait_for_outputs()
 
 
-class FloatingIPTest(base.NeutronTest):
-    """Tests server connectivity"""
-
-    def test_ping_floating_ip(self, fixture_type=FloatingIPFixture):
-        """Validates connectivity to a server post upgrade."""
-        stack = self.setup_fixture(fixture_type)
-        network.assert_ping(stack.outputs.floating_ip_address)
-
-    def test_ping_floating_ip_with_port_security(
-            self, fixture_type=FloatingIPWithPortSecurityFixture):
-        """Validates connectivity to a server post upgrade."""
-        stack = self.setup_fixture(fixture_type)
-        network.assert_ping(stack.outputs.floating_ip_address,
-                            should_fail=True)
-
-    def test_ping_floating_ip_with_security_group(
-            self, fixture_type=FloatingIPWithSecurityGroupFixture):
-        """Validates connectivity to a server post upgrade."""
-        stack = self.setup_fixture(fixture_type)
-        network.assert_ping(stack.outputs.floating_ip_address)
-
-    def test_ping_with_oversize_packet(self, fixture_type=FloatingIPFixture):
-        stack = self.setup_fixture(fixture_type)
-        network.assert_ping(stack.outputs.floating_ip_address,
-                            packet_size=stack.internal_network.mtu + 1,
-                            fragmentation=False, should_fail=True)
+class FloatingIPWithSecurityGroupTest(FloatingIPTest):
+    floating_ip_fixture = FloatingIPWithSecurityGroupFixture

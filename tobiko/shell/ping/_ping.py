@@ -37,7 +37,7 @@ RECEIVED = 'received'
 UNRECEIVED = 'unreceived'
 
 
-def ping(host, until=TRANSMITTED, **ping_params):
+def ping(host, until=TRANSMITTED, check=True, **ping_params):
     """Send ICMP messages to host address until timeout
 
     :param host: destination host address
@@ -45,7 +45,7 @@ def ping(host, until=TRANSMITTED, **ping_params):
         function
     :returns: PingStatistics
     """
-    return get_statistics(host=host, until=until, **ping_params)
+    return get_statistics(host=host, until=until, check=check, **ping_params)
 
 
 def ping_until_delivered(host, **ping_params):
@@ -122,21 +122,21 @@ def ping_until_unreceived(host, **ping_params):
     return ping(host=host, until=UNRECEIVED, **ping_params)
 
 
-def get_statistics(parameters=None, ssh_client=None, until=None,
+def get_statistics(parameters=None, ssh_client=None, until=None, check=True,
                    **ping_params):
     parameters = _parameters.get_ping_parameters(default=parameters,
                                                  **ping_params)
     statistics = _statistics.PingStatistics()
     for partial_statistics in iter_statistics(parameters=parameters,
                                               ssh_client=ssh_client,
-                                              until=until):
+                                              until=until, check=check):
         statistics += partial_statistics
         LOG.debug("%r", statistics)
 
     return statistics
 
 
-def iter_statistics(parameters=None, ssh_client=None, until=None,
+def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
                     **ping_params):
     parameters = _parameters.get_ping_parameters(default=parameters,
                                                  **ping_params)
@@ -177,7 +177,8 @@ def iter_statistics(parameters=None, ssh_client=None, until=None,
         try:
             result = execute_ping(parameters=execute_parameters,
                                   ssh_client=ssh_client,
-                                  timeout=end_of_time - now)
+                                  timeout=end_of_time - now,
+                                  check=check)
         except sh.ShellTimeoutExpired:
             pass
 
@@ -208,7 +209,7 @@ def iter_statistics(parameters=None, ssh_client=None, until=None,
                                     message_type=until)
 
 
-def execute_ping(parameters, ssh_client=None, **params):
+def execute_ping(parameters, ssh_client=None, check=True, **params):
     if not ssh_client:
         is_cirros_image = params.setdefault('is_cirros_image', False)
         if is_cirros_image:
@@ -218,7 +219,7 @@ def execute_ping(parameters, ssh_client=None, **params):
     command = get_ping_command(parameters)
     result = sh.execute(command=command, ssh_client=ssh_client,
                         timeout=parameters.timeout, check=False)
-    if result.exit_status:
+    if check and result.exit_status:
         handle_ping_command_error(error=result.stderr)
     return result
 
