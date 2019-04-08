@@ -15,7 +15,7 @@ from __future__ import absolute_import
 from tobiko.common.managers import fixture
 from tobiko.common.managers import testcase as testcase_manager
 from tobiko.common.managers import loader as loader_manager
-
+from tobiko.common import exceptions
 
 load_object = loader_manager.load_object
 load_module = loader_manager.load_module
@@ -32,3 +32,6 @@ setup_fixture = fixture.setup_fixture
 cleanup_fixture = fixture.cleanup_fixture
 list_required_fixtures = fixture.list_required_fixtures
 SharedFixture = fixture.SharedFixture
+
+TobikoException = exceptions.TobikoException
+FailureException = exceptions.FailureException

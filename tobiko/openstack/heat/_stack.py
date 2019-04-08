@@ -20,7 +20,6 @@ from heatclient import exc
 from oslo_log import log
 
 import tobiko
-from tobiko.common import exceptions
 from tobiko.openstack.heat import _client
 from tobiko.openstack.heat import _template
 
@@ -245,15 +244,15 @@ def check_stack_status(stack, expected):
                           status_reason=stack.stack_status_reason)
 
 
-class InvalidHeatStackOutputKey(exceptions.TobikoException):
-    message = "Output key %(key)r not found in stack %(name)."
+class InvalidHeatStackOutputKey(tobiko.TobikoException):
+    message = "Output key %(key)r not found in stack %(name)r."
 
 
-class HeatStackNotFound(exceptions.TobikoException):
+class HeatStackNotFound(tobiko.TobikoException):
     message = "Stack %(name)r not found"
 
 
-class InvalidHeatStackStatus(exceptions.TobikoException):
+class InvalidHeatStackStatus(tobiko.TobikoException):
     message = ("Stack %(name)r status %(observed)r not in %(expected)r.\n"
                "%(status_reason)s")
 
