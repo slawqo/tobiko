@@ -19,7 +19,6 @@
       devstack_localrc:
         USE_PYTHON3: true
         NETWORK_API_EXTENSIONS: address-scope,agent,allowed-address-pairs,auto-allocated-topology,availability_zone,binding,default-subnetpools,dhcp_agent_scheduler,dns-domain-ports,dns-integration,dvr,empty-string-filtering,ext-gw-mode,external-net,extra_dhcp_opt,extraroute,filter-validation,fip-port-details,flavors,ip-substring-filtering,l3-flavors,l3-ha,l3_agent_scheduler,logging,metering,multi-provider,net-mtu,net-mtu-writable,network-ip-availability,network_availability_zone,pagination,port-security,project-id,provider,qos,qos-bw-minimum-ingress,qos-fip,quotas,quota_details,rbac-policies,router,router_availability_zone,security-group,port-mac-address-regenerate,port-security-groups-filtering,segment,service-type,sorting,standard-attr-description,standard-attr-revisions,standard-attr-segment,standard-attr-timestamp,standard-attr-tag,subnet_allocation,trunk,trunk-details,uplink-status-propagation
-        MULTI_HOST: 1
         TOBIKO_KEYSTONE_USERNAME: tobiko
         TOBIKO_KEYSTONE_PASSWORD: secret_tobiko
         TOBIKO_KEYSTONE_PROJECT_NAME: tobiko
@@ -43,7 +42,7 @@
         neutron-trunk: true
         neutron-uplink-status-propagation: true
         tempest: false
-        tls-proxy: true
+        tls-proxy: false
         # NOTE(slaweq): Swift can't run with python3 currently
         s-account: false
         s-container: false
@@ -95,6 +94,7 @@
           c-vol: true
           peakmem_tracker: true
           dstat: true
+          tls-proxy: false
 
     run: playbooks/tobiko-devstack.yaml
     post-run: playbooks/post-tobiko-devstack.yaml
@@ -109,28 +109,66 @@
 - job:
     name: tobiko-devstack-multinode
     parent: tobiko-devstack
-    nodeset: openstack-three-node-bionic
     abstract: true
     description: |
       Base Tobiko devstack job with multinode.
     vars:
+      devstack_localrc:
+        ENABLE_FILE_INJECTION: true
+        MULTI_HOST: 1
       topology: multinode
+    group-vars:
+      subnode:
+        devstack_localrc:
+          MULTI_HOST: 1
+
 
 - job:
     name: tobiko-devstack-neutron
     parent: tobiko-devstack-multinode
+    abstract: true
     description: |
       Integration test that runs all tests against DevStack provided cloud
     vars:
       tox_envlist: neutron
-      devstack_localrc:
-        ENABLE_FILE_INJECTION: true
+
 
 - job:
-    name: tobiko-devstack-neutron-fedora
+    name: tobiko-devstack-neutron-centos-7
+    parent: tobiko-devstack-neutron
+    nodeset: openstack-three-node-centos-7
+    vars:
+      devstack_localrc:
+        USE_PYTHON3: false
+    group-vars:
+      subnode:
+        devstack_localrc:
+          USE_PYTHON3: false
+
+
+- job:
+    name: tobiko-devstack-neutron-centos-7-queens
+    parent: tobiko-devstack-neutron-centos-7
+    override-checkout: stable/queens
+    voting: false
+
+
+- job:
+    name: tobiko-devstack-neutron-centos-7-rocky
+    parent: tobiko-devstack-neutron-centos-7
+    override-checkout: stable/rocky
+
+
+- job:
+    name: tobiko-devstack-neutron-centos-7-stein
+    parent: tobiko-devstack-neutron-centos-7
+    override-checkout: stable/stein
+
+
+- job:
+    name: tobiko-devstack-neutron-fedora-28
     parent: tobiko-devstack-neutron
     nodeset: openstack-three-node-fedora-28
-    voting: false
     vars:
       devstack_localrc:
         # Add dns-domain-ports,dns-integration extensions again when bug
@@ -138,25 +176,17 @@
         # will be fixed for Fedora
         NETWORK_API_EXTENSIONS: address-scope,agent,allowed-address-pairs,auto-allocated-topology,availability_zone,binding,default-subnetpools,dhcp_agent_scheduler,dvr,empty-string-filtering,ext-gw-mode,external-net,extra_dhcp_opt,extraroute,filter-validation,fip-port-details,flavors,ip-substring-filtering,l3-flavors,l3-ha,l3_agent_scheduler,logging,metering,multi-provider,net-mtu,net-mtu-writable,network-ip-availability,network_availability_zone,pagination,port-security,project-id,provider,qos,qos-bw-minimum-ingress,qos-fip,quotas,quota_details,rbac-policies,router,router_availability_zone,security-group,port-mac-address-regenerate,port-security-groups-filtering,segment,service-type,sorting,standard-attr-description,standard-attr-revisions,standard-attr-segment,standard-attr-timestamp,standard-attr-tag,subnet_allocation,trunk,trunk-details,uplink-status-propagation
       devstack_services:
-        tls-proxy: false
         q-dns: false
-    group-vars:
-      subnode:
-        devstack_services:
-          tls-proxy: false
+
 
 - job:
-    name: tobiko-devstack-neutron-centos
+    name: tobiko-devstack-neutron-ubuntu-bionic
     parent: tobiko-devstack-neutron
-    nodeset: openstack-three-node-centos-7
+    nodeset: openstack-three-node-bionic
     vars:
-      devstack_localrc:
-        USE_PYTHON3: false
       devstack_services:
-        tls-proxy: false
+        tls-proxy: true
     group-vars:
       subnode:
-        devstack_localrc:
-          USE_PYTHON3: false
         devstack_services:
-          tls-proxy: false
+          tls-proxy: true
