@@ -1,0 +1,26 @@
+- job:
+    name: tobiko-tripleo-update-standalone
+    description: Tobiko TripleO job testing update
+    parent: tripleo-ci-base-standalone
+    nodeset: single-centos-7-node
+    required-projects:
+      - opendev.org/x/tobiko
+    voting: false
+    branches: ^(?!stable/(newton|ocata|pike|queens)).*$
+    vars:
+      featureset: '052'
+      tox_envlist: neutron
+      featureset_override:
+        run_tempest: false
+        # Tempest variable to provide cloud name is also used by
+        # Tobiko's playbook
+        tempest_cloud_name: "standalone"
+        standalone_environment_files:
+          - 'environments/low-memory-usage.yaml'
+          - 'ci/environments/scenario002-standalone.yaml'
+      playbooks:
+        - quickstart.yml
+        - multinode-standalone.yml
+        - tobiko.yml
+        - multinode-standalone-upgrade.yml
+        - tobiko.yml
