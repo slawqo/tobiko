@@ -15,7 +15,7 @@ from __future__ import absolute_import
 
 from neutronclient.v2_0 import client as neutronclient
 
-from tobiko.openstack import client as _client
+from tobiko.openstack import _client
 
 
 class NeutronClientFixture(_client.OpenstackClientFixture):

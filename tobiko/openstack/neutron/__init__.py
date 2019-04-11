@@ -14,6 +14,14 @@
 from __future__ import absolute_import
 
 from tobiko.openstack.neutron import _client
+from tobiko.openstack.neutron import _extension
+
 
 get_neutron_client = _client.get_neutron_client
 NeutronClientFixture = _client.NeutronClientFixture
+
+get_networking_extensions = _extension.get_networking_extensions
+missing_networking_extensions = _extension.missing_networking_extensions
+has_networking_extensions = _extension.has_networking_extensions
+skip_if_missing_networking_extensions = (
+    _extension.skip_if_missing_networking_extensions)

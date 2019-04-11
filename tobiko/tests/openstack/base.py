@@ -18,7 +18,6 @@ import mock
 
 from tobiko.config import CONF
 from tobiko.openstack import keystone
-from tobiko.openstack import heat
 from tobiko.tests import unit
 
 
@@ -38,4 +37,17 @@ class OpenstackTest(unit.TobikoUnitTest):
     def patch_get_heat_client(self, *args, **kwargs):
         from heatclient import client
         kwargs.setdefault('return_value', mock.MagicMock(specs=client.Client))
-        return self.patch_object(heat, 'get_heat_client', *args, **kwargs)
+        get_heat_client = self.patch(
+            'tobiko.openstack.heat._client.get_heat_client', *args, **kwargs)
+        self.patch('tobiko.openstack.heat.get_heat_client', get_heat_client)
+        return get_heat_client
+
+    def patch_get_neutron_client(self, *args, **kwargs):
+        from neutronclient.v2_0 import client
+        kwargs.setdefault('return_value', mock.MagicMock(specs=client.Client))
+        get_neutron_client = self.patch(
+            'tobiko.openstack.neutron._client.get_neutron_client', *args,
+            **kwargs)
+        self.patch('tobiko.openstack.neutron.get_neutron_client',
+                   get_neutron_client)
+        return get_neutron_client

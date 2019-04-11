@@ -15,7 +15,7 @@ from __future__ import absolute_import
 
 from heatclient import client as heatclient
 
-from tobiko.openstack import client as _client
+from tobiko.openstack import _client
 
 
 class HeatClientFixture(_client.OpenstackClientFixture):

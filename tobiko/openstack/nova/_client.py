@@ -15,7 +15,7 @@ from __future__ import absolute_import
 
 from novaclient import client as novaclient
 
-from tobiko.openstack import client as _client
+from tobiko.openstack import _client
 
 
 class NovaClientFixture(_client.OpenstackClientFixture):
