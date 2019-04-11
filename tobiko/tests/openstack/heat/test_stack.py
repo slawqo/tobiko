@@ -137,21 +137,23 @@ class HeatStackFixtureTest(base.OpenstackTest):
 
     def test_setup(self, fixture_class=MyStack, stack_name=None,
                    template=None, parameters=None, wait_interval=None,
-                   stack_states=None, create_conflict=False,
+                   stacks=None, create_conflict=False,
                    call_create=True, call_delete=False, call_sleep=False):
         client = mock.MagicMock(specs=heatclient.Client)
         get_heat_client = self.patch(
             'tobiko.openstack.heat._client.get_heat_client',
             return_value=client)
-        if stack_states:
-            client.stacks.get.side_effect = [
-                mock.MagicMock(stack_status=stack_status)
-                for stack_status in stack_states]
-        else:
-            client.stacks.get.side_effect = exc.HTTPNotFound
+
+        stacks = stacks or [
+            exc.HTTPNotFound,
+            mock_stack('CREATE_IN_PROGRESS')]
+        client.stacks.get.side_effect = stacks
 
         if create_conflict:
             client.stacks.create.side_effect = exc.HTTPConflict
+        else:
+            client.stacks.create.return_value = {
+                'stack': {'id': '<stack-id>'}}
 
         sleep = self.patch('time.sleep')
         stack = fixture_class(stack_name=stack_name, parameters=parameters,
@@ -173,7 +175,7 @@ class HeatStackFixtureTest(base.OpenstackTest):
                                                       resolve_outputs=False)])
 
         if call_delete:
-            client.stacks.delete.assert_called_once_with(stack.stack_name)
+            client.stacks.delete.assert_called_once_with(stack.stack_id)
         else:
             client.stacks.delete.assert_not_called()
 
@@ -247,47 +249,54 @@ class HeatStackFixtureTest(base.OpenstackTest):
         self.test_setup(fixture_class=MyStackWithWaitInterval)
 
     def test_setup_when_delete_completed(self):
-        self.test_setup(stack_states=[_stack.DELETE_COMPLETE])
+        self.test_setup(stacks=[mock_stack('DELETE_COMPLETE'),
+                                mock_stack('CREATE_IN_PROGRESS')])
 
     def test_setup_when_delete_failed(self):
-        self.test_setup(stack_states=[_stack.DELETE_FAILED,
-                                      _stack.DELETE_IN_PROGRESS,
-                                      _stack.DELETE_COMPLETE],
+        self.test_setup(stacks=[mock_stack('DELETE_FAILED'),
+                                mock_stack('DELETE_IN_PROGRESS'),
+                                mock_stack('DELETE_COMPLETE'),
+                                mock_stack('CREATE_IN_PROGRESS')],
                         call_delete=True, call_sleep=True)
 
     def test_setup_when_delete_failed_fast_delete(self):
-        self.test_setup(stack_states=[_stack.DELETE_FAILED,
-                                      _stack.DELETE_COMPLETE],
+        self.test_setup(stacks=[mock_stack('DELETE_FAILED'),
+                                mock_stack('DELETE_COMPLETE'),
+                                mock_stack('CREATE_IN_PROGRESS')],
                         call_delete=True)
 
     def test_setup_when_create_complete(self):
-        self.test_setup(stack_states=[_stack.CREATE_COMPLETE],
+        self.test_setup(stacks=[mock_stack('CREATE_COMPLETE')],
                         call_create=False)
 
     def test_setup_when_create_failed(self):
-        self.test_setup(stack_states=[_stack.CREATE_FAILED,
-                                      _stack.DELETE_IN_PROGRESS,
-                                      _stack.DELETE_COMPLETE],
+        self.test_setup(stacks=[mock_stack('CREATE_FAILED'),
+                                mock_stack('DELETE_IN_PROGRESS'),
+                                mock_stack('DELETE_COMPLETE'),
+                                mock_stack('CREATE_IN_PROGRESS')],
                         call_delete=True, call_sleep=True)
 
     def test_setup_when_create_failed_fast_delete(self):
-        self.test_setup(stack_states=[_stack.CREATE_FAILED,
-                                      _stack.DELETE_COMPLETE],
+        self.test_setup(stacks=[mock_stack('CREATE_FAILED'),
+                                mock_stack('DELETE_COMPLETE'),
+                                mock_stack('CREATE_IN_PROGRESS')],
                         call_delete=True)
 
     def test_setup_when_create_in_progress(self):
-        self.test_setup(stack_states=[_stack.CREATE_IN_PROGRESS],
+        self.test_setup(stacks=[mock_stack('CREATE_IN_PROGRESS')],
                         call_create=False)
 
     def test_setup_when_delete_in_progress_then_complete(self):
-        self.test_setup(stack_states=[_stack.DELETE_IN_PROGRESS,
-                                      _stack.DELETE_COMPLETE],
+        self.test_setup(stacks=[mock_stack('DELETE_IN_PROGRESS'),
+                                mock_stack('DELETE_COMPLETE'),
+                                mock_stack('CREATE_IN_PROGRESS')],
                         call_sleep=True)
 
     def test_setup_when_delete_in_progress_then_failed(self):
-        self.test_setup(stack_states=[_stack.DELETE_IN_PROGRESS,
-                                      _stack.DELETE_FAILED,
-                                      _stack.DELETE_COMPLETE],
+        self.test_setup(stacks=[mock_stack('DELETE_IN_PROGRESS'),
+                                mock_stack('DELETE_FAILED'),
+                                mock_stack('DELETE_COMPLETE'),
+                                mock_stack('CREATE_IN_PROGRESS')],
                         call_sleep=True, call_delete=True)
 
     def test_setup_when_create_conflict(self):
@@ -315,3 +324,7 @@ class HeatStackFixtureTest(base.OpenstackTest):
                                                   resolve_outputs=True)
         self.assertEqual('value1', outputs.key1)
         self.assertEqual('value2', outputs.key2)
+
+
+def mock_stack(status, stack_id='<stack-id>'):
+    return mock.MagicMock(stack_status=status, id=stack_id)
