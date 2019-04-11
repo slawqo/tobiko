@@ -157,12 +157,14 @@
     name: tobiko-devstack-neutron-centos-7-rocky
     parent: tobiko-devstack-neutron-centos-7
     override-checkout: stable/rocky
+    voting: false
 
 
 - job:
     name: tobiko-devstack-neutron-centos-7-stein
     parent: tobiko-devstack-neutron-centos-7
     override-checkout: stable/stein
+    voting: false
 
 
 - job:
