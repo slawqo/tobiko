@@ -22,7 +22,7 @@ def condition(value):
     return value
 
 
-class PositiveSkipTest(unit.TobikoUnitTest):
+class PositiveSkipMethodTest(unit.TobikoUnitTest):
 
     @tobiko.skip_if('condition value was true',
                     condition, True)
@@ -45,12 +45,12 @@ class PositiveSkipTest(unit.TobikoUnitTest):
         self.fail('Not skipped')
 
 
-class NegativeSkipTest(unit.TobikoUnitTest):
+class NegativeSkipMethodTest(unit.TobikoUnitTest):
 
     test_method_called = False
 
     def setUp(self):
-        super(NegativeSkipTest, self).setUp()
+        super(NegativeSkipMethodTest, self).setUp()
         self.addCleanup(self.assert_test_method_called)
 
     def assert_test_method_called(self):
@@ -75,3 +75,137 @@ class NegativeSkipTest(unit.TobikoUnitTest):
                        condition, value=True)
     def test_skip_until_condition_called_with_kwargs(self):
         self.test_method_called = True
+
+
+@tobiko.skip_if('condition value was true',
+                condition, True)
+class PositiveSkipIfConditionCalledWithArgsFixture(tobiko.SharedFixture):
+    pass
+
+
+@tobiko.skip_if('condition value was true',
+                condition, value=True)
+class PositiveSkipIfConditionCalledWithKwargsFixture(tobiko.SharedFixture):
+    pass
+
+
+@tobiko.skip_until('condition value was false',
+                   condition, False)
+class PositiveSkipUntilConditionCalledWithArgsFixture(tobiko.SharedFixture):
+    pass
+
+
+@tobiko.skip_until('condition value was false',
+                   condition, value=False)
+class PositiveSkipUntilConditionCalledWithKwargsFixture(tobiko.SharedFixture):
+    pass
+
+
+class PositiveSkipFixtureTest(unit.TobikoUnitTest):
+
+    def test_skip_if_condition_called_with_args(self):
+        ex = self.assertRaises(
+            self.skipException, tobiko.setup_fixture,
+            PositiveSkipIfConditionCalledWithArgsFixture)
+        self.assertEqual('condition value was true', str(ex))
+
+    def test_skip_if_condition_called_with_kwargs(self):
+        ex = self.assertRaises(
+            self.skipException, tobiko.setup_fixture,
+            PositiveSkipIfConditionCalledWithKwargsFixture)
+        self.assertEqual('condition value was true', str(ex))
+
+    def test_skip_until_condition_called_with_args(self):
+        ex = self.assertRaises(
+            self.skipException, tobiko.setup_fixture,
+            PositiveSkipUntilConditionCalledWithArgsFixture)
+        self.assertEqual('condition value was false', str(ex))
+
+    def test_skip_until_condition_called_with_kwargs(self):
+        ex = self.assertRaises(
+            self.skipException, tobiko.setup_fixture,
+            PositiveSkipUntilConditionCalledWithKwargsFixture)
+        self.assertEqual('condition value was false', str(ex))
+
+
+@tobiko.skip_if('condition value was false',
+                condition, False)
+class NegativeSkipIfConditionCalledWithArgsFixture(tobiko.SharedFixture):
+    pass
+
+
+@tobiko.skip_if('condition value was false',
+                condition, value=False)
+class NegativeSkipIfConditionCalledWithKwargsFixture(tobiko.SharedFixture):
+    pass
+
+
+@tobiko.skip_until('condition value was true',
+                   condition, True)
+class NegativeSkipUntilConditionCalledWithArgsFixture(tobiko.SharedFixture):
+    pass
+
+
+@tobiko.skip_until('condition value was true',
+                   condition, value=True)
+class NegativeSkipUntilConditionCalledWithKwargsFixture(tobiko.SharedFixture):
+    pass
+
+
+class NegativeSkipFixtureTest(unit.TobikoUnitTest):
+
+    def test_skip_if_condition_called_with_args(self):
+        fixture = tobiko.setup_fixture(
+            NegativeSkipIfConditionCalledWithArgsFixture)
+        self.assertIsInstance(
+            fixture, NegativeSkipIfConditionCalledWithArgsFixture)
+
+    def test_skip_if_condition_called_with_kwargs(self):
+        fixture = tobiko.setup_fixture(
+            NegativeSkipIfConditionCalledWithKwargsFixture)
+        self.assertIsInstance(
+            fixture, NegativeSkipIfConditionCalledWithKwargsFixture)
+
+    def test_skip_until_condition_called_with_args(self):
+        fixture = tobiko.setup_fixture(
+            NegativeSkipUntilConditionCalledWithArgsFixture)
+        self.assertIsInstance(
+            fixture, NegativeSkipUntilConditionCalledWithArgsFixture)
+
+    def test_skip_until_condition_called_with_kwargs(self):
+        fixture = tobiko.setup_fixture(
+            NegativeSkipUntilConditionCalledWithKwargsFixture)
+        self.assertIsInstance(
+            fixture, NegativeSkipUntilConditionCalledWithKwargsFixture)
+
+
+@tobiko.skip_if('condition value was true',
+                condition, True)
+class PositiveSkipIfConditionCalledWithArgsTest(unit.TobikoUnitTest):
+
+    def test_fail(self):
+        self.fail('Not skipped')
+
+
+@tobiko.skip_if('condition value was true',
+                condition, value=True)
+class PositiveSkipIfConditionCalledWithKwargsTest(unit.TobikoUnitTest):
+
+    def test_fail(self):
+        self.fail('Not skipped')
+
+
+@tobiko.skip_until('condition value was false',
+                   condition, False)
+class PositiveSkipUntilConditionCalledWithArgsTest(unit.TobikoUnitTest):
+
+    def test_fail(self):
+        self.fail('Not skipped')
+
+
+@tobiko.skip_until('condition value was false',
+                   condition, value=False)
+class PositiveSkipUntilConditionCalledWithKwargsTest(unit.TobikoUnitTest):
+
+    def test_fail(self):
+        self.fail('Not skipped')
