@@ -25,9 +25,7 @@ class TobikoCMDTest(test_base.OpenstackTest):
 
     def test_init(self, argv=None):
         self.patch_argv(argv=argv)
-        cmd = self.command_class()
-        self.assertIsNotNone(cmd.stackManager)
-        return cmd
+        return self.command_class()
 
     def patch_argv(self, argv=None):
         return self.patch('sys.argv', [self.command_name] + (argv or []))

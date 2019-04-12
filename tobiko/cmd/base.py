@@ -20,7 +20,6 @@ import argparse
 
 from oslo_log import log
 
-from tobiko.common.managers import stack
 from tobiko.common.managers import ansible
 from tobiko import config
 
@@ -38,11 +37,8 @@ class TobikoCMD(object):
         self.args = (self.parser).parse_args()
 
         curr_dir = os.path.dirname(__file__)
-        self.templates_dir = os.path.join(curr_dir,
-                                          "../tests/scenario/templates")
         self.playbooks_dir = os.path.join(curr_dir,
                                           "../tests/scenario/playbooks")
-        self.stackManager = stack.StackManager(self.templates_dir)
         self.ansibleManager = ansible.AnsibleManager(self.playbooks_dir)
 
     def get_parser(self):
@@ -61,7 +57,3 @@ class TobikoCMD(object):
         for handler in root_logger.handlers:
             if isinstance(handler, logging.StreamHandler):
                 handler.setLevel(level)
-        self.stackManager = stack.StackManager(
-            templates_dir=self.templates_dir)
-        self.ansibleManager = ansible.AnsibleManager(
-            playbooks_dir=self.playbooks_dir)

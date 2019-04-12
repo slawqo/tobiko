@@ -31,29 +31,11 @@ class ListUtil(base.TobikoCMD):
 
     def get_parser(self):
         parser = argparse.ArgumentParser(add_help=True)
-        parser.add_argument('--stacks', '-s',
-                            help="List stacks (created by Tobiko)",
-                            const='list_stacks',
-                            action='store_const', dest='action')
-        parser.add_argument('--templates', '-t',
-                            help="List templates provided by Tobiko",
-                            const='list_templates',
-                            action='store_const', dest='action')
         parser.add_argument('--playbooks', '-p',
                             help="List playbooks provided by Tobiko",
                             const='list_playbooks',
                             action='store_const', dest='action')
         return parser
-
-    def list_stacks(self):
-        """Lists stacks created by Tobiko."""
-        for stack in self.stackManager.get_stacks_match_templates():
-            sys.stdout.write(stack + '\n')
-
-    def list_templates(self):
-        """Lists templates included in Tobiko."""
-        for template in self.stackManager.get_templates_names():
-            sys.stdout.write(template + '\n')
 
     def list_playbooks(self):
         """Lists playbooks included in Tobiko."""
@@ -68,7 +50,7 @@ def main():
         action_func = getattr(list_cmd, list_cmd.args.action)
         action_func()
     else:
-        list_cmd.list_templates()
+        list_cmd.list_playbooks()
 
 
 if __name__ == '__main__':

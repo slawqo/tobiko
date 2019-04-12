@@ -26,29 +26,9 @@ class DeleteUtil(base.TobikoCMD):
     def get_parser(self):
         parser = super(DeleteUtil, self).get_parser()
         parser.add_argument(
-            '--stack', '-s',
-            help="The name of the stack to remove.")
-        parser.add_argument(
-            '--all', '-a', action='store_true', dest='all',
-            help="Remove all the stacks created by Tobiko.")
-        parser.add_argument(
-            '--wait', '-w', action='store_true', dest='wait',
-            help="Wait for stack to be deleted before exiting.")
-        parser.add_argument(
             '--playbook', '-p',
             help="The name of the playbook to execute in delete mode.")
         return parser
-
-    def delete_stack(self, stack_name=None, all_stacks=False, wait=False):
-        """Deletes a stack based on given arguments."""
-        if all_stacks or stack_name is None:
-            stacks = self.stackManager.get_stacks_match_templates()
-            for stack in stacks:
-                self.stackManager.delete_stack(stack, wait=wait)
-                LOG.info("Deleted stack: %s", stack)
-        else:
-            self.stackManager.delete_stack(stack_name, wait=wait)
-            LOG.info("Deleted stack: %s", stack_name)
 
     def run_playbook(self, playbook):
         """Executes given playbook."""
@@ -59,12 +39,7 @@ def main():
     """Delete CLI main entry."""
     delete_cmd = DeleteUtil()
     delete_cmd.set_stream_handler_logging_level()
-    if delete_cmd.args.playbook:
-        delete_cmd.run_playbook(delete_cmd.args.playbook)
-    else:
-        delete_cmd.delete_stack(stack_name=delete_cmd.args.stack,
-                                all_stacks=delete_cmd.args.all,
-                                wait=delete_cmd.args.wait)
+    delete_cmd.run_playbook(delete_cmd.args.playbook)
 
 
 if __name__ == '__main__':

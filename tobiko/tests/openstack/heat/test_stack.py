@@ -25,7 +25,6 @@ import tobiko
 from tobiko.openstack import heat
 from tobiko.openstack import keystone
 from tobiko.tests.openstack import base
-from tobiko.common.managers import stack as _stack
 
 
 class MyStack(heat.HeatStackFixture):
@@ -309,11 +308,11 @@ class HeatStackFixtureTest(base.OpenstackTest):
         client.stacks.delete.assert_called_once_with(stack.stack_name)
 
     def test_get_outputs(self):
-        stack = mock.MagicMock(stack_status=_stack.CREATE_COMPLETE,
-                               outputs=[{'output_key': 'key1',
-                                         'output_value': 'value1'},
-                                        {'output_key': 'key2',
-                                         'output_value': 'value2'}])
+        stack = mock_stack(status='CREATE_COMPLETE',
+                           outputs=[{'output_key': 'key1',
+                                     'output_value': 'value1'},
+                                    {'output_key': 'key2',
+                                     'output_value': 'value2'}])
         client = mock.MagicMock(specs=heatclient.Client)
         client.stacks.get.return_value = stack
         stack_fixture = MyStack(client=client)
@@ -326,5 +325,7 @@ class HeatStackFixtureTest(base.OpenstackTest):
         self.assertEqual('value2', outputs.key2)
 
 
-def mock_stack(status, stack_id='<stack-id>'):
-    return mock.MagicMock(stack_status=status, id=stack_id)
+def mock_stack(status, stack_id='<stack-id>', outputs=None):
+    return mock.MagicMock(stack_status=status,
+                          id=stack_id,
+                          outputs=outputs or [])
