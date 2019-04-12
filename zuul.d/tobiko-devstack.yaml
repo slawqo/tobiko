@@ -137,6 +137,7 @@
     name: tobiko-devstack-neutron-centos-7
     parent: tobiko-devstack-neutron
     nodeset: openstack-three-node-centos-7
+    voting: false
     vars:
       devstack_localrc:
         USE_PYTHON3: false
@@ -171,6 +172,7 @@
     name: tobiko-devstack-neutron-fedora-28
     parent: tobiko-devstack-neutron
     nodeset: openstack-three-node-fedora-28
+    voting: false
     vars:
       devstack_localrc:
         # Add dns-domain-ports,dns-integration extensions again when bug
