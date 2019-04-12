@@ -118,8 +118,12 @@ def iter_required_fixtures(objects):
         elif inspect.isclass(obj):
             members = [obj for _, obj in inspect.getmembers(obj)
                        if (inspect.isfunction(obj) or
-                           inspect.ismethod(obj))]
+                           inspect.ismethod(obj) or
+                           isinstance(obj, RequiredFixtureProperty))]
             objects.extend(members)
+
+        elif isinstance(obj, RequiredFixtureProperty):
+            objects.append(obj.obj)
 
 
 def list_required_fixtures(objects):
@@ -139,6 +143,14 @@ def init_fixture(obj, name):
         return obj
 
     raise TypeError("Invalid fixture object type: {!r}".format(object))
+
+
+def required_fixture(obj):
+    return RequiredFixtureProperty(obj)
+
+
+def required_setup_fixture(obj):
+    return RequiredSetupFixtureProperty(obj)
 
 
 def get_object_name(obj):
@@ -281,3 +293,24 @@ class SharedFixture(fixtures.Fixture):
 
     def cleanup_fixture(self):
         pass
+
+
+class RequiredFixtureProperty(object):
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        else:
+            return self.get_fixture()
+
+    def get_fixture(self):
+        return self.obj
+
+
+class RequiredSetupFixtureProperty(RequiredFixtureProperty):
+
+    def get_fixture(self):
+        return setup_fixture(self.obj)

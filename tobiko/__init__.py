@@ -27,6 +27,8 @@ TobikoException = _exception.TobikoException
 
 is_fixture = _fixture.is_fixture
 get_fixture = _fixture.get_fixture
+required_fixture = _fixture.required_fixture
+required_setup_fixture = _fixture.required_setup_fixture
 get_fixture_name = _fixture.get_fixture_name
 get_fixture_class = _fixture.get_fixture_class
 get_fixture_dir = _fixture.get_fixture_dir
