@@ -19,28 +19,29 @@ import os
 import subprocess
 
 import tobiko
-from tobiko.cmd import fixture
-from tobiko.tests import unit
+from tobiko.cmd import fixture as _fixture
+from tobiko.tests import test_fixture
+
+
+MyFixture = test_fixture.MyFixture
+MyFixture2 = test_fixture.MyFixture2
+MyRequiredFixture = test_fixture.MyRequiredFixture
+canonical_name = test_fixture.canonical_name
 
 
 class ExitCalled(Exception):
     pass
 
 
-class MyFixture1(tobiko.SharedFixture):
-    pass
-
-
-class MyFixture2(tobiko.SharedFixture):
-    pass
-
-
-class FixtureUtilTest(unit.TobikoUnitTest):
+class FixtureUtilTest(test_fixture.FixtureBaseTest):
 
     command_name = 'tobiko-fixture'
-    command_class = fixture.FixtureUtil
+    command_class = _fixture.FixtureUtil
+
     test_path = os.path.dirname(__file__)
     top_dir = os.path.dirname(os.path.dirname(tobiko.__file__))
+
+    required_fixture = tobiko.required_fixture(MyRequiredFixture)
 
     def setUp(self):
         super(FixtureUtilTest, self).setUp()
@@ -199,43 +200,62 @@ class FixtureUtilTest(unit.TobikoUnitTest):
                         whitelist_file=whitelist_file,
                         black_regex=black_regex, filters=filters)
         stdout = self.patch('sys.stdout', io.StringIO())
-        fixture.main()
+        _fixture.main()
         self.mock_error.assert_not_called()
         return stdout
 
-    def test_list(self, fixture1=MyFixture1, fixture2=MyFixture2):
+    def test_list(self, fixture1=MyFixture, fixture2=MyFixture2):
         stdout = self.test_main(subcommand='list')
         written_lines = stdout.getvalue().splitlines()
-        self.assertIn(tobiko.get_fixture_name(fixture1), written_lines)
-        self.assertIn(tobiko.get_fixture_name(fixture2), written_lines)
+        self.assertIn(canonical_name(fixture1), written_lines)
+        self.assertIn(canonical_name(fixture2), written_lines)
+        self.assertIn(canonical_name(MyRequiredFixture),
+                      written_lines)
 
-    def test_setup(self, fixture1=MyFixture1, fixture2=MyFixture2):
-        setup1 = self.patch(tobiko.get_fixture_name(fixture1) + '.setUp')
-        setup2 = self.patch(tobiko.get_fixture_name(fixture2) + '.setUp')
-        setup1.assert_not_called()
-        setup2.assert_not_called()
+    def test_list_with_filters(self, fixture=MyFixture):
+        stdout = self.test_main(subcommand='list', filters=[self.id()])
+        written_lines = stdout.getvalue().splitlines()
+        self.assertEqual([canonical_name(fixture),
+                          canonical_name(MyRequiredFixture)],
+                         written_lines)
+        self.assertIn(canonical_name(MyRequiredFixture),
+                      written_lines)
 
+    def test_setup(self, fixture=MyFixture, fixture2=MyFixture2):
         stdout = self.test_main(subcommand='setup')
         written_lines = stdout.getvalue().splitlines()
+        for obj in [fixture, fixture2, MyRequiredFixture]:
+            self.assertIn(canonical_name(obj), written_lines)
+            tobiko.get_fixture(obj).setup_fixture.assert_called_once_with()
+            tobiko.get_fixture(obj).cleanup_fixture.assert_not_called()
 
-        self.assertIn(tobiko.get_fixture_name(fixture1), written_lines)
-        self.assertIn(tobiko.get_fixture_name(fixture2), written_lines)
-        setup1.assert_called_with()
-        setup2.assert_called_with()
-
-    def test_cleanup(self, fixture1=MyFixture1, fixture2=MyFixture2):
-        cleanup1 = self.patch(tobiko.get_fixture_name(fixture1) + '.cleanUp')
-        cleanup2 = self.patch(tobiko.get_fixture_name(fixture2) + '.cleanUp')
-        cleanup1.assert_not_called()
-        cleanup2.assert_not_called()
-
-        stdout = self.test_main(subcommand='cleanup')
-
+    def test_setup_with_filters(self, fixture=MyFixture):
+        stdout = self.test_main(subcommand='setup', filters=[self.id()])
         written_lines = stdout.getvalue().splitlines()
-        self.assertIn(tobiko.get_fixture_name(fixture1), written_lines)
-        self.assertIn(tobiko.get_fixture_name(fixture2), written_lines)
-        cleanup1.assert_called_with()
-        cleanup2.assert_called_with()
+        self.assertEqual([canonical_name(fixture),
+                          canonical_name(MyRequiredFixture)],
+                         written_lines)
+        for obj in [fixture, MyRequiredFixture]:
+            tobiko.get_fixture(obj).setup_fixture.assert_called_once_with()
+            tobiko.get_fixture(obj).cleanup_fixture.assert_not_called()
+
+    def test_cleanup(self, fixture=MyFixture, fixture2=MyFixture2):
+        stdout = self.test_main(subcommand='cleanup')
+        written_lines = stdout.getvalue().splitlines()
+        for obj in [fixture, fixture2, MyRequiredFixture]:
+            self.assertIn(canonical_name(obj), written_lines)
+            tobiko.get_fixture(obj).setup_fixture.assert_not_called()
+            tobiko.get_fixture(obj).cleanup_fixture.assert_called_once_with()
+
+    def test_cleanup_with_filters(self, fixture=MyFixture):
+        stdout = self.test_main(subcommand='cleanup', filters=[self.id()])
+        written_lines = stdout.getvalue().splitlines()
+        self.assertEqual([canonical_name(fixture),
+                          canonical_name(MyRequiredFixture)],
+                         written_lines)
+        for obj in [fixture, MyRequiredFixture]:
+            tobiko.get_fixture(obj).setup_fixture.assert_not_called()
+            tobiko.get_fixture(obj).cleanup_fixture.assert_called_once_with()
 
     def setup_file_repo(self, top_dir):
         if not os.path.isdir(os.path.join(top_dir, '.stestr')):
