@@ -22,11 +22,15 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.vars.manager import VariableManager
 from oslo_log import log
 
-from tobiko.common import constants
+from tobiko import config
 from tobiko.openstack import keystone
 
 
 LOG = log.getLogger(__name__)
+CONF = config.CONF
+
+
+TEMPLATE_SUFFIX = ".yaml"
 
 
 class AnsibleManager(object):
@@ -49,7 +53,7 @@ class AnsibleManager(object):
             playbooks.extend(files)
         if strip_suffix:
             playbooks = [
-                f[:-len(constants.TEMPLATE_SUFFIX)] for f in playbooks]
+                f[:-len(TEMPLATE_SUFFIX)] for f in playbooks]
         return playbooks
 
     def get_options(self):
@@ -78,8 +82,8 @@ class AnsibleManager(object):
                       'username': credentials.username,
                       'project_name': credentials.project_name,
                       'password': credentials.project_name.password,
-                      'image': constants.DEFAULT_PARAMS['image'],
-                      'flavor': constants.DEFAULT_PARAMS['flavor']}
+                      'image': CONF.tobiko.nova.image,
+                      'flavor': CONF.tobiko.nova.flavor}
 
         self.variable_manager.extra_vars = extra_vars
 
