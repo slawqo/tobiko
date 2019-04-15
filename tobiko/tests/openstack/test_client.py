@@ -19,7 +19,7 @@ import inspect
 import mock
 
 import tobiko
-from tobiko.openstack import client as _client
+from tobiko.openstack import _client
 from tobiko.openstack import keystone
 from tobiko.tests.openstack import base
 
