@@ -14,42 +14,66 @@
 from __future__ import absolute_import
 
 import functools
+import inspect
+import unittest
 
 import testtools
+
+from tobiko.common import _fixture
 
 
 SkipException = testtools.TestCase.skipException
 
 
-def skip(reason):
+def skip(reason, *args, **kwargs):
+    if args or kwargs:
+        reason = reason.format(*args, **kwargs)
     raise SkipException(reason)
 
 
-def skip_if(reason, condition, *condition_args, **condition_kwargs):
+def skip_if(reason, predicate, *args, **kwargs):
+    return skip_if_match(reason, bool, predicate, *args, **kwargs)
 
-    def decorator(method):
+
+def skip_until(reason, predicate, *args, **kwargs):
+    return skip_if_match(reason, lambda x: bool(not x), predicate, *args,
+                         **kwargs)
+
+
+def skip_if_match(reason, match, predicate, *args, **kwargs):
+
+    def decorator(obj):
+        method, is_class_method = _get_decorated_method(obj)
 
         @functools.wraps(method)
-        def wrapped_method(*args, **kwargs):
-            if condition(*condition_args, **condition_kwargs):
-                skip(reason)
-            return method(*args, **kwargs)
+        def wrapped_method(*_args, **_kwargs):
+            return_value = predicate(*args, **kwargs)
+            if match(return_value):
+                skip(reason, return_value=return_value)
+            return method(*_args, **_kwargs)
 
-        return wrapped_method
+        if obj is method:
+            return wrapped_method
+        else:
+            if is_class_method:
+                wrapped_method = classmethod(wrapped_method)
+
+            setattr(obj, method.__name__, wrapped_method)
+            return obj
 
     return decorator
 
 
-def skip_until(reason, condition, *condition_args, **condition_kwargs):
-
-    def decorator(method):
-
-        @functools.wraps(method)
-        def wrapped_method(*args, **kwargs):
-            if not condition(*condition_args, **condition_kwargs):
-                skip(reason)
-            return method(*args, **kwargs)
-
-        return wrapped_method
-
-    return decorator
+def _get_decorated_method(obj):
+    if inspect.isclass(obj):
+        if issubclass(obj, (unittest.TestCase, testtools.TestCase)):
+            return obj.setUpClass, True
+        elif _fixture.is_fixture(obj):
+            return obj.setUp, False
+        else:
+            raise TypeError("Cannot decorate class {!r}".format(obj))
+    else:
+        if callable(obj):
+            return obj, False
+        else:
+            raise TypeError("Cannot decorate object {!r}".format(obj))
