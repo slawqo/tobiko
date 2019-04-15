@@ -128,31 +128,19 @@ class FixtureManagerTest(unit.TobikoUnitTest):
 
     def test_list_required_fixtures_from_module(self):
         result = tobiko.list_required_fixtures([__name__])
-        self.assertEqual(
-            [MY_FIXTURE_NAME,
-             MY_REQUIRED_FIXTURE_NAME,
-             MY_REQUIRED_SETUP_FIXTURE_NAME],
-            result)
+        self.assertEqual([], result)
 
     def test_list_required_fixtures_from_testcase_type(self):
         result = tobiko.list_required_fixtures([FixtureManagerTest])
-        self.assertEqual([MY_FIXTURE_NAME], result)
+        self.assertEqual([], result)
 
     def test_list_required_fixtures_from_fixture_type(self):
         result = tobiko.list_required_fixtures([MyFixture])
-        self.assertEqual(
-            [MY_FIXTURE_NAME,
-             MY_REQUIRED_FIXTURE_NAME,
-             MY_REQUIRED_SETUP_FIXTURE_NAME],
-            result)
+        self.assertEqual([MY_FIXTURE_NAME], result)
 
     def test_list_required_fixtures_from_fixture_name(self):
         result = tobiko.list_required_fixtures([MY_FIXTURE_NAME])
-        self.assertEqual(
-            [MY_FIXTURE_NAME,
-             MY_REQUIRED_FIXTURE_NAME,
-             MY_REQUIRED_SETUP_FIXTURE_NAME],
-            result)
+        self.assertEqual([MY_FIXTURE_NAME], result)
 
     def test_list_required_fixtures_from_method(
             self, fixture_type=MyFixture):
@@ -177,9 +165,8 @@ class SharedFixtureTest(unit.TobikoUnitTest):
         fixture = MyFixture()
         fixture.setup_fixture.assert_not_called()
         fixture.cleanup_fixture.assert_not_called()
-        self.assertEqual(
-            MyRequiredFixture,
-            fixture.req_fixture)
+        self.assertIs(tobiko.get_fixture(MyRequiredFixture),
+                      fixture.req_fixture)
         fixture.req_setup_fixture.setup_fixture.assert_called_once()
 
     def test_get(self):

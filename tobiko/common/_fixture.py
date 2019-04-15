@@ -91,49 +91,90 @@ def cleanup_fixture(obj, manager=None):
     return fixture
 
 
-def iter_required_fixtures(objects):
-    objects = list(objects)
+def get_name_and_object(obj):
+    if isinstance(obj, six.string_types):
+        return obj, tobiko.load_object(obj)
+    else:
+        return get_object_name(obj), obj
+
+
+def visit_objects(objects):
+    if not isinstance(objects, list):
+        raise TypeError("parameter 'objects' is not a list")
+
+    visited = set()
     while objects:
         obj = objects.pop()
-        if isinstance(obj, six.string_types):
-            object_id = obj
-            obj = tobiko.load_object(object_id)
+        try:
+            name, obj = get_name_and_object(obj)
+        except Exception:
+            LOG.exception('Unable to get (name, object) pair from {!r}'.format(
+                obj))
         else:
-            object_id = get_object_name(obj)
-
-        if is_fixture(obj):
-            yield object_id
-
-        elif inspect.isfunction(obj) or inspect.ismethod(obj):
-            for default in get_default_param_values(obj):
-                if is_fixture(default):
-                    yield get_object_name(default)
-
-        if inspect.ismodule(obj):
-            members = [obj for _, obj in inspect.getmembers(obj)
-                       if (inspect.isfunction(obj) or
-                           inspect.isclass(obj))]
-            objects.extend(members)
-
-        elif inspect.isclass(obj):
-            members = [obj for _, obj in inspect.getmembers(obj)
-                       if (inspect.isfunction(obj) or
-                           inspect.ismethod(obj) or
-                           isinstance(obj, RequiredFixtureProperty))]
-            objects.extend(members)
-
-        elif isinstance(obj, RequiredFixtureProperty):
-            objects.append(obj.obj)
+            if name not in visited:
+                visited.add(name)
+                yield name, obj
 
 
 def list_required_fixtures(objects):
-    return sorted(set(iter_required_fixtures(objects)))
+    result = []
+    objects = list(objects)
+    for name, obj in visit_objects(objects):
+        if is_fixture(obj):
+            result.append(name)
+            continue
+
+        if is_test_method(obj):
+            # Test methods also require test class fixtures
+            if '.' in name:
+                parent_name = name.rsplit('.', 1)[0]
+                objects.append(parent_name)
+
+        objects.extend(get_required_fixture(obj))
+
+    result.sort()
+    return result
+
+
+def is_test_method(obj):
+    return ((inspect.isfunction(obj) or inspect.ismethod(obj)) and
+            obj.__name__.startswith('test_'))
+
+
+def get_required_fixture(obj):
+    required_fixtures = getattr(obj, '__tobiko_required_fixtures__', None)
+    if required_fixtures is None:
+        required_fixtures = []
+        try:
+            # try to cache list for later use
+            obj.__tobiko_required_fixtures__ = required_fixtures
+        except AttributeError:
+            pass
+
+        if is_test_method(obj):
+            for default in get_default_param_values(obj):
+                if is_fixture(default):
+                    required_fixtures.append(get_fixture_name(default))
+
+        elif inspect.isclass(obj):
+            # inspect.getmembers() would iterate over such many
+            # testtools.TestCase members too, so let exclude members from
+            # very base classes
+            mro_index = obj.__mro__.index(testtools.TestCase)
+            if mro_index > 0:
+                member_names = sorted(set(
+                    [name
+                     for cls in obj.__mro__[:mro_index]
+                     for name in cls.__dict__]))
+                for member_name in member_names:
+                    member = getattr(obj, member_name)
+                    if isinstance(member, RequiredFixtureProperty):
+                        required_fixtures.append(member.fixture)
+
+    return required_fixtures
 
 
 def init_fixture(obj, name):
-    if isinstance(obj, six.string_types):
-        obj = tobiko.load_object(name)
-
     if (inspect.isclass(obj) and issubclass(obj, fixtures.Fixture)):
         obj = obj()
 
@@ -142,7 +183,7 @@ def init_fixture(obj, name):
         obj.__tobiko_fixture_name__ = name
         return obj
 
-    raise TypeError("Invalid fixture object type: {!r}".format(object))
+    raise TypeError("Invalid fixture object type: {!r}".format(obj))
 
 
 def required_fixture(obj):
@@ -161,7 +202,9 @@ def get_object_name(obj):
     if name:
         return name
 
-    if not inspect.isclass(obj):
+    if (not inspect.isfunction(obj) and
+            not inspect.ismethod(obj) and
+            not inspect.isclass(obj)):
         obj = type(obj)
 
     module = inspect.getmodule(obj).__name__
@@ -175,7 +218,7 @@ def get_object_name(obj):
         method_class = getattr(obj, 'im_class', None)
         if method_class:
             # This doesn't work for nested classes
-            return module + method_class.__name__ + '.' + obj.__name__
+            return module + '.' + method_class.__name__ + '.' + obj.__name__
 
         if inspect.isfunction(obj):
             return module + '.' + obj.func_name
@@ -211,7 +254,7 @@ class FixtureManager(object):
         self.fixtures = {}
 
     def get_fixture(self, obj, init=init_fixture):
-        name = get_object_name(obj)
+        name, obj = get_name_and_object(obj)
         fixture = self.fixtures.get(name)
         if fixture is None:
             self.fixtures[name] = fixture = init(name=name, obj=obj)
@@ -297,20 +340,24 @@ class SharedFixture(fixtures.Fixture):
 
 class RequiredFixtureProperty(object):
 
-    def __init__(self, obj):
-        self.obj = obj
+    def __init__(self, fixture):
+        self.fixture = fixture
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance, _):
         if instance is None:
             return self
         else:
             return self.get_fixture()
 
     def get_fixture(self):
-        return self.obj
+        return get_fixture(self.fixture)
+
+    @property
+    def __tobiko_required_fixtures__(self):
+        return [self.fixture]
 
 
 class RequiredSetupFixtureProperty(RequiredFixtureProperty):
 
     def get_fixture(self):
-        return setup_fixture(self.obj)
+        return setup_fixture(self.fixture)
