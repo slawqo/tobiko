@@ -25,14 +25,14 @@ class ShellError(tobiko.TobikoException):
 class ShellCommandFailed(ShellError):
     """Raised when shell command exited with non-zero status
     """
-    message = ("Command %(command)r failed, exit status: %(exit_status)d, "
-               "stderr:\n%(stderr)s\n"
-               "stdout:\n%(stdout)s")
+    message = ("command {command!r} failed (exit status is {exit_status}); "
+               "stderr:\n{stderr!s}\n"
+               "stdout:\n{stdout!s}")
 
 
 class ShellTimeoutExpired(ShellError):
     """Raised when shell command timeouts and has been killed before exiting
     """
-    message = ("Command '%(command)s' timed out: %(timeout)d, "
-               "stderr:\n%(stderr)s\n"
-               "stdout:\n%(stdout)s")
+    message = ("command {command!r} timed out after {timeout!s} seconds; "
+               "stderr:\n{stderr!s}\n"
+               "stdout:\n{stdout!s}")

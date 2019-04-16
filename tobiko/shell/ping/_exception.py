@@ -24,7 +24,7 @@ class PingException(tobiko.TobikoException):
 
 class PingError(PingException):
     """Base ping error"""
-    message = ("%(details)s")
+    message = "{details!s}"
 
 
 class LocalPingError(PingError):
@@ -41,13 +41,13 @@ class UnknowHostError(PingError):
 
 class BadAddressPingError(PingError):
     """Raised when passing wrong address to ping command"""
-    message = ("Bad address: %(address)r")
+    message = "bad address ({address!r})"
 
 
 class PingFailed(PingError, tobiko.FailureException):
     """Raised when ping timeout expires before reaching expected message count
 
     """
-    message = ("Timeout of %(timeout)d seconds expired after counting only "
-               "%(count)d out of expected %(expected_count)d ICMP messages of "
-               "type %(message_type)r.")
+    message = ("timeout of {timeout} seconds expired after counting only "
+               "{count} out of expected {expected_count} ICMP messages of "
+               "type {message_type!r}")

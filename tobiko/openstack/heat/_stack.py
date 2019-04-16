@@ -301,16 +301,16 @@ def check_stack_status(stack, expected):
 
 
 class InvalidHeatStackOutputKey(tobiko.TobikoException):
-    message = "Output key %(key)r not found in stack %(name)r."
+    message = "output key {key!r} not found in stack {name!r}"
 
 
 class HeatStackNotFound(tobiko.TobikoException):
-    message = "Stack %(name)r not found"
+    message = "stack {name!r} not found"
 
 
 class InvalidHeatStackStatus(tobiko.TobikoException):
-    message = ("Stack %(name)r status %(observed)r not in %(expected)r.\n"
-               "%(status_reason)s")
+    message = ("stack {name!r} status {observed!r} not in {expected!r}\n"
+               "{status_reason!s}")
 
 
 class HeatStackCreationFailed(InvalidHeatStackStatus):

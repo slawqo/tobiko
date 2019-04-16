@@ -19,7 +19,20 @@ import testtools
 FailureException = testtools.TestCase.failureException
 
 
-def fail(reason, *args, **kwargs):
+def fail(msg, *args, **kwargs):
+    """Fail immediately current test case execution, with the given message.
+
+    Unconditionally raises a tobiko.FailureException as in below equivalent
+    code:
+
+        raise FailureException(msg.format(*args, **kwargs))
+
+    :param msg: string message used to create FailureException
+    :param *args: positional arguments to be passed to str.format method
+    :param **kwargs: key-word arguments to be passed to str.format method
+    :returns: It never returns
+    :raises FailureException:
+    """
     if args or kwargs:
-        reason = reason.format(*args, **kwargs)
-    raise FailureException(reason)
+        msg = msg.format(*args, **kwargs)
+    raise FailureException(msg)

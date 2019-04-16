@@ -17,22 +17,40 @@ from __future__ import absolute_import
 class TobikoException(Exception):
     """Base Tobiko Exception.
 
-    To use this class, inherit from it and define a 'message' property.
+    To use this class, inherit from it and define attribute 'message' string.
+    If **properties parameters is given, then it will format message string
+    using properties as key-word arguments.
+
+    Example:
+
+        class MyException(TobikoException):
+            message = "This exception occurred because of {reason}"
+
+        try:
+            raise MyException(reason="something went wrong")
+        except MyException as ex:
+
+            # It should print:
+            #   This exception occurred because of something went wrong
+            print(ex)
+
+            # It should print:
+            #   something went wrong
+            print(ex.reason)
+
+    :attribute message: the message to be printed out.
     """
 
     message = None
 
-    def __init__(self, **properties):
-        super(TobikoException, self).__init__()
-        self._properties = properties
-        message = self.message  # pylint: disable=exception-message-attribute
-        if message:
-            if properties:
-                message = message % properties
-        self._message = message or "unknown reason"
-
-    def __str__(self):
-        return self._message
+    def __init__(self, message=None, **properties):
+        # pylint: disable=exception-message-attribute
+        message = message or self.message or "unknown reason"
+        if properties:
+            message = message.format(**properties)
+        self.message = message
+        self._properties = properties or {}
+        super(TobikoException, self).__init__(message)
 
     def __getattr__(self, name):
         try:
@@ -40,3 +58,8 @@ class TobikoException(Exception):
         except KeyError:
             msg = ("{!r} object has no attribute {!r}").format(self, name)
             raise AttributeError(msg)
+
+    def __repr__(self):
+        return "{class_name}({message!r})".format(
+            class_name=type(self).__name__,
+            message=self.message)
