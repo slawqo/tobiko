@@ -112,28 +112,19 @@ class FixtureUtil(base.TobikoCMD):
         stream = stream or sys.stdout
         self.parser.print_help(stream)
 
-    def discovertest_cases(self):
-        return tobiko.discover_testcases(
-            config=self.args.config,
-            repo_type=self.args.repo_type,
-            repo_url=self.args.repo_url,
-            test_path=self.args.test_path,
-            top_dir=self.args.top_dir,
-            group_regex=self.args.group_regex,
-            blacklist_file=self.args.blacklist_file,
-            whitelist_file=self.args.whitelist_file,
-            black_regex=self.args.black_regex,
-            filters=self.args.filters)
-
     def discover_testcases(self):
         args = self.args
         return tobiko.discover_testcases(
-            config=args.config, repo_type=args.repo_type,
-            repo_url=args.repo_url, test_path=args.test_path,
-            top_dir=args.top_dir, group_regex=args.group_regex,
+            config=args.config,
+            repo_type=args.repo_type,
+            repo_url=args.repo_url,
+            test_path=args.test_path,
+            top_dir=args.top_dir,
+            group_regex=args.group_regex,
             blacklist_file=args.blacklist_file,
             whitelist_file=args.whitelist_file,
-            black_regex=args.black_regex, filters=args.filters)
+            black_regex=args.black_regex,
+            filters=args.filters)
 
     def list_fixtures(self, stream=None):
         stream = stream or sys.stdout
