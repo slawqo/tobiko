@@ -13,6 +13,7 @@
         - openstack-tox-py37
         - openstack-tox-py27
         - openstack-tox-cover
+        - tobiko-devstack-functional
         - tobiko-devstack-neutron-centos-7
         - tobiko-devstack-neutron-centos-7-queens
         - tobiko-devstack-neutron-centos-7-rocky

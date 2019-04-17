@@ -18,24 +18,19 @@ from __future__ import absolute_import
 import sys
 import unittest
 
+import testtools
 
 from tobiko import config
 from tobiko.shell import sh
-from tobiko.tests import unit
 
 
 CONF = config.CONF
 
 
-class ExecuteTest(unit.TobikoUnitTest):
-
-    def setUp(self):
-        super(ExecuteTest, self).setUp()
-        self.config = self.patch_object(CONF.tobiko, 'shell',
-                                        command='/bin/sh -c')
+class ExecuteTest(testtools.TestCase):
 
     def test_execute_string(self):
-        result = sh.execute('true')
+        result = sh.execute('true', shell='/bin/sh -c')
         self.assertEqual(
             sh.ShellExecuteResult(
                 command=['/bin/sh', '-c', 'true'],
@@ -43,7 +38,7 @@ class ExecuteTest(unit.TobikoUnitTest):
             result)
 
     def test_execute_list(self):
-        result = sh.execute(['echo', 'something'])
+        result = sh.execute(['echo', 'something'], shell='/bin/sh -c')
         self.assertEqual(
             sh.ShellExecuteResult(
                 command=['/bin/sh', '-c', 'echo something'],
@@ -51,7 +46,7 @@ class ExecuteTest(unit.TobikoUnitTest):
             result)
 
     def test_execute_writing_to_stdout(self):
-        result = sh.execute('echo something')
+        result = sh.execute('echo something', shell='/bin/sh -c')
         self.assertEqual(
             sh.ShellExecuteResult(
                 command=['/bin/sh', '-c', 'echo something'],
@@ -59,7 +54,7 @@ class ExecuteTest(unit.TobikoUnitTest):
             result)
 
     def test_execute_writing_to_stderr(self):
-        result = sh.execute('echo something >&2')
+        result = sh.execute('echo something >&2', shell='/bin/sh -c')
         self.assertEqual(
             sh.ShellExecuteResult(
                 command=['/bin/sh', '-c', 'echo something >&2'],
@@ -67,7 +62,8 @@ class ExecuteTest(unit.TobikoUnitTest):
             result)
 
     def test_execute_failing_command(self):
-        ex = self.assertRaises(sh.ShellCommandFailed, sh.execute, 'exit 15')
+        ex = self.assertRaises(sh.ShellCommandFailed, sh.execute, 'exit 15',
+                               shell='/bin/sh -c')
         self.assertEqual('', ex.stdout)
         self.assertEqual('', ex.stderr)
         self.assertEqual(15, ex.exit_status)
@@ -75,7 +71,7 @@ class ExecuteTest(unit.TobikoUnitTest):
 
     def test_execute_failing_command_writing_to_stdout(self):
         ex = self.assertRaises(sh.ShellCommandFailed, sh.execute,
-                               'echo something; exit 8')
+                               'echo something; exit 8', shell='/bin/sh -c')
         self.assertEqual('something\n', ex.stdout)
         self.assertEqual('', ex.stderr)
         self.assertEqual(8, ex.exit_status)
@@ -84,7 +80,8 @@ class ExecuteTest(unit.TobikoUnitTest):
 
     def test_execute_failing_command_writing_to_stderr(self):
         ex = self.assertRaises(sh.ShellCommandFailed, sh.execute,
-                               'echo something >&2; exit 7')
+                               'echo something >&2; exit 7',
+                               shell='/bin/sh -c')
         self.assertEqual('', ex.stdout)
         self.assertEqual('something\n', ex.stderr)
         self.assertEqual(7, ex.exit_status)
@@ -92,7 +89,7 @@ class ExecuteTest(unit.TobikoUnitTest):
                          ex.command)
 
     def test_execute_with_timeout(self):
-        result = sh.execute('true', timeout=30.)
+        result = sh.execute('true', timeout=30., shell='/bin/sh -c')
         expected_timeout = None if sys.version_info < (3, 3) else 30.
         self.assertEqual(
             sh.ShellExecuteResult(
@@ -106,7 +103,7 @@ class ExecuteTest(unit.TobikoUnitTest):
     def test_execute_with_timeout_expired(self):
         ex = self.assertRaises(sh.ShellTimeoutExpired, sh.execute,
                                'echo out; echo err >&2; sleep 30',
-                               timeout=.01)
+                               timeout=.01, shell='/bin/sh -c')
         self.assertEqual(['/bin/sh', '-c',
                           'echo out; echo err >&2; sleep 30'],
                          ex.command)

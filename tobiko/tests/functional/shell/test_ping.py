@@ -16,26 +16,16 @@
 from __future__ import absolute_import
 
 import netaddr
+import testtools
 
 from tobiko import config
 from tobiko.shell import ping
-from tobiko.tests import unit
 
 
 CONF = config.CONF
 
 
-class PingTest(unit.TobikoUnitTest):
-
-    def setUp(self):
-        super(PingTest, self).setUp()
-        self.config = self.patch_object(CONF.tobiko, 'ping',
-                                        count=1,
-                                        deadline=5,
-                                        timeout=60,
-                                        fragmentation=True,
-                                        interval=1,
-                                        packet_size=None)
+class PingTest(testtools.TestCase):
 
     def test_ping_recheable_address(self):
         result = ping.ping('127.0.0.1', count=3)
