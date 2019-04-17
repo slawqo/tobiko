@@ -53,7 +53,6 @@ class HeatStackFixture(tobiko.SharedFixture):
     template_fixture = None
     parameters = None
     stack = None
-    outputs = None
 
     def __init__(self, stack_name=None, template=None, parameters=None,
                  wait_interval=None, client=None):
@@ -165,7 +164,7 @@ class HeatStackFixture(tobiko.SharedFixture):
                 stack = self.wait_for_stack_status(
                     expected_status={DELETE_COMPLETE})
 
-            self.stack = self.outputs = None
+            self.stack = self._outputs = None
             try:
                 LOG.debug('Creating stack %r (re-tries left %d)...',
                           self.stack_name, retry)
@@ -191,7 +190,7 @@ class HeatStackFixture(tobiko.SharedFixture):
         """Deletes stack."""
         if not stack_id:
             stack_id = self.stack_id
-            self.stack = self.outputs = None
+            self.stack = self._outputs = None
         try:
             self.client.stacks.delete(stack_id)
         except exc.NotFound:
@@ -217,7 +216,7 @@ class HeatStackFixture(tobiko.SharedFixture):
         except exc.HTTPNotFound:
             self.stack = stack = None
         finally:
-            self.outputs = None
+            self._outputs = None
         return stack
 
     def wait_for_create_complete(self, check=True):
@@ -247,20 +246,29 @@ class HeatStackFixture(tobiko.SharedFixture):
                 check_stack_status(stack, expected_status)
         return stack
 
+    _outputs = None
+
+    @property
+    def outputs(self):
+        return self.wait_for_outputs()
+
     def get_outputs(self):
         stack = self.stack
         if not hasattr(stack, 'outputs'):
             stack = self.get_stack(resolve_outputs=True)
         check_stack_status(stack, {CREATE_COMPLETE})
-        self.outputs = outputs = HeatStackOutputs(
+        self._outputs = outputs = HeatStackOutputs(
             stack_name=self.stack_name,
             outputs={output['output_key']: output['output_value']
                      for output in stack.outputs})
         return outputs
 
     def wait_for_outputs(self):
-        self.wait_for_create_complete()
-        return self.get_outputs()
+        if self._outputs:
+            return self._outputs
+        else:
+            self.wait_for_create_complete()
+            return self.get_outputs()
 
 
 class HeatStackOutputs(object):
