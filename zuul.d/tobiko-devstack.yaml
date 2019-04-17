@@ -137,7 +137,7 @@
     name: tobiko-devstack-neutron-centos-7
     parent: tobiko-devstack-neutron
     nodeset: openstack-three-node-centos-7
-    voting: true
+    voting: false
     vars:
       devstack_localrc:
         USE_PYTHON3: false
@@ -158,7 +158,7 @@
     name: tobiko-devstack-neutron-centos-7-rocky
     parent: tobiko-devstack-neutron-centos-7
     override-checkout: stable/rocky
-    voting: true
+    voting: false
 
 
 - job:
