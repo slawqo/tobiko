@@ -172,7 +172,6 @@
     name: tobiko-devstack-neutron-fedora-28
     parent: tobiko-devstack-neutron
     nodeset: openstack-three-node-fedora-28
-    voting: false
     vars:
       devstack_localrc:
         # Add dns-domain-ports,dns-integration extensions again when bug
