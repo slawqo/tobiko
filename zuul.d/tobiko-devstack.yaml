@@ -10,10 +10,10 @@
       test setup. To run a multi-node test inherit from tobiko-devstack and
       set the nodeset to a multi-node one.
     required-projects:
-      - openstack-infra/devstack-gate
+      - openstack/devstack-gate
       - openstack/heat
       - openstack/neutron
-      - openstack/tobiko
+      - x/tobiko
     timeout: 7200
     vars:
       devstack_localrc:
@@ -23,9 +23,9 @@
         TOBIKO_KEYSTONE_PASSWORD: secret_tobiko
         TOBIKO_KEYSTONE_PROJECT_NAME: tobiko
       devstack_plugins:
-        heat: https://git.openstack.org/openstack/heat.git
-        neutron: https://git.openstack.org/openstack/neutron.git
-        tobiko: https://git.openstack.org/openstack/tobiko.git
+        heat: https://opendev.org/openstack/heat.git
+        neutron: https://opendev.org/openstack/neutron.git
+        tobiko: https://opendev.org/x/tobiko.git
       devstack_services:
         heat: true
         h-api: true
@@ -80,7 +80,7 @@
         devstack_localrc:
           USE_PYTHON3: true
         devstack_plugins:
-          neutron: git://git.openstack.org/openstack/neutron.git
+          neutron: git://opendev.org/openstack/neutron.git
         devstack_services:
           tempest: false
           heat: false

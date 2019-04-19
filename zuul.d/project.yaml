@@ -1,5 +1,5 @@
 - project:
-    name: openstack/tobiko
+    name: x/tobiko
     templates:
       - check-requirements
       - tempest-plugin-jobs
