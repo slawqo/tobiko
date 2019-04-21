@@ -1,11 +1,13 @@
 heat_template_version: newton
 
-
 description: |
   Stack of resources used to test floating IP
 
 
 parameters:
+  key_name:
+    type: string
+
   flavor:
     type: string
 
@@ -39,6 +41,7 @@ resources:
   server:
     type: OS::Nova::Server
     properties:
+      key_name: {get_param: key_name}
       image: {get_param: image}
       flavor: {get_param: flavor}
       networks:

@@ -16,6 +16,8 @@ from __future__ import absolute_import
 
 import os
 
+import six
+
 from tobiko import config
 from tobiko.openstack import heat
 from tobiko.openstack import neutron
@@ -110,3 +112,18 @@ class SecurityGroupsFixture(heat.HeatStackFixture):
     """
     #: Heat template file
     template = heat_template_file('security_groups.yaml')
+
+
+class KeyPairFixture(heat.HeatStackFixture):
+    template = heat_template_file('key_pair.yaml')
+    key_file = os.path.expanduser(CONF.tobiko.nova.key_file)
+    key_name = CONF.tobiko.nova.key_name
+
+    @property
+    def public_key(self):
+        with open(self.key_file + '.pub', 'r') as fd:
+            key = fd.read()
+            if not isinstance(key, six.string_types):
+                # on Python 3 must convert key to string
+                key = key.decode()
+            return key

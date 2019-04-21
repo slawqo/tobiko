@@ -10,6 +10,11 @@ function install_tobiko {
 
 
 function configure_tobiko {
+  #Setup an ssh key
+  local nova_key_file=${TOBIKO_NOVA_KEY_FILE:-~/.ssh/id_rsa}
+  if ! [ -r "${nova_key_file}" ]; then
+    ssh-keygen -t rsa -q -P "" -f "${nova_key_file}"
+  fi
   # Write configuration to a new temporary file
   local tobiko_conf=$(mktemp)
   if [ -f "${TOBIKO_CONF}" ]; then
@@ -23,6 +28,7 @@ function configure_tobiko {
   echo_summary "Write compute service options to ${TOBIKO_CONF}"
   iniset "${tobiko_conf}" nova image "$(get_image)"
   iniset "${tobiko_conf}" nova flavor "$(get_flavor)"
+  iniset "${tobiko_conf}" nova key_file "${nova_key_file}"
 
   echo_summary "Write networking options to ${TOBIKO_CONF}"
   iniset "${tobiko_conf}" neutron floating_network \
