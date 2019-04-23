@@ -2,15 +2,11 @@
 Tobiko
 ======
 
-Tempest plugin for testing upgrades
+Framework to write Python test cases to test cloud (OpenStack) system operations.
 
-* Free software: Apache license
-* Source: https://git.openstack.org/cgit/openstack/tobiko
-* Bugs: https://bugs.launchpad.net/tobiko
+* Free software: Apache License v2.0
+* Source: https://opendev.org/x/tobiko.git
+* Bugs: https://storyboard.openstack.org/#!/project/x/tobiko
+* Usage: https://opendev.org/x/tobiko/src/branch/master/docs/quick-start.md
 
-Usage
------
 
-Run Neutorn tests::
-
-    tox -e neutron
