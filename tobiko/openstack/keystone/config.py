@@ -20,7 +20,10 @@ def register_tobiko_options(conf):
 
     conf.register_opts(
         group=cfg.OptGroup('keystone'),
-        opts=[cfg.StrOpt('auth_url',
+        opts=[cfg.IntOpt('api_version',
+                         default=None,
+                         help="Identity API version"),
+              cfg.StrOpt('auth_url',
                          default=None,
                          help="Identity service URL"),
               cfg.StrOpt('username',
@@ -32,12 +35,15 @@ def register_tobiko_options(conf):
               cfg.StrOpt('password',
                          default=None,
                          help="Password"),
-              cfg.IntOpt('api_version',
+              cfg.StrOpt('domain_name',
                          default=None,
-                         help="Identity API version"),
+                         help="Domain name"),
               cfg.StrOpt('user_domain_name',
                          default=None,
                          help="User domain name"),
               cfg.StrOpt('project_domain_name',
                          default=None,
-                         help="Project domain name")])
+                         help="Project domain name"),
+              cfg.StrOpt('trust_id',
+                         default=None,
+                         help="Trust ID for trust scoping.")])

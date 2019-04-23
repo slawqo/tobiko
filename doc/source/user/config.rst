@@ -115,15 +115,15 @@ Currently supported variables are::
     export OS_TENANT_ID=...
 
     # Domain-level authorization scope (name or ID)
-    export OS_DOMAIN_NAME=default
+    export OS_DOMAIN_NAME=Default
     export OS_DOMAIN_ID=...
 
     # Domain name or ID containing user
-    export OS_USER_DOMAIN_NAME=default
+    export OS_USER_DOMAIN_NAME=Default
     export OS_USER_DOMAIN_ID=...
 
     # Domain name or ID containing project
-    export OS_PROJECT_DOMAIN_NAME=default
+    export OS_PROJECT_DOMAIN_NAME=Default
     export OS_PROJECT_DOMAIN_ID=...
 
     # ID of the trust to use as a trustee user

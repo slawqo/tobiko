@@ -28,13 +28,15 @@ def default_keystone_credentials():
 
 
 class KeystoneCredentials(collections.namedtuple(
-        'KeystoneCredentials', ['auth_url',
+        'KeystoneCredentials', ['api_version',
+                                'auth_url',
                                 'username',
-                                'project_name',
                                 'password',
-                                'api_version',
+                                'project_name',
+                                'domain_name',
                                 'user_domain_name',
-                                'project_domain_name'])):
+                                'project_domain_name',
+                                'trust_id'])):
 
     def to_dict(self):
         return collections.OrderedDict(
@@ -50,7 +52,7 @@ class KeystoneCredentials(collections.namedtuple(
             ", ".join("{!s}={!r}".format(k, v)
                       for k, v in params.items()))
 
-    required_params = ('auth_url', 'username', 'project_name', 'password')
+    required_params = ('auth_url', 'username', 'password', 'project_name')
 
     def validate(self, required_params=None):
         required_params = required_params or self.required_params
@@ -63,14 +65,25 @@ class KeystoneCredentials(collections.namedtuple(
             raise InvalidKeystoneCredentials(credentials=self, reason=reason)
 
 
-def keystone_credentials(api_version=None, auth_url=None,
-                         username=None, password=None, project_name=None,
-                         user_domain_name=None, project_domain_name=None,
+def keystone_credentials(api_version=None,
+                         auth_url=None,
+                         username=None,
+                         password=None,
+                         project_name=None,
+                         domain_name=None,
+                         user_domain_name=None,
+                         project_domain_name=None,
+                         trust_id=None,
                          cls=KeystoneCredentials):
-    return cls(api_version=api_version, username=username,
-               password=password, project_name=project_name,
-               auth_url=auth_url, user_domain_name=user_domain_name,
-               project_domain_name=project_domain_name)
+    return cls(api_version=api_version,
+               auth_url=auth_url,
+               username=username,
+               password=password,
+               project_name=project_name,
+               domain_name=domain_name,
+               user_domain_name=user_domain_name,
+               project_domain_name=project_domain_name,
+               trust_id=trust_id)
 
 
 class InvalidKeystoneCredentials(tobiko.TobikoException):
@@ -88,24 +101,46 @@ class EnvironKeystoneCredentialsFixture(tobiko.SharedFixture):
             LOG.debug("OS_AUTH_URL environment variable not defined")
             return
 
-        api_version = (config.get_int_env('OS_IDENTITY_API_VERSION') or
-                       api_version_from_url(auth_url))
+        api_version = (
+            config.get_int_env('OS_IDENTITY_API_VERSION') or
+            api_version_from_url(auth_url))
+        username = (
+            config.get_env('OS_USERNAME') or
+            config.get_env('OS_USER_ID'))
+        password = config.get_env('OS_PASSWORD')
+        project_name = (
+            config.get_env('OS_PROJECT_NAME') or
+            config.get_env('OS_TENANT_NAME') or
+            config.get_env('OS_PROJECT_ID') or
+            config.get_env('OS_TENANT_ID'))
         if api_version == 2:
             credentials = keystone_credentials(
-                api_version=api_version, auth_url=auth_url,
-                username=config.get_env('OS_USERNAME'),
-                password=config.get_env('OS_PASSWORD'),
-                project_name=(config.get_env('OS_PROJECT_NAME') or
-                              config.get_env('OS_TENANT_NAME')))
+                api_version=api_version,
+                auth_url=auth_url,
+                username=username,
+                password=password,
+                project_name=project_name)
         else:
+            domain_name = (
+                config.get_env('OS_DOMAIN_NAME') or
+                config.get_env('OS_DOMAIN_ID'))
+            user_domain_name = (
+                config.get_env('OS_USER_DOMAIN_NAME') or
+                config.get_env('OS_USER_DOMAIN_ID'))
+            project_domain_name = (
+                config.get_env('OS_PROJECT_DOMAIN_NAME') or
+                config.get_env('OS_PROJECT_DOMAIN_ID'))
+            trust_id = config.get_env('OS_TRUST_ID')
             credentials = keystone_credentials(
-                api_version=api_version, auth_url=auth_url,
-                username=config.get_env('OS_USERNAME'),
-                password=config.get_env('OS_PASSWORD'),
-                project_name=(config.get_env('OS_PROJECT_NAME') or
-                              config.get_env('OS_TENANT_NAME')),
-                user_domain_name=config.get_env('OS_USER_DOMAIN_NAME'),
-                project_domain_name=config.get_env('OS_PROJECT_DOMAIN_NAME'))
+                api_version=api_version,
+                auth_url=auth_url,
+                username=username,
+                password=password,
+                project_name=project_name,
+                domain_name=domain_name,
+                user_domain_name=user_domain_name,
+                project_domain_name=project_domain_name,
+                trust_id=trust_id)
         try:
             credentials.validate()
         except InvalidKeystoneCredentials as ex:
@@ -131,16 +166,22 @@ class ConfigKeystoneCredentialsFixture(tobiko.SharedFixture):
                        api_version_from_url(auth_url))
         if api_version == 2:
             credentials = keystone_credentials(
-                api_version=api_version, auth_url=auth_url,
-                username=conf.username, password=conf.password,
+                api_version=api_version,
+                auth_url=auth_url,
+                username=conf.username,
+                password=conf.password,
                 project_name=conf.project_name)
         else:
             credentials = keystone_credentials(
-                api_version=api_version, auth_url=auth_url,
-                username=conf.username, password=conf.password,
+                api_version=api_version,
+                auth_url=auth_url,
+                username=conf.username,
+                password=conf.password,
                 project_name=conf.project_name,
+                domain_name=conf.domain_name,
                 user_domain_name=conf.user_domain_name,
-                project_domain_name=conf.project_domain_name)
+                project_domain_name=conf.project_domain_name,
+                trust_id=conf.trust_id)
         try:
             credentials.validate()
         except InvalidKeystoneCredentials as ex:
@@ -160,7 +201,6 @@ class DefaultKeystoneCredentialsFixture(tobiko.SharedFixture):
     credentials = None
 
     def setup_fixture(self):
-
         for fixture in self.fixtures:
             try:
                 credentials = tobiko.setup_fixture(fixture).credentials
@@ -172,7 +212,6 @@ class DefaultKeystoneCredentialsFixture(tobiko.SharedFixture):
                              fixture, credentials)
                     self.credentials = credentials
                     return credentials
-
         raise RuntimeError('Unable to found any valid credentials')
 
 
@@ -183,7 +222,6 @@ def api_version_from_url(auth_url):
     elif auth_url.endswith('/v3'):
         LOG.info('Got Keystone API version 3 from auth_url: %r', auth_url)
         return 3
-
     else:
         LOG.warning('Unable to get Keystone API version from auth_url:  %r',
                     auth_url)

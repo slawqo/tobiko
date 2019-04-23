@@ -48,16 +48,16 @@ V3_PARAMS = {
     'username': 'demo',
     'password': 'super-secret',
     'auth_url': 'http://10.0.0.1:5678/v3',
-    'user_domain_name': 'demo',
-    'project_domain_name': 'demo'}
+    'user_domain_name': 'Default',
+    'project_domain_name': 'Default'}
 
 V3_ENVIRON = {
     'OS_PROJECT_NAME': 'demo',
     'OS_USERNAME': 'demo',
     'OS_PASSWORD': 'super-secret',
     'OS_AUTH_URL': 'http://10.0.0.1:5678/v3',
-    'OS_USER_DOMAIN_NAME': 'demo',
-    'OS_PROJECT_DOMAIN_NAME': 'demo'}
+    'OS_USER_DOMAIN_NAME': 'Default',
+    'OS_PROJECT_DOMAIN_NAME': 'Default'}
 
 V3_ENVIRON_WITH_VERSION = dict(V3_ENVIRON, OS_IDENTITY_API_VERSION='3')
 
@@ -75,9 +75,9 @@ class KeystoneCredentialsTest(base.OpenstackTest):
         credentials.validate()
         self.assertEqual(V2_PARAMS, credentials.to_dict())
         self.assertEqual(
-            "keystone_credentials(auth_url='http://10.0.0.1:5678/v2.0', "
-            "username='demo', project_name='demo', password='***', "
-            "api_version=2)",
+            "keystone_credentials(api_version=2, "
+            "auth_url='http://10.0.0.1:5678/v2.0', username='demo', "
+            "password='***', project_name='demo')",
             repr(credentials))
 
     def test_validate_from_params_v3(self):
@@ -85,10 +85,11 @@ class KeystoneCredentialsTest(base.OpenstackTest):
         credentials.validate()
         self.assertEqual(V3_PARAMS, credentials.to_dict())
         self.assertEqual(
-            "keystone_credentials(auth_url='http://10.0.0.1:5678/v3', "
-            "username='demo', project_name='demo', password='***', "
-            "api_version=3, user_domain_name='demo', "
-            "project_domain_name='demo')",
+            "keystone_credentials(api_version=3, "
+            "auth_url='http://10.0.0.1:5678/v3', username='demo', "
+            "password='***', project_name='demo', "
+            "user_domain_name='Default', "
+            "project_domain_name='Default')",
             repr(credentials))
 
     def test_validate_without_auth_url(self):
