@@ -43,7 +43,7 @@ def skip_until(reason, predicate, *args, **kwargs):
 def skip_if_match(reason, match, predicate, *args, **kwargs):
 
     def decorator(obj):
-        method, is_class_method = _get_decorated_method(obj)
+        method = _get_decorated_method(obj)
 
         @functools.wraps(method)
         def wrapped_method(*_args, **_kwargs):
@@ -55,9 +55,6 @@ def skip_if_match(reason, match, predicate, *args, **kwargs):
         if obj is method:
             return wrapped_method
         else:
-            if is_class_method:
-                wrapped_method = classmethod(wrapped_method)
-
             setattr(obj, method.__name__, wrapped_method)
             return obj
 
@@ -67,13 +64,13 @@ def skip_if_match(reason, match, predicate, *args, **kwargs):
 def _get_decorated_method(obj):
     if inspect.isclass(obj):
         if issubclass(obj, (unittest.TestCase, testtools.TestCase)):
-            return obj.setUpClass, True
+            return obj.setUp
         elif _fixture.is_fixture(obj):
-            return obj.setUp, False
+            return obj.setUp
         else:
             raise TypeError("Cannot decorate class {!r}".format(obj))
     else:
         if callable(obj):
-            return obj, False
+            return obj
         else:
             raise TypeError("Cannot decorate object {!r}".format(obj))
