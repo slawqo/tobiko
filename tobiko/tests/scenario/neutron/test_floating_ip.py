@@ -143,6 +143,7 @@ class FloatingIPWithNetMtuWritableFixture(FloatingIPFixture):
         stacks.InternalNetworkWithNetMtuWritableFixture)
 
 
+@neutron.skip_if_missing_networking_extensions('net-mtu-writable')
 class FlatingIpWithMtuWritableTest(FloatingIPTest):
     floating_ip_stack = tobiko.required_setup_fixture(
         FloatingIPWithNetMtuWritableFixture)
