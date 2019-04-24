@@ -8,6 +8,7 @@
       - openstack-python37-jobs
       - release-notes-jobs-python3
       - publish-to-pypi
+      - publish-openstack-docs-pti
     check:
       jobs:
         - openstack-tox-pylint
