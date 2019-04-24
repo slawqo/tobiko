@@ -37,5 +37,10 @@ ping_until_delivered = _ping.ping_until_delivered
 ping_until_undelivered = _ping.ping_until_undelivered
 ping_until_received = _ping.ping_until_received
 ping_until_unreceived = _ping.ping_until_unreceived
+TRANSMITTED = _ping.TRANSMITTED
+UNDELIVERED = _ping.UNDELIVERED
+DELIVERED = _ping.DELIVERED
+RECEIVED = _ping.RECEIVED
+UNRECEIVED = _ping.UNRECEIVED
 
 PingStatistics = _statistics.PingStatistics
