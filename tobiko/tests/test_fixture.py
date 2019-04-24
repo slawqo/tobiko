@@ -17,6 +17,7 @@ import sys
 
 import fixtures
 import mock
+import testtools
 
 import tobiko
 from tobiko.tests import unit
@@ -35,6 +36,15 @@ class MyBaseFixture(tobiko.SharedFixture):
             specs=tobiko.SharedFixture.setup_fixture)
         self.cleanup_fixture = mock.Mock(
             specs=tobiko.SharedFixture.cleanup_fixture)
+
+
+class MySkyppingFixture(tobiko.SharedFixture):
+
+    def setup_fixture(self):
+        tobiko.skip('some-reason')
+
+    def cleanup_fixture(self):
+        tobiko.skip('some-reason')
 
 
 class MyFixture(MyBaseFixture):
@@ -263,6 +273,11 @@ class SharedFixtureTest(unit.TobikoUnitTest):
         fixture.setUp()
         fixture.setup_fixture.assert_called_once_with()
 
+    def test_setup_when_skipping(self):
+        fixture = MySkyppingFixture()
+        self.assertRaises(testtools.MultipleExceptions, fixture.setUp)
+        self.assertRaises(testtools.MultipleExceptions, fixture.setUp)
+
     def test_cleanup(self):
         fixture = MyFixture()
         fixture.cleanUp()
@@ -271,7 +286,13 @@ class SharedFixtureTest(unit.TobikoUnitTest):
     def test_cleanup_twice(self):
         fixture = MyFixture()
         fixture.cleanUp()
+        fixture.cleanUp()
         fixture.cleanup_fixture.assert_called_once_with()
+
+    def test_cleanup_when_skipping(self):
+        fixture = MySkyppingFixture()
+        self.assertRaises(tobiko.SkipException, fixture.cleanUp)
+        self.assertRaises(testtools.MultipleExceptions, fixture.cleanUp)
 
     def test_lifecycle(self):
         fixture = MyFixture()

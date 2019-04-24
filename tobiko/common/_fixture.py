@@ -308,21 +308,18 @@ class SharedFixture(fixtures.Fixture):
 
         """
         if not self._setup_executed:
-            try:
-                super(SharedFixture, self).setUp()
-            finally:
-                self._cleanup_executed = False
-                self._setup_executed = True
+            super(SharedFixture, self).setUp()
+            self._cleanup_executed = False
+            self._setup_executed = True
 
     def cleanUp(self, raise_first=True):
         """Executes registered cleanups if any"""
-        try:
-            if not self._cleanup_executed:
-                self.addCleanup(self.cleanup_fixture)
-            return super(SharedFixture, self).cleanUp(raise_first=raise_first)
-        finally:
-            self._setup_executed = False
-            self._cleanup_executed = True
+        if not self._cleanup_executed:
+            self.addCleanup(self.cleanup_fixture)
+        result = super(SharedFixture, self).cleanUp(raise_first=raise_first)
+        self._setup_executed = False
+        self._cleanup_executed = True
+        return result
 
     def _setUp(self):
         self.setup_fixture()
