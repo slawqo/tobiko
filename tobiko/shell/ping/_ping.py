@@ -344,6 +344,11 @@ def handle_ping_command_error(error):
                     details = text[:-len(suffix)].strip()
                     raise _exception.UnknowHostError(details=details)
 
+                suffix = ': No route to host'
+                if text.endswith(suffix):
+                    details = text[:-len(suffix)].strip()
+                    raise _exception.UnknowHostError(details=details)
+
                 raise _exception.PingError(details=text)
 
 
