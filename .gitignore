@@ -5,8 +5,9 @@
 *.log
 
 # Hidden files
+.coverage
+.coverage.*
 .eggs
-.coverage*
 .stestr
 .test
 .testrepository
