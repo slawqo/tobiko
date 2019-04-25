@@ -107,6 +107,15 @@
 
 
 - job:
+    name: tobiko-devstack-functional
+    parent: tobiko-devstack
+    description: |
+      Base Tobiko devstack job to execute functional tests.
+    vars:
+      tox_envlist: functional
+
+
+- job:
     name: tobiko-devstack-multinode
     parent: tobiko-devstack
     abstract: true
