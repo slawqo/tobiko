@@ -4,6 +4,7 @@
       - check-requirements
       - tempest-plugin-jobs
       - release-notes-jobs-python3
+      - publish-to-pypi
     check:
       jobs:
         - openstack-tox-pep8
