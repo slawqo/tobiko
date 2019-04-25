@@ -3,4 +3,3 @@
 ansible>=2.4.0       # GPLv3
 os-faults>=0.1.18    # Apache-2.0
 cryptography<=2.2.2  # Apache-2.0
-Jinja2>=2.8.0        # BSD
