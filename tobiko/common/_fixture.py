@@ -27,12 +27,30 @@ LOG = log.getLogger(__name__)
 
 
 def is_fixture(obj):
+    '''Returns whenever obj is a fixture or not'''
     return (getattr(obj, '__tobiko_fixture__', False) or
             isinstance(obj, fixtures.Fixture) or
             (inspect.isclass(obj) and issubclass(obj, fixtures.Fixture)))
 
 
 def get_fixture(obj, manager=None):
+    '''Returns a fixture identified by given :param obj:
+
+    It returns registered fixture for given :param obj:. If none has been
+    registered it creates a new one.
+
+    :param obj: can be:
+      - an instance of fixtures.Fixture class: on such case it would return
+        obj itself
+      - the unique fully qualified name or an object that refers to a fixture
+        class or an instance to a fixture.
+      - the class of the fixture. It must be a subclass of fixtures.Fixture
+        sub-class.
+
+    :returns: an instance of fixture class identified by obj, or obj itself
+    if it is instance of fixtures.Fixture class.
+
+    '''
     if isinstance(obj, fixtures.Fixture):
         return obj
     else:
@@ -41,6 +59,7 @@ def get_fixture(obj, manager=None):
 
 
 def get_fixture_name(obj):
+    '''Get unique fixture name'''
     try:
         return obj.__tobiko_fixture_name__
     except AttributeError:
@@ -48,10 +67,12 @@ def get_fixture_name(obj):
         if is_fixture(obj):
             obj.__tobiko_fixture__ = True
             obj.__tobiko_fixture_name__ = name
-        return name
+            return name
+    raise TypeError('Object {obj!r} is not a fixture.'.format(obj=obj))
 
 
 def get_fixture_class(obj):
+    '''Get fixture class'''
     if isinstance(obj, six.string_types):
         obj = tobiko.load_object(obj)
 
@@ -63,15 +84,18 @@ def get_fixture_class(obj):
 
 
 def get_fixture_dir(obj):
+    '''Get directory of fixture class source code file'''
     return os.path.dirname(inspect.getfile(get_fixture_class(obj)))
 
 
 def remove_fixture(obj, manager=None):
+    '''Unregister fixture identified by given :param obj: if any'''
     manager = manager or FIXTURES
     return manager.remove_fixture(obj)
 
 
 def setup_fixture(obj, manager=None):
+    '''Get registered fixture and setup it up'''
     fixture = get_fixture(obj, manager=manager)
     LOG.debug('Set up fixture %r', get_fixture_name(fixture))
     try:
@@ -85,6 +109,7 @@ def setup_fixture(obj, manager=None):
 
 
 def cleanup_fixture(obj, manager=None):
+    '''Get registered fixture and clean it up'''
     fixture = get_fixture(obj, manager=manager)
     LOG.debug('Clean up fixture %r', get_fixture_name(fixture))
     fixture.cleanUp()
@@ -92,6 +117,7 @@ def cleanup_fixture(obj, manager=None):
 
 
 def get_name_and_object(obj):
+    '''Get (name, obj) tuple identified by given :param obj:'''
     if isinstance(obj, six.string_types):
         return obj, tobiko.load_object(obj)
     else:
@@ -117,6 +143,7 @@ def visit_objects(objects):
 
 
 def list_required_fixtures(objects):
+    '''List fixture names required by given objects'''
     result = []
     objects = list(objects)
     for name, obj in visit_objects(objects):
@@ -137,11 +164,13 @@ def list_required_fixtures(objects):
 
 
 def is_test_method(obj):
+    '''Returns whenever given object is a test method'''
     return ((inspect.isfunction(obj) or inspect.ismethod(obj)) and
             obj.__name__.startswith('test_'))
 
 
 def get_required_fixture(obj):
+    '''Get fixture names required by given :param obj:'''
     required_fixtures = getattr(obj, '__tobiko_required_fixtures__', None)
     if required_fixtures is None:
         required_fixtures = []
@@ -187,14 +216,21 @@ def init_fixture(obj, name):
 
 
 def required_fixture(obj):
+    '''Creates a property that gets fixture identified by given :param obj:
+
+    '''
     return RequiredFixtureProperty(obj)
 
 
 def required_setup_fixture(obj):
+    '''Creates a property that sets up fixture identified by given :param obj:
+
+    '''
     return RequiredSetupFixtureProperty(obj)
 
 
 def get_object_name(obj):
+    '''Gets a fully qualified name for given :param obj:'''
     if isinstance(obj, six.string_types):
         return obj
 
