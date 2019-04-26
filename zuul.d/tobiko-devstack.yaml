@@ -146,7 +146,6 @@
     name: tobiko-devstack-neutron-centos-7
     parent: tobiko-devstack-neutron
     nodeset: openstack-three-node-centos-7
-    voting: false
     vars:
       devstack_localrc:
         USE_PYTHON3: false
