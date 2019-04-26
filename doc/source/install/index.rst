@@ -1,13 +1,15 @@
-============
-Installation
-============
+.. _tobiko-install-guide:
+
+=========================
+Tobiko Installation Guide
+=========================
 
 
 Document Overview
 -----------------
 
 This document describes how to install Tobiko inside a Python virtualenv. For
-a quick and simpler start you can jump to the Quick Start Guide.
+a quick and simpler start you can jump to the :ref:`quick-start-guide`.
 
 
 Install Tobiko Using Virtualenv
@@ -24,7 +26,7 @@ Make sure pip and setuptools are installed and up-to date::
     sudo python get-pip.py
     sudo pip install --upgrade setuptools
 
-Make sure tox, virtualenv and wheel are installed and up to date::
+Make sure virtualenv and wheel are installed and up to date::
 
     sudo pip install --upgrade tox virtualenv wheel
 
