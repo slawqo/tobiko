@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
 import sys
 
 import fixtures
@@ -67,6 +68,9 @@ class GetFixtureTest(FixtureBaseTest):
     def test_by_type(self):
         self._test_get_fixture(MyFixture)
 
+    def test_by_instance(self):
+        self._test_get_fixture(MyFixture())
+
     def _test_get_fixture(self, obj):
         fixture = tobiko.get_fixture(obj)
         self.assertIsInstance(fixture, MyFixture)
@@ -79,9 +83,6 @@ class GetFixtureTest(FixtureBaseTest):
         fixture.setup_fixture.assert_not_called()
         fixture.cleanup_fixture.assert_not_called()
 
-    def test_by_instance(self):
-        self._test_get_fixture(MyFixture())
-
 
 class GetFixtureNameTest(FixtureBaseTest):
 
@@ -89,6 +90,44 @@ class GetFixtureNameTest(FixtureBaseTest):
         fixture = MyFixture()
         result = tobiko.get_fixture_name(fixture)
         self.assertEqual(canonical_name(MyFixture), result)
+
+    def test_with_other_type(self):
+        obj = object()
+        ex = self.assertRaises(TypeError, tobiko.get_fixture_name, obj)
+        self.assertEqual('Object {obj!r} is not a fixture.'.format(obj=obj),
+                         str(ex))
+
+
+class GetFixtureClassTest(FixtureBaseTest):
+
+    def test_with_name(self):
+        result = tobiko.get_fixture_class(canonical_name(MyFixture))
+        self.assertIs(MyFixture, result)
+
+    def test_with_type(self):
+        result = tobiko.get_fixture_class(MyFixture)
+        self.assertIs(MyFixture, result)
+
+    def test_with_instance(self):
+        result = tobiko.get_fixture_class(MyFixture())
+        self.assertIs(MyFixture, result)
+
+
+class GetFixtureDirTest(FixtureBaseTest):
+
+    expected_dir = os.path.dirname(__file__)
+
+    def test_with_name(self):
+        actual_dir = tobiko.get_fixture_dir(canonical_name(MyFixture))
+        self.assertEqual(self.expected_dir, actual_dir)
+
+    def test_with_type(self):
+        actual_dir = tobiko.get_fixture_dir(MyFixture)
+        self.assertEqual(self.expected_dir, actual_dir)
+
+    def test_with_instance(self):
+        actual_dir = tobiko.get_fixture_dir(MyFixture())
+        self.assertEqual(self.expected_dir, actual_dir)
 
 
 class RemoveFixtureTest(FixtureBaseTest):
@@ -124,6 +163,31 @@ class SetupFixtureTest(FixtureBaseTest):
         self.assertIs(tobiko.get_fixture(obj), result)
         result.setup_fixture.assert_called_once_with()
         result.cleanup_fixture.assert_not_called()
+
+
+class FailingFixture(tobiko.SharedFixture):
+
+    def setup_fixture(self):
+        raise RuntimeError('raised by setup_fixture')
+
+    def cleanup_fixture(self):
+        raise RuntimeError('raised by cleanup_fixture')
+
+
+class FailingSetupFixtureWhenFailingTest(FixtureBaseTest):
+
+    def test_with_name(self):
+        self._test_setup_fixture(canonical_name(FailingFixture))
+
+    def test_with_type(self):
+        self._test_setup_fixture(FailingFixture)
+
+    def test_with_instance(self):
+        self._test_setup_fixture(FailingFixture())
+
+    def _test_setup_fixture(self, obj):
+        ex = self.assertRaises(RuntimeError, tobiko.setup_fixture, obj)
+        self.assertEqual('raised by setup_fixture', str(ex))
 
 
 class CleanupFixtureTest(FixtureBaseTest):
