@@ -20,4 +20,4 @@ Links
 * Documentation: `Tobiko Documentation <https://docs.openstack.org/>`__
 * Source: https://opendev.org/x/tobiko.git
 * Bugs: `StoryBoard <https://storyboard.openstack.org/#!/project/x/tobiko>`__
-* Usage: `Quick Start Guide <https://opendev.org/x/tobiko/src/branch/master/doc/quick-start.md>`__
+* Usage: `Quick Start Guide <https://opendev.org/x/tobiko/src/branch/master/doc/source/user/index.rst>`__
