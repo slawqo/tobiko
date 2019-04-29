@@ -2,23 +2,35 @@
 Tobiko
 ======
 
-Tobiko is an OpenStack testing framework focusing on areas
-complementary to Tempest:
 
-- Minor updates and major upgrades. Tobiko tests populate the
-  cloud with workloads such as instances, allows the CI workflow
-  to perform an operation such as an update or upgrade, and then runs
-  tests that validate that the cloud workloads are still functional.
-- Fault injection, like restarting nodes, OpenStack services and
-  dependencies such as OVS, RabbitMQ or the DB.
-- White box testing; Specifically the ability to run commands on
-  nodes.
+Test Big Cloud Operations
+-------------------------
 
-Links
-~~~~~
+Tobiko is an OpenStack testing framework focusing on areas mostly
+complementary to `Tempest <https://docs.openstack.org/tempest/latest/>`__.
+While tempest main focus has been testing OpenStack rest APIs, the main Tobiko
+focus would be to test OpenStack system operations while "simulating"
+the use of the cloud as the final user would.
 
-* Documentation: `Tobiko Documentation <https://docs.openstack.org/tobiko/latest/>`__
-* Usage: `Tobiko User Guide <https://docs.openstack.org/tobiko/latest/user/>`__
-* Bugs: `Tobiko StoryBoard <https://storyboard.openstack.org/#!/project/x/tobiko>`__
-* Source Code: https://opendev.org/x/tobiko.git
-* License: `Apache License v2.0 <https://opendev.org/x/tobiko/src/branch/master/LICENSE>`__
+Tobiko's test cases populate the cloud with workloads such as instances, allows
+the CI workflow to perform an operation such as an update or upgrade, and then
+runs test cases to validate that the cloud workloads are still functional.
+
+
+Main Project Goals
+~~~~~~~~~~~~~~~~~~
+
+- Provide a Python framework to write system scenario test cases;
+- Provide CLI tools to implement a workflow designed to test potentially
+  destructive operations (like cloud nodes reboot, update, upgrade...).
+- Provide tools to monitor and recollect the healthy status of the cloud 
+
+
+References
+----------
+
+* Free software: Apache License, Version 2.0
+* Documentation: https://docs.openstack.org/tobiko/latest/
+* Release notes: https://docs.openstack.org/releasenotes/tobiko/
+* Source: https://opendev.org/x/tobiko
+* Bugs: https://storyboard.openstack.org/#!/project/x/tobiko

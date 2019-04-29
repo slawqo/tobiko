@@ -1,3 +1,5 @@
+.. _tobiko-user-guide:
+
 =================
 Tobiko User Guide
 =================
@@ -6,3 +8,6 @@ Tobiko User Guide
    :maxdepth: 2
 
    quick-start
+   install
+   config
+   run-test-cases
