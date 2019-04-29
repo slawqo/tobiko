@@ -57,5 +57,12 @@ resources:
 
 
 outputs:
+
   floating_ip_address:
     value: {get_attr: [floating_ip, floating_ip_address]}
+
+  port_security_enabled:
+    value: {get_attr: [port, port_security_enabled]}
+
+  security_groups:
+    value: {get_attr: [port, security_groups]}

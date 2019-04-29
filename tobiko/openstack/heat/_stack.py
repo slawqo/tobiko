@@ -281,8 +281,8 @@ class HeatStackOutputs(object):
         try:
             return self.outputs[name]
         except KeyError:
-            InvalidHeatStackOutputKey(name=self.stack_name,
-                                      key=name)
+            raise InvalidHeatStackOutputKey(name=self.stack_name,
+                                            key=name)
 
 
 def check_stack_status(stack, expected):
