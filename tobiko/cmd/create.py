@@ -39,7 +39,7 @@ class CreateUtil(base.TobikoCMD):
 
 
 class NoSuchTemplateError(tobiko.TobikoException):
-    message = "No such template. Existing templates:\n%(templates)s"
+    message = "no such template; existing templates are: {templates}"
 
 
 def main():

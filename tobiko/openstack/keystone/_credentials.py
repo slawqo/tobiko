@@ -74,7 +74,7 @@ def keystone_credentials(api_version=None, auth_url=None,
 
 
 class InvalidKeystoneCredentials(tobiko.TobikoException):
-    message = "Invalid Keystone credentials (%(credentials)r): %(reason)s."
+    message = "invalid Keystone credentials; {reason!s}; {credentials!r}"
 
 
 class EnvironKeystoneCredentialsFixture(tobiko.SharedFixture):
