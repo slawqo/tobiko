@@ -2,16 +2,17 @@
 Tobiko
 ======
 
+Tobiko is an OpenStack testing framework focusing on areas
+complementary to Tempest:
 
-Test Big Cloud Operations
--------------------------
-
-Tobiko is a project used to write system tests for OpenStack. Main projects
-goals are:
-
-- provide a Python framework to write system scenario test cases;
-- provide CLI tools to implement a workflow designed to test potentially
-  destructive operations.
+- Minor updates and major upgrades. Tobiko tests populate the
+  cloud with workloads such as instances, allows the CI workflow
+  to perform an operation such as an update or upgrade, and then runs
+  tests that validate that the cloud workloads are still functional.
+- Fault injection, like restarting nodes, OpenStack services and
+  dependencies such as OVS, RabbitMQ or the DB.
+- White box testing; Specifically the ability to run commands on
+  nodes.
 
 Links
 ~~~~~
