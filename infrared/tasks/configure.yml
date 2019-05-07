@@ -1,0 +1,34 @@
+- name: Create os-faults configuration file
+  template:
+      src: "templates/os-faults.yaml.j2"
+      dest: "~/os-faults.yaml"
+      mode: 0755
+
+- name: Set up Overcloud resources wget cirros img
+  shell: |
+    source "{{ test.overcloudrc }}"
+    wget -c http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
+
+- name: Set up Overcloud resources create cirros img
+  shell: |
+    source "{{ test.overcloudrc }}"
+    openstack image create cirros \
+      --file cirros-0.4.0-x86_64-disk.img \
+      --disk-format qcow2 \
+      --container-format bare \
+      --public
+
+- name: Set up Overcloud resources create m.tiny flavor
+  shell: |
+    source "{{ test.overcloudrc }}"
+    openstack flavor create --vcpus 1 --ram 64 --disk 1 m1.tiny
+
+- name: Set up Overcloud resources create ssh keys
+  shell: |
+    test -f ~/.ssh/id_rsa||ssh-keygen -f ~/.ssh/id_rsa -P ''
+
+- name: Create tobiko configuration file
+  template:
+      src: "templates/tobiko.conf.j2"
+      dest: "{{ test.dir }}/tobiko.conf"
+      mode: 0755

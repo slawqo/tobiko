@@ -1,0 +1,35 @@
+cloud_management:
+  driver: universal
+ 
+node_discover:
+  driver: node_list
+  args:
+{% for host_name in groups.overcloud_nodes|sort %}
+     - fqdn: {{ host_name }}
+       ip: {{ hostvars[host_name]['ansible_host'] }}
+       auth:
+        username: heat-admin
+        private_key_file: /home/stack/.ssh/id_rsa
+        become: true
+{% endfor %}
+ 
+services:
+  openvswitch:
+    driver: system_service
+    args:
+      service_name: openvswitch
+      grep: openvswitch
+ 
+containers:
+  neutron_ovs_agent:
+    driver: docker_container
+    args:
+      container_name: neutron_ovs_agent
+  neutron_metadata_agent:
+    driver: docker_container
+    args:
+      container_name: neutron_metadata_agent
+  neutron_api:
+    driver: docker_container
+    args:
+      container_name: neutron_api

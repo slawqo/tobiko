@@ -1,0 +1,6 @@
+- name: Run Tobiko Tests
+  shell: |
+      cd "{{ test.dir }}"
+      source "{{ test.overcloudrc }}"
+      source "{{ test.venv }}/bin/activate"
+      tox -e "{{ test.tests }}"

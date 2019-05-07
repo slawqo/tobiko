@@ -1,0 +1,10 @@
+[DEFAULT]
+debug = true
+log_file = tobiko.log
+log_dir = .
+[nova]
+image = cirros
+flavor = m1.tiny
+key_file=~/.ssh/id_rsa
+[neutron]
+floating_network = public

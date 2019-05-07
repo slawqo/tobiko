@@ -1,3 +1,16 @@
----
-- import_playbook: install.yml
-  when: test.install|default(False)
+- name: Tobiko Tests Main
+  hosts: undercloud
+  gather_facts: yes
+  any_errors_fatal: yes
+  tasks:
+
+        - name: Install Tobiko
+          include_tasks: tasks/install.yml
+
+        - name: Set up environment configurations
+          include_tasks: tasks/configure.yml
+
+        - name: Run Tobiko
+          include_tasks: tasks/run.yml
+          when:
+              - test.tests is defined
