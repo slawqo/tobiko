@@ -20,10 +20,8 @@ def register_tobiko_options(conf):
     conf.register_opts(
         group=cfg.OptGroup('nova'),
         opts=[cfg.StrOpt('image',
-                help="Default image for new server instances"),
-            cfg.StrOpt('flavor',
-                help="Default flavor for new server instances"),
-            cfg.StrOpt('key_file', default='~/.ssh/id_rsa',
-                help="ssh key file for new server instances"),
-            cfg.StrOpt('key_name', default='nova_ssh_key',
-                help="ssh key name for new server instances")])
+                         help="Default image for new server instances"),
+              cfg.StrOpt('flavor',
+                         help="Default flavor for new server instances"),
+              cfg.StrOpt('key_file', default='~/.ssh/id_rsa',
+                         help="ssh key file for new server instances")])

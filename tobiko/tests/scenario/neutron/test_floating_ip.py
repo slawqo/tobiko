@@ -59,7 +59,6 @@ class FloatingIPFixture(heat.HeatStackFixture):
     # --- class parameters ---
     #: Whenever port security on internal network is enable
     key_pair_stack = tobiko.required_setup_fixture(stacks.KeyPairFixture)
-    key_name = CONF.tobiko.nova.key_name
     port_security_enabled = False
 
     #: Security groups to be associated to network ports
@@ -82,9 +81,9 @@ class FloatingIPFixture(heat.HeatStackFixture):
             port_security_enabled=self.port_security_enabled,
             security_groups=self.security_groups or [])
 
-    def setup_stack(self):
-        self.key_pair_stack.wait_for_create_complete()
-        super(FloatingIPFixture, self).setup_stack()
+    @property
+    def key_name(self):
+        return self.key_pair_stack.outputs.key_name
 
 
 class FloatingIPTest(base.TobikoTest):

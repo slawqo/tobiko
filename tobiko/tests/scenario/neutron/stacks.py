@@ -117,7 +117,6 @@ class SecurityGroupsFixture(heat.HeatStackFixture):
 class KeyPairFixture(heat.HeatStackFixture):
     template = heat_template_file('key_pair.yaml')
     key_file = os.path.expanduser(CONF.tobiko.nova.key_file)
-    key_name = CONF.tobiko.nova.key_name
 
     @property
     def public_key(self):
