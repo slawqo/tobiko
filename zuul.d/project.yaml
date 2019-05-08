@@ -1,17 +1,20 @@
 - project:
     name: x/tobiko
+
     templates:
       - openstack-python-jobs
       - openstack-python35-jobs
       - openstack-python36-jobs
       - openstack-python37-jobs
-      - release-notes-jobs-python3
       - publish-to-pypi
       - publish-openstack-docs-pti
+      - release-notes-jobs-python3
+
     check:
       jobs:
-        - openstack-tox-pylint
         - openstack-tox-cover
+        - openstack-tox-pylint
+
         - tobiko-devstack-functional
         - tobiko-devstack-neutron-centos-7
         - tobiko-devstack-neutron-centos-7-queens
@@ -19,6 +22,7 @@
         - tobiko-devstack-neutron-centos-7-stein
         - tobiko-devstack-neutron-fedora-28
         - tobiko-devstack-neutron-ubuntu-bionic
+
     gate:
       jobs:
         - openstack-tox-pylint
