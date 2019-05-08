@@ -97,7 +97,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     libvirt.memory =  MEMORY
   end
 
-  config.vm.synced_folder ".", "/vagrant", type: "rsync"
+  config.vm.synced_folder ".", "/vagrant", type: "rsync",
+    rsync__exclude: ".tox/"
 
   # View the documentation for the provider you are using for more
   # information on available options.
