@@ -20,10 +20,15 @@ runs test cases to validate that the cloud workloads are still functional.
 Main Project Goals
 ~~~~~~~~~~~~~~~~~~
 
-- Provide a Python framework to write system scenario test cases;
-- Provide CLI tools to implement a workflow designed to test potentially
-  destructive operations (like cloud nodes reboot, update, upgrade...).
-- Provide tools to monitor and recollect the healthy status of the cloud 
+- To provide a Python framework to write system scenario test cases.
+- To provide tools for testing OpenStack system operations like update,
+  upgrades and fast forward upgrade.
+- To provide CLI tools to implement a workflow designed to test potentially
+  destructive operations (like rebooting cloud nodes, restarting services
+  or others kinds of fault injections).
+- To provide tools to monitor and recollect the healthy status of the cloud as
+  seen from user perspective (black-box testing) or from inside (white-box
+  testing).
 
 
 References
