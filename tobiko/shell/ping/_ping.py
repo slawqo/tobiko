@@ -183,10 +183,11 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
             pass
 
         else:
-            if result.exit_status is not None:
+            if result.exit_status is not None and result.stdout:
                 statistics = _statistics.parse_ping_statistics(
                     output=result.stdout, begin_interval=now,
                     end_interval=time.time())
+
                 yield statistics
 
                 transmitted += statistics.transmitted
