@@ -61,6 +61,15 @@ class ExecuteTest(testtools.TestCase):
                 timeout=None, exit_status=0, stdout='', stderr='something\n'),
             result)
 
+    def test_execute_reading_from_stdin(self):
+        result = sh.execute('cat', shell='/bin/sh -c', stdin='some input\n')
+        self.assertEqual(
+            sh.ShellExecuteResult(
+                command=['/bin/sh', '-c', 'cat'],
+                timeout=None, exit_status=0, stdout='some input\n',
+                stderr=''),
+            result)
+
     def test_execute_failing_command(self):
         ex = self.assertRaises(sh.ShellCommandFailed, sh.execute, 'exit 15',
                                shell='/bin/sh -c')
@@ -88,18 +97,19 @@ class ExecuteTest(testtools.TestCase):
         self.assertEqual(['/bin/sh', '-c', 'echo something >&2; exit 7'],
                          ex.command)
 
+    @unittest.skipIf(sys.version_info < (3, 3),
+                     'timeout not implemented for Python version < 3.3')
     def test_execute_with_timeout(self):
         result = sh.execute('true', timeout=30., shell='/bin/sh -c')
-        expected_timeout = None if sys.version_info < (3, 3) else 30.
         self.assertEqual(
             sh.ShellExecuteResult(
                 command=['/bin/sh', '-c', 'true'],
-                timeout=expected_timeout, exit_status=0, stdout='',
+                timeout=30, exit_status=0, stdout='',
                 stderr=''),
             result)
 
     @unittest.skipIf(sys.version_info < (3, 3),
-                     'not implemented for Python version < 3.3')
+                     'timeout not implemented for Python version < 3.3')
     def test_execute_with_timeout_expired(self):
         ex = self.assertRaises(sh.ShellTimeoutExpired, sh.execute,
                                'echo out; echo err >&2; sleep 30',

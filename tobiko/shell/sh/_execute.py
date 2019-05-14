@@ -16,19 +16,24 @@
 from __future__ import absolute_import
 
 import collections
+import select
 import subprocess
 import sys
+import time
 
 from oslo_log import log
 import six
 
+import tobiko
+from tobiko.shell import paramiko
 from tobiko.shell.sh import _exception
 
 
 LOG = log.getLogger(__name__)
 
 
-def execute(command, timeout=None, shell=None, check=True, ssh_client=None):
+def execute(command, stdin=None, environment=None, timeout=None, shell=None,
+            check=True, ssh_client=None):
     """Execute command inside a remote or local shell
 
     :param command: command argument list
@@ -51,15 +56,25 @@ def execute(command, timeout=None, shell=None, check=True, ssh_client=None):
     :raises ShellCommandError: when command execution terminates with non-zero
     exit status.
     """
+
     if timeout:
         timeout = float(timeout)
 
-    if ssh_client:
-        result = execute_remote_command(command=command, timeout=timeout,
-                                        shell=shell, ssh_client=ssh_client)
+    if isinstance(command, six.string_types):
+        command = command.split()
     else:
-        result = execute_local_command(command=command, timeout=timeout,
-                                       shell=shell)
+        command = [str(a) for a in command]
+
+    ssh_client = ssh_client or paramiko.ssh_proxy_client()
+    if ssh_client:
+        result = execute_remote_command(command=command, stdin=stdin,
+                                        environment=environment,
+                                        timeout=timeout, shell=shell,
+                                        ssh_client=ssh_client)
+    else:
+        result = execute_local_command(command=command, stdin=stdin,
+                                       environment=environment,
+                                       timeout=timeout, shell=shell)
 
     if result.exit_status == 0:
         LOG.debug("Command %r succeeded:\n"
@@ -82,31 +97,126 @@ def execute(command, timeout=None, shell=None, check=True, ssh_client=None):
     return result
 
 
-def execute_remote_command(command, ssh_client, timeout=None, shell=None):
+def execute_remote_command(command, ssh_client, stdin=None, timeout=None,
+                           shell=None, environment=None):
     """Execute command on a remote host using SSH client"""
-    raise NotImplementedError
+
+    if shell:
+        command = shell.split() + [str(subprocess.list2cmdline(command))]
+
+    if isinstance(ssh_client, paramiko.SSHClientFixture):
+        # Connect to fixture
+        ssh_client = tobiko.setup_fixture(ssh_client).client
+
+    transport = ssh_client.get_transport()
+    with transport.open_session() as channel:
+        if environment:
+            channel.update_environment(environment)
+        channel.exec_command(subprocess.list2cmdline(command))
+        stdout, stderr = comunicate_ssh_channel(channel, stdin=stdin,
+                                                timeout=timeout)
+        if channel.exit_status_ready():
+            exit_status = channel.recv_exit_status()
+        else:
+            exit_status = None
+    return ShellExecuteResult(command=command, timeout=timeout,
+                              stdout=stdout, stderr=stderr,
+                              exit_status=exit_status)
 
 
-def execute_local_command(command, timeout=None, shell=None):
+def comunicate_ssh_channel(ssh_channel, stdin=None, chunk_size=None,
+                           timeout=None, sleep_time=None, read_stdout=True,
+                           read_stderr=True):
+    if read_stdout:
+        rlist = [ssh_channel]
+    else:
+        rlist = []
+
+    if not stdin:
+        ssh_channel.shutdown_write()
+        stdin = None
+        wlist = []
+    else:
+        wlist = [ssh_channel]
+        if not isinstance(stdin, six.binary_type):
+            stdin = stdin.encode()
+
+    chunk_size = chunk_size or 1024
+    sleep_time = sleep_time or 1.
+    timeout = timeout or float("inf")
+    start = time.time()
+    stdout = None
+    stderr = None
+
+    while True:
+        chunk_timeout = min(sleep_time, timeout - (time.time() - start))
+        if chunk_timeout < 0.:
+            LOG.debug('Timed out reading from SSH channel: %r', ssh_channel)
+            break
+        ssh_channel.settimeout(chunk_timeout)
+        if read_stdout and ssh_channel.recv_ready():
+            chunk = ssh_channel.recv(chunk_size)
+            if stdout:
+                stdout += chunk
+            else:
+                stdout = chunk
+            if not chunk:
+                LOG.debug("STDOUT channel closed by peer on SSH channel %r",
+                          ssh_channel)
+                read_stdout = False
+        elif read_stderr and ssh_channel.recv_stderr_ready():
+            chunk = ssh_channel.recv_stderr(chunk_size)
+            if stderr:
+                stderr += chunk
+            else:
+                stderr = chunk
+            if not chunk:
+                LOG.debug("STDERR channel closed by peer on SSH channel %r",
+                          ssh_channel)
+                read_stderr = False
+        elif ssh_channel.exit_status_ready():
+            break
+        elif stdin and ssh_channel.send_ready():
+            sent_bytes = ssh_channel.send(stdin[:chunk_size])
+            stdin = stdin[sent_bytes:] or None
+            if not stdin:
+                LOG.debug('shutdown_write() on SSH channel: %r', ssh_channel)
+                ssh_channel.shutdown_write()
+        else:
+            select.select(rlist, wlist, rlist or wlist, chunk_timeout)
+
+    if stdout:
+        if not isinstance(stdout, six.string_types):
+            stdout = stdout.decode()
+    else:
+        stdout = ''
+    if stderr:
+        if not isinstance(stderr, six.string_types):
+            stderr = stderr.decode()
+    else:
+        stderr = ''
+    return stdout, stderr
+
+
+def execute_local_command(command, stdin=None, environment=None, timeout=None,
+                          shell=None):
     """Execute command on local host using local shell"""
 
     LOG.debug("Executing command %r on local host (timeout=%r)...",
               command, timeout)
 
+    stdin = stdin or None
     if not shell:
         from tobiko import config
         CONF = config.CONF
         shell = CONF.tobiko.shell.command
 
-    if isinstance(command, six.string_types):
-        command = command.split()
-    else:
-        command = [str(a) for a in command]
-
     if shell:
         command = shell.split() + [str(subprocess.list2cmdline(command))]
     process = subprocess.Popen(command,
                                universal_newlines=True,
+                               env=environment,
+                               stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
 
@@ -118,14 +228,15 @@ def execute_local_command(command, timeout=None, shell=None):
     # Wait for process execution while reading STDERR and STDOUT streams
     if timeout:
         try:
-            stdout, stderr = process.communicate(timeout=timeout)
+            stdout, stderr = process.communicate(input=stdin,
+                                                 timeout=timeout)
         except subprocess.TimeoutExpired:
             # At this state I expect the process to be still running
             # therefore it has to be kill later after calling poll()
             LOG.exception("Command %r timeout expired.", command)
-            stdout = stderr = None
+            stdout = stderr = ''
     else:
-        stdout, stderr = process.communicate()
+        stdout, stderr = process.communicate(input=stdin)
 
     # Check process termination status
     exit_status = process.poll()

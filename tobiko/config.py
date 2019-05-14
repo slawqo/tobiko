@@ -27,8 +27,9 @@ LOG = log.getLogger(__name__)
 CONFIG_MODULES = ['tobiko.openstack.keystone.config',
                   'tobiko.openstack.neutron.config',
                   'tobiko.openstack.nova.config',
-                  'tobiko.shell.sh.config',
-                  'tobiko.shell.ping.config']
+                  'tobiko.shell.paramiko.config',
+                  'tobiko.shell.ping.config',
+                  'tobiko.shell.sh.config']
 
 CONFIG_DIRS = [os.getcwd(),
                os.path.expanduser("~/.tobiko"),
