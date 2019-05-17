@@ -1,0 +1,35 @@
+heat_template_version: newton
+
+
+description: |
+  Stack of shared Neutron security groups
+
+
+resources:
+
+  icmp:
+    type: OS::Neutron::SecurityGroup
+    description: Security group to allow to ping Nova server instances
+    properties:
+      rules:
+      - protocol: icmp
+
+  ssh:
+    type: OS::Neutron::SecurityGroup
+    description: Security group to allow to SSH Nova server instances
+    properties:
+      rules:
+      - protocol: tcp
+        port_range_min: 22
+        port_range_max: 22
+
+
+outputs:
+
+  icmp_security_group_id:
+    description: Security group ID to allow to ping Nova server instances
+    value: {get_resource: icmp}
+
+  ssh_security_group_id:
+    description: Security group ID to allow to SSH Nova server instances
+    value: {get_resource: ssh}

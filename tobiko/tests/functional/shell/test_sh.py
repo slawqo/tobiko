@@ -17,7 +17,9 @@ from __future__ import absolute_import
 
 import testtools
 
+import tobiko
 from tobiko import config
+from tobiko.openstack import stacks
 from tobiko.shell import sh
 
 
@@ -59,14 +61,17 @@ class ExecuteTest(testtools.TestCase):
     def test_succeed_with_timeout(self):
         self.test_succeed(timeout=30.)
 
-    def test_fails(self, command='false', exit_status=1, stdout='', stderr='',
-                   **kwargs):
+    def test_fails(self, command='false', exit_status=None, stdout='',
+                   stderr='', **kwargs):
         ex = self.assertRaises(sh.ShellCommandFailed, self.execute, command,
                                **kwargs)
         self.assertEqual(self.expected_ex_command(command), ex.command)
         self.assertEqual(stdout, ex.stdout)
         self.assertEqual(stderr, ex.stderr)
-        self.assertEqual(exit_status, ex.exit_status)
+        if exit_status:
+            self.assertEqual(exit_status, ex.exit_status)
+        else:
+            self.assertTrue(ex.exit_status)
 
     def test_fails_getting_exit_status(self):
         self.test_fails('exit 15', exit_status=15)
@@ -103,3 +108,23 @@ class ExecuteTest(testtools.TestCase):
 
     def expected_ex_command(self, command):
         return sh.join_command(self.expected_command(command))
+
+
+class ExecuteWithSSHClientTest(ExecuteTest):
+
+    server_stack = tobiko.required_setup_fixture(
+        stacks.NeutronServerStackFixture)
+
+    @property
+    def ssh_client(self):
+        return self.server_stack.ssh_client
+
+
+class ExecuteWithSSHCommandTest(ExecuteTest):
+
+    server_stack = tobiko.required_setup_fixture(
+        stacks.NeutronServerStackFixture)
+
+    @property
+    def shell(self):
+        return self.server_stack.ssh_command

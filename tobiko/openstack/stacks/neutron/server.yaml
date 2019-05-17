@@ -1,0 +1,117 @@
+heat_template_version: newton
+
+
+description: |
+  Creates a Nova server connected to an existing Neutron network and
+  optionally assign a floating IP address to server so it is routable from the
+  public network.
+
+
+parameters:
+
+  key_name:
+    type: string
+    description: Name of keypair to assign to server
+    constraints:
+    - custom_constraint: nova.keypair
+
+  flavor:
+    type: string
+    description: Flavor to use for server
+    constraints:
+    - custom_constraint: nova.flavor
+
+  image:
+    type: string
+    description: Name of image to use for server
+
+  network:
+    type: string
+    description: ID of network to which server get connected
+    constraints:
+    - custom_constraint: neutron.network
+
+  port_security_enabled:
+    type: boolean
+    description: Whenever port security is enabled on server port
+    default: false
+
+  security_groups:
+    type: comma_delimited_list
+    description: Security groups to subscrive server port
+    default: []
+
+  has_floating_ip:
+    type: boolean
+    description: Whenever server has floating IP associated
+    default: false
+
+  floating_network:
+    type: string
+    description: |
+      Public network for which floating IP addresses will be allocated
+    constraints:
+    - custom_constraint: neutron.network
+
+
+conditions:
+
+  has_floating_ip:
+    get_param: has_floating_ip
+
+
+resources:
+
+  port:
+    type: OS::Neutron::Port
+    description: Neutron port
+    properties:
+      network: {get_param: network}
+      port_security_enabled: {get_param: port_security_enabled}
+      security_groups: {get_param: security_groups}
+
+  server_name:
+    type: OS::Heat::RandomString
+    properties:
+      character_classes: [{'class': 'lowercase', 'min': 1}]
+      length: 8
+
+  server:
+    type: OS::Nova::Server
+    description: Nova server connected to Neutron port
+    properties:
+      name: {get_attr: [server_name, value]}
+      key_name: {get_param: key_name}
+      image: {get_param: image}
+      flavor: {get_param: flavor}
+      networks:
+        - port: {get_resource: port}
+
+  floating_ip:
+    type: OS::Neutron::FloatingIP
+    description: Floating IP address to be connected to server
+    condition: has_floating_ip
+    properties:
+      floating_network: {get_param: floating_network}
+      port_id: {get_resource: port}
+
+
+outputs:
+
+  fixed_ips:
+    description: fixed IP addresses of server
+    value: {get_attr: [port, fixed_ips]}
+
+  floating_ip_address:
+    description: Floating IP address of server in public network
+    value: { get_attr: [ floating_ip, floating_ip_address ] }
+    condition: has_floating_ip
+
+  port_security_enabled:
+    value: {get_attr: [port, port_security_enabled]}
+
+  security_groups:
+    value: {get_attr: [port, security_groups]}
+
+  server_name:
+    value: {get_attr: [server, name]}

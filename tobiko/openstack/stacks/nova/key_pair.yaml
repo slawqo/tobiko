@@ -1,0 +1,34 @@
+heat_template_version: newton
+
+description: |
+  Creates a nova SSH keypair to be used for creating Nova servers
+
+
+parameters:
+
+  public_key:
+    type: string
+    description: SSH public key
+
+
+resources:
+
+  key_name:
+    type: OS::Heat::RandomString
+    description: Random unique key pair name
+    properties:
+      length: 32
+
+  key_pair:
+    type: OS::Nova::KeyPair
+    description: SSH key pair
+    properties:
+      name: {get_attr: [key_name, value]}
+      public_key: {get_param: public_key}
+
+
+outputs:
+
+  key_name:
+    description: unique Nova key pair name
+    value: {get_attr: [key_name, value]}

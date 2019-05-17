@@ -1,0 +1,185 @@
+heat_template_version: newton
+
+
+description: |
+  Creates an network with a subnet and a gateway router to an external network
+  if given
+
+
+parameters:
+  port_security_enabled:
+    description: Default value to be assigned to network ports
+    type: boolean
+    default: false
+
+  value_specs:
+    description: Extra network creation parameters
+    type: json
+    default: {}
+
+  has_ipv4:
+    description: Whenever to create IPv4 subnet
+    type: boolean
+    default: false
+
+  has_ipv6:
+    description: Whenever to create IPv6 subnet
+    type: boolean
+    default: false
+
+  ipv4_cidr:
+    description: IPv4 subnet CIDR to be assigned to new network
+    type: string
+    constraints:
+      - custom_constraint: net_cidr
+
+  ipv6_cidr:
+    description: IPv6 subnet CIDR to be assigned to new network
+    type: string
+    constraints:
+      - custom_constraint: net_cidr
+
+  ipv4_dns_nameservers:
+    description: IPv4 nameservers IP addresses
+    type: comma_delimited_list
+    default: []
+    constraints:
+      - custom_constraint: dns_name
+
+  ipv6_dns_nameservers:
+    description: IPv6 nameservers IP addresses
+    type: comma_delimited_list
+    default: []
+    constraints:
+      - custom_constraint: dns_name
+
+  ipv6_address_mode:
+    description: IPv6 address mode
+    type: string
+    default: slaac
+    constraints:
+      - allowed_values: [ slaac, dhcpv6-stateful, dhcpv6-stateless ]
+
+  ipv6_ra_mode:
+    description: IPv6 router advertisement mode
+    type: string
+    default: slaac
+    constraints:
+      - allowed_values: [ slaac, dhcpv6-stateful, dhcpv6-stateless ]
+
+  has_gateway:
+    description: whenever to create gateway router
+    type: boolean
+    default: false
+
+  gateway_network:
+    description: Optional gateway network to route packages to
+    type: string
+    default:
+    constraints:
+    - custom_constraint: neutron.network
+
+  has_net_mtu:
+    description: whenever net mtu extension is available
+    type: boolean
+    default: false
+
+
+conditions:
+  has_ipv4:
+    get_param: has_ipv4
+
+  has_ipv6:
+    get_param: has_ipv6
+
+  has_gateway:
+    get_param: has_gateway
+
+  has_ipv4_gateway:
+    and:
+    - get_param: has_ipv4
+    - get_param: has_gateway
+
+  has_ipv6_gateway:
+    and:
+    - get_param: has_ipv6
+    - get_param: has_gateway
+
+  has_net_mtu:
+    get_param: has_net_mtu
+
+
+resources:
+
+  network:
+    type: OS::Neutron::Net
+    properties:
+      port_security_enabled: {get_param: port_security_enabled}
+      value_specs: {get_param: value_specs}
+
+  ipv4_subnet:
+    type: OS::Neutron::Subnet
+    condition: has_ipv4
+    properties:
+      network: {get_resource: network}
+      ip_version: 4
+      cidr: {get_param: ipv4_cidr}
+      dns_nameservers: {get_param: ipv4_dns_nameservers}
+
+  ipv6_subnet:
+    type: OS::Neutron::Subnet
+    condition: has_ipv6
+    properties:
+      network: {get_resource: network}
+      ip_version: 6
+      cidr: {get_param: ipv6_cidr}
+      dns_nameservers: {get_param: ipv6_dns_nameservers}
+      ipv6_address_mode: {get_param: ipv6_address_mode}
+      ipv6_ra_mode: {get_param: ipv6_ra_mode}
+
+  gateway:
+    type: OS::Neutron::Router
+    condition: has_gateway
+    properties:
+      external_gateway_info:
+        network: {get_param: gateway_network}
+
+  ipv4_gateway_interface:
+    type: OS::Neutron::RouterInterface
+    condition: has_ipv4_gateway
+    properties:
+      router: {get_resource: gateway}
+      subnet: {get_resource: ipv4_subnet}
+
+  ipv6_gateway_interface:
+    type: OS::Neutron::RouterInterface
+    condition: has_ipv6_gateway
+    properties:
+      router: {get_resource: gateway}
+      subnet: {get_resource: ipv6_subnet}
+
+outputs:
+
+  network_id:
+    description: Network ID
+    value: {get_resource: network}
+
+  ipv4_subnet_id:
+    description: IPv4 subnet ID
+    value: {get_resource: ipv4_subnet}
+    condition: has_ipv4
+
+  ipv6_subnet_id:
+    description: IPv6 subnet ID
+    value: {get_resource: ipv6_subnet}
+    condition: has_ipv6
+
+  gateway_id:
+    description: Gateway router ID
+    value: {get_resource: gateway}
+    condition: has_gateway
+
+  mtu:
+    description: Network MTU value (integer)
+    value: {get_attr: [network, mtu]}
+    condition: has_net_mtu
