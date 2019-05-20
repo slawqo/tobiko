@@ -29,12 +29,12 @@ class FixtureUtil(base.TobikoCMD):
     def get_parser(self):
         parser = super(FixtureUtil, self).get_parser()
 
-        subparsers_params = {}
-        subparsers = parser.add_subparsers(**subparsers_params)
+        subparsers = parser.add_subparsers(
+            title='subcommands', description='fixture operation')
 
-        parser.set_defaults(subcommand='help')
         subcommand_parser = subparsers.add_parser(
             'help', help=('show this help message'))
+        subcommand_parser.set_defaults(subcommand='help')
 
         for subcommand_name in ['cleanup', 'list', 'setup']:
             subcommand_parser = subparsers.add_parser(
