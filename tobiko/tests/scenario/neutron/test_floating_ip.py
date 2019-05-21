@@ -17,6 +17,8 @@ from __future__ import absolute_import
 import tobiko
 from tobiko import config
 from tobiko.shell import ping
+from tobiko.shell import ssh
+from tobiko.shell import sh
 from tobiko.openstack import heat
 from tobiko.openstack import neutron
 from tobiko.tests import base
@@ -41,6 +43,9 @@ class FloatingIPFixture(heat.HeatStackFixture):
 
     #: Nova flavor used to create a Nova server instance
     flavor = CONF.tobiko.nova.flavor
+
+    #: Username used to login to Nova server instance
+    username = CONF.tobiko.nova.username
 
     @property
     def internal_network(self):
@@ -85,6 +90,19 @@ class FloatingIPFixture(heat.HeatStackFixture):
     def key_name(self):
         return self.key_pair_stack.outputs.key_name
 
+    @property
+    def server_name(self):
+        return self.outputs.server_name
+
+    @property
+    def floating_ip_address(self):
+        return self.outputs.floating_ip_address
+
+    @property
+    def ssh_client(self):
+        return ssh.ssh_client(host=self.floating_ip_address,
+                              username=self.username)
+
 
 class FloatingIPTest(base.TobikoTest):
     """Tests connectivity to Nova instances via floating IPs"""
@@ -95,10 +113,41 @@ class FloatingIPTest(base.TobikoTest):
     @property
     def floating_ip_address(self):
         """Floating IP address"""
-        return self.floating_ip_stack.outputs.floating_ip_address
+        return self.floating_ip_stack.floating_ip_address
+
+    @property
+    def server_name(self):
+        """Floating IP address"""
+        return self.floating_ip_stack.server_name
+
+    @property
+    def ssh_client(self):
+        """Floating IP address"""
+        return self.floating_ip_stack.ssh_client
+
+    def test_ssh(self):
+        """Test SSH connectivity to floating IP address"""
+        result = sh.execute("hostname", ssh_client=self.ssh_client)
+        self.assertEqual([self.server_name.lower()],
+                         result.stdout.splitlines())
+
+    def test_ssh_from_cli(self):
+        """Test SSH connectivity to floating IP address from CLI"""
+        host_config = self.ssh_client.ssh_config.lookup(
+            self.floating_ip_address)
+        result = sh.execute(['ssh',
+                             '-o', 'UserKnownHostsFile=/dev/null',
+                             '-o', 'StrictHostKeyChecking=no',
+                             '-o', 'ConnectTimeout=10',
+                             '-o', 'ConnectionAttempts=12',
+                             '-p', host_config.port or 22,
+                             'cirros@' + host_config.hostname,
+                             'hostname'])
+        self.assertEqual([self.server_name.lower()],
+                         result.stdout.splitlines())
 
     def test_ping(self):
-        """Test connectivity to floating IP address"""
+        """Test ICMP connectivity to floating IP address"""
         ping.ping_until_received(self.floating_ip_address).assert_replied()
 
     # --- test port-security extension ---------------------------------------
@@ -179,11 +228,21 @@ class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
 
     """
 
+    #: Resources stack with security group to allow ping Nova servers
+    security_groups_stack = tobiko.required_setup_fixture(
+        stacks.SecurityGroupsFixture)
+
     #: Enable port security on internal network
     port_security_enabled = True
 
+    @property
+    def security_groups(self):
+        """List with ICMP security group"""
+        return [self.security_groups_stack.outputs.ssh_security_group_id]
 
-@neutron.skip_if_missing_networking_extensions('port-security')
+
+@neutron.skip_if_missing_networking_extensions('port-security',
+                                               'security-group')
 class FloatingIPWithPortSecurityTest(FloatingIPTest):
     """Tests connectivity to Nova instances via floating IPs with port security
 
@@ -193,20 +252,10 @@ class FloatingIPWithPortSecurityTest(FloatingIPTest):
     floating_ip_stack = tobiko.required_setup_fixture(
         FloatingIPWithPortSecurityFixture)
 
-    #: Resources stack with floating IP and Nova server without port security
-    unsecured_floating_ip_stack = tobiko.required_setup_fixture(
-        FloatingIPFixture)
-
-    @property
-    def unsecured_floating_ip_address(self):
-        """Floating IP address to unsecured port"""
-        return self.unsecured_floating_ip_stack.outputs.floating_ip_address
-
     def test_ping(self):
         """Test connectivity to floating IP address"""
-        # Ping until unsecured port is reachable via floating IP
-        ping.ping(self.unsecured_floating_ip_address,
-                  until=ping.RECEIVED).assert_replied()
+        # Wait for server instance to get ready by logging in
+        tobiko.setup_fixture(self.ssh_client)
 
         # Check can't reach secured port via floating IP
         ping.ping(self.floating_ip_address,
@@ -216,9 +265,8 @@ class FloatingIPWithPortSecurityTest(FloatingIPTest):
     @neutron.skip_if_missing_networking_extensions('net-mtu')
     def test_ping_with_net_mtu(self):
         """Test connectivity to floating IP address"""
-        # Ping until unsecured port is reachable via floating IP
-        ping.ping(self.unsecured_floating_ip_address,
-                  until=ping.RECEIVED).assert_replied()
+        # Wait for server instance to get ready by logging in
+        tobiko.setup_fixture(self.ssh_client)
 
         # Verify it can't reach secured port with maximum-sized packets
         ping.ping(self.floating_ip_address,
@@ -241,14 +289,11 @@ class FloatingIPWithICMPSecurityGroupFixture(
 
     """
 
-    #: Resources stack with security group to allow ping Nova servers
-    security_groups_stack = tobiko.required_setup_fixture(
-        stacks.SecurityGroupsFixture)
-
     @property
     def security_groups(self):
         """List with ICMP security group"""
-        return [self.security_groups_stack.outputs.icmp_security_group_id]
+        return [self.security_groups_stack.outputs.ssh_security_group_id,
+                self.security_groups_stack.outputs.icmp_security_group_id]
 
 
 @neutron.skip_if_missing_networking_extensions('port-security',
@@ -257,7 +302,7 @@ class FloatingIPWithICMPSecurityGroupTest(FloatingIPTest):
     """Tests connectivity via floating IP with security ICMP security group
 
     """
-    #: Resources stack with floating IP and Nova server
+    #: Resources stack with floating IP and Nova server to ping
     floating_ip_stack = tobiko.required_setup_fixture(
         FloatingIPWithICMPSecurityGroupFixture)
 

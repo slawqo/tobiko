@@ -176,6 +176,7 @@
     name: tobiko-devstack-scenario-fedora-28
     parent: tobiko-devstack-scenario
     nodeset: openstack-three-node-fedora-28
+    voting: false
     vars:
       devstack_localrc:
         # Add dns-domain-ports,dns-integration extensions again when bug

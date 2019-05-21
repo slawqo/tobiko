@@ -38,9 +38,16 @@ resources:
       port_security_enabled: {get_param: port_security_enabled}
       security_groups: {get_param: security_groups}
 
+  server_name:
+    type: OS::Heat::RandomString
+    properties:
+      character_classes: [{'class': 'lowercase', 'min': 1}]
+      length: 8
+
   server:
     type: OS::Nova::Server
     properties:
+      name: {get_attr: [server_name, value]}
       key_name: {get_param: key_name}
       image: {get_param: image}
       flavor: {get_param: flavor}
@@ -69,3 +76,6 @@ outputs:
 
   security_groups:
     value: {get_attr: [port, security_groups]}
+
+  server_name:
+    value: {get_attr: [server, name]}
