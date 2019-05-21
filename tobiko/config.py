@@ -86,7 +86,7 @@ def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
 
     # setup final configuration
     log.setup(conf=conf, product_name=product_name, version=version)
-    setup_tobiko_config()
+    setup_tobiko_config(conf=conf)
 
 
 def register_tobiko_options(conf):
@@ -107,11 +107,11 @@ def register_tobiko_options(conf):
             module.register_tobiko_options(conf=conf)
 
 
-def setup_tobiko_config():
+def setup_tobiko_config(conf):
     # Redirect all warnings to logging library
     logging.captureWarnings(True)
     warnings_logger = log.getLogger('py.warnings')
-    if CONF.tobiko.debug:
+    if conf.debug:
         if not warnings_logger.isEnabledFor(log.WARNING):
             # Print Python warnings
             warnings_logger.logger.setLevel(log.WARNING)
@@ -124,7 +124,7 @@ def setup_tobiko_config():
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
         if hasattr(module, 'setup_tobiko_config'):
-            module.setup_tobiko_config()
+            module.setup_tobiko_config(conf=conf)
 
 
 class HttpProxyFixture(tobiko.SharedFixture):

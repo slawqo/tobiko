@@ -14,28 +14,40 @@
 from __future__ import absolute_import
 
 from oslo_config import cfg
+from oslo_log import log
 
 
 def register_tobiko_options(conf):
     conf.register_opts(
         group=cfg.OptGroup('paramiko'),
-        opts=[cfg.StrOpt('config_file',
-                         default='~/.ssh/config',
-                         help="Default user SSH configuration file"),
+        opts=[cfg.BoolOpt('debug',
+                          default=False,
+                          help=('Logout debugging messages of paramiko '
+                                'library')),
+              cfg.ListOpt('config_files',
+                         default=['/etc/ssh/ssh_config', '~/.ssh/config'],
+                         help="Default user SSH configuration files"),
               cfg.StrOpt('key_file',
                          default='~/.ssh/id_rsa',
                          help="Default SSH private key file"),
-              cfg.IntOpt('connect_timeout',
-                         default=120,
-                         help="SSH connect timeout in seconds"),
-              cfg.IntOpt('connect_sleep_time',
-                         default=1,
-                         help=("Seconds to wait after every failed SSH "
-                               "connection attempt")),
-              cfg.IntOpt('connect_sleep_time_increment',
-                         default=1,
-                         help=("Incremental seconds to wait after every "
-                               "failed SSH connection attempt")),
+              cfg.BoolOpt('allow_agent',
+                         default=True,
+                         help=("Set to False to disable connecting to the SSH "
+                               "agent")),
+              cfg.BoolOpt('compress',
+                         default=False,
+                         help="Set to True to turn on compression"),
+              cfg.FloatOpt('timeout',
+                           default=120.,
+                           help="SSH connect timeout in seconds"),
+              cfg.FloatOpt('connect_sleep_time',
+                           default=1.,
+                           help=("Seconds to wait after every failed SSH "
+                                 "connection attempt")),
+              cfg.FloatOpt('connect_sleep_time_increment',
+                           default=1.,
+                           help=("Incremental seconds to wait after every "
+                                 "failed SSH connection attempt")),
               cfg.StrOpt('proxy_jump',
                          default=None,
                          help="Default SSH proxy server"),
@@ -43,3 +55,14 @@ def register_tobiko_options(conf):
                          default=None,
                          help="Default proxy command"),
               ])
+
+
+def setup_tobiko_config(conf):
+    paramiko_logger = log.getLogger('paramiko')
+    if conf.paramiko.debug:
+        if not paramiko_logger.isEnabledFor(log.DEBUG):
+            # Print paramiko debugging messages
+            paramiko_logger.logger.setLevel(log.DEBUG)
+    elif paramiko_logger.isEnabledFor(log.DEBUG):
+        # Silence paramiko debugging messages
+        paramiko_logger.logger.setLevel(log.INFO)

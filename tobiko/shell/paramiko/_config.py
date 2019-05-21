@@ -44,42 +44,39 @@ class SSHConfigFixture(tobiko.SharedFixture):
 
     paramiko_conf = tobiko.required_setup_fixture(SSHParamikoConfFixture)
 
-    _config_file = None
+    _config_files = None
     config = None
 
-    def __init__(self, config_file=None):
+    def __init__(self, config_files=None):
         super(SSHConfigFixture, self).__init__()
-        if config_file:
-            self._config_file = config_file
+        if config_files:
+            self._config_files = tuple(config_files)
 
     def setup_fixture(self):
         self.setup_ssh_config()
 
     def setup_ssh_config(self):
         self.config = paramiko.SSHConfig()
-        config_file = self.config_file
-        if config_file:
-            LOG.debug("Loading %r config file...", config_file)
+        for config_file in self.config_files:
             config_file = os.path.expanduser(config_file)
             if os.path.exists(config_file):
+                LOG.debug("Parsing %r config file...", config_file)
                 with open(config_file) as f:
                     self.config.parse(f)
                 LOG.debug("File %r parsed.", config_file)
 
     @property
-    def config_file(self):
-        return self._config_file or self.paramiko_conf.config_file
+    def config_files(self):
+        return self._config_files or self.paramiko_conf.config_files
 
     def lookup(self, host):
-        host_config = SSHHostConfig(host=host,
-                                    ssh_config=self,
-                                    host_config=self.config.lookup(host))
-        LOG.debug('Lookup SSH config for for host %r:\n%r', host, host_config)
-        return host_config
+        return SSHHostConfig(host=host,
+                            ssh_config=self,
+                            host_config=self.config.lookup(host))
 
     def __repr__(self):
-        return "{class_name!s}(config_file={config_file!r})".format(
-            class_name=type(self).__name__, config_file=self.config_file)
+        return "{class_name!s}(config_files={config_files!r})".format(
+            class_name=type(self).__name__, config_files=self.config_files)
 
 
 class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
@@ -89,12 +86,16 @@ class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
     paramiko_conf = tobiko.required_setup_fixture(SSHParamikoConfFixture)
 
     @property
-    def username(self):
-        return self.host_config.get('user')
-
-    @property
     def hostname(self):
         return self.host_config.get('hostname', self.host)
+
+    @property
+    def port(self):
+        return self.host_config.get('port')
+
+    @property
+    def username(self):
+        return self.host_config.get('user')
 
     @property
     def key_filename(self):
@@ -117,13 +118,34 @@ class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
 
     @property
     def proxy_command(self):
-        return self.host_config.get('proxycommand',
-                                    self.paramiko_conf.proxy_command)
+        return (self.host_config.get('proxycommand') or
+                self.paramiko_conf.proxy_command)
 
-    def __getattr__(self, name):
-        try:
-            return self.host_config[name]
-        except KeyError:
-            pass
-        message = "{!r} object has no attribute {!r}".format(self, name)
-        raise AttributeError(message)
+    @property
+    def allow_agent(self):
+        return (is_yes(self.host_config.get('forwardagent')) or
+                self.paramiko_conf.allow_agent)
+
+    @property
+    def compress(self):
+        return (is_yes(self.host_config.get('compression')) or
+                self.paramiko_conf.compress)
+
+    @property
+    def timeout(self):
+        return (self.host_config.get('connetcttimeout') or
+                self.paramiko_conf.timeout)
+
+    @property
+    def connect_parameters(self):
+        return dict(hostname=self.hostname,
+                    port=self.port,
+                    username=self.username,
+                    key_filename=self.key_filename,
+                    compress=self.compress,
+                    timeout=self.timeout,
+                    allow_agent=self.allow_agent)
+
+
+def is_yes(value):
+    return value and str(value).lower() == 'yes'

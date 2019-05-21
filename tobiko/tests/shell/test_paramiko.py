@@ -46,8 +46,8 @@ class SSHClientFixtureTest(unit.TobikoUnitTest):
         fixture = self.fixture
         self.assertIs(self.expected_host, fixture.host)
         self.assertIs(self.expected_proxy_client, fixture.proxy_client)
-        self.assertEqual({}, fixture.connect_parameters)
         self.assertIsNone(fixture.host_config)
+        self.assertIsNone(fixture.connect_parameters)
 
     def test_setup(self):
         fixture = self.fixture
@@ -56,13 +56,12 @@ class SSHClientFixtureTest(unit.TobikoUnitTest):
         fixture.username = 'some-username'
         fixture.setUp()
 
-        ssh_config_file = os.path.expanduser(CONF.tobiko.paramiko.config_file)
-        if os.path.exists(ssh_config_file):
-            with open(ssh_config_file) as f:
-                ssh_config = paramiko.SSHConfig()
-                ssh_config.parse(f)
-                expected_host_config = ssh_config.lookup(fixture.host)
-        else:
-            expected_host_config = {'hostname': fixture.host}
+        ssh_config = paramiko.SSHConfig()
+        for ssh_config_file in CONF.tobiko.paramiko.config_files:
+            if os.path.exists(ssh_config_file):
+                with open(ssh_config_file) as f:
+                    ssh_config.parse(f)
+        expected_host_config = ssh_config.lookup(fixture.host)
         self.assertEqual(fixture.host, fixture.host_config.host)
-        self.assertEqual(expected_host_config, fixture.host_config.host_config)
+        self.assertEqual(expected_host_config,
+                         fixture.host_config.host_config)
