@@ -97,7 +97,6 @@ def remove_fixture(obj, manager=None):
 def setup_fixture(obj, manager=None):
     '''Get registered fixture and setup it up'''
     fixture = get_fixture(obj, manager=manager)
-    LOG.debug('Set up fixture %r', get_fixture_name(fixture))
     try:
         fixture.setUp()
     except testtools.MultipleExceptions as ex:
@@ -111,7 +110,6 @@ def setup_fixture(obj, manager=None):
 def cleanup_fixture(obj, manager=None):
     '''Get registered fixture and clean it up'''
     fixture = get_fixture(obj, manager=manager)
-    LOG.debug('Clean up fixture %r', get_fixture_name(fixture))
     fixture.cleanUp()
     return fixture
 
@@ -348,6 +346,7 @@ class SharedFixture(fixtures.Fixture):
 
         """
         if not self._setup_executed:
+            LOG.debug('Set up fixture %r', self.fixture_name)
             super(SharedFixture, self).setUp()
             self._cleanup_executed = False
             self._setup_executed = True
@@ -355,6 +354,7 @@ class SharedFixture(fixtures.Fixture):
     def cleanUp(self, raise_first=True):
         """Executes registered cleanups if any"""
         if not self._cleanup_executed:
+            LOG.debug('Clean up fixture %r', self.fixture_name)
             self.addCleanup(self.cleanup_fixture)
         result = super(SharedFixture, self).cleanUp(raise_first=raise_first)
         self._setup_executed = False
