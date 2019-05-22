@@ -215,6 +215,10 @@ def init_fixture(obj, name):
     raise TypeError("Invalid fixture object type: {!r}".format(obj))
 
 
+def fixture_property(*args, **kwargs):
+    return FixtureProperty(*args, **kwargs)
+
+
 def required_fixture(obj):
     '''Creates a property that gets fixture identified by given :param obj:
 
@@ -369,6 +373,13 @@ class SharedFixture(fixtures.Fixture):
 
     def cleanup_fixture(self):
         pass
+
+
+class FixtureProperty(property):
+
+    def __get__(self, instance, owner):
+        instance = instance or tobiko.get_fixture(owner)
+        return super(FixtureProperty, self).__get__(instance, owner)
 
 
 class RequiredFixtureProperty(object):

@@ -208,6 +208,24 @@ class CleanupFixtureTest(FixtureBaseTest):
         result.cleanup_fixture.assert_called_once_with()
 
 
+class MyFixtureWithProperty(MyBaseFixture):
+
+    @tobiko.fixture_property
+    def some_property(self):
+        return id(self)
+
+
+class FixturePropertyTest(FixtureBaseTest):
+
+    def test_with_instance(self):
+        fixture = tobiko.get_fixture(MyFixtureWithProperty)
+        self.assertEqual(id(fixture), fixture.some_property)
+
+    def test_without_instance(self):
+        fixture = tobiko.get_fixture(MyFixtureWithProperty)
+        self.assertEqual(id(fixture), MyFixtureWithProperty.some_property)
+
+
 class MyFixture2(MyBaseFixture):
     pass
 
