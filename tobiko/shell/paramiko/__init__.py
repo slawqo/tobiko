@@ -15,11 +15,16 @@
 #    under the License.
 from __future__ import absolute_import
 
+import paramiko
+
 from tobiko.shell.paramiko import _config
 from tobiko.shell.paramiko import _client
+
+SSHException = paramiko.SSHException
 
 SSHHostConfig = _config.SSHHostConfig
 
 SSHClientFixture = _client.SSHClientFixture
 ssh_client = _client.ssh_client
 ssh_proxy_client = _client.ssh_proxy_client
+SSHConnectFailure = _client.SSHConnectFailure

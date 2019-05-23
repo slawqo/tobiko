@@ -24,4 +24,7 @@ def register_tobiko_options(conf):
               cfg.StrOpt('flavor',
                          help="Default flavor for new server instances"),
               cfg.StrOpt('key_file', default='~/.ssh/id_rsa',
-                         help="ssh key file for new server instances")])
+                         help="Default SSH key to login to server instances"),
+              cfg.StrOpt('username', default='cirros',
+                         help="Default username to login to server instances")
+              ])

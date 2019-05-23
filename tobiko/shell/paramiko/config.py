@@ -65,4 +65,4 @@ def setup_tobiko_config(conf):
             paramiko_logger.logger.setLevel(log.DEBUG)
     elif paramiko_logger.isEnabledFor(log.DEBUG):
         # Silence paramiko debugging messages
-        paramiko_logger.logger.setLevel(log.INFO)
+        paramiko_logger.logger.setLevel(log.WARNING)

@@ -75,8 +75,8 @@ SSH_CONNECT_PARAMETERS = {
     #: The targets name in the kerberos database. default: hostname
     'gss_host': str,
 
-    #:Indicates whether or not the DNS is trusted to securely canonicalize the
-    # name of the host being connected to (default True).
+    #: Indicates whether or not the DNS is trusted to securely canonicalize the
+    #  name of the host being connected to (default True).
     'gss_trust_dns': bool,
 
     #: An optional timeout (in seconds) to wait for the SSH banner to be
@@ -86,6 +86,10 @@ SSH_CONNECT_PARAMETERS = {
     #: An optional timeout (in seconds) to wait for an authentication response
     'auth_timeout': float
 }
+
+
+class SSHConnectFailure(tobiko.TobikoException):
+    message = "Failed to login to {login}\n{cause}"
 
 
 class SSHClientFixture(tobiko.SharedFixture):
@@ -102,9 +106,6 @@ class SSHClientFixture(tobiko.SharedFixture):
 
     proxy_client = None
     proxy_command = None
-    #: An open socket or socket-like object (such as a Channel) to use for
-    #  communication to the target host
-    proxy_sock = None
 
     connect_parameters = None
 
@@ -127,7 +128,6 @@ class SSHClientFixture(tobiko.SharedFixture):
     def setup_fixture(self):
         self.setup_host_config()
         self.setup_connect_parameters()
-        self.setup_proxy_sock()
         self.setup_ssh_client()
 
     def setup_host_config(self):
@@ -193,11 +193,41 @@ class SSHClientFixture(tobiko.SharedFixture):
             message = "Invalid timeout: {!r}".format(port)
             raise ValueError(message)
 
-    def setup_proxy_sock(self):
-        if self.proxy_sock:
-            # Proxy sock already set up
-            return
+    def setup_ssh_client(self):
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.load_system_host_keys()
 
+        now = time.time()
+        parameters = dict(self.connect_parameters)
+        deadline = now + parameters.pop('timeout')
+        sleep_time = self.connect_sleep_time
+        login = self.connect_login
+        while True:
+            timeout = deadline - now
+            LOG.debug("Logging in to %r... (time left %d seconds)", login,
+                     timeout)
+            try:
+                sock = self._open_proxy_sock()
+                client.connect(sock=sock, timeout=timeout, **parameters)
+            except (EOFError, socket.error, socket.timeout,
+                    paramiko.SSHException) as ex:
+                now = time.time()
+                if now + sleep_time >= deadline:
+                    raise SSHConnectFailure(login=login, cause=ex)
+
+                LOG.debug("Error logging in to  %s (%s); retrying in %d "
+                          "seconds...", login, ex, sleep_time)
+                time.sleep(sleep_time)
+                sleep_time += self.connect_sleep_time_increment
+
+            else:
+                self.client = client
+                self.addCleanup(client.close)
+                LOG.info("Successfully logged it to %s", login)
+                break
+
+    def _open_proxy_sock(self):
         proxy_command = self.host_config.proxy_command or self.proxy_command
         proxy_client = self.proxy_client
         if proxy_client:
@@ -205,7 +235,7 @@ class SSHClientFixture(tobiko.SharedFixture):
             proxy_command = proxy_command or 'nc {hostname!r} {port!r}'
         elif not proxy_command:
             # Proxy sock is not required
-            return
+            return None
 
         # Apply connect parameters to proxy command
         parameters = self.connect_parameters
@@ -222,76 +252,14 @@ class SSHClientFixture(tobiko.SharedFixture):
             # Open proxy channel
             LOG.debug("Execute proxy command with proxy client %r: %r",
                       proxy_client, proxy_command)
-            self.proxy_sock = proxy_client.get_transport().open_session()
-            self.addCleanup(self.cleanup_proxy_sock)
-            self.proxy_sock.exec_command(proxy_command)
+            proxy_sock = proxy_client.get_transport().open_session()
+            proxy_sock.exec_command(proxy_command)
         else:
             LOG.debug("Execute proxy command on local host: %r", proxy_command)
-            self.proxy_sock = paramiko.ProxyCommand(proxy_command)
-            self.addCleanup(self.cleanup_proxy_sock)
+            proxy_sock = paramiko.ProxyCommand(proxy_command)
 
-    def setup_ssh_client(self):
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.load_system_host_keys()
-
-        now = time.time()
-        parameters = dict(self.connect_parameters)
-        deadline = now + parameters.pop('timeout')
-        sleep_time = self.connect_sleep_time
-        while True:
-            timeout = deadline - now
-            message = "time left {!s} seconds".format(timeout)
-            try:
-                self._connect_client(client,
-                                     message=message,
-                                     timeout=timeout,
-                                     **parameters)
-                break
-            except (EOFError, socket.error, socket.timeout,
-                    paramiko.SSHException):
-                now = time.time()
-                if now + sleep_time >= sleep_time:
-                    raise
-
-                LOG.debug('Retry to connect to %r in %d seconds',
-                          self.connect_login, sleep_time)
-                time.sleep(sleep_time)
-                now = time.time()
-                if now >= deadline:
-                    raise
-                sleep_time += self.connect_sleep_time_increment
-
-    def _connect_client(self, client, message=None, **parameters):
-        """Returns an ssh connection to the specified host."""
-        extra_info = ''
-        if message:
-            extra_info = ' (' + message + ')'
-        LOG.info("Creating SSH connection to %r%s...", self.connect_login,
-                 extra_info)
-
-        try:
-            client.connect(sock=self.proxy_sock, **parameters)
-        except Exception as ex:
-            LOG.debug("Error connecting to  %s%s: %s", self.connect_login,
-                      extra_info, ex)
-            raise
-        else:
-            self.client = client
-            self.addCleanup(self.cleanup_ssh_client, client)
-            LOG.info("SSH connection to %s successfully created",
-                     self.connect_login)
-
-    def cleanup_ssh_client(self):
-        if self.client:
-            self.client = None
-            self.client.close()
-
-    def cleanup_proxy_sock(self):
-        proxy_sock = self.proxy_sock
-        if proxy_sock:
-            self.proxy_sock = None
-            proxy_sock.close()
+        self.addCleanup(proxy_sock.close)
+        return proxy_sock
 
     @property
     def connect_sleep_time(self):
