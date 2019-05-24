@@ -17,8 +17,8 @@ from heatclient.v1 import client as heatclient
 
 from tobiko.openstack import keystone
 from tobiko.openstack import heat
-from tobiko.tests.openstack import base
-from tobiko.tests.openstack import test_client
+from tobiko.tests.unit import openstack
+from tobiko.tests.unit.openstack import test_client
 
 
 class HeatClientFixtureTest(test_client.OpenstackClientFixtureTest):
@@ -27,7 +27,7 @@ class HeatClientFixtureTest(test_client.OpenstackClientFixtureTest):
         return heat.HeatClientFixture(session=session)
 
 
-class GetHeatClientTest(base.OpenstackTest):
+class GetHeatClientTest(openstack.OpenstackTest):
 
     def test_get_heat_client(self, session=None, shared=True):
         client1 = heat.get_heat_client(session=session, shared=shared)

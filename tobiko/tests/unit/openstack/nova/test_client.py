@@ -17,8 +17,8 @@ from novaclient.v2 import client as novaclient
 
 from tobiko.openstack import keystone
 from tobiko.openstack import nova
-from tobiko.tests.openstack import base
-from tobiko.tests.openstack import test_client
+from tobiko.tests.unit import openstack
+from tobiko.tests.unit.openstack import test_client
 
 
 class NovaClientFixtureTest(test_client.OpenstackClientFixtureTest):
@@ -27,7 +27,7 @@ class NovaClientFixtureTest(test_client.OpenstackClientFixtureTest):
         return nova.NovaClientFixture(session=session)
 
 
-class GetNovaClientTest(base.OpenstackTest):
+class GetNovaClientTest(openstack.OpenstackTest):
 
     def test_get_nova_client(self, session=None, shared=True):
         client1 = nova.get_nova_client(session=session, shared=shared)

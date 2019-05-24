@@ -21,7 +21,7 @@ import mock
 import tobiko
 from tobiko.openstack import _client
 from tobiko.openstack import keystone
-from tobiko.tests.openstack import base
+from tobiko.tests.unit import openstack
 
 
 CLIENT = object()
@@ -46,7 +46,7 @@ class SessionFixture(tobiko.SharedFixture):
         self.session = SESSION
 
 
-class OpenstackClientFixtureTest(base.OpenstackTest):
+class OpenstackClientFixtureTest(openstack.OpenstackTest):
 
     def create_client(self, session=None):
         return ClientFixture(session=session)
@@ -99,7 +99,7 @@ class OpenstackClientFixtureTest(base.OpenstackTest):
             self.assertIsNone(client.session_fixture)
 
 
-class OpenstackClientManagerTest(base.OpenstackTest):
+class OpenstackClientManagerTest(openstack.OpenstackTest):
 
     def setUp(self):
         super(OpenstackClientManagerTest, self).setUp()

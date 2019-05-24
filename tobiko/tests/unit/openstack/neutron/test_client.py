@@ -17,8 +17,8 @@ from neutronclient.v2_0 import client as neutronclient
 
 from tobiko.openstack import keystone
 from tobiko.openstack import neutron
-from tobiko.tests.openstack import base
-from tobiko.tests.openstack import test_client
+from tobiko.tests.unit import openstack
+from tobiko.tests.unit.openstack import test_client
 
 
 class NeutronClientFixtureTest(test_client.OpenstackClientFixtureTest):
@@ -27,7 +27,7 @@ class NeutronClientFixtureTest(test_client.OpenstackClientFixtureTest):
         return neutron.NeutronClientFixture(session=session)
 
 
-class GetNeutronClientTest(base.OpenstackTest):
+class GetNeutronClientTest(openstack.OpenstackTest):
 
     def test_get_neutron_client(self, session=None, shared=True):
         client1 = neutron.get_neutron_client(session=session, shared=shared)

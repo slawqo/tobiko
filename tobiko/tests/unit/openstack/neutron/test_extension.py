@@ -14,10 +14,10 @@
 from __future__ import absolute_import
 
 from tobiko.openstack import neutron
-from tobiko.tests.openstack import base
+from tobiko.tests.unit import openstack
 
 
-class NeutronExtensionTest(base.OpenstackTest):
+class NeutronExtensionTest(openstack.OpenstackTest):
 
     extensions = ['ext-1', 'ext-2', 'ext-3']
 
