@@ -19,7 +19,7 @@ from oslo_log import log
 
 def register_tobiko_options(conf):
     conf.register_opts(
-        group=cfg.OptGroup('paramiko'),
+        group=cfg.OptGroup('ssh'),
         opts=[cfg.BoolOpt('debug',
                           default=False,
                           help=('Logout debugging messages of paramiko '
@@ -59,7 +59,7 @@ def register_tobiko_options(conf):
 
 def setup_tobiko_config(conf):
     paramiko_logger = log.getLogger('paramiko')
-    if conf.paramiko.debug:
+    if conf.ssh.debug:
         if not paramiko_logger.isEnabledFor(log.DEBUG):
             # Print paramiko debugging messages
             paramiko_logger.logger.setLevel(log.DEBUG)

@@ -23,7 +23,7 @@ import paramiko
 from oslo_log import log
 
 import tobiko
-from tobiko.shell.paramiko import _config
+from tobiko.shell.ssh import _config
 
 
 LOG = log.getLogger(__name__)

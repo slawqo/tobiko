@@ -22,7 +22,7 @@ import paramiko
 
 import tobiko
 from tobiko import config
-from tobiko.shell import paramiko as ssh
+from tobiko.shell import ssh
 from tobiko.tests import unit
 
 
@@ -57,7 +57,7 @@ class SSHClientFixtureTest(unit.TobikoUnitTest):
         fixture.setUp()
 
         ssh_config = paramiko.SSHConfig()
-        for ssh_config_file in CONF.tobiko.paramiko.config_files:
+        for ssh_config_file in CONF.tobiko.ssh.config_files:
             if os.path.exists(ssh_config_file):
                 with open(ssh_config_file) as f:
                     ssh_config.parse(f)
