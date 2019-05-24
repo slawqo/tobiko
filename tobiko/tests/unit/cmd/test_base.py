@@ -15,10 +15,10 @@
 from __future__ import absolute_import
 
 from tobiko.cmd import base
-from tobiko.tests.openstack import base as test_base
+from tobiko.tests.unit import openstack
 
 
-class TobikoCMDTest(test_base.OpenstackTest):
+class TobikoCMDTest(openstack.OpenstackTest):
 
     command_name = 'tobiko-base'
     command_class = base.TobikoCMD

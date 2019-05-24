@@ -16,7 +16,6 @@ from __future__ import absolute_import
 
 import mock
 
-from tobiko.config import CONF
 from tobiko.openstack import keystone
 from tobiko.tests import unit
 
@@ -31,7 +30,8 @@ class OpenstackTest(unit.TobikoUnitTest):
 
     def setUp(self):
         super(OpenstackTest, self).setUp()
-        self.patch_object(CONF.tobiko, 'keystone',
+        from tobiko import config
+        self.patch_object(config.CONF.tobiko, 'keystone',
                           self.default_keystone_credentials)
 
     def patch_get_heat_client(self, *args, **kwargs):

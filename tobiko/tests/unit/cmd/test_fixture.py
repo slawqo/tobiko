@@ -20,7 +20,7 @@ import subprocess
 
 import tobiko
 from tobiko.cmd import fixture as _fixture
-from tobiko.tests import test_fixture
+from tobiko.tests.unit import test_fixture
 from tobiko.tests import unit
 
 

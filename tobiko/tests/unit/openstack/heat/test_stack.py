@@ -24,7 +24,7 @@ import yaml
 import tobiko
 from tobiko.openstack import heat
 from tobiko.openstack import keystone
-from tobiko.tests.openstack import base
+from tobiko.tests.unit import openstack
 
 
 class MyStack(heat.HeatStackFixture):
@@ -61,7 +61,7 @@ class MyTemplateFixture(tobiko.SharedFixture):
         self.template = heat.HeatTemplate.from_dict(self._template)
 
 
-class HeatStackFixtureTest(base.OpenstackTest):
+class HeatStackFixtureTest(openstack.OpenstackTest):
 
     def test_init(self, fixture_class=MyStack, stack_name=None, template=None,
                   parameters=None, wait_interval=None, client=None):

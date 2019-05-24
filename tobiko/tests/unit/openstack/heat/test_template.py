@@ -16,10 +16,10 @@ from __future__ import absolute_import
 import os
 
 from tobiko.openstack import heat
-from tobiko.tests.openstack import base
+from tobiko.tests.unit import openstack
 
 
-class GetHeatTemplateTest(base.OpenstackTest):
+class GetHeatTemplateTest(openstack.OpenstackTest):
 
     template_dirs = [os.path.dirname(__file__)]
     template_file = 'my-stack.yaml'
