@@ -14,9 +14,11 @@
 #    under the License.
 from __future__ import absolute_import
 
+import argparse
 import io
 import os
 import subprocess
+import sys
 
 import tobiko
 from tobiko.cmd import fixture as _fixture
@@ -46,7 +48,7 @@ class FixtureUtilTest(unit.TobikoUnitTest):
 
     def setUp(self):
         super(FixtureUtilTest, self).setUp()
-        self.mock_error = self.patch('argparse.ArgumentParser.error',
+        self.mock_error = self.patch(argparse.ArgumentParser, 'error',
                                      side_effect=self.fail)
 
     def patch_argv(self, subcommand=None, arguments=None,
@@ -76,7 +78,7 @@ class FixtureUtilTest(unit.TobikoUnitTest):
             arguments += ['--black-regex', black_regex]
         if filters:
             arguments += list(filters)
-        return self.patch('sys.argv',
+        return self.patch(sys, 'argv',
                           [self.command_name, subcommand] + arguments)
 
     def test_init(self, subcommand=None, arguments=None, filters=None,
@@ -200,7 +202,7 @@ class FixtureUtilTest(unit.TobikoUnitTest):
                         blacklist_file=blacklist_file,
                         whitelist_file=whitelist_file,
                         black_regex=black_regex, filters=filters)
-        stdout = self.patch('sys.stdout', io.StringIO())
+        stdout = self.patch(sys, 'stdout', io.StringIO())
         _fixture.main()
         self.mock_error.assert_not_called()
         return stdout

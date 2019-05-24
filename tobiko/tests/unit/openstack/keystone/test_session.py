@@ -82,8 +82,10 @@ class KeystoneSessionFixtureTest(CheckSessionCredentialsMixin,
 
     def setUp(self):
         super(KeystoneSessionFixtureTest, self).setUp()
+        from tobiko.openstack.keystone import _credentials
+
         tobiko.remove_fixture(self.default_credentials_fixture)
-        self.patch(self.default_credentials_fixture,
+        self.patch(_credentials, 'DefaultKeystoneCredentialsFixture',
                    DefaultCredentialsFixture)
 
     def test_init(self, credentials=None):

@@ -40,7 +40,7 @@ class SSHClientFixtureTest(unit.TobikoUnitTest):
         super(SSHClientFixtureTest, self).setUp()
         tobiko.cleanup_fixture(self.fixture)
         self.ssh_client = mock.MagicMock(specs=paramiko.SSHClient)
-        self.patch('paramiko.SSHClient', return_value=self.ssh_client)
+        self.patch(paramiko, 'SSHClient', return_value=self.ssh_client)
 
     def test_init(self):
         fixture = self.fixture

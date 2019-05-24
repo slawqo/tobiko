@@ -14,6 +14,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
+
 import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
@@ -120,35 +122,35 @@ class EnvironKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
         self.assertIsNone(fixture.credentials)
 
     def test_setup_v2(self):
-        self.patch('os.environ', V2_ENVIRON)
+        self.patch(os, 'environ', V2_ENVIRON)
         fixture = _credentials.EnvironKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_v2_with_tenant_name(self):
-        self.patch('os.environ', V2_ENVIRON_WITH_TENANT_NAME)
+        self.patch(os, 'environ', V2_ENVIRON_WITH_TENANT_NAME)
         fixture = _credentials.EnvironKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_v2_with_api_version(self):
-        self.patch('os.environ', V2_ENVIRON_WITH_VERSION)
+        self.patch(os, 'environ', V2_ENVIRON_WITH_VERSION)
         fixture = _credentials.EnvironKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_v3(self):
-        self.patch('os.environ', V3_ENVIRON)
+        self.patch(os, 'environ', V3_ENVIRON)
         fixture = _credentials.EnvironKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V3_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_v3_without_api_version(self):
-        self.patch('os.environ', V3_ENVIRON_WITH_VERSION)
+        self.patch(os, 'environ', V3_ENVIRON_WITH_VERSION)
         fixture = _credentials.EnvironKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
@@ -159,7 +161,7 @@ class ConfigKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
 
     def patch_config(self, params, **kwargs):
         credentials = make_credentials(params, **kwargs)
-        return self.patch_object(config.CONF.tobiko, 'keystone', credentials)
+        return self.patch(config.CONF.tobiko, 'keystone', credentials)
 
     def test_init(self):
         fixture = _credentials.ConfigKeystoneCredentialsFixture()
@@ -199,20 +201,20 @@ class DefaultKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
     def setUp(self):
         super(DefaultKeystoneCredentialsFixtureTest, self).setUp()
         self.patch_config({})
-        self.patch('os.environ', {})
+        self.patch(os, 'environ', {})
         tobiko.remove_fixture(_credentials.ConfigKeystoneCredentialsFixture)
         tobiko.remove_fixture(_credentials.EnvironKeystoneCredentialsFixture)
 
     def patch_config(self, params, **kwargs):
         credentials = make_credentials(params, **kwargs)
-        return self.patch_object(config.CONF.tobiko, 'keystone', credentials)
+        return self.patch(config.CONF.tobiko, 'keystone', credentials)
 
     def test_init(self):
         fixture = _credentials.DefaultKeystoneCredentialsFixture()
         self.assertIsNone(fixture.credentials)
 
     def test_setup_from_environ(self):
-        self.patch('os.environ', V2_ENVIRON)
+        self.patch(os, 'environ', V2_ENVIRON)
         fixture = _credentials.DefaultKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
@@ -226,7 +228,7 @@ class DefaultKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_from_environ_and_confif(self):
-        self.patch('os.environ', V3_ENVIRON)
+        self.patch(os, 'environ', V3_ENVIRON)
         self.patch_config(V2_PARAMS)
         fixture = _credentials.DefaultKeystoneCredentialsFixture()
         fixture.setUp()

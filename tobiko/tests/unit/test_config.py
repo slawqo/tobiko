@@ -20,6 +20,9 @@ from tobiko.tests import unit
 from tobiko import config
 
 
+CONF = config.CONF
+
+
 class HttpProxyFixtureTest(unit.TobikoUnitTest):
 
     MY_HTTP_PROXY = 'http://my-server:8080'
@@ -27,8 +30,8 @@ class HttpProxyFixtureTest(unit.TobikoUnitTest):
 
     def setUp(self):
         super(HttpProxyFixtureTest, self).setUp()
-        self.patch('os.environ', {})
-        self.patch('tobiko.config.CONF.tobiko.http',
+        self.patch(os, 'environ', {})
+        self.patch(CONF.tobiko, 'http',
                    http_proxy=None, https_proxy=None, no_proxy=None)
 
     def test_init(self):
@@ -72,8 +75,7 @@ class HttpProxyFixtureTest(unit.TobikoUnitTest):
         self.assertEqual(self.MY_NO_PROXY, fixture.no_proxy)
 
     def test_setup_from_tobiko_conf_http_proxy(self):
-        self.patch_object(config.CONF.tobiko.http, 'http_proxy',
-                          self.MY_HTTP_PROXY)
+        self.patch(CONF.tobiko.http, 'http_proxy', self.MY_HTTP_PROXY)
         fixture = config.HttpProxyFixture()
 
         fixture.setUp()
@@ -82,8 +84,7 @@ class HttpProxyFixtureTest(unit.TobikoUnitTest):
         self.assertEqual({'http_proxy': self.MY_HTTP_PROXY}, os.environ)
 
     def test_setup_from_tobiko_conf_https_proxy(self):
-        self.patch_object(config.CONF.tobiko.http, 'https_proxy',
-                          self.MY_HTTP_PROXY)
+        self.patch(CONF.tobiko.http, 'https_proxy', self.MY_HTTP_PROXY)
         fixture = config.HttpProxyFixture()
 
         fixture.setUp()
@@ -92,10 +93,8 @@ class HttpProxyFixtureTest(unit.TobikoUnitTest):
         self.assertEqual({'https_proxy': self.MY_HTTP_PROXY}, os.environ)
 
     def test_setup_from_tobiko_conf_no_proxy(self):
-        self.patch_object(config.CONF.tobiko.http, 'http_proxy',
-                          self.MY_HTTP_PROXY)
-        self.patch_object(config.CONF.tobiko.http, 'no_proxy',
-                          self.MY_NO_PROXY)
+        self.patch(CONF.tobiko.http, 'http_proxy', self.MY_HTTP_PROXY)
+        self.patch(CONF.tobiko.http, 'no_proxy', self.MY_NO_PROXY)
         fixture = config.HttpProxyFixture()
 
         fixture.setUp()

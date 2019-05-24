@@ -34,7 +34,7 @@ class TestLoader(TobikoUnitTest):
     def setUp(self):
         super(TestLoader, self).setUp()
         self.manager = loader.LoaderManager()
-        self.patch('tobiko.common.managers.loader.LOADERS', self.manager)
+        self.patch(loader, 'LOADERS', self.manager)
 
     def test_load_object_with_none(self):
         object_id = '.'.join([__name__, 'SOME_NONE'])

@@ -179,9 +179,11 @@ def get_required_fixture(obj):
             pass
 
         if is_test_method(obj):
-            for default in get_default_param_values(obj):
-                if is_fixture(default):
-                    required_fixtures.append(get_fixture_name(default))
+            defaults = six.get_function_defaults(obj)
+            if defaults:
+                for default in defaults:
+                    if is_fixture(default):
+                        required_fixtures.append(get_fixture_name(default))
 
         elif inspect.isclass(obj):
             # inspect.getmembers() would iterate over such many
@@ -269,21 +271,6 @@ def get_object_name(obj):
 
     msg = "Unable to get fixture name from object {!r}".format(obj)
     raise TypeError(msg)
-
-
-def get_default_param_values(obj):
-    if hasattr(inspect, 'signature'):
-        try:
-            signature = inspect.signature(obj)
-        except ValueError:
-            pass
-        else:
-            return [param.default
-                    for param in signature.parameters.values()]
-
-    # Use old deprecated function 'getargspec'
-    return list(inspect.getargspec(obj).defaults or  # pylint: disable=W1505
-                tuple())
 
 
 class FixtureManager(object):

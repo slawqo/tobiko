@@ -16,9 +16,10 @@ import shutil
 import tempfile
 
 import mock
+from oslo_log import log
 
-from tobiko.tests import base
 from tobiko.common import _fixture
+from tobiko.tests import base
 
 
 class TobikoUnitTest(base.TobikoTest):
@@ -26,21 +27,21 @@ class TobikoUnitTest(base.TobikoTest):
     def setUp(self):
         super(TobikoUnitTest, self).setUp()
         # Protect from mis-configuring logging
-        self.patch('oslo_log.log.setup')
+        self.patch(log, 'setup')
         self.fixture_manager = manager = _fixture.FixtureManager()
-        self.patch_object(_fixture, 'FIXTURES', manager)
+        self.patch(_fixture, 'FIXTURES', manager)
 
-    def patch(self, target, *args, **kwargs):
-        context = mock.patch(target, *args, **kwargs)
-        mock_object = context.start()
+    def patch(self, obj, attribute, value=mock.DEFAULT, spec=None,
+              create=False, spec_set=None, autospec=None,
+              new_callable=None, **kwargs):
+        # pylint: disable=arguments-differ
+        context = mock.patch.object(target=obj, attribute=attribute, new=value,
+                                    spec=spec, create=create,
+                                    spec_set=spec_set, autospec=autospec,
+                                    new_callable=new_callable, **kwargs)
+        mocked = context.start()
         self.addCleanup(context.stop)
-        return mock_object
-
-    def patch_object(self, target, attribute, *args, **kwargs):
-        context = mock.patch.object(target, attribute, *args, **kwargs)
-        mock_object = context.start()
-        self.addCleanup(context.stop)
-        return mock_object
+        return mocked
 
     def create_tempdir(self, *args, **kwargs):
         dir_path = tempfile.mkdtemp(*args, **kwargs)

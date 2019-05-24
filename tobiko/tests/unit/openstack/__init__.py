@@ -31,23 +31,28 @@ class OpenstackTest(unit.TobikoUnitTest):
     def setUp(self):
         super(OpenstackTest, self).setUp()
         from tobiko import config
-        self.patch_object(config.CONF.tobiko, 'keystone',
-                          self.default_keystone_credentials)
+
+        self.patch(config.CONF.tobiko, 'keystone',
+                   self.default_keystone_credentials)
 
     def patch_get_heat_client(self, *args, **kwargs):
         from heatclient import client
+        from tobiko.openstack import heat
+        from tobiko.openstack.heat import _client
+
         kwargs.setdefault('return_value', mock.MagicMock(specs=client.Client))
-        get_heat_client = self.patch(
-            'tobiko.openstack.heat._client.get_heat_client', *args, **kwargs)
-        self.patch('tobiko.openstack.heat.get_heat_client', get_heat_client)
+        get_heat_client = self.patch(_client, 'get_heat_client', *args,
+                                     **kwargs)
+        self.patch(heat, 'get_heat_client', get_heat_client)
         return get_heat_client
 
     def patch_get_neutron_client(self, *args, **kwargs):
         from neutronclient.v2_0 import client
+        from tobiko.openstack import neutron
+        from tobiko.openstack.neutron import _client
+
         kwargs.setdefault('return_value', mock.MagicMock(specs=client.Client))
-        get_neutron_client = self.patch(
-            'tobiko.openstack.neutron._client.get_neutron_client', *args,
-            **kwargs)
-        self.patch('tobiko.openstack.neutron.get_neutron_client',
-                   get_neutron_client)
+        get_neutron_client = self.patch(_client, 'get_neutron_client', *args,
+                                        **kwargs)
+        self.patch(neutron, 'get_neutron_client', get_neutron_client)
         return get_neutron_client

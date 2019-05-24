@@ -24,7 +24,7 @@ LOG = log.getLogger(__name__)
 def makedirs(path, mode=777, exist_ok=True):
     """Creates directory and its parents if directory doesn't exists."""
     try:
-        os.makedirs(path, mode, exist_ok)
-    except FileExistsError:
+        os.makedirs(path, mode)
+    except os.error:
         if not exist_ok:
             raise

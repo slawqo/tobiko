@@ -103,7 +103,7 @@ class OpenstackClientManagerTest(openstack.OpenstackTest):
 
     def setUp(self):
         super(OpenstackClientManagerTest, self).setUp()
-        self.patch('tobiko.openstack.keystone.get_keystone_session',
+        self.patch(keystone, 'get_keystone_session',
                    return_value=DEFAULT_SESSION)
 
     def test_init(self, init_client=None):

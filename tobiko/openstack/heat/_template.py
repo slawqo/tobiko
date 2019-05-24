@@ -94,4 +94,4 @@ def find_heat_template_file(template_file, template_dirs):
 
     msg = "Template file {!r} not found in directories {!r}".format(
         template_file, template_dirs)
-    raise FileNotFoundError(msg)
+    raise IOError(msg)

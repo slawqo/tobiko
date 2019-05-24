@@ -228,6 +228,7 @@ def execute_local_command(command, stdin=None, environment=None, timeout=None,
     # Wait for process execution while reading STDERR and STDOUT streams
     if timeout:
         try:
+            # pylint: disable=unexpected-keyword-arg,no-member
             stdout, stderr = process.communicate(input=stdin,
                                                  timeout=timeout)
         except subprocess.TimeoutExpired:

@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 import collections
 import os
+import time
 
 from heatclient.v1 import client as heatclient
 from heatclient import exc
@@ -138,10 +139,12 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
                    template=None, parameters=None, wait_interval=None,
                    stacks=None, create_conflict=False,
                    call_create=True, call_delete=False, call_sleep=False):
+        from tobiko.openstack.heat import _client
+        from tobiko.openstack.heat import _template
+
         client = mock.MagicMock(specs=heatclient.Client)
-        get_heat_client = self.patch(
-            'tobiko.openstack.heat._client.get_heat_client',
-            return_value=client)
+        get_heat_client = self.patch(_client, 'get_heat_client',
+                                     return_value=client)
 
         stacks = stacks or [
             exc.HTTPNotFound,
@@ -154,15 +157,14 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
             client.stacks.create.return_value = {
                 'stack': {'id': '<stack-id>'}}
 
-        sleep = self.patch('time.sleep')
+        sleep = self.patch(time, 'sleep')
         stack = fixture_class(stack_name=stack_name, parameters=parameters,
                               template=template, wait_interval=wait_interval)
 
         default_template = heat.HeatTemplate.from_dict(
             {'default': 'template'})
-        get_heat_template = self.patch(
-            'tobiko.openstack.heat._template.get_heat_template',
-            return_value=default_template)
+        get_heat_template = self.patch(_template, 'get_heat_template',
+                                       return_value=default_template)
 
         stack.setUp()
 

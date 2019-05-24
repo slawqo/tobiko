@@ -14,6 +14,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import sys
+
 from tobiko.cmd import base
 from tobiko.tests.unit import openstack
 
@@ -28,4 +30,4 @@ class TobikoCMDTest(openstack.OpenstackTest):
         return self.command_class()
 
     def patch_argv(self, argv=None):
-        return self.patch('sys.argv', [self.command_name] + (argv or []))
+        return self.patch(sys, 'argv', [self.command_name] + (argv or []))
