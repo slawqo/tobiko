@@ -34,7 +34,7 @@ class SSHParamikoConfFixture(tobiko.SharedFixture):
     def setup_fixture(self):
         from tobiko import config
         CONF = config.CONF
-        self.conf = CONF.tobiko.paramiko
+        self.conf = CONF.tobiko.ssh
 
     def __getattr__(self, name):
         return getattr(self.conf, name)

@@ -25,7 +25,7 @@ from oslo_log import log
 import six
 
 import tobiko
-from tobiko.shell import paramiko
+from tobiko.shell import ssh
 from tobiko.shell.sh import _exception
 
 
@@ -65,7 +65,7 @@ def execute(command, stdin=None, environment=None, timeout=None, shell=None,
     else:
         command = [str(a) for a in command]
 
-    ssh_client = ssh_client or paramiko.ssh_proxy_client()
+    ssh_client = ssh_client or ssh.ssh_proxy_client()
     if ssh_client:
         result = execute_remote_command(command=command, stdin=stdin,
                                         environment=environment,
@@ -104,7 +104,7 @@ def execute_remote_command(command, ssh_client, stdin=None, timeout=None,
     if shell:
         command = shell.split() + [str(subprocess.list2cmdline(command))]
 
-    if isinstance(ssh_client, paramiko.SSHClientFixture):
+    if isinstance(ssh_client, ssh.SSHClientFixture):
         # Connect to fixture
         ssh_client = tobiko.setup_fixture(ssh_client).client
 
