@@ -21,6 +21,7 @@ import subprocess
 import tobiko
 from tobiko.cmd import fixture as _fixture
 from tobiko.tests import test_fixture
+from tobiko.tests import unit
 
 
 MyFixture = test_fixture.MyFixture
@@ -33,7 +34,7 @@ class ExitCalled(Exception):
     pass
 
 
-class FixtureUtilTest(test_fixture.FixtureBaseTest):
+class FixtureUtilTest(unit.TobikoUnitTest):
 
     command_name = 'tobiko-fixture'
     command_class = _fixture.FixtureUtil

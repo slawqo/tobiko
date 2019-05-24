@@ -22,7 +22,6 @@ import testtools
 
 import tobiko
 from tobiko.tests import unit
-from tobiko.common import _fixture
 
 
 def canonical_name(cls):
@@ -52,15 +51,7 @@ class MyFixture(MyBaseFixture):
     pass
 
 
-class FixtureBaseTest(unit.TobikoUnitTest):
-
-    def setUp(self):
-        super(FixtureBaseTest, self).setUp()
-        self.manager = _fixture.FixtureManager()
-        self.patch_object(_fixture, 'FIXTURES', self.manager)
-
-
-class GetFixtureTest(FixtureBaseTest):
+class GetFixtureTest(unit.TobikoUnitTest):
 
     def test_by_name(self):
         self._test_get_fixture(canonical_name(MyFixture))
@@ -84,7 +75,7 @@ class GetFixtureTest(FixtureBaseTest):
         fixture.cleanup_fixture.assert_not_called()
 
 
-class GetFixtureNameTest(FixtureBaseTest):
+class GetFixtureNameTest(unit.TobikoUnitTest):
 
     def test_with_instance(self):
         fixture = MyFixture()
@@ -98,7 +89,7 @@ class GetFixtureNameTest(FixtureBaseTest):
                          str(ex))
 
 
-class GetFixtureClassTest(FixtureBaseTest):
+class GetFixtureClassTest(unit.TobikoUnitTest):
 
     def test_with_name(self):
         result = tobiko.get_fixture_class(canonical_name(MyFixture))
@@ -113,7 +104,7 @@ class GetFixtureClassTest(FixtureBaseTest):
         self.assertIs(MyFixture, result)
 
 
-class GetFixtureDirTest(FixtureBaseTest):
+class GetFixtureDirTest(unit.TobikoUnitTest):
 
     expected_dir = os.path.dirname(__file__)
 
@@ -130,7 +121,7 @@ class GetFixtureDirTest(FixtureBaseTest):
         self.assertEqual(self.expected_dir, actual_dir)
 
 
-class RemoveFixtureTest(FixtureBaseTest):
+class RemoveFixtureTest(unit.TobikoUnitTest):
 
     def test_with_name(self):
         self._test_remove_fixture(canonical_name(MyFixture))
@@ -147,7 +138,7 @@ class RemoveFixtureTest(FixtureBaseTest):
         fixture.cleanup_fixture.assert_not_called()
 
 
-class SetupFixtureTest(FixtureBaseTest):
+class SetupFixtureTest(unit.TobikoUnitTest):
 
     def test_with_name(self):
         self._test_setup_fixture(canonical_name(MyFixture))
@@ -174,7 +165,7 @@ class FailingFixture(tobiko.SharedFixture):
         raise RuntimeError('raised by cleanup_fixture')
 
 
-class FailingSetupFixtureWhenFailingTest(FixtureBaseTest):
+class FailingSetupFixtureWhenFailingTest(unit.TobikoUnitTest):
 
     def test_with_name(self):
         self._test_setup_fixture(canonical_name(FailingFixture))
@@ -190,7 +181,7 @@ class FailingSetupFixtureWhenFailingTest(FixtureBaseTest):
         self.assertEqual('raised by setup_fixture', str(ex))
 
 
-class CleanupFixtureTest(FixtureBaseTest):
+class CleanupFixtureTest(unit.TobikoUnitTest):
 
     def test_with_name(self):
         self._test_cleanup_fixture(canonical_name(MyFixture))
@@ -215,7 +206,7 @@ class MyFixtureWithProperty(MyBaseFixture):
         return id(self)
 
 
-class FixturePropertyTest(FixtureBaseTest):
+class FixturePropertyTest(unit.TobikoUnitTest):
 
     def test_with_instance(self):
         fixture = tobiko.get_fixture(MyFixtureWithProperty)
@@ -238,7 +229,7 @@ class MyRequiredSetupFixture(MyBaseFixture):
     pass
 
 
-class ListRequiredFixtureTest(FixtureBaseTest):
+class ListRequiredFixtureTest(unit.TobikoUnitTest):
 
     required_fixture = tobiko.required_fixture(MyRequiredFixture)
     required_setup_fixture = tobiko.required_setup_fixture(

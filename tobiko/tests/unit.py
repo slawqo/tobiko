@@ -18,6 +18,7 @@ import tempfile
 import mock
 
 from tobiko.tests import base
+from tobiko.common import _fixture
 
 
 class TobikoUnitTest(base.TobikoTest):
@@ -26,6 +27,8 @@ class TobikoUnitTest(base.TobikoTest):
         super(TobikoUnitTest, self).setUp()
         # Protect from mis-configuring logging
         self.patch('oslo_log.log.setup')
+        self.fixture_manager = manager = _fixture.FixtureManager()
+        self.patch_object(_fixture, 'FIXTURES', manager)
 
     def patch(self, target, *args, **kwargs):
         context = mock.patch(target, *args, **kwargs)
