@@ -42,8 +42,8 @@ def ssh_command(host, username=None, port=None, command=None,
     username = username or host_config.username
     command += [ssh_login(hostname=hostname, username=username)]
 
-    if host_config.default.debug:
-        command += ['-vvvvvv']
+    #     if host_config.default.debug:
+    #         command += ['-vvvvvv']
 
     port = port or host_config.port
     if port:

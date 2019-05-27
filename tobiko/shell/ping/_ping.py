@@ -179,26 +179,29 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
                                   ssh_client=ssh_client,
                                   timeout=end_of_time - now,
                                   check=check)
-        except sh.ShellTimeoutExpired:
-            pass
+        except sh.ShellError as ex:
+            LOG.exception("Error executing ping command")
+            output = str(ex.stdout)
 
         else:
-            if result.exit_status is not None and result.stdout:
-                statistics = _statistics.parse_ping_statistics(
-                    output=result.stdout, begin_interval=now,
-                    end_interval=time.time())
+            output = str(result.stdout)
 
-                yield statistics
+        if output:
+            statistics = _statistics.parse_ping_statistics(
+                output=output, begin_interval=now,
+                end_interval=time.time())
 
-                transmitted += statistics.transmitted
-                received += statistics.received
-                undelivered += statistics.undelivered
-                count = {None: 0,
-                         TRANSMITTED: transmitted,
-                         DELIVERED: transmitted - undelivered,
-                         UNDELIVERED: undelivered,
-                         RECEIVED: received,
-                         UNRECEIVED: transmitted - received}[until]
+            yield statistics
+
+            transmitted += statistics.transmitted
+            received += statistics.received
+            undelivered += statistics.undelivered
+            count = {None: 0,
+                     TRANSMITTED: transmitted,
+                     DELIVERED: transmitted - undelivered,
+                     UNDELIVERED: undelivered,
+                     RECEIVED: received,
+                     UNRECEIVED: transmitted - received}[until]
 
         now = time.time()
         deadline = min(int(end_of_time - now), parameters.deadline)
@@ -219,10 +222,10 @@ def execute_ping(parameters, ssh_client=None, check=True, **params):
 
     command = get_ping_command(parameters)
     result = sh.execute(command=command, ssh_client=ssh_client,
-                        timeout=parameters.timeout, check=False)
+                        timeout=parameters.timeout, check=False, wait=True)
 
     if check and result.exit_status and result.stderr:
-        handle_ping_command_error(error=result.stderr)
+        handle_ping_command_error(error=str(result.stderr))
     return result
 
 

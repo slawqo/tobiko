@@ -136,13 +136,13 @@ class FloatingIPTest(base.TobikoTest):
         """Test SSH connectivity to floating IP address"""
         result = sh.execute("hostname", ssh_client=self.ssh_client)
         self.assertEqual([self.server_name.lower()],
-                         result.stdout.splitlines())
+                         str(result.stdout).splitlines())
 
     def test_ssh_from_cli(self):
         """Test SSH connectivity to floating IP address from CLI"""
         result = sh.execute(self.floating_ip_stack.ssh_command + ['hostname'])
         self.assertEqual([self.server_name.lower()],
-                         result.stdout.splitlines())
+                         str(result.stdout).splitlines())
 
     def test_ping(self):
         """Test ICMP connectivity to floating IP address"""

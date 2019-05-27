@@ -15,20 +15,30 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.shell.sh import _command
-from tobiko.shell.sh import _exception
-from tobiko.shell.sh import _execute
+import subprocess
+
+import six
 
 
-ShellError = _exception.ShellError
-ShellCommandFailed = _exception.ShellCommandFailed
-ShellTimeoutExpired = _exception.ShellTimeoutExpired
-ShellProcessTeriminated = _exception.ShellProcessTeriminated
-ShellProcessNotTeriminated = _exception.ShellProcessNotTeriminated
-ShellStdinClosed = _exception.ShellStdinClosed
+def shell_command(command):
+    if isinstance(command, ShellCommand):
+        return command
+    elif isinstance(command, six.string_types):
+        return ShellCommand(command.split())
+    elif command:
+        return ShellCommand(str(a) for a in command)
+    else:
+        return ShellCommand()
 
-execute = _execute.execute
-local_execute = _execute.local_execute
-ssh_execute = _execute.ssh_execute
 
-shell_command = _command.shell_command
+class ShellCommand(tuple):
+
+    def __repr__(self):
+        return "ShellCommand([{!s}])".format(', '.join(self))
+
+    def __str__(self):
+        return subprocess.list2cmdline(self)
+
+    def __add__(self, other):
+        other = shell_command(other)
+        return shell_command(tuple(self) + other)

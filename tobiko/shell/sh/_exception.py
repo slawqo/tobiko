@@ -25,14 +25,39 @@ class ShellError(tobiko.TobikoException):
 class ShellCommandFailed(ShellError):
     """Raised when shell command exited with non-zero status
     """
-    message = ("command {command!r} failed (exit status is {exit_status}); "
-               "stderr:\n{stderr!s}\n"
-               "stdout:\n{stdout!s}")
+    message = ("command '{command}' failed (exit status is {exit_status});\n"
+               "stdin:\n{stdin}\n"
+               "stdout:\n{stdout}\n"
+               "stderr:\n{stderr}")
 
 
 class ShellTimeoutExpired(ShellError):
     """Raised when shell command timeouts and has been killed before exiting
     """
-    message = ("command {command!r} timed out after {timeout!s} seconds; "
-               "stderr:\n{stderr!s}\n"
-               "stdout:\n{stdout!s}")
+    message = ("command {command} timed out after {timeout} seconds;\n"
+               "stdin:\n{stdin}\n"
+               "stdout:\n{stdout}\n"
+               "stderr:\n{stderr}")
+
+
+class ShellProcessTeriminated(ShellError):
+    message = ("command '{command}' terminated (exit status is {exit_status})"
+               ";\n"
+               "stdin:\n{stdin}\n"
+               "stdout:\n{stdout}\n"
+               "stderr:\n{stderr}")
+
+
+class ShellProcessNotTeriminated(ShellError):
+    message = ("command '{command}' not terminated (time left is {time_left})"
+               ";\n"
+               "stdin:\n{stdin}\n"
+               "stdout:\n{stdout}\n"
+               "stderr:\n{stderr}")
+
+
+class ShellStdinClosed(ShellError):
+    message = ("command {command}: STDIN stream closed;\n"
+               "stdin:\n{stdin}\n"
+               "stdout:\n{stdout}\n"
+               "stderr:\n{stderr}")
