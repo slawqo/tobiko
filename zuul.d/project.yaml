@@ -16,12 +16,12 @@
         - openstack-tox-pylint
 
         - tobiko-devstack-functional
-        - tobiko-devstack-neutron-centos-7
-        - tobiko-devstack-neutron-centos-7-queens
-        - tobiko-devstack-neutron-centos-7-rocky
-        - tobiko-devstack-neutron-centos-7-stein
-        - tobiko-devstack-neutron-fedora-28
-        - tobiko-devstack-neutron-ubuntu-bionic
+        - tobiko-devstack-scenario-centos-7
+        - tobiko-devstack-scenario-centos-7-queens
+        - tobiko-devstack-scenario-centos-7-rocky
+        - tobiko-devstack-scenario-centos-7-stein
+        - tobiko-devstack-scenario-fedora-28
+        - tobiko-devstack-scenario-ubuntu-bionic
 
     gate:
       jobs:

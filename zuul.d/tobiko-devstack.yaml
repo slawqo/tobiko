@@ -117,6 +117,7 @@
     irrelevant-files:
       - ^tobiko/tests/scenario/.*$
 
+
 - job:
     name: tobiko-devstack-multinode
     parent: tobiko-devstack
@@ -135,20 +136,20 @@
 
 
 - job:
-    name: tobiko-devstack-neutron
+    name: tobiko-devstack-scenario
     parent: tobiko-devstack-multinode
     abstract: true
     description: |
       Integration test that runs all tests against DevStack provided cloud
     vars:
-      tox_envlist: neutron
+      tox_envlist: scenario
     irrelevant-files:
       - ^tobiko/tests/functional/.*$
 
 
 - job:
-    name: tobiko-devstack-neutron-centos-7
-    parent: tobiko-devstack-neutron
+    name: tobiko-devstack-scenario-centos-7
+    parent: tobiko-devstack-scenario
     nodeset: openstack-three-node-centos-7
     vars:
       devstack_localrc:
@@ -160,29 +161,29 @@
 
 
 - job:
-    name: tobiko-devstack-neutron-centos-7-queens
-    parent: tobiko-devstack-neutron-centos-7
+    name: tobiko-devstack-scenario-centos-7-queens
+    parent: tobiko-devstack-scenario-centos-7
     override-checkout: stable/queens
     voting: false
 
 
 - job:
-    name: tobiko-devstack-neutron-centos-7-rocky
-    parent: tobiko-devstack-neutron-centos-7
+    name: tobiko-devstack-scenario-centos-7-rocky
+    parent: tobiko-devstack-scenario-centos-7
     override-checkout: stable/rocky
     voting: false
 
 
 - job:
-    name: tobiko-devstack-neutron-centos-7-stein
-    parent: tobiko-devstack-neutron-centos-7
+    name: tobiko-devstack-scenario-centos-7-stein
+    parent: tobiko-devstack-scenario-centos-7
     override-checkout: stable/stein
     voting: false
 
 
 - job:
-    name: tobiko-devstack-neutron-fedora-28
-    parent: tobiko-devstack-neutron
+    name: tobiko-devstack-scenario-fedora-28
+    parent: tobiko-devstack-scenario
     nodeset: openstack-three-node-fedora-28
     vars:
       devstack_localrc:
@@ -195,8 +196,8 @@
 
 
 - job:
-    name: tobiko-devstack-neutron-ubuntu-bionic
-    parent: tobiko-devstack-neutron
+    name: tobiko-devstack-scenario-ubuntu-bionic
+    parent: tobiko-devstack-scenario
     nodeset: openstack-three-node-bionic
     vars:
       devstack_services:
