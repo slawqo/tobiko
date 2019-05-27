@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -eux
+
+# Prefer python3 on python2
+PYTHON=$(which python3 || which python)
+
+# Create a virtualenv for executing Tox and activate it
+BASE_VIRTUALENV_DIR=.tox/base
+if ! [ -d "${BASE_VIRTUALENV_DIR}" ]; then
+    "${PYTHON}" -m virtualenv "${BASE_VIRTUALENV_DIR}"
+    set +eux
+    source "${BASE_VIRTUALENV_DIR}/bin/activate"
+    set -eux
+    curl https://bootstrap.pypa.io/get-pip.py | python
+    pip install --upgrade setuptools wheel virtualenv tox
+else
+    set +eux
+    source "${BASE_VIRTUALENV_DIR}/bin/activate"
+    set -eux
+fi
+
+tox "$*"
