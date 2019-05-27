@@ -1,5 +1,5 @@
 - name: Run Tobiko
-  command: tox -e {{tox_envlist}} {{tox_extra_args}}
+  command: tools/ci/tox -e {{tox_envlist}} {{tox_extra_args}}
   args:
     chdir: "{{tox_dir}}"
   become: true
