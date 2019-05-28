@@ -130,12 +130,12 @@ class FloatingIPTest(base.TobikoTest):
     @property
     def expected_security_groups(self):
         """Expected port security groups"""
-        return self.floating_ip_stack.security_groups
+        return set(self.floating_ip_stack.security_groups)
 
     @property
     def observed_security_groups(self):
         """Actual port security group"""
-        return self.floating_ip_stack.outputs.security_groups
+        return set(self.floating_ip_stack.outputs.security_groups)
 
     # --- test net-mtu and net-mtu-writable extensions -----------------------
 
