@@ -24,6 +24,7 @@ from oslo_log import log
 
 import tobiko
 from tobiko.shell.ssh import _config
+from tobiko.shell.ssh import _command
 
 
 LOG = log.getLogger(__name__)
@@ -45,9 +46,6 @@ SSH_CONNECT_PARAMETERS = {
 
     #: Used for decrypting private keys
     'passphrase': str,
-
-    #: Private key to be used for authentication
-    'pkey': str,
 
     #: The filename, or list of filenames, of optional private key(s) and/or
     #: certs to try for authentication
@@ -87,7 +85,16 @@ SSH_CONNECT_PARAMETERS = {
     'banner_timeout': float,
 
     #: An optional timeout (in seconds) to wait for an authentication response
-    'auth_timeout': float
+    'auth_timeout': float,
+
+    #: Number of connection attempts to be tried before timeout
+    'connection_attempts': int,
+
+    #: Minimum amount of time to wait between two connection attempts
+    'connection_interval': float,
+
+    #: Command to be executed to open proxy sock
+    'proxy_command': str,
 }
 
 
@@ -98,30 +105,30 @@ class SSHConnectFailure(tobiko.TobikoException):
 class SSHClientFixture(tobiko.SharedFixture):
 
     host = None
-    username = None
-    port = 22
     client = None
 
-    paramiko_conf = tobiko.required_setup_fixture(
-        _config.SSHParamikoConfFixture)
-    ssh_config = tobiko.required_setup_fixture(_config.SSHConfigFixture)
+    default = tobiko.required_setup_fixture(_config.SSHDefaultConfigFixture)
+    config_files = None
     host_config = None
 
     proxy_client = None
-    proxy_command = None
-
+    proxy_sock = None
     connect_parameters = None
 
-    def __init__(self, host=None, proxy_client=None, **connect_parameters):
+    def __init__(self, host=None, proxy_client=None, host_config=None,
+                 config_files=None, **connect_parameters):
         super(SSHClientFixture, self).__init__()
         if host:
             self.host = host
         if proxy_client:
             self.proxy_client = proxy_client
-        invalid_parameters = sorted([
-            name
-            for name in connect_parameters
-            if name not in SSH_CONNECT_PARAMETERS])
+        if host_config:
+            self.host_config = host_config
+        if config_files:
+            self.config_files = config_files
+        invalid_parameters = sorted([name
+                                     for name in connect_parameters
+                                     if name not in SSH_CONNECT_PARAMETERS])
         if invalid_parameters:
             message = "Invalid SSH connection parameters: {!s}".format(
                 ', '.join(invalid_parameters))
@@ -134,11 +141,9 @@ class SSHClientFixture(tobiko.SharedFixture):
         self.setup_ssh_client()
 
     def setup_host_config(self):
-        host = self.host
-        if not host:
-            message = 'Invalid host: {!r}'.format(host)
-            raise ValueError(message)
-        self.host_config = self.ssh_config.lookup(host)
+        if not self.host_config:
+            self.host_config = _config.ssh_host_config(
+                host=self.host, config_files=self.config_files)
 
     def setup_connect_parameters(self):
         """Fill connect parameters dict
@@ -190,98 +195,35 @@ class SSHClientFixture(tobiko.SharedFixture):
             message = "Invalid timeout: {!r}".format(timeout)
             raise ValueError(message)
 
+        # Validate connection attempts
+        connection_attempts = parameters.get('connection_attempts')
+        if not connection_attempts or connection_attempts < 0:
+            message = "Invalid connection attempts: {!r}".format(
+                connection_attempts)
+            raise ValueError(message)
+
+        # Validate connection attempts
+        connection_interval = parameters.get('connection_interval')
+        if not connection_interval or connection_interval < 0.:
+            message = "Invalid connection interval: {!r}".format(
+                connection_interval)
+            raise ValueError(message)
+
         # Validate connection port
         port = parameters.get('port')
-        if not port or port < 0 or port > 65535:
-            message = "Invalid timeout: {!r}".format(port)
+        if not port or port < 1 or port > 65535:
+            message = "Invalid port: {!r}".format(port)
             raise ValueError(message)
 
     def setup_ssh_client(self):
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.load_system_host_keys()
+        self.client, self.proxy_sock = ssh_connect(
+            proxy_client=self.proxy_client, **self.connect_parameters)
+        self.addCleanup(self.client.close)
+        if self.proxy_sock:
+            self.addCleanup(self.proxy_sock.close)
 
-        now = time.time()
-        parameters = dict(self.connect_parameters)
-        deadline = now + parameters.pop('timeout')
-        sleep_time = self.connect_sleep_time
-        login = self.connect_login
-        while True:
-            timeout = deadline - now
-            LOG.debug("Logging in to %r... (time left %d seconds)", login,
-                      timeout)
-            try:
-                sock = self._open_proxy_sock()
-                client.connect(sock=sock, timeout=timeout, **parameters)
-            except (EOFError, socket.error, socket.timeout,
-                    paramiko.SSHException) as ex:
-                now = time.time()
-                if now + sleep_time >= deadline:
-                    raise SSHConnectFailure(login=login, cause=ex)
-
-                LOG.debug("Error logging in to  %s (%s); retrying in %d "
-                          "seconds...", login, ex, sleep_time)
-                time.sleep(sleep_time)
-                sleep_time += self.connect_sleep_time_increment
-
-            else:
-                self.client = client
-                self.addCleanup(client.close)
-                LOG.info("Successfully logged it to %s", login)
-                break
-
-    def _open_proxy_sock(self):
-        proxy_command = self.host_config.proxy_command or self.proxy_command
-        proxy_client = self.proxy_client
-        if proxy_client:
-            # I need a command to execute with proxy client
-            proxy_command = proxy_command or 'nc {hostname!r} {port!r}'
-        elif not proxy_command:
-            # Proxy sock is not required
-            return None
-
-        # Apply connect parameters to proxy command
-        parameters = self.connect_parameters
-        proxy_command = proxy_command.format(
-            hostname=parameters['hostname'],
-            port=parameters.get('port', 22))
-        LOG.debug("Using proxy command: %r", proxy_command)
-
-        if proxy_client:
-            if isinstance(proxy_client, SSHClientFixture):
-                # Connect to proxy server
-                proxy_client = tobiko.setup_fixture(proxy_client).client
-
-            # Open proxy channel
-            LOG.debug("Execute proxy command with proxy client %r: %r",
-                      proxy_client, proxy_command)
-            proxy_sock = proxy_client.get_transport().open_session()
-            proxy_sock.exec_command(proxy_command)
-        else:
-            LOG.debug("Execute proxy command on local host: %r", proxy_command)
-            proxy_sock = paramiko.ProxyCommand(proxy_command)
-
-        self.addCleanup(proxy_sock.close)
-        return proxy_sock
-
-    @property
-    def connect_sleep_time(self):
-        return self.paramiko_conf.connect_sleep_time
-
-    @property
-    def connect_sleep_time_increment(self):
-        return self.paramiko_conf.connect_sleep_time_increment
-
-    @property
-    def connect_login(self):
-        login = self.connect_parameters['hostname']
-        port = self.connect_parameters.get('port', None)
-        if port:
-            login = ':'.join([login, str(port)])
-        username = self.connect_parameters.get('username', None)
-        if username:
-            login = "@".join([username, login])
-        return login
+    def connect(self):
+        return tobiko.setup_fixture(self).client
 
 
 def items_from_mapping(schema, mapping):
@@ -296,52 +238,130 @@ def items_from_object(schema, obj):
             if getattr(obj, key, None) is not None}
 
 
+UNDEFINED_CLIENT = 'UNDEFINED_CLIENT'
+
+
 class SSHClientManager(object):
 
-    ssh_config = tobiko.required_setup_fixture(_config.SSHConfigFixture)
-    paramiko_conf = tobiko.required_setup_fixture(
-        _config.SSHParamikoConfFixture)
+    default = tobiko.required_setup_fixture(_config.SSHDefaultConfigFixture)
 
     def __init__(self):
         self.clients = {}
 
     def get_client(self, host, username=None, port=None, proxy_jump=None,
-                   **connect_parameters):
-        host_config = self.ssh_config.lookup(host)
+                   host_config=None, config_files=None, **connect_parameters):
+        host_config = host_config or _config.ssh_host_config(
+            host=host, config_files=config_files)
         hostname = host_config.hostname
         port = port or host_config.port
         username = username or host_config.username
-        proxy_jump = proxy_jump or host_config.proxy_jump
         host_key = hostname, port, username, proxy_jump
-        client = self.clients.get(host_key)
-        if not client:
-            proxy_client = None
-            if proxy_jump:
-                proxy_client = self.get_client(proxy_jump)
+        client = self.clients.get(host_key, UNDEFINED_CLIENT)
+        if client is UNDEFINED_CLIENT:
+            # Put a placeholder client to avoid infinite recursive lookup
+            self.clients[host_key] = None
+            proxy_client = self.get_proxy_client(host=host,
+                                                 config_files=config_files)
             self.clients[host_key] = client = SSHClientFixture(
                 host=host, hostname=hostname, port=port, username=username,
                 proxy_client=proxy_client, **connect_parameters)
         return client
 
-    @property
-    def proxy_client(self):
-        proxy_jump = self.paramiko_conf.proxy_jump
-        if proxy_jump:
-            return self.get_client(proxy_jump)
-        else:
-            return None
+    def get_proxy_client(self, host=None, host_config=None,
+                         config_files=None):
+        host_config = host_config or _config.ssh_host_config(
+            host=host, config_files=config_files)
+        proxy_host = host_config.proxy_jump
+        return proxy_host and self.get_client(proxy_host) or None
 
 
 CLIENTS = SSHClientManager()
 
 
 def ssh_client(host, port=None, username=None, proxy_jump=None,
-               manager=None, **connect_parameters):
+               host_config=None, config_files=None, manager=None,
+               **connect_parameters):
     manager = manager or CLIENTS
     return manager.get_client(host=host, port=port, username=username,
-                              proxy_jump=proxy_jump, **connect_parameters)
+                              proxy_jump=proxy_jump, host_config=host_config,
+                              config_files=config_files,
+                              **connect_parameters)
 
 
-def ssh_proxy_client(manager=None):
+def ssh_connect(hostname, username=None, port=None, connection_interval=None,
+                connection_attempts=None, proxy_command=None,
+                proxy_client=None, **parameters):
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.load_system_host_keys()
+
+    login = _command.ssh_login(hostname=hostname, username=username, port=port)
+    attempts = connection_attempts or 1
+    interval = connection_interval or 5.
+    for attempt in range(1, attempts + 1):
+        LOG.debug("Logging in to %r (%r)... attempt %d out of %d",
+                  login, parameters, attempt, attempts)
+        start_time = time.time()
+        proxy_sock = ssh_proxy_sock(hostname=hostname,
+                                    port=port,
+                                    command=proxy_command,
+                                    client=proxy_client)
+        try:
+            client.connect(hostname=hostname,
+                           username=username,
+                           port=port,
+                           sock=proxy_sock,
+                           **parameters)
+        except (EOFError, socket.error, socket.timeout,
+                paramiko.SSHException) as ex:
+            if attempt >= attempts:
+                raise
+
+            LOG.debug("Error logging in to %r: \n(%s)", login, ex)
+            sleep_time = start_time + interval - time.time()
+            if sleep_time > 0.:
+                LOG.debug("Retrying connecting to %r in %d seconds...", login,
+                          sleep_time)
+                time.sleep(sleep_time)
+
+        else:
+            LOG.info("Successfully logged it to %s", login)
+            return client, proxy_sock
+
+
+def ssh_proxy_sock(hostname, port=None, command=None, client=None):
+    if client:
+        # I need a command to execute with proxy client
+        command = command or 'nc {hostname!r} {port!r}'
+    elif not command:
+        # Proxy sock is not required
+        return None
+
+    # Apply connect parameters to proxy command
+    command = command.format(hostname=hostname, port=(port or 22))
+    if client:
+        if isinstance(client, SSHClientFixture):
+            # Connect to proxy server
+            client = client.connect()
+        elif not isinstance(client, paramiko.SSHClient):
+            message = "Object {!r} is not an SSHClient".format(client)
+            raise TypeError(message)
+
+        # Open proxy channel
+        LOG.debug("Execute proxy command with proxy client %r: %r",
+                  client, command)
+        sock = client.get_transport().open_session()
+        sock.exec_command(command)
+    else:
+        LOG.debug("Execute proxy command on local host: %r", command)
+        sock = paramiko.ProxyCommand(command)
+
+    return sock
+
+
+def ssh_proxy_client(manager=None, host=None, host_config=None,
+                     config_files=None):
     manager = manager or CLIENTS
-    return manager.proxy_client
+    return manager.get_proxy_client(host=host,
+                                    host_config=host_config,
+                                    config_files=config_files)

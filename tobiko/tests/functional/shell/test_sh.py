@@ -15,9 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import sys
-import unittest
-
 import testtools
 
 from tobiko import config
@@ -27,99 +24,82 @@ from tobiko.shell import sh
 CONF = config.CONF
 
 
-class LocalExecuteTest(testtools.TestCase):
+class ExecuteTest(testtools.TestCase):
 
     ssh_client = None
     shell = '/bin/sh -c'
+
+    def test_succeed(self, command='true', stdout='', stderr='', **kwargs):
+        result = self.execute(command, **kwargs)
+        expected_result = sh.ShellExecuteResult(
+            command=self.expected_command(command),
+            timeout=kwargs.get('timeout'),
+            exit_status=0,
+            stdout=stdout,
+            stderr=stderr)
+        self.assertEqual(expected_result, result)
+
+    def test_succeed_with_command_list(self):
+        self.test_succeed(['echo', 'something'],
+                          stdout='something\n')
+
+    def test_succeed_reading_from_stdout(self):
+        self.test_succeed('echo something',
+                          stdout='something\n')
+
+    def test_succeed_reading_from_stderr(self):
+        self.test_succeed('echo something >&2',
+                          stderr='something\n')
+
+    def test_succeed_writing_to_stdin(self):
+        self.test_succeed('cat',
+                          stdin='some input\n',
+                          stdout='some input\n')
+
+    def test_succeed_with_timeout(self):
+        self.test_succeed(timeout=30.)
+
+    def test_fails(self, command='false', exit_status=1, stdout='', stderr='',
+                   **kwargs):
+        ex = self.assertRaises(sh.ShellCommandFailed, self.execute, command,
+                               **kwargs)
+        self.assertEqual(self.expected_ex_command(command), ex.command)
+        self.assertEqual(stdout, ex.stdout)
+        self.assertEqual(stderr, ex.stderr)
+        self.assertEqual(exit_status, ex.exit_status)
+
+    def test_fails_getting_exit_status(self):
+        self.test_fails('exit 15', exit_status=15)
+
+    def test_fails_reading_from_stdout(self):
+        self.test_fails(command='echo something && false',
+                        stdout='something\n')
+
+    def test_fails_reading_from_stderr(self):
+        self.test_fails(command='echo something >&2 && false',
+                        stderr='something\n')
+
+    def test_fails_writing_to_stdin(self):
+        self.test_fails('cat && false',
+                        stdin='some input\n',
+                        stdout='some input\n')
+
+    def test_timeout_expires(self, command='sleep 5', timeout=0.1, stdout='',
+                             stderr='', **kwargs):
+        ex = self.assertRaises(sh.ShellTimeoutExpired, self.execute, command,
+                               timeout=timeout, **kwargs)
+        self.assertEqual(self.expected_ex_command(command), ex.command)
+        self.assertTrue(stdout.startswith(ex.stdout))
+        self.assertTrue(stderr.startswith(ex.stderr))
+        self.assertEqual(timeout, ex.timeout)
 
     def execute(self, command, **kwargs):
         kwargs.setdefault('shell', self.shell)
         kwargs.setdefault('ssh_client', self.ssh_client)
         return sh.execute(command, **kwargs)
 
-    def test_execute_string(self):
-        result = self.execute('true')
-        self.assertEqual(
-            sh.ShellExecuteResult(
-                command=['/bin/sh', '-c', 'true'],
-                timeout=None, exit_status=0, stdout='', stderr=''),
-            result)
+    def expected_command(self, command):
+        return sh.split_command(self.shell) + [sh.join_command(command)]
 
-    def test_execute_list(self):
-        result = self.execute(['echo', 'something'])
-        self.assertEqual(
-            sh.ShellExecuteResult(
-                command=['/bin/sh', '-c', 'echo something'],
-                timeout=None, exit_status=0, stdout='something\n', stderr=''),
-            result)
-
-    def test_execute_writing_to_stdout(self):
-        result = self.execute('echo something')
-        self.assertEqual(
-            sh.ShellExecuteResult(
-                command=['/bin/sh', '-c', 'echo something'],
-                timeout=None, exit_status=0, stdout='something\n', stderr=''),
-            result)
-
-    def test_execute_writing_to_stderr(self):
-        result = self.execute('echo something >&2')
-        self.assertEqual(
-            sh.ShellExecuteResult(
-                command=['/bin/sh', '-c', 'echo something >&2'],
-                timeout=None, exit_status=0, stdout='', stderr='something\n'),
-            result)
-
-    def test_execute_reading_from_stdin(self):
-        result = self.execute('cat', stdin='some input\n')
-        self.assertEqual(
-            sh.ShellExecuteResult(
-                command=['/bin/sh', '-c', 'cat'],
-                timeout=None, exit_status=0, stdout='some input\n',
-                stderr=''),
-            result)
-
-    def test_execute_failing_command(self):
-        ex = self.assertRaises(sh.ShellCommandFailed, self.execute, 'exit 15')
-        self.assertEqual('', ex.stdout)
-        self.assertEqual('', ex.stderr)
-        self.assertEqual(15, ex.exit_status)
-        self.assertEqual(['/bin/sh', '-c', 'exit 15'], ex.command)
-
-    def test_execute_failing_command_writing_to_stdout(self):
-        ex = self.assertRaises(sh.ShellCommandFailed, self.execute,
-                               'echo something; exit 8')
-        self.assertEqual('something\n', ex.stdout)
-        self.assertEqual('', ex.stderr)
-        self.assertEqual(8, ex.exit_status)
-        self.assertEqual(['/bin/sh', '-c', 'echo something; exit 8'],
-                         ex.command)
-
-    def test_execute_failing_command_writing_to_stderr(self):
-        ex = self.assertRaises(sh.ShellCommandFailed, self.execute,
-                               'echo something >&2; exit 7')
-        self.assertEqual('', ex.stdout)
-        self.assertEqual('something\n', ex.stderr)
-        self.assertEqual(7, ex.exit_status)
-        self.assertEqual(['/bin/sh', '-c', 'echo something >&2; exit 7'],
-                         ex.command)
-
-    @unittest.skipIf(sys.version_info < (3, 3),
-                     'timeout not implemented for Python version < 3.3')
-    def test_execute_with_timeout(self):
-        result = self.execute('true', timeout=30.)
-        self.assertEqual(
-            sh.ShellExecuteResult(
-                command=['/bin/sh', '-c', 'true'],
-                timeout=30, exit_status=0, stdout='',
-                stderr=''),
-            result)
-
-    @unittest.skipIf(sys.version_info < (3, 3),
-                     'timeout not implemented for Python version < 3.3')
-    def test_execute_with_timeout_expired(self):
-        ex = self.assertRaises(sh.ShellTimeoutExpired, self.execute,
-                               'echo out; echo err >&2; sleep 30',
-                               timeout=.01)
-        self.assertEqual(['/bin/sh', '-c',
-                          'echo out; echo err >&2; sleep 30'],
-                         ex.command)
+    def expected_ex_command(self, command):
+        return sh.join_command(self.expected_command(command))

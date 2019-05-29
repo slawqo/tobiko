@@ -25,3 +25,5 @@ ShellTimeoutExpired = _exception.ShellTimeoutExpired
 
 execute = _execute.execute
 ShellExecuteResult = _execute.ShellExecuteResult
+split_command = _execute.split_command
+join_command = _execute.join_command

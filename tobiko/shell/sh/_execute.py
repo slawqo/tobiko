@@ -60,21 +60,26 @@ def execute(command, stdin=None, environment=None, timeout=None, shell=None,
     if timeout:
         timeout = float(timeout)
 
-    if isinstance(command, six.string_types):
-        command = command.split()
-    else:
-        command = [str(a) for a in command]
-
     ssh_client = ssh_client or ssh.ssh_proxy_client()
+    if not ssh_client and not shell:
+        from tobiko import config
+        CONF = config.CONF
+        shell = CONF.tobiko.shell.command
+
+    if shell:
+        command = split_command(shell) + [join_command(command)]
+    else:
+        command = split_command(command)
+
     if ssh_client:
         result = execute_remote_command(command=command, stdin=stdin,
                                         environment=environment,
-                                        timeout=timeout, shell=shell,
+                                        timeout=timeout,
                                         ssh_client=ssh_client)
     else:
         result = execute_local_command(command=command, stdin=stdin,
                                        environment=environment,
-                                       timeout=timeout, shell=shell)
+                                       timeout=timeout)
 
     if result.exit_status == 0:
         LOG.debug("Command %r succeeded:\n"
@@ -98,11 +103,8 @@ def execute(command, stdin=None, environment=None, timeout=None, shell=None,
 
 
 def execute_remote_command(command, ssh_client, stdin=None, timeout=None,
-                           shell=None, environment=None):
+                           environment=None):
     """Execute command on a remote host using SSH client"""
-
-    if shell:
-        command = shell.split() + [str(subprocess.list2cmdline(command))]
 
     if isinstance(ssh_client, ssh.SSHClientFixture):
         # Connect to fixture
@@ -112,7 +114,7 @@ def execute_remote_command(command, ssh_client, stdin=None, timeout=None,
     with transport.open_session() as channel:
         if environment:
             channel.update_environment(environment)
-        channel.exec_command(subprocess.list2cmdline(command))
+        channel.exec_command(join_command(command))
         stdout, stderr = comunicate_ssh_channel(channel, stdin=stdin,
                                                 timeout=timeout)
         if channel.exit_status_ready():
@@ -198,21 +200,13 @@ def comunicate_ssh_channel(ssh_channel, stdin=None, chunk_size=None,
     return stdout, stderr
 
 
-def execute_local_command(command, stdin=None, environment=None, timeout=None,
-                          shell=None):
+def execute_local_command(command, stdin=None, environment=None, timeout=None):
     """Execute command on local host using local shell"""
 
     LOG.debug("Executing command %r on local host (timeout=%r)...",
               command, timeout)
 
     stdin = stdin or None
-    if not shell:
-        from tobiko import config
-        CONF = config.CONF
-        shell = CONF.tobiko.shell.command
-
-    if shell:
-        command = shell.split() + [str(subprocess.list2cmdline(command))]
     process = subprocess.Popen(command,
                                universal_newlines=True,
                                env=environment,
@@ -256,14 +250,33 @@ class ShellExecuteResult(collections.namedtuple(
                                'stderr'])):
 
     def check(self):
+        command = join_command(self.command)
         if self.exit_status is None:
-            raise _exception.ShellTimeoutExpired(command=self.command,
+            raise _exception.ShellTimeoutExpired(command=command,
                                                  timeout=self.timeout,
                                                  stderr=self.stderr,
                                                  stdout=self.stdout)
 
         elif self.exit_status != 0:
-            raise _exception.ShellCommandFailed(command=self.command,
+            raise _exception.ShellCommandFailed(command=command,
                                                 exit_status=self.exit_status,
                                                 stderr=self.stderr,
                                                 stdout=self.stdout)
+
+
+def split_command(command):
+    if isinstance(command, six.string_types):
+        return command.split()
+    elif command:
+        return [str(a) for a in command]
+    else:
+        return []
+
+
+def join_command(command):
+    if isinstance(command, six.string_types):
+        return command
+    elif command:
+        return subprocess.list2cmdline([str(a) for a in command])
+    else:
+        return ""

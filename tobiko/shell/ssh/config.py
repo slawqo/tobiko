@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import getpass
+
 from oslo_config import cfg
 from oslo_log import log
 
@@ -24,29 +26,38 @@ def register_tobiko_options(conf):
                           default=False,
                           help=('Logout debugging messages of paramiko '
                                 'library')),
+              cfg.StrOpt('command',
+                         default='/usr/bin/ssh',
+                         help=('Default SSH client command')),
+              cfg.StrOpt('port',
+                         default=22,
+                         help=('Default SSH port')),
+              cfg.StrOpt('username',
+                         default=getpass.getuser(),
+                         help=('Default SSH username')),
               cfg.ListOpt('config_files',
-                         default=['/etc/ssh/ssh_config', '~/.ssh/config'],
-                         help="Default user SSH configuration files"),
+                          default=['/etc/ssh/ssh_config', '~/.ssh/config'],
+                          help="Default user SSH configuration files"),
               cfg.StrOpt('key_file',
                          default='~/.ssh/id_rsa',
                          help="Default SSH private key file"),
               cfg.BoolOpt('allow_agent',
-                         default=True,
-                         help=("Set to False to disable connecting to the SSH "
-                               "agent")),
+                          default=True,
+                          help=("Set to False to disable connecting to the "
+                                "SSH agent")),
               cfg.BoolOpt('compress',
-                         default=False,
-                         help="Set to True to turn on compression"),
+                          default=False,
+                          help="Set to True to turn on compression"),
               cfg.FloatOpt('timeout',
-                           default=120.,
+                           default=5.,
                            help="SSH connect timeout in seconds"),
-              cfg.FloatOpt('connect_sleep_time',
-                           default=1.,
-                           help=("Seconds to wait after every failed SSH "
-                                 "connection attempt")),
-              cfg.FloatOpt('connect_sleep_time_increment',
-                           default=1.,
-                           help=("Incremental seconds to wait after every "
+              cfg.IntOpt('connection_attempts',
+                         default=24,
+                         help=("Incremental seconds to wait after every "
+                               "failed SSH connection attempt")),
+              cfg.FloatOpt('connection_interval',
+                           default=5.,
+                           help=("Minimal seconds to wait between every "
                                  "failed SSH connection attempt")),
               cfg.StrOpt('proxy_jump',
                          default=None,

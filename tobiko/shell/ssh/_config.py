@@ -27,7 +27,19 @@ import tobiko
 LOG = log.getLogger(__name__)
 
 
-class SSHParamikoConfFixture(tobiko.SharedFixture):
+def ssh_config(config_files=None):
+    if config_files:
+        fixture = SSHConfigFixture(config_files=config_files)
+    else:
+        fixture = SSHConfigFixture
+    return tobiko.setup_fixture(fixture)
+
+
+def ssh_host_config(host=None, config_files=None):
+    return ssh_config(config_files=config_files).lookup(host)
+
+
+class SSHDefaultConfigFixture(tobiko.SharedFixture):
 
     conf = None
 
@@ -42,15 +54,17 @@ class SSHParamikoConfFixture(tobiko.SharedFixture):
 
 class SSHConfigFixture(tobiko.SharedFixture):
 
-    paramiko_conf = tobiko.required_setup_fixture(SSHParamikoConfFixture)
+    default = tobiko.required_setup_fixture(SSHDefaultConfigFixture)
 
-    _config_files = None
+    config_files = None
     config = None
 
     def __init__(self, config_files=None):
         super(SSHConfigFixture, self).__init__()
         if config_files:
-            self._config_files = tuple(config_files)
+            self.config_files = tuple(config_files)
+        else:
+            self.config_files = self.default.config_files
 
     def setup_fixture(self):
         self.setup_ssh_config()
@@ -65,14 +79,14 @@ class SSHConfigFixture(tobiko.SharedFixture):
                     self.config.parse(f)
                 LOG.debug("File %r parsed.", config_file)
 
-    @property
-    def config_files(self):
-        return self._config_files or self.paramiko_conf.config_files
-
-    def lookup(self, host):
+    def lookup(self, host=None):
+        host_config = host and self.config.lookup(host) or {}
+        # remove unsupported directive
+        host_config.pop('include', None)
         return SSHHostConfig(host=host,
-                            ssh_config=self,
-                            host_config=self.config.lookup(host))
+                             ssh_config=self,
+                             host_config=host_config,
+                             config_files=self.config_files)
 
     def __repr__(self):
         return "{class_name!s}(config_files={config_files!r})".format(
@@ -81,9 +95,10 @@ class SSHConfigFixture(tobiko.SharedFixture):
 
 class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
                                                              'ssh_config',
-                                                             'host_config'])):
+                                                             'host_config',
+                                                             'config_files'])):
 
-    paramiko_conf = tobiko.required_setup_fixture(SSHParamikoConfFixture)
+    default = tobiko.required_setup_fixture(SSHDefaultConfigFixture)
 
     @property
     def hostname(self):
@@ -91,21 +106,23 @@ class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
 
     @property
     def port(self):
-        return self.host_config.get('port')
+        return (self.host_config.get('port') or
+                self.default.port)
 
     @property
     def username(self):
-        return self.host_config.get('user')
+        return (self.host_config.get('user') or
+                self.default.username)
 
     @property
     def key_filename(self):
-        return self.host_config.get('identityfile',
-                                    self.paramiko_conf.key_file)
+        return (self.host_config.get('identityfile') or
+                self.default.key_file)
 
     @property
     def proxy_jump(self):
         proxy_jump = (self.host_config.get('proxyjump') or
-                      self.paramiko_conf.proxy_jump)
+                      self.default.proxy_jump)
         if not proxy_jump:
             return None
 
@@ -119,22 +136,32 @@ class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
     @property
     def proxy_command(self):
         return (self.host_config.get('proxycommand') or
-                self.paramiko_conf.proxy_command)
+                self.default.proxy_command)
 
     @property
     def allow_agent(self):
         return (is_yes(self.host_config.get('forwardagent')) or
-                self.paramiko_conf.allow_agent)
+                self.default.allow_agent)
 
     @property
     def compress(self):
         return (is_yes(self.host_config.get('compression')) or
-                self.paramiko_conf.compress)
+                self.default.compress)
 
     @property
     def timeout(self):
         return (self.host_config.get('connetcttimeout') or
-                self.paramiko_conf.timeout)
+                self.default.timeout)
+
+    @property
+    def connection_attempts(self):
+        return (self.host_config.get('connectionattempts') or
+                self.default.connection_attempts)
+
+    @property
+    def connection_interval(self):
+        return (self.host_config.get('connetcttimeout') or
+                self.default.connection_interval)
 
     @property
     def connect_parameters(self):
@@ -144,7 +171,9 @@ class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
                     key_filename=self.key_filename,
                     compress=self.compress,
                     timeout=self.timeout,
-                    allow_agent=self.allow_agent)
+                    allow_agent=self.allow_agent,
+                    connection_attempts=self.connection_attempts,
+                    connection_interval=self.connection_interval)
 
 
 def is_yes(value):
