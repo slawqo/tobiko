@@ -26,5 +26,7 @@ def register_tobiko_options(conf):
               cfg.StrOpt('key_file', default='~/.ssh/id_rsa',
                          help="Default SSH key to login to server instances"),
               cfg.StrOpt('username', default='cirros',
-                         help="Default username to login to server instances")
+                         help="Default username to login to server instances"),
+              cfg.StrOpt('password', default='gocubsgo',
+                         help="Default password to login to server instances"),
               ])

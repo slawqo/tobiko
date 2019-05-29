@@ -40,14 +40,17 @@ SSH_CONNECT_PARAMETERS = {
     'username': str,
 
     #: Used for password authentication; is also used for private key
-    #  decryption if passphrase is not given
+    #: decryption if passphrase is not given
     'password': str,
 
     #: Used for decrypting private keys
     'passphrase': str,
 
+    #: Private key to be used for authentication
+    'pkey': str,
+
     #: The filename, or list of filenames, of optional private key(s) and/or
-    #  certs to try for authentication
+    #: certs to try for authentication
     'key_filename': str,
 
     #: An optional timeout (in seconds) for the TCP connect
@@ -57,7 +60,7 @@ SSH_CONNECT_PARAMETERS = {
     'allow_agent': bool,
 
     #: Set to False to disable searching for discoverable private key files in
-    # ~/.ssh/
+    #: ~/.ssh/
     'look_for_keys': bool,
 
     #: Set to True to turn on compression
@@ -76,11 +79,11 @@ SSH_CONNECT_PARAMETERS = {
     'gss_host': str,
 
     #: Indicates whether or not the DNS is trusted to securely canonicalize the
-    #  name of the host being connected to (default True).
+    #: name of the host being connected to (default True).
     'gss_trust_dns': bool,
 
     #: An optional timeout (in seconds) to wait for the SSH banner to be
-    #  presented.
+    #: presented.
     'banner_timeout': float,
 
     #: An optional timeout (in seconds) to wait for an authentication response
@@ -206,7 +209,7 @@ class SSHClientFixture(tobiko.SharedFixture):
         while True:
             timeout = deadline - now
             LOG.debug("Logging in to %r... (time left %d seconds)", login,
-                     timeout)
+                      timeout)
             try:
                 sock = self._open_proxy_sock()
                 client.connect(sock=sock, timeout=timeout, **parameters)
@@ -302,7 +305,8 @@ class SSHClientManager(object):
     def __init__(self):
         self.clients = {}
 
-    def get_client(self, host, username=None, port=None, proxy_jump=None):
+    def get_client(self, host, username=None, port=None, proxy_jump=None,
+                   **connect_parameters):
         host_config = self.ssh_config.lookup(host)
         hostname = host_config.hostname
         port = port or host_config.port
@@ -316,7 +320,7 @@ class SSHClientManager(object):
                 proxy_client = self.get_client(proxy_jump)
             self.clients[host_key] = client = SSHClientFixture(
                 host=host, hostname=hostname, port=port, username=username,
-                proxy_client=proxy_client)
+                proxy_client=proxy_client, **connect_parameters)
         return client
 
     @property
@@ -332,10 +336,10 @@ CLIENTS = SSHClientManager()
 
 
 def ssh_client(host, port=None, username=None, proxy_jump=None,
-               manager=None):
+               manager=None, **connect_parameters):
     manager = manager or CLIENTS
     return manager.get_client(host=host, port=port, username=username,
-                              proxy_jump=proxy_jump)
+                              proxy_jump=proxy_jump, **connect_parameters)
 
 
 def ssh_proxy_client(manager=None):
