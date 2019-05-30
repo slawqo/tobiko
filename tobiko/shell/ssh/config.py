@@ -42,7 +42,7 @@ def register_tobiko_options(conf):
                          default='~/.ssh/id_rsa',
                          help="Default SSH private key file"),
               cfg.BoolOpt('allow_agent',
-                          default=True,
+                          default=False,
                           help=("Set to False to disable connecting to the "
                                 "SSH agent")),
               cfg.BoolOpt('compress',
