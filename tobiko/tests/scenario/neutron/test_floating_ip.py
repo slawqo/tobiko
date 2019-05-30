@@ -21,8 +21,9 @@ from tobiko.shell import ssh
 from tobiko.shell import sh
 from tobiko.openstack import heat
 from tobiko.openstack import neutron
+from tobiko.openstack import stacks
 from tobiko.tests import base
-from tobiko.tests.scenario.neutron import stacks
+from tobiko.tests.scenario.neutron import _stacks
 
 
 CONF = config.CONF
@@ -33,7 +34,7 @@ class FloatingIPFixture(heat.HeatStackFixture):
     """
 
     #: Heat template file
-    template = stacks.heat_template_file('floating_ip.yaml')
+    template = _stacks.heat_template_file('floating_ip.yaml')
 
     #: Floating IP network where the Neutron floating IP is created
     floating_network = CONF.tobiko.neutron.floating_network
@@ -59,11 +60,12 @@ class FloatingIPFixture(heat.HeatStackFixture):
     #: Heat stack for creating internal network with a router to floating
     #:  network
     internal_network_stack = tobiko.required_setup_fixture(
-        stacks.InternalNetworkFixture)
+        _stacks.InternalNetworkFixture)
 
     # --- class parameters ---
     #: Whenever port security on internal network is enable
-    key_pair_stack = tobiko.required_setup_fixture(stacks.KeyPairFixture)
+    key_pair_stack = tobiko.required_setup_fixture(
+        stacks.NovaKeyPairStackFixture)
     port_security_enabled = False
 
     #: Security groups to be associated to network ports
@@ -226,7 +228,7 @@ class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
 
     #: Resources stack with security group to allow ping Nova servers
     security_groups_stack = tobiko.required_setup_fixture(
-        stacks.SecurityGroupsFixture)
+        _stacks.SecurityGroupsFixture)
 
     #: Enable port security on internal network
     port_security_enabled = True
@@ -310,7 +312,7 @@ class FloatingIPWithNetMtuWritableFixture(FloatingIPFixture):
 
     #: Heat stack for creating internal network with custom MTU value
     internal_network_stack = tobiko.required_setup_fixture(
-        stacks.InternalNetworkWithNetMtuWritableFixture)
+        _stacks.InternalNetworkWithNetMtuWritableFixture)
 
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
