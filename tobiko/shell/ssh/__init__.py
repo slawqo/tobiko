@@ -17,10 +17,12 @@ from __future__ import absolute_import
 
 from tobiko.shell.ssh import _config
 from tobiko.shell.ssh import _client
+from tobiko.shell.ssh import _command
 
 SSHHostConfig = _config.SSHHostConfig
 
 SSHClientFixture = _client.SSHClientFixture
 ssh_client = _client.ssh_client
+ssh_command = _command.ssh_command
 ssh_proxy_client = _client.ssh_proxy_client
 SSHConnectFailure = _client.SSHConnectFailure

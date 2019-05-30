@@ -103,6 +103,11 @@ class FloatingIPFixture(heat.HeatStackFixture):
         return ssh.ssh_client(host=self.floating_ip_address,
                               username=self.username)
 
+    @property
+    def ssh_command(self):
+        return ssh.ssh_command(host=self.floating_ip_address,
+                               username=self.username)
+
 
 class FloatingIPTest(base.TobikoTest):
     """Tests connectivity to Nova instances via floating IPs"""
@@ -133,16 +138,7 @@ class FloatingIPTest(base.TobikoTest):
 
     def test_ssh_from_cli(self):
         """Test SSH connectivity to floating IP address from CLI"""
-        host_config = self.ssh_client.ssh_config.lookup(
-            self.floating_ip_address)
-        result = sh.execute(['ssh',
-                             '-o', 'UserKnownHostsFile=/dev/null',
-                             '-o', 'StrictHostKeyChecking=no',
-                             '-o', 'ConnectTimeout=10',
-                             '-o', 'ConnectionAttempts=12',
-                             '-p', host_config.port or 22,
-                             'cirros@' + host_config.hostname,
-                             'hostname'])
+        result = sh.execute(self.floating_ip_stack.ssh_command + ['hostname'])
         self.assertEqual([self.server_name.lower()],
                          result.stdout.splitlines())
 
