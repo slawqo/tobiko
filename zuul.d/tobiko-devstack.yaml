@@ -81,10 +81,10 @@
     post-run: playbooks/post-tobiko-devstack.yaml
     irrelevant-files:
       - ^.*\.rst$
-      - ^api-ref/.*$
       - ^doc/.*$
-      - ^etc/.*$
+      - ^infrared/.*$
       - ^releasenotes/.*$
+      - ^report/.*$
       - ^tobiko/tests/unit/.*$
 
 
