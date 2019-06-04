@@ -44,6 +44,9 @@ def register_tobiko_options(conf):
               cfg.StrOpt('project_domain_name',
                          default=None,
                          help="Project domain name"),
+              cfg.StrOpt('project_domain_id',
+                         default=None,
+                         help="Project domain ID"),
               cfg.StrOpt('trust_id',
                          default=None,
                          help="Trust ID for trust scoping.")])

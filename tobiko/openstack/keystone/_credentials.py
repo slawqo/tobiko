@@ -36,6 +36,7 @@ class KeystoneCredentials(collections.namedtuple(
                                 'domain_name',
                                 'user_domain_name',
                                 'project_domain_name',
+                                'project_domain_id',
                                 'trust_id'])):
 
     def to_dict(self):
@@ -73,6 +74,7 @@ def keystone_credentials(api_version=None,
                          domain_name=None,
                          user_domain_name=None,
                          project_domain_name=None,
+                         project_domain_id=None,
                          trust_id=None,
                          cls=KeystoneCredentials):
     return cls(api_version=api_version,
@@ -83,6 +85,7 @@ def keystone_credentials(api_version=None,
                domain_name=domain_name,
                user_domain_name=user_domain_name,
                project_domain_name=project_domain_name,
+               project_domain_id=project_domain_id,
                trust_id=trust_id)
 
 
@@ -128,7 +131,8 @@ class EnvironKeystoneCredentialsFixture(tobiko.SharedFixture):
                 config.get_env('OS_USER_DOMAIN_NAME') or
                 config.get_env('OS_USER_DOMAIN_ID'))
             project_domain_name = (
-                config.get_env('OS_PROJECT_DOMAIN_NAME') or
+                config.get_env('OS_PROJECT_DOMAIN_NAME'))
+            project_domain_id = (
                 config.get_env('OS_PROJECT_DOMAIN_ID'))
             trust_id = config.get_env('OS_TRUST_ID')
             credentials = keystone_credentials(
@@ -140,6 +144,7 @@ class EnvironKeystoneCredentialsFixture(tobiko.SharedFixture):
                 domain_name=domain_name,
                 user_domain_name=user_domain_name,
                 project_domain_name=project_domain_name,
+                project_domain_id=project_domain_id,
                 trust_id=trust_id)
         try:
             credentials.validate()
@@ -159,7 +164,7 @@ class ConfigKeystoneCredentialsFixture(tobiko.SharedFixture):
         auth_url = conf.auth_url
         if not auth_url:
             LOG.debug("auth_url option not defined in 'keystone' section of "
-                     "tobiko.conf")
+                      "tobiko.conf")
             return
 
         api_version = (conf.api_version or
@@ -181,6 +186,7 @@ class ConfigKeystoneCredentialsFixture(tobiko.SharedFixture):
                 domain_name=conf.domain_name,
                 user_domain_name=conf.user_domain_name,
                 project_domain_name=conf.project_domain_name,
+                project_domain_id=conf.project_domain_id,
                 trust_id=conf.trust_id)
         try:
             credentials.validate()
