@@ -6,7 +6,7 @@
 - name: Install required packages
   become: yes
   vars:
-    required_packages: ['python-virtualenv', 'git', 'gcc', 'python-devel']
+    required_packages: ['python-virtualenv', 'git', 'gcc', 'python-devel', 'wget']
   yum:
       name: "{{ required_packages }}"
       state: present
