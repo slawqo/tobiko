@@ -67,7 +67,7 @@ class FaultConfig(object):
                                containers=fault_const.CONTAINERS)
 
     def get_nodes(self):
-        """Returns a list of dictonaries with nodes name and address."""
+        """Returns a list of dictionaries with nodes name and address."""
         client = nova.get_nova_client()
         return [{'name': server.name,
                  'address': server.addresses['ctlplane'][0]['addr']}

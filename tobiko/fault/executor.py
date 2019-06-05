@@ -13,8 +13,11 @@
 #    under the License.
 from __future__ import absolute_import
 
+import sys
+
 from oslo_log import log
 
+import jsonschema
 import os_faults
 
 from tobiko.fault.config import FaultConfig
@@ -25,14 +28,9 @@ LOG = log.getLogger(__name__)
 class FaultExecutor(object):
     """Responsible for executing faults."""
 
-    def __init__(self, conf_file=None):
+    def __init__(self, conf_file=None, cloud=None):
         self.config = FaultConfig(conf_file=conf_file)
-        try:
-            self.connect()
-            LOG.info("os-faults connected.")
-        except os_faults.api.error.OSFError:
-            msg = "Unable to connect. Please check your configuration."
-            raise RuntimeError(msg)
+        self.cloud = cloud
 
     def connect(self):
         """Connect to the cloud using os-faults."""
@@ -43,7 +41,12 @@ class FaultExecutor(object):
         except os_faults.ansible.executor.AnsibleExecutionUnreachable:
             LOG.warning("Couldn't verify connectivity to the"
                         " cloud with os-faults configuration")
+        except jsonschema.exceptions.ValidationError:
+            LOG.error("Wrong os-fault configuration format. Exiting...")
+            sys.exit(2)
 
     def execute(self, fault):
         """Executes given fault using os-faults human API."""
+        LOG.info("Using %s" % self.config.conf_file)
+        self.connect()
         os_faults.human_api(self.cloud, fault)

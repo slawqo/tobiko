@@ -1,4 +1,6 @@
-# Copyright 2019 Red Hat
+# Copyright (c) 2019 Red Hat, Inc.
+#
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,7 +15,19 @@
 #    under the License.
 from __future__ import absolute_import
 
-SERVICES = ['openvswitch', 'tripleo_cinder_api', 'tripleo_cinder_api_cron',
-            'tripleo_cinder_scheduler', 'tripleo_clustercheck',
-            'tripleo_glance_api', 'tripleo_horizon']
-CONTAINERS = ['neutron_ovs_agent', 'neutron_metadata_agent', 'neutron_api']
+from tobiko.tests import unit
+from tobiko.fault import executor
+
+
+class FaultTest(unit.TobikoUnitTest):
+
+    conf_file = "/some/conf/file"
+    fault = "some_fault"
+
+    def setUp(self):
+        super(FaultTest, self).setUp()
+        self.fault_exec = executor.FaultExecutor(conf_file=self.conf_file)
+
+    def test_init(self):
+        self.assertEqual(self.fault_exec.config.conf_file, self.conf_file)
+        self.assertEqual(self.fault_exec.cloud, None)

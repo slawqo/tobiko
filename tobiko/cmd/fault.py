@@ -32,8 +32,7 @@ class FaultCMD(object):
     def get_parser(self):
         parser = argparse.ArgumentParser(add_help=True)
         parser.add_argument(
-            '--fault',
-            required=True,
+            'fault',
             help="The fault to execute (e.g. restart neutron service).\n")
         return parser
 
@@ -43,8 +42,17 @@ class FaultCMD(object):
         fault_exec.execute(self.args.fault)
 
 
+def setup_logging(debug=None):
+    """Sets the logging."""
+    # pylint: disable=W0622
+    format = '%(message)s'
+    level = logging.DEBUG if debug else logging.INFO
+    logging.basicConfig(level=level, format=format)
+
+
 def main():
     """Run CLI main entry."""
+    setup_logging()
     fault_cli = FaultCMD()
     fault_cli.run()
 
