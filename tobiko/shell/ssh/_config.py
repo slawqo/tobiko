@@ -82,7 +82,10 @@ class SSHConfigFixture(tobiko.SharedFixture):
     def lookup(self, host=None):
         host_config = host and self.config.lookup(host) or {}
         # remove unsupported directive
-        host_config.pop('include', None)
+        include_files = host_config.pop('include', None)
+        if include_files:
+            LOG.warning('Ignoring unsupported directive: Include %s',
+                        include_files)
         return SSHHostConfig(host=host,
                              ssh_config=self,
                              host_config=host_config,

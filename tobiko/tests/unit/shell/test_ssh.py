@@ -62,6 +62,7 @@ class SSHClientFixtureTest(unit.TobikoUnitTest):
                 with open(ssh_config_file) as f:
                     ssh_config.parse(f)
         expected_host_config = ssh_config.lookup(fixture.host)
+        expected_host_config.pop('include', None)
         self.assertEqual(fixture.host, fixture.host_config.host)
         self.assertEqual(expected_host_config,
                          fixture.host_config.host_config)
