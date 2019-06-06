@@ -27,3 +27,6 @@ zuul/versioninfo
 
 # Files created by releasenotes build
 releasenotes/build
+
+Pipfile.lock
+tobiko.conf
