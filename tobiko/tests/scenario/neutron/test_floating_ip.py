@@ -184,7 +184,7 @@ class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
 
     #: Resources stack with security group to allow ping Nova servers
     security_groups_stack = tobiko.required_setup_fixture(
-        _stacks.SecurityGroupsFixture)
+        stacks.SecurityGroupsFixture)
 
     #: Enable port security on internal network
     port_security_enabled = True

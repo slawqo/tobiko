@@ -101,12 +101,3 @@ class InternalNetworkWithNetMtuWritableFixture(InternalNetworkFixture):
     """
     #: Force value for internal network maximum transfer unit
     mtu = 1000
-
-
-@neutron.skip_if_missing_networking_extensions('security-group')
-class SecurityGroupsFixture(heat.HeatStackFixture):
-    """Heat stack with some security groups
-
-    """
-    #: Heat template file
-    template = heat_template_file('security_groups.yaml')

@@ -19,6 +19,7 @@ from __future__ import absolute_import
 import tobiko
 from tobiko import config
 from tobiko.openstack import heat
+from tobiko.openstack import neutron
 from tobiko.openstack.stacks import _hot
 from tobiko.openstack.stacks import _nova
 from tobiko.shell import ssh
@@ -55,6 +56,15 @@ class NetworkStackFixture(heat.HeatStackFixture):
     @property
     def has_gateway(self):
         return bool(self.gateway_network)
+
+
+@neutron.skip_if_missing_networking_extensions('security-group')
+class SecurityGroupsFixture(heat.HeatStackFixture):
+    """Heat stack with some security groups
+
+    """
+    #: Heat template file
+    template = _hot.heat_template_file('neutron/security_groups.yaml')
 
 
 class FloatingIpServerStackFixture(heat.HeatStackFixture):

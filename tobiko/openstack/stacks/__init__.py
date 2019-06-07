@@ -22,3 +22,4 @@ KeyPairStackFixture = _nova.KeyPairStackFixture
 
 NetworkStackFixture = _neutron.NetworkStackFixture
 FloatingIpServerStackFixture = _neutron.FloatingIpServerStackFixture
+SecurityGroupsFixture = _neutron.SecurityGroupsFixture
