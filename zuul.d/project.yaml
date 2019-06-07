@@ -10,7 +10,7 @@
       - publish-to-pypi
       - release-notes-jobs-python3
     vars:
-        rtd_webhook_id: 'b122e0704a91334a457a33fecc4ea1d432905828'
+        rtd_webhook_id: '84947'
     check:
       jobs:
         - openstack-tox-pylint
