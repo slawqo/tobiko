@@ -27,7 +27,7 @@ from tobiko.shell import ssh
 CONF = config.CONF
 
 
-class NeutronNetworkStackFixture(heat.HeatStackFixture):
+class NetworkStackFixture(heat.HeatStackFixture):
     """Heat stack for creating internal network with a router to external
 
     """
@@ -57,14 +57,14 @@ class NeutronNetworkStackFixture(heat.HeatStackFixture):
         return bool(self.gateway_network)
 
 
-class NeutronServerStackFixture(heat.HeatStackFixture):
+class FloatingIpServerStackFixture(heat.HeatStackFixture):
 
     #: Heat template file
     template = _hot.heat_template_file('neutron/server.yaml')
 
     key_pair_stack = tobiko.required_setup_fixture(
-        _nova.NovaKeyPairStackFixture)
-    network_stack = tobiko.required_setup_fixture(NeutronNetworkStackFixture)
+        _nova.KeyPairStackFixture)
+    network_stack = tobiko.required_setup_fixture(NetworkStackFixture)
 
     #: Glance image used to create a Nova server instance
     image = CONF.tobiko.nova.image

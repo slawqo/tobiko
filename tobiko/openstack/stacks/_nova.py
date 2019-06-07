@@ -27,7 +27,7 @@ from tobiko.openstack.stacks import _hot
 CONF = config.CONF
 
 
-class NovaKeyPairStackFixture(heat.HeatStackFixture):
+class KeyPairStackFixture(heat.HeatStackFixture):
     template = _hot.heat_template_file('nova/key_pair.yaml')
     key_file = os.path.expanduser(CONF.tobiko.nova.key_file)
     public_key = None
@@ -35,7 +35,7 @@ class NovaKeyPairStackFixture(heat.HeatStackFixture):
 
     def setup_fixture(self):
         self.read_keys()
-        super(NovaKeyPairStackFixture, self).setup_fixture()
+        super(KeyPairStackFixture, self).setup_fixture()
 
     def read_keys(self):
         with open(self.key_file, 'r') as fd:

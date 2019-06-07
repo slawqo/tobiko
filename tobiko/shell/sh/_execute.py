@@ -299,10 +299,6 @@ class StdinSSHChannelFile(SSHChannelFile):
     def write_ready(self):
         return self.channel.send_ready()
 
-    def write(self, data):
-        super(StdinSSHChannelFile, self).write(data)
-        return len(data)
-
 
 class StdoutSSHChannelFile(SSHChannelFile):
 

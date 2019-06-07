@@ -15,10 +15,24 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.openstack.stacks import _neutron
-from tobiko.openstack.stacks import _nova
+import testtools
 
-KeyPairStackFixture = _nova.KeyPairStackFixture
+import tobiko
+from tobiko.openstack import stacks
+from tobiko.shell import ping
 
-NetworkStackFixture = _neutron.NetworkStackFixture
-FloatingIpServerStackFixture = _neutron.FloatingIpServerStackFixture
+
+class FloatingIPTest(testtools.TestCase):
+    """Tests connectivity to Nova instances via floating IPs"""
+
+    floating_ip_stack = tobiko.required_setup_fixture(
+        stacks.FloatingIpServerStackFixture)
+
+    @property
+    def floating_ip_address(self):
+        """Floating IP address"""
+        return self.floating_ip_stack.outputs.floating_ip_address
+
+    def test_ping(self):
+        """Test connectivity to floating IP address"""
+        ping.ping_until_received(self.floating_ip_address).assert_replied()

@@ -109,9 +109,11 @@ class ShellWritable(ShellIOBase):
     def writable(self):
         return True
 
-    def write(self, chunk):
-        witten_bytes = self.delegate.write(chunk)
-        self._data_chunks.append(chunk)
+    def write(self, data):
+        witten_bytes = self.delegate.write(data)
+        if witten_bytes is None:
+            witten_bytes = len(data)
+        self._data_chunks.append(data)
         return witten_bytes
 
     @property

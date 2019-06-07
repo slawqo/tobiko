@@ -65,7 +65,7 @@ class FloatingIPFixture(heat.HeatStackFixture):
     # --- class parameters ---
     #: Whenever port security on internal network is enable
     key_pair_stack = tobiko.required_setup_fixture(
-        stacks.NovaKeyPairStackFixture)
+        stacks.KeyPairStackFixture)
     port_security_enabled = False
 
     #: Security groups to be associated to network ports
