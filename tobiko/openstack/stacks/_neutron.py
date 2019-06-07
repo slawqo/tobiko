@@ -60,10 +60,13 @@ class NetworkStackFixture(heat.HeatStackFixture):
 class FloatingIpServerStackFixture(heat.HeatStackFixture):
 
     #: Heat template file
-    template = _hot.heat_template_file('neutron/server.yaml')
+    template = _hot.heat_template_file('neutron/floating_ip_server.yaml')
 
+    #: stack with the key pair for the server instance
     key_pair_stack = tobiko.required_setup_fixture(
         _nova.KeyPairStackFixture)
+
+    #: stack with the internal where the server port is created
     network_stack = tobiko.required_setup_fixture(NetworkStackFixture)
 
     #: Glance image used to create a Nova server instance

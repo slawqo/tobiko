@@ -17,9 +17,7 @@ from __future__ import absolute_import
 import tobiko
 from tobiko import config
 from tobiko.shell import ping
-from tobiko.shell import ssh
 from tobiko.shell import sh
-from tobiko.openstack import heat
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.tests import base
@@ -29,43 +27,15 @@ from tobiko.tests.scenario.neutron import _stacks
 CONF = config.CONF
 
 
-class FloatingIPFixture(heat.HeatStackFixture):
+class FloatingIPFixture(stacks.FloatingIpServerStackFixture):
     """Heat stack for testing a floating IP instance
     """
 
-    #: Heat template file
-    template = _stacks.heat_template_file('floating_ip.yaml')
-
-    #: Floating IP network where the Neutron floating IP is created
-    floating_network = CONF.tobiko.neutron.floating_network
-
-    #: Glance image used to create a Nova server instance
-    image = CONF.tobiko.nova.image
-
-    #: Nova flavor used to create a Nova server instance
-    flavor = CONF.tobiko.nova.flavor
-
-    #: Username used to login to Nova server instance
-    username = CONF.tobiko.nova.username
-
-    @property
-    def internal_network(self):
-        """Internal network where the Nova server instance is connected
-
-        """
-        return self.internal_network_stack.outputs.network_id
-
-    # --- required fixtures ---
-
-    #: Heat stack for creating internal network with a router to floating
-    #:  network
-    internal_network_stack = tobiko.required_setup_fixture(
+    #: stack with the internal where the server port is created
+    network_stack = tobiko.required_setup_fixture(
         _stacks.InternalNetworkFixture)
 
-    # --- class parameters ---
     #: Whenever port security on internal network is enable
-    key_pair_stack = tobiko.required_setup_fixture(
-        stacks.KeyPairStackFixture)
     port_security_enabled = False
 
     #: Security groups to be associated to network ports
@@ -89,26 +59,12 @@ class FloatingIPFixture(heat.HeatStackFixture):
             security_groups=self.security_groups or [])
 
     @property
-    def key_name(self):
-        return self.key_pair_stack.outputs.key_name
-
-    @property
     def server_name(self):
         return self.outputs.server_name
 
     @property
     def floating_ip_address(self):
         return self.outputs.floating_ip_address
-
-    @property
-    def ssh_client(self):
-        return ssh.ssh_client(host=self.floating_ip_address,
-                              username=self.username)
-
-    @property
-    def ssh_command(self):
-        return ssh.ssh_command(host=self.floating_ip_address,
-                               username=self.username)
 
 
 class FloatingIPTest(base.TobikoTest):
@@ -212,12 +168,12 @@ class FloatingIPTest(base.TobikoTest):
     @property
     def expected_net_mtu(self):
         """Expected MTU value for internal network"""
-        return self.floating_ip_stack.internal_network_stack.mtu
+        return self.floating_ip_stack.network_stack.mtu
 
     @property
     def observed_net_mtu(self):
         """Actual MTU value for internal network"""
-        return self.floating_ip_stack.internal_network_stack.outputs.mtu
+        return self.floating_ip_stack.network_stack.outputs.mtu
 
 
 @neutron.skip_if_missing_networking_extensions('port-security')
@@ -311,7 +267,7 @@ class FloatingIPWithNetMtuWritableFixture(FloatingIPFixture):
     """
 
     #: Heat stack for creating internal network with custom MTU value
-    internal_network_stack = tobiko.required_setup_fixture(
+    network_stack = tobiko.required_setup_fixture(
         _stacks.InternalNetworkWithNetMtuWritableFixture)
 
 
