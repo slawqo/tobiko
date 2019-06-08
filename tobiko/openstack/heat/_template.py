@@ -13,7 +13,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
 import os
 import sys
 
@@ -28,37 +27,33 @@ TEMPLATE_SUFFIX = '.yaml'
 TEMPLATE_DIRS = list(sys.path)
 
 
-class HeatTemplate(collections.namedtuple('HeatTemplate',
-                                          ['template', 'file', 'files'])):
+class HeatTemplateFixture(tobiko.SharedFixture):
 
-    _yaml = None
+    template = None
+    template_files = None
+    template_yaml = None
 
-    @classmethod
-    def from_dict(cls, template):
-        return cls(template=template, file=None, files=None)
+    def __init__(self, template=None, template_files=None):
+        super(HeatTemplateFixture, self).__init__()
+        if template:
+            self.template = template
+        if template_files:
+            self.template_files = template_files
 
-    @classmethod
-    def from_file(cls, template_file, template_dirs=None):
-        if template_dirs or not os.path.isfile(template_file):
-            template_dirs = template_dirs or TEMPLATE_DIRS
-            template_file = find_heat_template_file(
-                template_file=template_file, template_dirs=template_dirs)
-        files, template = template_utils.get_template_contents(
-            template_file=template_file)
-        return cls(file=template_file, files=files, template=template)
+    def setup_fixture(self):
+        self.setup_template()
 
-    @property
-    def yaml(self):
-        if not self._yaml:
-            self._yaml = yaml.safe_dump(self.template)
-        return self._yaml
+    def setup_template(self):
+        self.template_yaml = yaml.safe_dump(self.template)
 
 
-class HeatTemplateFileFixture(tobiko.SharedFixture):
+class HeatTemplateFileFixture(HeatTemplateFixture):
 
     template_file = None
     template_dirs = None
+    template_files = None
     template = None
+    template_yaml = None
 
     def __init__(self, template_file=None, template_dirs=None):
         super(HeatTemplateFileFixture, self).__init__()
@@ -67,23 +62,27 @@ class HeatTemplateFileFixture(tobiko.SharedFixture):
         if template_dirs:
             self.template_dirs = template_dirs
 
-    def setup_fixture(self):
-        self.setup_template()
-
     def setup_template(self):
-        self.template = HeatTemplate.from_file(
-            template_file=self.template_file,
-            template_dirs=self.template_dirs)
+        if self.template_dirs or not os.path.isfile(self.template_file):
+            template_dirs = self.template_dirs or TEMPLATE_DIRS
+            template_file = find_heat_template_file(
+                template_file=self.template_file,
+                template_dirs=template_dirs)
+        template_files, template = template_utils.get_template_contents(
+            template_file=template_file)
+        self.template = template
+        self.template_files = template_files
+        super(HeatTemplateFileFixture, self).setup_template()
+
+
+def heat_template(template, template_files=None):
+    return HeatTemplateFixture(template=template,
+                               template_files=template_files)
 
 
 def heat_template_file(template_file, template_dirs=None):
     return HeatTemplateFileFixture(template_file=template_file,
                                    template_dirs=template_dirs)
-
-
-def get_heat_template(template_file, template_dirs=None):
-    return HeatTemplate.from_file(template_file=template_file,
-                                  template_dirs=template_dirs)
 
 
 def find_heat_template_file(template_file, template_dirs):

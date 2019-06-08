@@ -14,7 +14,6 @@
 from __future__ import absolute_import
 
 import collections
-import os
 import time
 
 from heatclient.v1 import client as heatclient
@@ -29,43 +28,30 @@ from tobiko.tests.unit import openstack
 
 
 class MyStack(heat.HeatStackFixture):
-    pass
-
-
-class MyStackWithStackName(heat.HeatStackFixture):
-    stack_name = 'stack.name.from.class'
-
-
-class MyStackWithParameters(heat.HeatStackFixture):
-    parameters = {'param': 'from-class'}
-
-
-class MyStackWithTemplate(heat.HeatStackFixture):
     template = {'template': 'from-class'}
 
 
-class MyStackWithWaitInterval(heat.HeatStackFixture):
+class MyStackWithStackName(MyStack):
+    stack_name = 'stack.name.from.class'
+
+
+class MyStackWithParameters(MyStack):
+    parameters = {'param': 'from-class'}
+
+
+class MyStackWithWaitInterval(MyStack):
     wait_interval = 10
 
 
-class MyTemplateFixture(tobiko.SharedFixture):
-
-    _template = {'template': 'from-class'}
-    template = None
-
-    def __init__(self, template=None):
-        super(MyTemplateFixture, self).__init__()
-        if template:
-            self._template = template
-
-    def setup_fixture(self):
-        self.template = heat.HeatTemplate.from_dict(self._template)
+class MyTemplateFixture(heat.HeatTemplateFixture):
+    template = {'template': 'from-class'}
 
 
 class HeatStackFixtureTest(openstack.OpenstackTest):
 
-    def test_init(self, fixture_class=MyStack, stack_name=None, template=None,
-                  parameters=None, wait_interval=None, client=None):
+    def test_init(self, fixture_class=MyStack, stack_name=None,
+                  template=None, parameters=None, wait_interval=None,
+                  client=None):
         stack = fixture_class(stack_name=stack_name, template=template,
                               parameters=parameters,
                               wait_interval=wait_interval, client=client)
@@ -74,20 +60,7 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
                          tobiko.get_fixture_name(stack),
                          stack.stack_name)
 
-        if tobiko.is_fixture(template):
-            self.assertIsNone(stack.template)
-            self.assertIs(template, stack.template_fixture)
-        elif isinstance(template, collections.Mapping):
-            self.assertEqual(
-                heat.HeatTemplate.from_dict(template=template),
-                stack.template)
-            self.assertIsNone(stack.template_fixture)
-        elif template:
-            self.assertIs(template, stack.template)
-            self.assertIsNone(stack.template_fixture)
-        else:
-            self.assertIsNone(stack.template)
-            self.assertIsNone(stack.template_fixture)
+        self.check_stack_template(stack=stack, template=template)
 
         self.assertIs(fixture_class.parameters, stack.parameters)
 
@@ -120,7 +93,7 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
         self.test_init(parameters={'my': 'value'})
 
     def test_init_with_parameters_from_class(self):
-        self.test_init(fixture_class=MyStackWithParameters)
+        self.test_init(fixture_class=MyStackWithParameters, )
 
     def test_init_with_wait_interval(self):
         self.test_init(wait_interval=20)
@@ -135,12 +108,11 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
     def test_init_with_client_fixture(self):
         self.test_init(client=heat.HeatClientFixture())
 
-    def test_setup(self, fixture_class=MyStack, stack_name=None,
-                   template=None, parameters=None, wait_interval=None,
-                   stacks=None, create_conflict=False,
-                   call_create=True, call_delete=False, call_sleep=False):
+    def test_setup(self, fixture_class=MyStack, template=None,
+                   stack_name=None, parameters=None, wait_interval=None,
+                   stacks=None, create_conflict=False, call_create=True,
+                   call_delete=False, call_sleep=False):
         from tobiko.openstack.heat import _client
-        from tobiko.openstack.heat import _template
 
         client = mock.MagicMock(specs=heatclient.Client)
         get_heat_client = self.patch(_client, 'get_heat_client',
@@ -160,11 +132,6 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
         sleep = self.patch(time, 'sleep')
         stack = fixture_class(stack_name=stack_name, parameters=parameters,
                               template=template, wait_interval=wait_interval)
-
-        default_template = heat.HeatTemplate.from_dict(
-            {'default': 'template'})
-        get_heat_template = self.patch(_template, 'get_heat_template',
-                                       return_value=default_template)
 
         stack.setUp()
 
@@ -192,32 +159,6 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
         if call_sleep:
             sleep.assert_has_calls([mock.call(stack.wait_interval)])
 
-        if tobiko.is_fixture(template):
-            self.assertIs(tobiko.get_fixture(template).template,
-                          stack.template)
-        elif isinstance(template, collections.Mapping):
-            self.assertEqual(heat.HeatTemplate.from_dict(template),
-                             stack.template)
-        elif isinstance(template, heat.HeatTemplate):
-            self.assertIs(template, stack.template)
-        elif not template:
-            if fixture_class.template:
-                self.assertEqual(
-                    heat.HeatTemplate.from_dict(fixture_class.template),
-                    stack.template)
-            else:
-                self.assertEqual(default_template, stack.template)
-        else:
-            self.fail("Unsupported template type: {!r}".format(template))
-
-        if template or fixture_class.template:
-            get_heat_template.assert_not_called()
-        else:
-            template_file_name = stack.stack_name.rsplit('.', 1)[-1] + '.yaml'
-            get_heat_template.assert_called_once_with(
-                template_file=template_file_name,
-                template_dirs=[os.path.dirname(__file__)])
-
     def test_setup_with_stack_name(self):
         self.test_setup(stack_name='my-stack-name')
 
@@ -227,11 +168,8 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
     def test_setup_with_template(self):
         self.test_setup(template={'other': 'template'})
 
-    def test_setup_with_template_from_class(self):
-        self.test_setup(fixture_class=MyStackWithTemplate)
-
     def test_setup_with_template_fixture(self):
-        self.test_setup(template=MyTemplateFixture(template={'template':
+        self.test_setup(template=heat.heat_template(template={'template':
                                                              'from-fixture'}))
 
     def test_setup_with_template_fixture_type(self):
@@ -309,7 +247,7 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
         stack.cleanUp()
         client.stacks.delete.assert_called_once_with(stack.stack_name)
 
-    def test_get_outputs(self):
+    def test_outputs(self):
         stack = mock_stack(status='CREATE_COMPLETE',
                            outputs=[{'output_key': 'key1',
                                      'output_value': 'value1'},
@@ -317,14 +255,25 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
                                      'output_value': 'value2'}])
         client = mock.MagicMock(specs=heatclient.Client)
         client.stacks.get.return_value = stack
-        stack_fixture = MyStack(client=client)
+        stack_fixture = MyStack(
+            template={'outputs': {'key1': {}, 'key2': {}}},
+            client=client)
 
-        outputs = stack_fixture.get_outputs()
+        outputs = stack_fixture.outputs
 
-        client.stacks.get.assert_called_once_with(stack_fixture.stack_name,
-                                                  resolve_outputs=True)
         self.assertEqual('value1', outputs.key1)
         self.assertEqual('value2', outputs.key2)
+
+    def check_stack_template(self, stack, template):
+        expected_template = template or type(stack).template
+        if tobiko.is_fixture(expected_template):
+            self.assertIs(expected_template, stack.template)
+        elif isinstance(expected_template, collections.Mapping):
+            self.assertEqual(expected_template, stack.template.template)
+        else:
+            message = "Unsupported template type: {!r}".format(
+                expected_template)
+            self.fail(message)
 
 
 def mock_stack(status, stack_id='<stack-id>', outputs=None):

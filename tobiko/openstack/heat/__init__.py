@@ -21,8 +21,9 @@ from tobiko.openstack.heat import _stack
 get_heat_client = _client.get_heat_client
 HeatClientFixture = _client.HeatClientFixture
 
-HeatTemplate = _template.HeatTemplate
-get_heat_template = _template.get_heat_template
+heat_template = _template.heat_template
 heat_template_file = _template.heat_template_file
+HeatTemplateFixture = _template.HeatTemplateFixture
+HeatTemplateFileFixture = _template.HeatTemplateFileFixture
 
 HeatStackFixture = _stack.HeatStackFixture
