@@ -26,30 +26,16 @@ from tobiko.shell import sh
 class FloatingIpServerTest(testtools.TestCase):
     """Tests connectivity to Nova instances via floating IPs"""
 
-    stack = tobiko.required_setup_fixture(
-        stacks.FloatingIpServerStackFixture)
-
-    @property
-    def floating_ip_address(self):
-        """Floating IP address"""
-        return self.stack.outputs.floating_ip_address
-
-    @property
-    def ssh_client(self):
-        """Floating IP address"""
-        return self.stack.ssh_client
-
-    @property
-    def server_name(self):
-        """Floating IP address"""
-        return self.stack.outputs.server_name
+    #: Stack of resources with a server attached to a floating IP
+    stack = tobiko.required_setup_fixture(stacks.FloatingIpServerStackFixture)
 
     def test_ping(self):
         """Test connectivity to floating IP address"""
-        ping.ping_until_received(self.floating_ip_address).assert_replied()
+        ping.ping_until_received(
+            self.stack.floating_ip_address).assert_replied()
 
     def test_hostname(self):
         """Test that hostname of instance server matches Nova server name"""
-        result = sh.execute('hostname', ssh_client=self.ssh_client)
+        result = sh.execute('hostname', ssh_client=self.stack.ssh_client)
         hostname, = str(result.stdout).splitlines()
         self.assertEqual(hostname, self.stack.server_name)
