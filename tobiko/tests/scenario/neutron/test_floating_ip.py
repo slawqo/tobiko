@@ -190,7 +190,7 @@ class FloatingIPWithPortSecurityTest(FloatingIPTest):
     def test_ping(self):
         """Test connectivity to floating IP address"""
         # Wait for server instance to get ready by logging in
-        tobiko.setup_fixture(self.stack.ssh_client)
+        self.stack.ssh_client.connect()
 
         # Check can't reach secured port via floating IP
         ping.ping(self.stack.floating_ip_address,
@@ -202,6 +202,7 @@ class FloatingIPWithPortSecurityTest(FloatingIPTest):
         """Test connectivity to floating IP address"""
         # Wait for server instance to get ready by logging in
         tobiko.setup_fixture(self.stack.ssh_client)
+        self.stack.ssh_client.connect()
 
         # Verify it can't reach secured port with maximum-sized packets
         ping.ping(self.stack.floating_ip_address,
