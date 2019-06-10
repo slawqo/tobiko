@@ -52,4 +52,4 @@ class FloatingIpServerTest(testtools.TestCase):
         """Test that hostname of instance server matches Nova server name"""
         result = sh.execute('hostname', ssh_client=self.ssh_client)
         hostname, = str(result.stdout).splitlines()
-        self.assertEqual(hostname, self.server_name)
+        self.assertEqual(hostname, self.stack.server_name)

@@ -46,6 +46,11 @@ class HeatTemplateFixture(tobiko.SharedFixture):
     def setup_template(self):
         self.template_yaml = yaml.safe_dump(self.template)
 
+    @property
+    def outputs(self):
+        template = self.template
+        return template and template.get('outputs') or {}
+
 
 class HeatTemplateFileFixture(HeatTemplateFixture):
 
