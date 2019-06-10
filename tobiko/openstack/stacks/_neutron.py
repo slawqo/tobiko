@@ -28,19 +28,22 @@ from tobiko.shell import ssh
 CONF = config.CONF
 
 
+@neutron.skip_if_missing_networking_extensions('port-security')
 class NetworkStackFixture(heat.HeatStackFixture):
-    """Heat stack for creating internal network with a router to external
-
-    """
+    """Heat stack for creating internal network with a router to external"""
 
     #: Heat template file
     template = _hot.heat_template_file('neutron/network.yaml')
 
-    #: IPv4 sub-net CIDR
+    #: Disable port security by default for new network ports
+    port_security_enabled = False
+
+    #: Default IPv4 sub-net CIDR
     ipv4_cidr = '190.40.2.0/24'
 
     @property
     def has_ipv4(self):
+        """Whenever to setup IPv4 subnet"""
         return bool(self.ipv4_cidr)
 
     #: IPv6 sub-net CIDR
@@ -48,6 +51,7 @@ class NetworkStackFixture(heat.HeatStackFixture):
 
     @property
     def has_ipv6(self):
+        """Whenever to setup IPv6 subnet"""
         return bool(self.ipv6_cidr)
 
     #: Floating IP network where the Neutron floating IPs are created
@@ -55,7 +59,25 @@ class NetworkStackFixture(heat.HeatStackFixture):
 
     @property
     def has_gateway(self):
+        """Whenever to setup gateway router"""
         return bool(self.gateway_network)
+
+    # Whenever cat obtain network MTU value
+    has_net_mtu = neutron.has_networking_extensions('net-mtu')
+
+    #: Value for maximum transfer unit on the internal network
+    mtu = None
+
+    def setup_parameters(self):
+        """Setup Heat template parameters"""
+        super(NetworkStackFixture, self).setup_parameters()
+        if self.mtu:
+            self.setup_net_mtu_writable()
+
+    @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
+    def setup_net_mtu_writable(self):
+        """Setup maximum transfer unit size for the network"""
+        self.parameters.setdefault('value_specs', {}).update(mtu=self.mtu)
 
 
 @neutron.skip_if_missing_networking_extensions('security-group')
@@ -67,6 +89,7 @@ class SecurityGroupsFixture(heat.HeatStackFixture):
     template = _hot.heat_template_file('neutron/security_groups.yaml')
 
 
+@neutron.skip_if_missing_networking_extensions('port-security')
 class FloatingIpServerStackFixture(heat.HeatStackFixture):
 
     #: Heat template file
@@ -91,6 +114,12 @@ class FloatingIpServerStackFixture(heat.HeatStackFixture):
     #: password used to login to a Nova server instance
     password = CONF.tobiko.nova.password
 
+    #: Whenever port security on internal network is enable
+    port_security_enabled = False
+
+    #: Security groups to be associated to network ports
+    security_groups = []
+
     @property
     def key_name(self):
         return self.key_pair_stack.key_name
@@ -109,12 +138,12 @@ class FloatingIpServerStackFixture(heat.HeatStackFixture):
     @property
     def ssh_client(self):
         return ssh.ssh_client(
-            host=self.outputs.floating_ip_address,
+            host=self.floating_ip_address,
             username=self.username,
             password=self.password)
 
     @property
     def ssh_command(self):
         return ssh.ssh_command(
-            host=self.outputs.floating_ip_address,
+            host=self.floating_ip_address,
             username=self.username)
