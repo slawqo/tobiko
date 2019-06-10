@@ -93,11 +93,11 @@ class FloatingIpServerStackFixture(heat.HeatStackFixture):
 
     @property
     def key_name(self):
-        return self.key_pair_stack.outputs.key_name
+        return self.key_pair_stack.key_name
 
     @property
     def network(self):
-        return self.network_stack.outputs.network_id
+        return self.network_stack.network_id
 
     #: Floating IP network where the Neutron floating IP is created
     floating_network = CONF.tobiko.neutron.floating_network

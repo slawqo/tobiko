@@ -192,7 +192,7 @@ class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
     @property
     def security_groups(self):
         """List with ICMP security group"""
-        return [self.security_groups_stack.outputs.ssh_security_group_id]
+        return [self.security_groups_stack.ssh_security_group_id]
 
 
 @neutron.skip_if_missing_networking_extensions('port-security',
@@ -246,8 +246,8 @@ class FloatingIPWithICMPSecurityGroupFixture(
     @property
     def security_groups(self):
         """List with ICMP security group"""
-        return [self.security_groups_stack.outputs.ssh_security_group_id,
-                self.security_groups_stack.outputs.icmp_security_group_id]
+        return [self.security_groups_stack.ssh_security_group_id,
+                self.security_groups_stack.icmp_security_group_id]
 
 
 @neutron.skip_if_missing_networking_extensions('port-security',
