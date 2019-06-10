@@ -60,15 +60,14 @@ def get_fixture(obj, manager=None):
 
 def get_fixture_name(obj):
     '''Get unique fixture name'''
-    try:
-        return obj.__tobiko_fixture_name__
-    except AttributeError:
+    name = getattr(obj, '__tobiko_fixture_name__', None)
+    if name is None:
+        if not is_fixture(obj):
+            raise TypeError('Object {obj!r} is not a fixture.'.format(obj=obj))
         name = get_object_name(obj)
-        if is_fixture(obj):
-            obj.__tobiko_fixture__ = True
-            obj.__tobiko_fixture_name__ = name
-            return name
-    raise TypeError('Object {obj!r} is not a fixture.'.format(obj=obj))
+        obj.__tobiko_fixture__ = True
+        obj.__tobiko_fixture_name__ = name
+    return name
 
 
 def get_fixture_class(obj):
@@ -315,6 +314,9 @@ class SharedFixture(fixtures.Fixture):
 
     _setup_executed = False
     _cleanup_executed = False
+
+    __tobiko_fixture__ = True
+    __tobiko_fixture_name__ = None
 
     def __init__(self):
         # make sure class states can be used before setUp
