@@ -164,6 +164,10 @@ outputs:
     description: Network ID
     value: {get_resource: network}
 
+  port_security_enabled:
+    description: whenever port security has been enabled on created network
+    value: {get_attr: [network, port_security_enabled]}
+
   ipv4_subnet_id:
     description: IPv4 subnet ID
     value: {get_resource: ipv4_subnet}

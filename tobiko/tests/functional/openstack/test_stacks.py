@@ -18,9 +18,38 @@ from __future__ import absolute_import
 import testtools
 
 import tobiko
+from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.shell import ping
 from tobiko.shell import sh
+
+
+class NetworkTestCase(testtools.TestCase):
+    """Tests network creation"""
+
+    #: Stack of resources with a server attached to a floating IP
+    stack = tobiko.required_setup_fixture(stacks.NetworkStackFixture)
+
+    @property
+    def network_details(self):
+        return neutron.get_neutron_client().show_network(
+            self.stack.network_id)['network']
+
+    @neutron.skip_if_missing_networking_extensions('port-security')
+    def test_port_security_enabled(self):
+        port_security_enabled = self.stack.port_security_enabled
+        self.assertEqual(port_security_enabled,
+                         self.network_details['port_security_enabled'])
+        self.assertEqual(port_security_enabled,
+                         self.stack.outputs.port_security_enabled)
+
+    @neutron.skip_if_missing_networking_extensions('net-mtu')
+    def test_net_mtu(self):
+        self.assertEqual(self.network_details['mtu'], self.stack.outputs.mtu)
+
+    @neutron.skip_if_missing_networking_extensions('net-mtu-write')
+    def test_net_mtu_write(self):
+        self.assertEqual(self.stack.mtu, self.stack.outputs.mtu)
 
 
 class FloatingIpServerTest(testtools.TestCase):
