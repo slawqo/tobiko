@@ -19,6 +19,11 @@ from tobiko.openstack.neutron import _extension
 
 get_neutron_client = _client.get_neutron_client
 NeutronClientFixture = _client.NeutronClientFixture
+find_network = _client.find_network
+list_network = _client.list_network
+show_network = _client.show_network
+show_router = _client.show_router
+show_subnet = _client.show_subnet
 
 get_networking_extensions = _extension.get_networking_extensions
 missing_networking_extensions = _extension.missing_networking_extensions

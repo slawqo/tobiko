@@ -65,12 +65,39 @@ class NetworkStackFixture(heat.HeatStackFixture):
     # Whenever cat obtain network MTU value
     has_net_mtu = neutron.has_networking_extensions('net-mtu')
 
+    @property
+    def network_details(self):
+        return neutron.show_network(self.network_id)
+
+    @property
+    def ipv4_subnet_details(self):
+        return neutron.show_subnet(self.ipv4_subnet_id)
+
+    @property
+    def gateway_details(self):
+        return neutron.show_router(self.gateway_id)
+
+    @property
+    def gateway_network_id(self):
+        return neutron.find_network(self.gateway_network)['id']
+
+    @property
+    def gateway_network_details(self):
+        return neutron.show_network(self.gateway_network_id)
+
+
+@neutron.skip_if_missing_networking_extensions('net-mtu-writable')
+class NetworkNetMtuWriteStackFixture(heat.HeatStackFixture):
+
+    # Whenever cat obtain network MTU value
+    has_net_mtu = True
+
     #: Value for maximum transfer unit on the internal network
-    mtu = None
+    mtu = 1000
 
     def setup_parameters(self):
         """Setup Heat template parameters"""
-        super(NetworkStackFixture, self).setup_parameters()
+        super(NetworkNetMtuWriteStackFixture, self).setup_parameters()
         if self.mtu:
             self.setup_net_mtu_writable()
 

@@ -1,6 +1,4 @@
-# Copyright (c) 2019 Red Hat, Inc.
-#
-# All Rights Reserved.
+# Copyright 2019 Red Hat
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -15,12 +13,12 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.openstack.stacks import _neutron
-from tobiko.openstack.stacks import _nova
+import tobiko
 
-KeyPairStackFixture = _nova.KeyPairStackFixture
 
-NetworkStackFixture = _neutron.NetworkStackFixture
-NetworkNetMtuWriteStackFixture = _neutron.NetworkNetMtuWriteStackFixture
-FloatingIpServerStackFixture = _neutron.FloatingIpServerStackFixture
-SecurityGroupsFixture = _neutron.SecurityGroupsFixture
+class NoSuchNetwork(tobiko.TobikoException):
+    message = "No such network found for {network!r}"
+
+
+class MoreNetworksFound(tobiko.TobikoException):
+    message = "More than one network found for {network!r}: {network_ids!s}"
