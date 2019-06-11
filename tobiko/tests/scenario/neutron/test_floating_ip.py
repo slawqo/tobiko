@@ -68,22 +68,22 @@ class FloatingIPTest(base.TobikoTest):
     """Tests connectivity via floating IPs"""
 
     #: Resources stack with floating IP and Nova server
-    floating_ip_stack = tobiko.required_setup_fixture(FloatingIPFixture)
+    stack = tobiko.required_setup_fixture(FloatingIPFixture)
 
     @property
     def floating_ip_address(self):
         """Floating IP address"""
-        return self.floating_ip_stack.floating_ip_address
+        return self.stack.floating_ip_address
 
     @property
     def server_name(self):
         """Floating IP address"""
-        return self.floating_ip_stack.server_name
+        return self.stack.server_name
 
     @property
     def ssh_client(self):
         """Floating IP address"""
-        return self.floating_ip_stack.ssh_client
+        return self.stack.ssh_client
 
     def test_ssh(self):
         """Test SSH connectivity to floating IP address"""
@@ -93,7 +93,7 @@ class FloatingIPTest(base.TobikoTest):
 
     def test_ssh_from_cli(self):
         """Test SSH connectivity to floating IP address from CLI"""
-        result = sh.execute(self.floating_ip_stack.ssh_command + ['hostname'])
+        result = sh.execute(self.stack.ssh_command + ['hostname'])
         self.assertEqual([self.server_name.lower()],
                          str(result.stdout).splitlines())
 
@@ -112,12 +112,12 @@ class FloatingIPTest(base.TobikoTest):
     @property
     def expected_port_security_enabled(self):
         """Expected port security enabled value"""
-        return self.floating_ip_stack.port_security_enabled
+        return self.stack.port_security_enabled
 
     @property
     def observed_port_security_enabled(self):
         """Actual MTU value for internal network"""
-        return self.floating_ip_stack.outputs.port_security_enabled
+        return self.stack.outputs.port_security_enabled
 
     # --- test security_group extension --------------------------------------
 
@@ -130,12 +130,12 @@ class FloatingIPTest(base.TobikoTest):
     @property
     def expected_security_groups(self):
         """Expected port security groups"""
-        return set(self.floating_ip_stack.security_groups)
+        return set(self.stack.security_groups)
 
     @property
     def observed_security_groups(self):
         """Actual port security group"""
-        return set(self.floating_ip_stack.outputs.security_groups)
+        return set(self.stack.outputs.security_groups)
 
     # --- test net-mtu and net-mtu-writable extensions -----------------------
 
@@ -165,12 +165,12 @@ class FloatingIPTest(base.TobikoTest):
     @property
     def expected_net_mtu(self):
         """Expected MTU value for internal network"""
-        return self.floating_ip_stack.network_stack.mtu
+        return self.stack.network_stack.mtu
 
     @property
     def observed_net_mtu(self):
         """Actual MTU value for internal network"""
-        return self.floating_ip_stack.network_stack.outputs.mtu
+        return self.stack.network_stack.outputs.mtu
 
 
 # --- Test with port security enabled -----------------------------------------
@@ -199,7 +199,7 @@ class FloatingIPWithPortSecurityTest(FloatingIPTest):
     """Tests connectivity via floating IPs with port security"""
 
     #: Resources stack with floating IP and Nova server with port security
-    floating_ip_stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_setup_fixture(
         FloatingIPWithPortSecurityFixture)
 
     def test_ping(self):
@@ -251,7 +251,7 @@ class FloatingIPWithICMPSecurityGroupFixture(
 class FloatingIPWithICMPSecurityGroupTest(FloatingIPTest):
     """Tests connectivity via floating IP with security ICMP security group"""
     #: Resources stack with floating IP and Nova server to ping
-    floating_ip_stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_setup_fixture(
         FloatingIPWithICMPSecurityGroupFixture)
 
 
@@ -270,5 +270,4 @@ class FlatingIpWithMtuWritableTest(FloatingIPTest):
     """Tests connectivity via floating IP with modified MTU value"""
 
     #: Resources stack with floating IP and Nova server
-    floating_ip_stack = tobiko.required_setup_fixture(
-        FloatingIPWithNetMtuWritableFixture)
+    stack = tobiko.required_setup_fixture(FloatingIPWithNetMtuWritableFixture)
