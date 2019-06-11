@@ -28,8 +28,7 @@ CONF = config.CONF
 
 
 class FloatingIPFixture(stacks.FloatingIpServerStackFixture):
-    """Heat stack for testing a floating IP instance
-    """
+    """Heat stack for testing a floating IP instance"""
 
     #: stack with the internal where the server port is created
     network_stack = tobiko.required_setup_fixture(
@@ -51,9 +50,7 @@ class FloatingIPFixture(stacks.FloatingIpServerStackFixture):
 
     @neutron.skip_if_missing_networking_extensions('port-security')
     def setup_port_security(self):
-        """Setup port security template parameters
-
-        """
+        """Setup port security template parameters"""
         self.parameters.update(
             port_security_enabled=self.port_security_enabled,
             security_groups=self.security_groups or [])
@@ -68,7 +65,7 @@ class FloatingIPFixture(stacks.FloatingIpServerStackFixture):
 
 
 class FloatingIPTest(base.TobikoTest):
-    """Tests connectivity to Nova instances via floating IPs"""
+    """Tests connectivity via floating IPs"""
 
     #: Resources stack with floating IP and Nova server
     floating_ip_stack = tobiko.required_setup_fixture(FloatingIPFixture)
@@ -176,11 +173,12 @@ class FloatingIPTest(base.TobikoTest):
         return self.floating_ip_stack.network_stack.outputs.mtu
 
 
-@neutron.skip_if_missing_networking_extensions('port-security')
-class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
-    """Heat stack for testing a floating IP instance with port security enabled
+# --- Test with port security enabled -----------------------------------------
 
-    """
+@neutron.skip_if_missing_networking_extensions('port-security',
+                                               'security-group')
+class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
+    """Heat stack for testing a floating IP instance with port security"""
 
     #: Resources stack with security group to allow ping Nova servers
     security_groups_stack = tobiko.required_setup_fixture(
@@ -198,9 +196,7 @@ class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
 @neutron.skip_if_missing_networking_extensions('port-security',
                                                'security-group')
 class FloatingIPWithPortSecurityTest(FloatingIPTest):
-    """Tests connectivity to Nova instances via floating IPs with port security
-
-    """
+    """Tests connectivity via floating IPs with port security"""
 
     #: Resources stack with floating IP and Nova server with port security
     floating_ip_stack = tobiko.required_setup_fixture(
@@ -237,11 +233,11 @@ class FloatingIPWithPortSecurityTest(FloatingIPTest):
                   check=False).assert_not_replied()
 
 
+# --- Test with ICMP security group -------------------------------------------
+
 class FloatingIPWithICMPSecurityGroupFixture(
         FloatingIPWithPortSecurityFixture):
-    """Heat stack for testing a floating IP instance with security groups
-
-    """
+    """Heat stack for testing a floating IP instance with security groups"""
 
     @property
     def security_groups(self):
@@ -253,18 +249,16 @@ class FloatingIPWithICMPSecurityGroupFixture(
 @neutron.skip_if_missing_networking_extensions('port-security',
                                                'security-group')
 class FloatingIPWithICMPSecurityGroupTest(FloatingIPTest):
-    """Tests connectivity via floating IP with security ICMP security group
-
-    """
+    """Tests connectivity via floating IP with security ICMP security group"""
     #: Resources stack with floating IP and Nova server to ping
     floating_ip_stack = tobiko.required_setup_fixture(
         FloatingIPWithICMPSecurityGroupFixture)
 
 
-class FloatingIPWithNetMtuWritableFixture(FloatingIPFixture):
-    """Heat stack for testing setting MTU value to internal network
+# --- Test net-mtu-write extension --------------------------------------------
 
-    """
+class FloatingIPWithNetMtuWritableFixture(FloatingIPFixture):
+    """Heat stack for testing setting MTU value to internal network value"""
 
     #: Heat stack for creating internal network with custom MTU value
     network_stack = tobiko.required_setup_fixture(
@@ -273,9 +267,7 @@ class FloatingIPWithNetMtuWritableFixture(FloatingIPFixture):
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
 class FlatingIpWithMtuWritableTest(FloatingIPTest):
-    """Tests connectivity via floating IP with modified MTU value
-
-    """
+    """Tests connectivity via floating IP with modified MTU value"""
 
     #: Resources stack with floating IP and Nova server
     floating_ip_stack = tobiko.required_setup_fixture(
