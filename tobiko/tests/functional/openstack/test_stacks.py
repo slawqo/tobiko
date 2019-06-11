@@ -34,6 +34,14 @@ class FloatingIpServerTest(testtools.TestCase):
         ping.ping_until_received(
             self.stack.floating_ip_address).assert_replied()
 
+    def test_ssh_connect(self):
+        """Test SSH connectivity via Paramiko SSHClient"""
+        self.stack.ssh_client.connect()
+
+    def test_ssh_command(self):
+        """Test SSH connectivity via OpenSSH client"""
+        sh.execute('true', shell=self.stack.ssh_command)
+
     def test_hostname(self):
         """Test that hostname of instance server matches Nova server name"""
         result = sh.execute('hostname', ssh_client=self.stack.ssh_client)
