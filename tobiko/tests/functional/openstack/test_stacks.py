@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import netaddr
 import testtools
 
 import tobiko
@@ -27,27 +28,42 @@ from tobiko.shell import sh
 class NetworkTestCase(testtools.TestCase):
     """Tests network creation"""
 
-    #: Stack of resources with a server attached to a floating IP
+    #: Stack of resources with a network with a gateway router
     stack = tobiko.required_setup_fixture(stacks.NetworkStackFixture)
-
-    @property
-    def network_details(self):
-        return neutron.get_neutron_client().show_network(
-            self.stack.network_id)['network']
 
     @neutron.skip_if_missing_networking_extensions('port-security')
     def test_port_security_enabled(self):
-        port_security_enabled = self.stack.port_security_enabled
-        self.assertEqual(port_security_enabled,
-                         self.network_details['port_security_enabled'])
-        self.assertEqual(port_security_enabled,
+        self.assertEqual(self.stack.port_security_enabled,
+                         self.stack.network_details['port_security_enabled'])
+        self.assertEqual(self.stack.port_security_enabled,
                          self.stack.outputs.port_security_enabled)
 
     @neutron.skip_if_missing_networking_extensions('net-mtu')
     def test_net_mtu(self):
-        self.assertEqual(self.network_details['mtu'], self.stack.outputs.mtu)
+        self.assertEqual(self.stack.network_details['mtu'],
+                         self.stack.outputs.mtu)
 
-    @neutron.skip_if_missing_networking_extensions('net-mtu-write')
+    def test_ipv4_subnet_cidr(self):
+        self.assertEqual(self.stack.ipv4_cidr,
+                         self.stack.ipv4_subnet_details['cidr'])
+
+    def test_ipv4_subnet_gateway_ip(self):
+        self.assertEqual(str(netaddr.IPNetwork(self.stack.ipv4_cidr).ip + 1),
+                         self.stack.ipv4_subnet_details['gateway_ip'])
+
+    def test_gateway_network(self):
+        self.assertEqual(
+            self.stack.gateway_network_id,
+            self.stack.gateway_details['external_gateway_info']['network_id'])
+
+
+@neutron.skip_if_missing_networking_extensions('net-mtu-write')
+class NetworkNetMtuWriteTestCase(NetworkTestCase):
+
+    #: Stack of resources with a network with a gateway router
+    stack = tobiko.required_setup_fixture(
+        stacks.NetworkNetMtuWriteStackFixture)
+
     def test_net_mtu_write(self):
         self.assertEqual(self.stack.mtu, self.stack.outputs.mtu)
 

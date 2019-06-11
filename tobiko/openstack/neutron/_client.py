@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from neutronclient.v2_0 import client as neutronclient
 
 from tobiko.openstack import _client
+from tobiko.openstack.neutron import _exceptions
 
 
 class NeutronClientFixture(_client.OpenstackClientFixture):
@@ -34,3 +35,40 @@ def get_neutron_client(session=None, shared=True, init_client=None,
                                 init_client=init_client)
     client.setUp()
     return client.client
+
+
+def find_network(network, session=None, **params):
+    networks = [n
+               for n in list_network(session=session, **params)
+               if network in (n['name'], n['id'])]
+
+    if not networks:
+        raise _exceptions.NoSuchNetwork(network=network)
+
+    elif len(networks) > 1:
+        network_ids = [n['id'] for n in networks]
+        raise _exceptions.MoreNetworksFound(
+            network=network,
+            netowrk_ids=(', '.join(network_ids)))
+
+    return networks[0]
+
+
+def list_network(session=None, **params):
+    return get_neutron_client(session=session).list_networks(**params)[
+        'networks']
+
+
+def show_network(network, session=None, **params):
+    return get_neutron_client(session=session).show_network(
+        network, **params)['network']
+
+
+def show_router(router, session=None, **params):
+    return get_neutron_client(session=session).show_router(
+        router, **params)['router']
+
+
+def show_subnet(subnet, session=None, **params):
+    return get_neutron_client(session=session).show_subnet(
+        subnet, **params)['subnet']
