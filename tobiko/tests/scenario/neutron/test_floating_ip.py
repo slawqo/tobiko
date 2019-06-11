@@ -70,36 +70,22 @@ class FloatingIPTest(base.TobikoTest):
     #: Resources stack with floating IP and Nova server
     stack = tobiko.required_setup_fixture(FloatingIPFixture)
 
-    @property
-    def floating_ip_address(self):
-        """Floating IP address"""
-        return self.stack.floating_ip_address
-
-    @property
-    def server_name(self):
-        """Floating IP address"""
-        return self.stack.server_name
-
-    @property
-    def ssh_client(self):
-        """Floating IP address"""
-        return self.stack.ssh_client
-
     def test_ssh(self):
         """Test SSH connectivity to floating IP address"""
-        result = sh.execute("hostname", ssh_client=self.ssh_client)
-        self.assertEqual([self.server_name.lower()],
-                         str(result.stdout).splitlines())
+        result = sh.execute("hostname", ssh_client=self.stack.ssh_client)
+        hostname, = str(result.stdout).splitlines()
+        self.assertEqual(self.stack.server_name.lower(), hostname)
 
     def test_ssh_from_cli(self):
         """Test SSH connectivity to floating IP address from CLI"""
-        result = sh.execute(self.stack.ssh_command + ['hostname'])
-        self.assertEqual([self.server_name.lower()],
-                         str(result.stdout).splitlines())
+        result = sh.execute("hostname", shell=self.stack.ssh_command)
+        hostname, = str(result.stdout).splitlines()
+        self.assertEqual(self.stack.server_name.lower(), hostname)
 
     def test_ping(self):
         """Test ICMP connectivity to floating IP address"""
-        ping.ping_until_received(self.floating_ip_address).assert_replied()
+        ping.ping_until_received(
+            self.stack.floating_ip_address).assert_replied()
 
     # --- test port-security extension ---------------------------------------
 
@@ -143,13 +129,13 @@ class FloatingIPTest(base.TobikoTest):
     def test_ping_with_net_mtu(self):
         """Test connectivity to floating IP address with MTU sized packets"""
         # Wait until it can reach remote port with maximum-sized packets
-        ping.ping(self.floating_ip_address,
+        ping.ping(self.stack.floating_ip_address,
                   until=ping.RECEIVED,
                   packet_size=self.observed_net_mtu,
                   fragmentation=False).assert_replied()
 
         # Verify it can't reach remote port with over-sized packets
-        ping.ping(self.floating_ip_address,
+        ping.ping(self.stack.floating_ip_address,
                   packet_size=self.observed_net_mtu + 1,
                   fragmentation=False,
                   count=5,
@@ -199,16 +185,15 @@ class FloatingIPWithPortSecurityTest(FloatingIPTest):
     """Tests connectivity via floating IPs with port security"""
 
     #: Resources stack with floating IP and Nova server with port security
-    stack = tobiko.required_setup_fixture(
-        FloatingIPWithPortSecurityFixture)
+    stack = tobiko.required_setup_fixture(FloatingIPWithPortSecurityFixture)
 
     def test_ping(self):
         """Test connectivity to floating IP address"""
         # Wait for server instance to get ready by logging in
-        tobiko.setup_fixture(self.ssh_client)
+        tobiko.setup_fixture(self.stack.ssh_client)
 
         # Check can't reach secured port via floating IP
-        ping.ping(self.floating_ip_address,
+        ping.ping(self.stack.floating_ip_address,
                   count=5,
                   check=False).assert_not_replied()
 
@@ -216,17 +201,17 @@ class FloatingIPWithPortSecurityTest(FloatingIPTest):
     def test_ping_with_net_mtu(self):
         """Test connectivity to floating IP address"""
         # Wait for server instance to get ready by logging in
-        tobiko.setup_fixture(self.ssh_client)
+        tobiko.setup_fixture(self.stack.ssh_client)
 
         # Verify it can't reach secured port with maximum-sized packets
-        ping.ping(self.floating_ip_address,
+        ping.ping(self.stack.floating_ip_address,
                   packet_size=self.observed_net_mtu,
                   fragmentation=False,
                   count=5,
                   check=False).assert_not_replied()
 
         # Verify it can't reach secured port with over-sized packets
-        ping.ping(self.floating_ip_address,
+        ping.ping(self.stack.floating_ip_address,
                   packet_size=self.observed_net_mtu + 1,
                   fragmentation=False,
                   count=5,
