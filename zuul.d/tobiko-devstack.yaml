@@ -115,17 +115,18 @@
     group-vars:
       subnode:
         devstack_services:
+          c-vol: true
+          dstat: true
           heat: false
           h-api: false
           h-api-cfn: false
           h-eng: false
-          n-api-meta: false
+          n-api-meta: true
           placement-client: true
           n-cpu: true
           neutron-agent: true
-          c-vol: true
           peakmem_tracker: true
-          dstat: true
+          q-agt: true
           tls-proxy: false
 
 
