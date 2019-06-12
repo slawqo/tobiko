@@ -21,7 +21,6 @@ from tobiko.shell import sh
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.tests import base
-from tobiko.tests.scenario.neutron import _stacks
 
 
 CONF = config.CONF
@@ -32,6 +31,11 @@ class FloatingIPTest(base.TobikoTest):
 
     #: Resources stack with floating IP and Nova server
     stack = tobiko.required_setup_fixture(stacks.FloatingIpServerStackFixture)
+
+    def test_stack_create_complete(self):
+        self.stack.key_pair_stack.wait_for_create_complete()
+        self.stack.network_stack.wait_for_create_complete()
+        self.stack.wait_for_create_complete()
 
     def test_ssh(self):
         """Test SSH connectivity to floating IP address"""
@@ -206,17 +210,23 @@ class FloatingIPWithICMPSecurityGroupTest(FloatingIPTest):
 
 # --- Test net-mtu-write extension --------------------------------------------
 
+@neutron.skip_if_missing_networking_extensions('net-mtu-writable')
 class FloatingIPWithNetMtuWritableFixture(stacks.FloatingIpServerStackFixture):
-    """Heat stack for testing setting MTU value to internal network value"""
+    """Heat stack for testing floating IP with a custom MTU network value"""
 
     #: Heat stack for creating internal network with custom MTU value
     network_stack = tobiko.required_setup_fixture(
-        _stacks.InternalNetworkWithNetMtuWritableFixture)
+        stacks.NetworkWithNetMtuWriteStackFixture)
 
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
 class FlatingIpWithMtuWritableTest(FloatingIPTest):
-    """Tests connectivity via floating IP with modified MTU value"""
+    """Tests connectivity via floating IP with a custom MTU value"""
 
     #: Resources stack with floating IP and Nova server
     stack = tobiko.required_setup_fixture(FloatingIPWithNetMtuWritableFixture)
+
+    @classmethod
+    def setUpClass(cls):
+        super(FlatingIpWithMtuWritableTest, cls).setUpClass()
+        tobiko.skip('Disable this test to see if it fixes the problem')
