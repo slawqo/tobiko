@@ -27,48 +27,11 @@ from tobiko.tests.scenario.neutron import _stacks
 CONF = config.CONF
 
 
-class FloatingIPFixture(stacks.FloatingIpServerStackFixture):
-    """Heat stack for testing a floating IP instance"""
-
-    #: stack with the internal where the server port is created
-    network_stack = tobiko.required_setup_fixture(
-        _stacks.InternalNetworkFixture)
-
-    #: Whenever port security on internal network is enable
-    port_security_enabled = False
-
-    #: Security groups to be associated to network ports
-    security_groups = []
-
-    def setup_parameters(self):
-        """Setup template parameters
-
-        """
-        super(FloatingIPFixture, self).setup_parameters()
-        if self.port_security_enabled:
-            self.setup_port_security()
-
-    @neutron.skip_if_missing_networking_extensions('port-security')
-    def setup_port_security(self):
-        """Setup port security template parameters"""
-        self.parameters.update(
-            port_security_enabled=self.port_security_enabled,
-            security_groups=self.security_groups or [])
-
-    @property
-    def server_name(self):
-        return self.outputs.server_name
-
-    @property
-    def floating_ip_address(self):
-        return self.outputs.floating_ip_address
-
-
 class FloatingIPTest(base.TobikoTest):
     """Tests connectivity via floating IPs"""
 
     #: Resources stack with floating IP and Nova server
-    stack = tobiko.required_setup_fixture(FloatingIPFixture)
+    stack = tobiko.required_setup_fixture(stacks.FloatingIpServerStackFixture)
 
     def test_ssh(self):
         """Test SSH connectivity to floating IP address"""
@@ -163,7 +126,7 @@ class FloatingIPTest(base.TobikoTest):
 
 @neutron.skip_if_missing_networking_extensions('port-security',
                                                'security-group')
-class FloatingIPWithPortSecurityFixture(FloatingIPFixture):
+class FloatingIPWithPortSecurityFixture(stacks.FloatingIpServerStackFixture):
     """Heat stack for testing a floating IP instance with port security"""
 
     #: Resources stack with security group to allow ping Nova servers
@@ -243,7 +206,7 @@ class FloatingIPWithICMPSecurityGroupTest(FloatingIPTest):
 
 # --- Test net-mtu-write extension --------------------------------------------
 
-class FloatingIPWithNetMtuWritableFixture(FloatingIPFixture):
+class FloatingIPWithNetMtuWritableFixture(stacks.FloatingIpServerStackFixture):
     """Heat stack for testing setting MTU value to internal network value"""
 
     #: Heat stack for creating internal network with custom MTU value
