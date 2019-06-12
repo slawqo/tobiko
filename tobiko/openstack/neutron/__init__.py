@@ -17,10 +17,14 @@ from tobiko.openstack.neutron import _client
 from tobiko.openstack.neutron import _extension
 
 
+neutron_client = _client.neutron_client
 get_neutron_client = _client.get_neutron_client
 NeutronClientFixture = _client.NeutronClientFixture
 find_network = _client.find_network
-list_network = _client.list_network
+list_networks = _client.list_networks
+find_subnet = _client.find_subnet
+list_subnets = _client.list_subnets
+list_subnet_cidrs = _client.list_subnet_cidrs
 show_network = _client.show_network
 show_router = _client.show_router
 show_subnet = _client.show_subnet

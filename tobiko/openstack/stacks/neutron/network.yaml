@@ -183,6 +183,11 @@ outputs:
     value: {get_resource: gateway}
     condition: has_gateway
 
+  gateway_network_id:
+    description: Gateway network ID
+    value: {get_attr: [gateway, external_gateway_info, network_id]}
+    condition: has_gateway
+
   mtu:
     description: Network MTU value (integer)
     value: {get_attr: [network, mtu]}

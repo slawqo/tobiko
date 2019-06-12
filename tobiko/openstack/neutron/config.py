@@ -20,4 +20,16 @@ def register_tobiko_options(conf):
     conf.register_opts(
         group=cfg.OptGroup('neutron'),
         opts=[cfg.StrOpt('floating_network',
-                         help="Network for creating floating IPs")])
+                         help="Network for creating floating IPs"),
+              cfg.StrOpt('ipv4_cidr',
+                         default='10.100.0.0/16',
+                         help="The CIDR block to allocate IPv4 subnets from"),
+              cfg.IntOpt('ipv4_prefixlen',
+                         default=24,
+                         help="The mask bits for IPv4 subnets"),
+              cfg.StrOpt('ipv6_cidr',
+                         default='2003::/48',
+                         help="The CIDR block to allocate IPv6 subnets from"),
+              cfg.IntOpt('ipv6_prefixlen',
+                         default=64,
+                         help="The mask bits for IPv6 subnets")])

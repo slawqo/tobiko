@@ -74,12 +74,12 @@ class NetworkStackFixture(heat.HeatStackFixture):
         return neutron.show_subnet(self.ipv4_subnet_id)
 
     @property
-    def gateway_details(self):
-        return neutron.show_router(self.gateway_id)
+    def ipv6_subnet_details(self):
+        return neutron.show_subnet(self.ipv6_subnet_id)
 
     @property
-    def gateway_network_id(self):
-        return neutron.find_network(self.gateway_network)['id']
+    def gateway_details(self):
+        return neutron.show_router(self.gateway_id)
 
     @property
     def gateway_network_details(self):

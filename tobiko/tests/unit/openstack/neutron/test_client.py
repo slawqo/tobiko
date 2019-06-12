@@ -45,3 +45,24 @@ class GetNeutronClientTest(openstack.OpenstackTest):
     def test_get_neutron_client_with_session(self):
         session = keystone.get_keystone_session()
         self.test_get_neutron_client(session=session)
+
+
+class NeutronClientTest(openstack.OpenstackTest):
+
+    def test_neutron_client_with_none(self):
+        default_client = neutron.get_neutron_client()
+        client = neutron.neutron_client(None)
+        self.assertIsInstance(client, neutronclient.Client)
+        self.assertIs(default_client, client)
+
+    def test_neutron_client_with_client(self):
+        default_client = neutron.get_neutron_client()
+        client = neutron.neutron_client(default_client)
+        self.assertIsInstance(client, neutronclient.Client)
+        self.assertIs(default_client, client)
+
+    def test_neutron_client_with_fixture(self):
+        fixture = neutron.NeutronClientFixture()
+        client = neutron.neutron_client(fixture)
+        self.assertIsInstance(client, neutronclient.Client)
+        self.assertIs(client, fixture.client)

@@ -13,10 +13,12 @@
 #    under the License.
 from __future__ import absolute_import
 
+import netaddr
 from neutronclient.v2_0 import client as neutronclient
 
+import tobiko
 from tobiko.openstack import _client
-from tobiko.openstack.neutron import _exceptions
+from tobiko.openstack import _find
 
 
 class NeutronClientFixture(_client.OpenstackClientFixture):
@@ -28,47 +30,70 @@ class NeutronClientFixture(_client.OpenstackClientFixture):
 CLIENTS = _client.OpenstackClientManager(init_client=NeutronClientFixture)
 
 
+def neutron_client(obj):
+    if not obj:
+        return get_neutron_client()
+
+    if isinstance(obj, neutronclient.Client):
+        return obj
+
+    fixture = tobiko.setup_fixture(obj)
+    if isinstance(fixture, NeutronClientFixture):
+        return fixture.client
+
+    message = "Object {!r} is not a NeutronClientFixture".format(obj)
+    raise TypeError(message)
+
+
 def get_neutron_client(session=None, shared=True, init_client=None,
                        manager=None):
     manager = manager or CLIENTS
     client = manager.get_client(session=session, shared=shared,
                                 init_client=init_client)
-    client.setUp()
+    tobiko.setup_fixture(client)
     return client.client
 
 
-def find_network(network, session=None, **params):
-    networks = [n
-               for n in list_network(session=session, **params)
-               if network in (n['name'], n['id'])]
-
-    if not networks:
-        raise _exceptions.NoSuchNetwork(network=network)
-
-    elif len(networks) > 1:
-        network_ids = [n['id'] for n in networks]
-        raise _exceptions.MoreNetworksFound(
-            network=network,
-            netowrk_ids=(', '.join(network_ids)))
-
-    return networks[0]
+def find_network(obj, properties=None, client=None, **params):
+    """Look for the unique network matching some property values"""
+    return _find.find_resource(
+        obj=obj, resource_type='network', properties=properties,
+        resources=list_networks(client=client, **params))
 
 
-def list_network(session=None, **params):
-    return get_neutron_client(session=session).list_networks(**params)[
-        'networks']
+def find_subnet(obj, properties=None, client=None, **params):
+    """Look for the unique subnet matching some property values"""
+    return _find.find_resource(
+        obj=obj, resource_type='subnet', properties=properties,
+        resources=list_subnets(client=client, **params))
 
 
-def show_network(network, session=None, **params):
-    return get_neutron_client(session=session).show_network(
-        network, **params)['network']
+def list_networks(show=False, client=None, **params):
+    networks = neutron_client(client).list_networks(**params)['networks']
+    if show:
+        networks = [show_network(n['id'], client=client) for n in networks]
+    return networks
 
 
-def show_router(router, session=None, **params):
-    return get_neutron_client(session=session).show_router(
-        router, **params)['router']
+def list_subnets(show=False, client=None, **params):
+    subnets = neutron_client(client).list_subnets(**params)['subnets']
+    if show:
+        subnets = [show_subnet(s['id'], client=client) for s in subnets]
+    return subnets
 
 
-def show_subnet(subnet, session=None, **params):
-    return get_neutron_client(session=session).show_subnet(
-        subnet, **params)['subnet']
+def list_subnet_cidrs(client=None, **params):
+    return [netaddr.IPNetwork(subnet['cidr'])
+            for subnet in list_subnets(client=client, **params)]
+
+
+def show_network(network, client=None, **params):
+    return neutron_client(client).show_network(network, **params)['network']
+
+
+def show_router(router, client=None, **params):
+    return neutron_client(client).show_router(router, **params)['router']
+
+
+def show_subnet(subnet, client=None, **params):
+    return neutron_client(client).show_subnet(subnet, **params)['subnet']
