@@ -21,6 +21,7 @@ from tobiko.openstack.stacks import _nova
 KeyPairStackFixture = _nova.KeyPairStackFixture
 
 NetworkStackFixture = _neutron.NetworkStackFixture
-NetworkNetMtuWriteStackFixture = _neutron.NetworkNetMtuWriteStackFixture
+NetworkWithNetMtuWriteStackFixture = (
+    _neutron.NetworkWithNetMtuWriteStackFixture)
 FloatingIpServerStackFixture = _neutron.FloatingIpServerStackFixture
 SecurityGroupsFixture = _neutron.SecurityGroupsFixture

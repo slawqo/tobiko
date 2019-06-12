@@ -87,7 +87,7 @@ class NetworkStackFixture(heat.HeatStackFixture):
 
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
-class NetworkNetMtuWriteStackFixture(heat.HeatStackFixture):
+class NetworkWithNetMtuWriteStackFixture(NetworkStackFixture):
 
     # Whenever cat obtain network MTU value
     has_net_mtu = True
@@ -97,7 +97,7 @@ class NetworkNetMtuWriteStackFixture(heat.HeatStackFixture):
 
     def setup_parameters(self):
         """Setup Heat template parameters"""
-        super(NetworkNetMtuWriteStackFixture, self).setup_parameters()
+        super(NetworkWithNetMtuWriteStackFixture, self).setup_parameters()
         if self.mtu:
             self.setup_net_mtu_writable()
 

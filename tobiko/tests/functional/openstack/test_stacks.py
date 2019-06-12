@@ -58,11 +58,11 @@ class NetworkTestCase(testtools.TestCase):
 
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-write')
-class NetworkNetMtuWriteTestCase(NetworkTestCase):
+class NetworkWithNetMtuWriteTestCase(NetworkTestCase):
 
     #: Stack of resources with a network with a gateway router
     stack = tobiko.required_setup_fixture(
-        stacks.NetworkNetMtuWriteStackFixture)
+        stacks.NetworkWithNetMtuWriteStackFixture)
 
     def test_net_mtu_write(self):
         self.assertEqual(self.stack.mtu, self.stack.outputs.mtu)
