@@ -106,6 +106,19 @@ def setup_fixture(obj, manager=None):
     return fixture
 
 
+def reset_fixture(obj, manager=None):
+    '''Get registered fixture and setup it up'''
+    fixture = get_fixture(obj, manager=manager)
+    try:
+        fixture.reset()
+    except testtools.MultipleExceptions as ex:
+        for exc_info in ex.args[1:]:
+            LOG.exception("Error reseting fixture %r",
+                          fixture.fixture_name, exc_info=exc_info)
+        six.reraise(*ex.args[0])
+    return fixture
+
+
 def cleanup_fixture(obj, manager=None):
     '''Get registered fixture and clean it up'''
     fixture = get_fixture(obj, manager=manager)

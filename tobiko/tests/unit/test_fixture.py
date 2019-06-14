@@ -156,6 +156,38 @@ class SetupFixtureTest(unit.TobikoUnitTest):
         result.cleanup_fixture.assert_not_called()
 
 
+class ResetFixtureTest(unit.TobikoUnitTest):
+
+    def test_with_name(self):
+        self._test_reset_fixture(canonical_name(MyFixture))
+
+    def test_with_type(self):
+        self._test_reset_fixture(MyFixture)
+
+    def test_with_instance(self):
+        self._test_reset_fixture(MyFixture2())
+
+    def test_after_setup(self):
+        fixture = MyFixture2()
+        fixture.setUp()
+        fixture.setup_fixture.reset_mock()
+        self._test_reset_fixture(fixture)
+
+    def test_after_cleanup(self):
+        fixture = MyFixture2()
+        fixture.cleanUp()
+        self._test_reset_fixture(fixture)
+
+    def _test_reset_fixture(self, obj, should_clean=True):
+        result = tobiko.reset_fixture(obj)
+        self.assertIs(tobiko.get_fixture(obj), result)
+        result.setup_fixture.assert_called_once_with()
+        if should_clean:
+            result.cleanup_fixture.assert_called_once_with()
+        else:
+            result.cleanup_fixture.assert_not_called()
+
+
 class FailingFixture(tobiko.SharedFixture):
 
     def setup_fixture(self):

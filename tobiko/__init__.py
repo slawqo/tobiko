@@ -35,6 +35,7 @@ get_fixture_name = _fixture.get_fixture_name
 get_fixture_class = _fixture.get_fixture_class
 get_fixture_dir = _fixture.get_fixture_dir
 remove_fixture = _fixture.remove_fixture
+reset_fixture = _fixture.reset_fixture
 setup_fixture = _fixture.setup_fixture
 cleanup_fixture = _fixture.cleanup_fixture
 list_required_fixtures = _fixture.list_required_fixtures
