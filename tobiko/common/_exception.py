@@ -63,3 +63,12 @@ class TobikoException(Exception):
         return "{class_name}({message!r})".format(
             class_name=type(self).__name__,
             message=self.message)
+
+
+def check_valid_type(obj, *valid_types):
+    if not isinstance(obj, valid_types):
+        types_str = ", ".join(str(t) for t in valid_types)
+        message = ("Object {!r} is not of a valid type ({!s})").format(
+            obj, types_str)
+        raise TypeError(message)
+    return obj

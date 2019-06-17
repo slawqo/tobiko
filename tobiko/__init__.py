@@ -25,6 +25,7 @@ FailureException = _asserts.FailureException
 fail = _asserts.fail
 
 TobikoException = _exception.TobikoException
+check_valid_type = _exception.check_valid_type
 
 is_fixture = _fixture.is_fixture
 get_fixture = _fixture.get_fixture

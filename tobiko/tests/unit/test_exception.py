@@ -71,3 +71,34 @@ class TestException(unit.TobikoUnitTest):
                 'This exception occurred because of something went wrong',
                 str(ex))
             self.assertEqual('something went wrong', ex.reason)
+
+
+class TestCheckValidType(unit.TobikoUnitTest):
+
+    def test_check_valid_type_with_no_type(self):
+        self._test_check_is_valid_type_when_invalid(object())
+
+    def test_check_valid_type_with_one_type(self):
+        self._test_check_is_valid_type_when_valid(object(), object)
+
+    def test_check_valid_type_with_two_types(self):
+        self._test_check_is_valid_type_when_valid(object(), bool, object)
+
+    def test_check_valid_type_with_one_wrong_type(self):
+        self._test_check_is_valid_type_when_invalid(object(), bool)
+
+    def test_check_valid_type_with_two_wrong_types(self):
+        self._test_check_is_valid_type_when_invalid(object(), bool, int)
+
+    def _test_check_is_valid_type_when_valid(self, obj, *valid_types):
+        result = tobiko.check_valid_type(obj, *valid_types)
+        self.assertIs(obj, result)
+
+    def _test_check_is_valid_type_when_invalid(self, obj, *valid_types):
+        ex = self.assertRaises(TypeError, tobiko.check_valid_type, obj,
+                               *valid_types)
+        tyes_str = ', '.join([str(t) for t in valid_types])
+        message = ("Object {!s} is not of a valid type ({!s})"
+                   ).format(repr(obj), tyes_str)
+
+        self.assertEqual(message, str(ex))
