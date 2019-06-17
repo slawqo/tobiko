@@ -14,11 +14,15 @@
 from __future__ import absolute_import
 
 from heatclient.v1 import client as heatclient
+import mock
 
 from tobiko.openstack import keystone
 from tobiko.openstack import heat
 from tobiko.tests.unit import openstack
 from tobiko.tests.unit.openstack import test_client
+
+
+MockClient = mock.create_autospec(heatclient.Client)
 
 
 class HeatClientFixtureTest(test_client.OpenstackClientFixtureTest):
@@ -45,3 +49,22 @@ class GetHeatClientTest(openstack.OpenstackTest):
     def test_get_heat_client_with_session(self):
         session = keystone.get_keystone_session()
         self.test_get_heat_client(session=session)
+
+
+class HeatClientTest(openstack.OpenstackTest):
+
+    def test_heat_client(self, obj=None):
+        client = heat.heat_client(obj)
+        self.assertIsInstance(client, heatclient.Client)
+        if obj is None:
+            self.assertIs(heat.default_heat_client(), client)
+        elif isinstance(obj, heatclient.Client):
+            self.assertIs(obj, client)
+        elif isinstance(obj, heat.HeatClientFixture):
+            self.assertIs(obj.client, client)
+
+    def test_heat_client_with_client(self):
+        self.test_heat_client(obj=MockClient())
+
+    def test_heat_client_with_fixture(self):
+        self.test_heat_client(obj=heat.HeatClientFixture())

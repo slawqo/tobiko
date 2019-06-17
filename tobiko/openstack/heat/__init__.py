@@ -18,7 +18,10 @@ from tobiko.openstack.heat import _template
 from tobiko.openstack.heat import _stack
 
 
+heat_client = _client.heat_client
+default_heat_client = _client.default_heat_client
 get_heat_client = _client.get_heat_client
+heat_client = _client.heat_client
 HeatClientFixture = _client.HeatClientFixture
 
 heat_template = _template.heat_template

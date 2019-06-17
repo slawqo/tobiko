@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 from novaclient import client as novaclient
 
+import tobiko
 from tobiko.openstack import _client
 
 
@@ -24,7 +25,28 @@ class NovaClientFixture(_client.OpenstackClientFixture):
         return novaclient.Client('2', session=session)
 
 
-CLIENTS = _client.OpenstackClientManager(init_client=NovaClientFixture)
+class NovaClientManager(_client.OpenstackClientManager):
+
+    def create_client(self, session):
+        return NovaClientFixture(session=session)
+
+
+CLIENTS = NovaClientManager()
+
+
+def nova_client(obj):
+    if not obj:
+        return get_nova_client()
+
+    if isinstance(obj, novaclient.Client):
+        return obj
+
+    fixture = tobiko.setup_fixture(obj)
+    if isinstance(fixture, NovaClientFixture):
+        return fixture.client
+
+    message = "Object {!r} is not a NovaClientFixture".format(obj)
+    raise TypeError(message)
 
 
 def get_nova_client(session=None, shared=True, init_client=None,
@@ -32,5 +54,5 @@ def get_nova_client(session=None, shared=True, init_client=None,
     manager = manager or CLIENTS
     client = manager.get_client(session=session, shared=shared,
                                 init_client=init_client)
-    client.setUp()
+    tobiko.setup_fixture(client)
     return client.client

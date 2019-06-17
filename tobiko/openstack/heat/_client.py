@@ -13,26 +13,51 @@
 #    under the License.
 from __future__ import absolute_import
 
-from heatclient import client as heatclient
+from heatclient.v1 import client as heatclient
 
+import tobiko
 from tobiko.openstack import _client
 
 
 class HeatClientFixture(_client.OpenstackClientFixture):
 
     def init_client(self, session):
-        return heatclient.Client(
-            '1', session=session, endpoint_type='public',
-            service_type='orchestration')
+        return heatclient.Client(session=session,
+                                 endpoint_type='public',
+                                 service_type='orchestration')
 
 
-CLIENTS = _client.OpenstackClientManager(init_client=HeatClientFixture)
+class HeatClientManager(_client.OpenstackClientManager):
+
+    def create_client(self, session):
+        return HeatClientFixture(session=session)
+
+
+CLIENTS = HeatClientManager()
+
+
+def heat_client(obj=None):
+    if obj is None:
+        return default_heat_client()
+
+    if isinstance(obj, heatclient.Client):
+        return obj
+
+    fixture = tobiko.get_fixture(obj)
+    if isinstance(fixture, HeatClientFixture):
+        return tobiko.setup_fixture(fixture).client
+
+    message = "Object {!r} is not a NeutronClientFixture".format(obj)
+    raise TypeError(message)
+
+
+def default_heat_client():
+    return get_heat_client()
 
 
 def get_heat_client(session=None, shared=True, init_client=None,
                     manager=None):
     manager = manager or CLIENTS
-    client = manager.get_client(session=session, shared=shared,
+    fixture = manager.get_client(session=session, shared=shared,
                                 init_client=init_client)
-    client.setUp()
-    return client.client
+    return tobiko.setup_fixture(fixture).client

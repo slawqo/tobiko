@@ -27,7 +27,13 @@ class NeutronClientFixture(_client.OpenstackClientFixture):
         return neutronclient.Client(session=session)
 
 
-CLIENTS = _client.OpenstackClientManager(init_client=NeutronClientFixture)
+class NeutronClientManatger(_client.OpenstackClientManager):
+
+    def create_client(self, session):
+        return NeutronClientFixture(session=session)
+
+
+CLIENTS = NeutronClientManatger()
 
 
 def neutron_client(obj):

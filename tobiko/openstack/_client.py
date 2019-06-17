@@ -28,29 +28,26 @@ class OpenstackClientFixture(tobiko.SharedFixture):
 
     client = None
     session = None
-    session_fixture = None
 
-    def __init__(self, session=None):
+    def __init__(self, session=None, client=None):
         super(OpenstackClientFixture, self).__init__()
         if session:
-            if tobiko.is_fixture(session):
-                self.session_fixture = session
-            else:
-                self.session = session
+            self.session = session
+        if client:
+            self.client = client
 
     def setup_fixture(self):
-        self.setup_session()
         self.setup_client()
 
-    def setup_session(self):
-        session_fixture = self.session_fixture
-        if session_fixture:
-            self.session = tobiko.setup_fixture(session_fixture).session
-        elif not self.session:
-            self.session = keystone.get_keystone_session()
-
     def setup_client(self):
-        self.client = self.init_client(session=self.session)
+        client = self.client
+        if not client:
+            self.session = session = self.get_session()
+            self.client = client = self.init_client(session=session)
+        return client
+
+    def get_session(self):
+        return keystone.keystone_session(self.session)
 
     @abc.abstractmethod
     def init_client(self, session):
@@ -59,9 +56,8 @@ class OpenstackClientFixture(tobiko.SharedFixture):
 
 class OpenstackClientManager(object):
 
-    def __init__(self, init_client=None):
-        self._clients = {}
-        self.init_client = init_client
+    def __init__(self):
+        self.clients = {}
 
     def get_client(self, session=None, shared=True, init_client=None):
         if shared:
@@ -70,17 +66,19 @@ class OpenstackClientManager(object):
             else:
                 key = session
 
-            client = self._clients.get(key)
+            client = self.clients.get(key)
             if client:
                 return client
 
-        session = session or keystone.get_keystone_session()
-        init_client = init_client or self.init_client
+        init_client = init_client or self.create_client
         assert callable(init_client)
         LOG.debug('Initialize OpenStack client: %r(session=%r)',
                   init_client, session)
         client = init_client(session=session)
 
         if shared:
-            self._clients[key] = client
+            self.clients[key] = client
         return client
+
+    def create_client(self, session):
+        raise NotImplementedError

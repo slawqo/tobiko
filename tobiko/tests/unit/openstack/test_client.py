@@ -16,6 +16,7 @@ from __future__ import absolute_import
 
 import inspect
 
+from keystoneauth1 import session as _session
 import mock
 
 import tobiko
@@ -33,17 +34,7 @@ class ClientFixture(_client.OpenstackClientFixture):
         return CLIENT
 
 
-SESSION = object()
-
-DEFAULT_SESSION = object()
-
-
-class SessionFixture(tobiko.SharedFixture):
-
-    session = None
-
-    def setup_fixture(self):
-        self.session = SESSION
+MockSession = mock.create_autospec(_session.Session)
 
 
 class OpenstackClientFixtureTest(openstack.OpenstackTest):
@@ -53,10 +44,10 @@ class OpenstackClientFixtureTest(openstack.OpenstackTest):
 
     def test_init(self, session=None):
         client = self.create_client(session=session)
-        self.check_client_session(client=client, session=session)
+        self.assertIs(session or None, client.session)
 
     def test_init_with_credentials(self):
-        self.test_init(session=SESSION)
+        self.test_init(session=MockSession)
 
     def test_init_with_credentials_fixture(self):
         self.test_init(session=keystone.KeystoneSessionFixture())
@@ -78,25 +69,19 @@ class OpenstackClientFixtureTest(openstack.OpenstackTest):
             self.assertIs(keystone.get_keystone_session(), client.session)
 
     def test_setup_with_session(self):
-        self.test_setup(session=SESSION)
+        self.test_setup(session=MockSession())
 
     def test_setup_with_session_fixture(self):
-        self.test_setup(session=SessionFixture())
+        self.test_setup(session=keystone.KeystoneSessionFixture())
 
     def test_setup_with_session_fixture_type(self):
-        self.test_setup(session=SessionFixture)
+        self.test_setup(session=keystone.KeystoneSessionFixture)
 
-    def check_client_session(self, client, session):
-        if session:
-            if tobiko.is_fixture(session):
-                self.assertIsNone(client.session)
-                self.assertIs(session, client.session_fixture)
-            else:
-                self.assertIs(session, client.session)
-                self.assertIsNone(client.session_fixture)
-        else:
-            self.assertIsNone(client.session)
-            self.assertIsNone(client.session_fixture)
+
+class ClientManager(_client.OpenstackClientManager):
+
+    def create_client(self, session):
+        return ClientFixture(session=session)
 
 
 class OpenstackClientManagerTest(openstack.OpenstackTest):
@@ -104,47 +89,38 @@ class OpenstackClientManagerTest(openstack.OpenstackTest):
     def setUp(self):
         super(OpenstackClientManagerTest, self).setUp()
         self.patch(keystone, 'get_keystone_session',
-                   return_value=DEFAULT_SESSION)
+                   return_value=MockSession())
 
-    def test_init(self, init_client=None):
-        manager = _client.OpenstackClientManager(init_client=init_client)
-        self.assertIs(init_client, manager.init_client)
-
-    def test_init_with_init_client(self):
-        self.test_init(init_client=ClientFixture)
+    def test_init(self):
+        manager = ClientManager()
+        self.assertEqual({}, manager.clients)
 
     def test_get_client(self, session=None, shared=True):
-        default_init_client = mock.MagicMock(side_effect=ClientFixture)
-        manager = _client.OpenstackClientManager(
-            init_client=default_init_client)
+        manager = ClientManager()
         client1 = manager.get_client(session=session, shared=shared)
         client2 = manager.get_client(session=session, shared=shared)
         if shared:
             self.assertIs(client1, client2)
-            default_init_client.assert_called_once_with(
-                session=(session or DEFAULT_SESSION))
         else:
             self.assertIsNot(client1, client2)
-            default_init_client.assert_has_calls(
-                [mock.call(session=(session or DEFAULT_SESSION))] * 2,
-                any_order=True)
 
     def test_get_client_with_not_shared(self):
         self.test_get_client(shared=False)
 
     def test_get_client_with_session(self):
-        self.test_get_client(session=SESSION)
+        self.test_get_client(session=MockSession())
 
     def test_get_client_with_session_fixture(self):
-        self.test_get_client(session=SessionFixture())
+        self.test_get_client(session=keystone.KeystoneSessionFixture())
 
     def test_get_client_with_session_fixture_type(self):
-        self.test_get_client(session=SessionFixture)
+        self.test_get_client(session=keystone.KeystoneSessionFixture)
 
     def test_get_client_with_init_client(self):
         init_client = mock.MagicMock(return_value=CLIENT)
         manager = _client.OpenstackClientManager()
-        client = manager.get_client(session=SESSION,
+        session = MockSession()
+        client = manager.get_client(session=session,
                                     init_client=init_client)
         self.assertIs(CLIENT, client)
-        init_client.assert_called_once_with(session=SESSION)
+        init_client.assert_called_once_with(session=session)

@@ -131,8 +131,8 @@ class KeystoneCredentialsFixture(tobiko.SharedFixture):
                 try:
                     credentials.validate()
                 except InvalidKeystoneCredentials as ex:
-                    LOG.info("No such valid credentials from environment: %r",
-                             ex)
+                    LOG.info("No such valid credentials from %r (%r)",
+                             self, ex)
                 else:
                     self.addCleanup(self.cleanup_credentials)
                     self.credentials = credentials
@@ -141,7 +141,7 @@ class KeystoneCredentialsFixture(tobiko.SharedFixture):
         del self.credentials
 
     def get_credentials(self):
-        return None
+        return self.credentials
 
 
 class EnvironKeystoneCredentialsFixture(KeystoneCredentialsFixture):
