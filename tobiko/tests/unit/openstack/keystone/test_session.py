@@ -14,8 +14,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import inspect
-
 from keystoneauth1 import session as keystonesession
 import mock
 
@@ -34,22 +32,6 @@ CREDENTIALS = keystone.keystone_credentials(
     project_domain_name='Default')
 
 
-class CredentialsFixture(tobiko.SharedFixture):
-
-    credentials = None
-
-    def setup_fixture(self):
-        self.credentials = CREDENTIALS
-
-
-class DefaultCredentialsFixture(tobiko.SharedFixture):
-
-    credentials = None
-
-    def setup_fixture(self):
-        self.credentials = DEFAULT_CREDENTIALS
-
-
 DEFAULT_CREDENTIALS = keystone.keystone_credentials(
     api_version=2,
     auth_url='http://127.0.0.1:5000/identiy/v2.0',
@@ -58,23 +40,17 @@ DEFAULT_CREDENTIALS = keystone.keystone_credentials(
     password='this is a secret')
 
 
-class CheckSessionCredentialsMixin(object):
+class CredentialsFixture(keystone.KeystoneCredentialsFixture):
 
-    def check_session_credentials(self, session, credentials):
-        if credentials:
-            if tobiko.is_fixture(credentials):
-                self.assertIsNone(session.credentials)
-                self.assertIs(credentials, session.credentials_fixture)
-            else:
-                self.assertIs(credentials, session.credentials)
-                self.assertIsNone(session.credentials_fixture)
-        else:
-            self.assertIsNone(session.credentials)
-            self.assertIsNone(session.credentials_fixture)
+    credentials = CREDENTIALS
 
 
-class KeystoneSessionFixtureTest(CheckSessionCredentialsMixin,
-                                 openstack.OpenstackTest):
+class DefaultCredentialsFixture(CredentialsFixture):
+
+    credentials = DEFAULT_CREDENTIALS
+
+
+class KeystoneSessionFixtureTest(openstack.OpenstackTest):
 
     default_credentials_fixture = (
         'tobiko.openstack.keystone._credentials.'
@@ -83,15 +59,17 @@ class KeystoneSessionFixtureTest(CheckSessionCredentialsMixin,
     def setUp(self):
         super(KeystoneSessionFixtureTest, self).setUp()
         from tobiko.openstack.keystone import _credentials
+        from tobiko.openstack.keystone import _session
 
         tobiko.remove_fixture(self.default_credentials_fixture)
         self.patch(_credentials, 'DefaultKeystoneCredentialsFixture',
                    DefaultCredentialsFixture)
+        self.patch(_session, 'SESSIONS',
+                   _session.KeystoneSessionManager())
 
     def test_init(self, credentials=None):
         session = keystone.KeystoneSessionFixture(credentials=credentials)
-        self.check_session_credentials(session=session,
-                                       credentials=credentials)
+        self.assertIs(credentials or None, session.credentials)
 
     def test_init_with_credentials(self):
         self.test_init(credentials=CREDENTIALS)
@@ -105,15 +83,12 @@ class KeystoneSessionFixtureTest(CheckSessionCredentialsMixin,
     def test_setup(self, credentials=None):
         session = keystone.KeystoneSessionFixture(credentials=credentials)
         session.setUp()
-        if credentials:
-            if tobiko.is_fixture(credentials):
-                if inspect.isclass(credentials):
-                    credentials = tobiko.get_fixture(credentials)
-                self.assertIs(credentials.credentials, session.credentials)
-            else:
-                self.assertIs(credentials, session.credentials)
+        if tobiko.is_fixture(credentials):
+            credentials = tobiko.get_fixture(credentials)
+            self.assertIs(credentials.credentials, session.credentials)
         else:
-            self.assertEqual(DEFAULT_CREDENTIALS, session.credentials)
+            self.assertIs(credentials or DEFAULT_CREDENTIALS,
+                          session.credentials)
 
     def test_setup_with_credentials(self):
         self.test_setup(credentials=CREDENTIALS)
@@ -125,21 +100,20 @@ class KeystoneSessionFixtureTest(CheckSessionCredentialsMixin,
         self.test_setup(credentials=CredentialsFixture)
 
 
-class KeystoneSessionManagerTest(CheckSessionCredentialsMixin,
-                                 openstack.OpenstackTest):
+class KeystoneSessionManagerTest(openstack.OpenstackTest):
 
     def test_init(self):
         manager = keystone.KeystoneSessionManager()
-
         self.assertTrue(manager)
+        self.assertEqual({}, manager.sessions)
 
     def test_get_session(self, credentials=None, shared=True):
         manager = keystone.KeystoneSessionManager()
         session = manager.get_session(credentials=credentials,
                                       shared=shared)
+        self.assertIs(credentials or None, session.credentials)
+
         self.assertIsInstance(session, keystone.KeystoneSessionFixture)
-        self.check_session_credentials(session=session,
-                                       credentials=credentials)
         if shared:
             self.assertIs(session, manager.get_session(
                 credentials=credentials))

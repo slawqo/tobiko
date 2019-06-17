@@ -24,57 +24,80 @@ from tobiko.openstack.keystone import _credentials
 LOG = log.getLogger(__name__)
 
 
+def keystone_session(obj):
+    if not obj:
+        return default_keystone_session()
+    if tobiko.is_fixture(obj):
+        obj = tobiko.get_fixture(obj)
+        if isinstance(obj, KeystoneSessionFixture):
+            obj = tobiko.setup_fixture(obj).session
+    if isinstance(obj, _session.Session):
+        return obj
+    raise TypeError("Can't get {!r} object from {!r}".format(
+        _session.Session, obj))
+
+
 class KeystoneSessionFixture(tobiko.SharedFixture):
 
     session = None
     credentials = None
-    credentials_fixture = None
 
-    def __init__(self, credentials=None):
+    VALID_CREDENTIALS_TYPES = (_credentials.KeystoneCredentials,
+                               _credentials.KeystoneCredentialsFixture,
+                               type, str)
+
+    def __init__(self, credentials=None, session=None):
         super(KeystoneSessionFixture, self).__init__()
         if credentials:
-            if tobiko.is_fixture(credentials):
-                self.credentials_fixture = credentials
-            else:
-                self.credentials = credentials
+            tobiko.check_valid_type(credentials, *self.VALID_CREDENTIALS_TYPES)
+            self.credentials = credentials
+        if session:
+            self.session = session
 
     def setup_fixture(self):
-        self.setup_credentials()
-        self.setup_session(credentials=self.credentials)
+        self.setup_session()
 
-    def setup_credentials(self):
-        credentials_fixture = self.credentials_fixture
-        if credentials_fixture:
-            self.credentials = tobiko.setup_fixture(
-                credentials_fixture).credentials
-        elif not self.credentials:
-            self.credentials = _credentials.default_keystone_credentials()
+    def setup_session(self):
+        session = self.session
+        if not session:
+            credentials = _credentials.get_keystone_credentials(
+                self.credentials)
 
-    def setup_session(self, credentials):
-        LOG.debug("Create session for credentials %r", credentials)
-        loader = loading.get_plugin_loader('password')
-        params = credentials.to_dict()
-        del params['api_version']  # parameter not required
-        auth = loader.load_from_options(**params)
-        self.session = _session.Session(auth=auth, verify=False)
+            LOG.debug("Create Keystone session with credentials %r",
+                      credentials)
+            credentials.validate()
+            loader = loading.get_plugin_loader('password')
+            params = credentials.to_dict()
+            del params['api_version']  # parameter not required
+            auth = loader.load_from_options(**params)
+            self.session = _session.Session(auth=auth, verify=False)
+            self.credentials = credentials
 
 
 class KeystoneSessionManager(object):
 
     def __init__(self):
-        self._sessions = {}
+        self.sessions = {}
 
-    def get_session(self, credentials=None, shared=True, init_session=None):
+    def get_session(self, credentials=None, init_session=None, shared=True):
         if shared:
+            shared_key, session = self.get_shared_session(credentials)
+        else:
+            shared_key = session = None
+        return session or self.create_session(credentials=credentials,
+                                              init_session=init_session,
+                                              shared=shared,
+                                              shared_key=shared_key)
+
+    def get_shared_session(self, credentials):
+        if tobiko.is_fixture(credentials):
+            key = tobiko.get_fixture_name(credentials)
+        else:
             key = credentials
-            if credentials:
-                if tobiko.is_fixture(credentials):
-                    key = tobiko.get_fixture_name(credentials)
+        return key, self.sessions.get(key)
 
-            session = self._sessions.get(key)
-            if session:
-                return session
-
+    def create_session(self, credentials=None, init_session=None, shared=True,
+                       shared_key=None):
         init_session = init_session or KeystoneSessionFixture
         assert callable(init_session)
         LOG.debug('Initialize Keystone session: %r(credentials=%r)',
@@ -82,11 +105,16 @@ class KeystoneSessionManager(object):
         session = init_session(credentials=credentials)
 
         if shared:
-            self._sessions[key] = session
+            self.sessions[shared_key] = session
         return session
 
 
 SESSIONS = KeystoneSessionManager()
+
+
+def default_keystone_session(shared=True, init_session=None, manager=None):
+    return get_keystone_session(shared=shared, init_session=init_session,
+                                manager=manager)
 
 
 def get_keystone_session(credentials=None, shared=True, init_session=None,
@@ -94,5 +122,4 @@ def get_keystone_session(credentials=None, shared=True, init_session=None,
     manager = manager or SESSIONS
     session = manager.get_session(credentials=credentials, shared=shared,
                                   init_session=init_session)
-    session.setUp()
-    return session.session
+    return tobiko.setup_fixture(session).session

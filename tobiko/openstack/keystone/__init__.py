@@ -17,10 +17,13 @@ from tobiko.openstack.keystone import _credentials
 from tobiko.openstack.keystone import _session
 
 keystone_credentials = _credentials.keystone_credentials
+get_keystone_credentials = _credentials.get_keystone_credentials
 default_keystone_credentials = _credentials.default_keystone_credentials
 KeystoneCredentials = _credentials.KeystoneCredentials
+KeystoneCredentialsFixture = _credentials.KeystoneCredentialsFixture
 InvalidKeystoneCredentials = _credentials.InvalidKeystoneCredentials
 
+keystone_session = _session.keystone_session
 KeystoneSessionFixture = _session.KeystoneSessionFixture
 KeystoneSessionManager = _session.KeystoneSessionManager
 get_keystone_session = _session.get_keystone_session
