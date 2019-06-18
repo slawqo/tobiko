@@ -12,6 +12,8 @@
 - name: Set up Overcloud resources create cirros img
   shell: |
     source "{{ test.overcloudrc }}"
+    openstack image list --status active --limit 1 -f value -c Name| \
+    grep -q -w cirros || \
     openstack image create cirros \
       --file cirros-0.4.0-x86_64-disk.img \
       --disk-format qcow2 \
@@ -21,6 +23,7 @@
 - name: Set up Overcloud resources create m.tiny flavor
   shell: |
     source "{{ test.overcloudrc }}"
+    openstack flavor list --limit 1 -f value -c Name|grep -q -w 'm1.tiny' || \
     openstack flavor create --vcpus 1 --ram 64 --disk 1 m1.tiny
 
 - name: Set up Overcloud resources create ssh keys

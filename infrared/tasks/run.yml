@@ -3,4 +3,4 @@
       cd "{{ test.dir }}"
       source "{{ test.overcloudrc }}"
       source "{{ test.venv }}/bin/activate"
-      tox -e "{{ test.tests }}"
+      tox -e {{ test.tests }}
