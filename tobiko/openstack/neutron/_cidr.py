@@ -35,7 +35,6 @@ class CIDRGeneratorFixture(tobiko.SharedFixture):
     client = None
     config = None
     cidr_generator = None
-    subnet_cidrs = None
 
     def __init__(self, cidr=None, prefixlen=None, client=None):
         super(CIDRGeneratorFixture, self).__init__()
@@ -48,7 +47,7 @@ class CIDRGeneratorFixture(tobiko.SharedFixture):
 
     def setup_fixture(self):
         self.setup_config()
-        self.setup_subnet_cidrs()
+        self.setup_client()
         self.setup_cidr_generator()
 
     def setup_config(self):
@@ -56,18 +55,16 @@ class CIDRGeneratorFixture(tobiko.SharedFixture):
         CONF = config.CONF
         self.config = CONF.tobiko.neutron
 
-    def setup_subnet_cidrs(self):
-        client = _client.neutron_client(self.client)
-        self.subnet_cidrs = set(_client.list_subnet_cidrs(client=client))
+    def setup_client(self):
+        self.client = _client.neutron_client(self.client)
 
     def setup_cidr_generator(self):
-        cidr = netaddr.IPNetwork(self.cidr)
-        prefixlen = int(self.prefixlen)
-        self.cidr_generator = cidr.subnet(prefixlen)
+        self.cidr_generator = self.cidr.subnet(self.prefixlen)
 
     def new_cidr(self):
+        used_cidrs = set(_client.list_subnet_cidrs(client=self.client))
         for cidr in self.cidr_generator:
-            if cidr not in self.subnet_cidrs:
+            if cidr not in used_cidrs:
                 return cidr
         raise NoSuchCIDRLeft(cidr=self.cidr, prefixlen=self.prefixlen)
 
@@ -76,22 +73,22 @@ class IPv4CIDRGeneratorFixture(CIDRGeneratorFixture):
 
     @property
     def cidr(self):
-        return self.config.ipv4_cidr
+        return netaddr.IPNetwork(self.config.ipv4_cidr)
 
     @property
     def prefixlen(self):
-        return self.config.ipv4_prefixlen
+        return int(self.config.ipv4_prefixlen)
 
 
 class IPv6CIDRGeneratorFixture(CIDRGeneratorFixture):
 
     @property
     def cidr(self):
-        return self.config.ipv6_cidr
+        return netaddr.IPNetwork(self.config.ipv6_cidr)
 
     @property
     def prefixlen(self):
-        return self.config.ipv6_prefixlen
+        return int(self.config.ipv6_prefixlen)
 
 
 class NoSuchCIDRLeft(tobiko.TobikoException):

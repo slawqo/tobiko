@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import netaddr
 
 import tobiko
 from tobiko import config
@@ -38,21 +39,33 @@ class NetworkStackFixture(heat.HeatStackFixture):
     #: Disable port security by default for new network ports
     port_security_enabled = False
 
-    #: Default IPv4 sub-net CIDR
-    ipv4_cidr = '190.40.2.0/24'
-
     @property
     def has_ipv4(self):
         """Whenever to setup IPv4 subnet"""
-        return bool(self.ipv4_cidr)
+        return bool(CONF.tobiko.neutron.ipv4_cidr)
 
-    #: IPv6 sub-net CIDR
-    ipv6_cidr = '2001:db8:1:2::/64'
+    @property
+    def ipv4_cidr(self):
+        if self.has_ipv4:
+            return neutron.new_ipv4_cidr()
+        else:
+            return None
 
     @property
     def has_ipv6(self):
         """Whenever to setup IPv6 subnet"""
-        return bool(self.ipv6_cidr)
+        return bool(CONF.tobiko.neutron.ipv4_cidr)
+
+    @property
+    def ipv6_cidr(self):
+        if self.has_ipv6:
+            return neutron.new_ipv6_cidr()
+        else:
+            return None
+
+    @property
+    def value_specs(self):
+        return {}
 
     #: Floating IP network where the Neutron floating IPs are created
     gateway_network = CONF.tobiko.neutron.floating_network
@@ -74,8 +87,16 @@ class NetworkStackFixture(heat.HeatStackFixture):
         return neutron.show_subnet(self.ipv4_subnet_id)
 
     @property
+    def ipv4_subnet_cidr(self):
+        return netaddr.IPNetwork(self.ipv4_subnet_details['cidr'])
+
+    @property
     def ipv6_subnet_details(self):
         return neutron.show_subnet(self.ipv6_subnet_id)
+
+    @property
+    def ipv6_subnet_cidr(self):
+        return netaddr.IPNetwork(self.ipv6_subnet_details['cidr'])
 
     @property
     def gateway_details(self):
@@ -95,16 +116,11 @@ class NetworkWithNetMtuWriteStackFixture(NetworkStackFixture):
     #: Value for maximum transfer unit on the internal network
     mtu = 1000
 
-    def setup_parameters(self):
-        """Setup Heat template parameters"""
-        super(NetworkWithNetMtuWriteStackFixture, self).setup_parameters()
-        if self.mtu:
-            self.setup_net_mtu_writable()
-
-    @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
-    def setup_net_mtu_writable(self):
-        """Setup maximum transfer unit size for the network"""
-        self.parameters.setdefault('value_specs', {}).update(mtu=self.mtu)
+    @property
+    def value_specs(self):
+        return dict(
+            super(NetworkWithNetMtuWriteStackFixture, self).value_specs,
+            mtu=int(self.mtu))
 
 
 @neutron.skip_if_missing_networking_extensions('security-group')

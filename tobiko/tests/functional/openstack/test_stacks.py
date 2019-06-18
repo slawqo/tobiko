@@ -15,9 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import unittest
-
-import netaddr
 import testtools
 
 import tobiko
@@ -45,27 +42,19 @@ class NetworkTestCase(testtools.TestCase):
         self.assertEqual(self.stack.network_details['mtu'],
                          self.stack.outputs.mtu)
 
-    @unittest.skip('Feature not implemented')
     def test_ipv4_subnet_cidr(self):
         if not self.stack.has_ipv4:
             tobiko.skip('Stack {!s} has no ipv4 subnet', self.stack.stack_name)
 
-        self.assertEqual(str(self.stack.ipv4_cidr),
-                         self.stack.ipv4_subnet_details['cidr'])
-
-        subnet = neutron.find_subnet(str(self.stack.ipv4_cidr),
+        subnet = neutron.find_subnet(str(self.stack.ipv4_subnet_cidr),
                                      properties=['cidr'])
         self.assertEqual(neutron.show_subnet(self.stack.ipv4_subnet_id),
                          subnet)
 
-    @unittest.skip('Feature not implemented')
     def test_ipv6_subnet_cidr(self):
         if not self.stack.has_ipv6:
             tobiko.skip('Stack {!s} has no ipv4 subnet', self.stack.stack_name)
-        self.assertEqual(str(self.stack.ipv6_cidr),
-                         self.stack.ipv6_subnet_details['cidr'])
-
-        subnet = neutron.find_subnet(str(self.stack.ipv6_cidr),
+        subnet = neutron.find_subnet(str(self.stack.ipv6_subnet_cidr),
                                      properties=['cidr'])
         self.assertEqual(neutron.show_subnet(self.stack.ipv6_subnet_id),
                          subnet)
@@ -74,14 +63,14 @@ class NetworkTestCase(testtools.TestCase):
         if not self.stack.has_ipv4 or self.stack.has_gateway:
             tobiko.skip('Stack {!s} has no IPv4 gateway',
                         self.stack.stack_name)
-        self.assertEqual(str(netaddr.IPNetwork(self.stack.ipv4_cidr).ip + 1),
+        self.assertEqual(str(self.stack.ipv4_cidr.ip + 1),
                          self.stack.ipv4_subnet_details['gateway_ip'])
 
     def test_ipv6_subnet_gateway_ip(self):
         if not self.stack.has_ipv6 or self.stack.has_gateway:
             tobiko.skip('Stack {!s} has no IPv6 gateway',
                         self.stack.stack_name)
-        self.assertEqual(str(netaddr.IPNetwork(self.stack.ipv6_cidr).ip + 1),
+        self.assertEqual(str(self.stack.ipv6_cidr.ip + 1),
                          self.stack.ipv6_subnet_details['gateway_ip'])
 
     def test_gateway_network(self):

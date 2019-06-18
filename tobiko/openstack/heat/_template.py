@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
 import os
 import sys
 
@@ -49,7 +50,12 @@ class HeatTemplateFixture(tobiko.SharedFixture):
     @property
     def outputs(self):
         template = self.template
-        return template and template.get('outputs') or {}
+        return template and template.get('outputs') or None
+
+    @property
+    def parameters(self):
+        template = self.template
+        return template and template.get('parameters') or None
 
 
 class HeatTemplateFileFixture(HeatTemplateFixture):
@@ -80,9 +86,17 @@ class HeatTemplateFileFixture(HeatTemplateFixture):
         super(HeatTemplateFileFixture, self).setup_template()
 
 
-def heat_template(template, template_files=None):
-    return HeatTemplateFixture(template=template,
-                               template_files=template_files)
+def heat_template(obj, template_files=None):
+    if isinstance(obj, collections.Mapping):
+        template = HeatTemplateFixture(template=obj,
+                                       template_files=template_files)
+    else:
+        template = tobiko.get_fixture(obj)
+
+    if not isinstance(template, HeatTemplateFixture):
+        msg = "Object {!r} is not an HeatTemplateFixture".format(template)
+        raise TypeError(msg)
+    return template
 
 
 def heat_template_file(template_file, template_dirs=None):

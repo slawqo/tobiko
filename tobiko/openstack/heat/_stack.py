@@ -41,17 +41,28 @@ DELETE_FAILED = 'DELETE_FAILED'
 TEMPLATE_FILE_SUFFIX = '.yaml'
 
 
+def _stack_parameters(obj, stack=None):
+    if obj is None or isinstance(obj, collections.Mapping):
+        parameters = HeatStackParametersFixture(stack, obj)
+    else:
+        parameters = tobiko.get_fixture(obj)
+    if not isinstance(parameters, HeatStackParametersFixture):
+        msg = "Object {!r} is not an HeatStackParametersFixture".format(
+            parameters)
+        raise TypeError(msg)
+    return parameters
+
+
 class HeatStackFixture(tobiko.SharedFixture):
     """Manages Heat stacks."""
 
     client = None
-    client_fixture = None
     retry_create_stack = 1
     wait_interval = 5
     stack_name = None
     template = None
-    parameters = None
     stack = None
+    parameters = None
 
     def __init__(self, stack_name=None, template=None, parameters=None,
                  wait_interval=None, client=None):
@@ -60,62 +71,24 @@ class HeatStackFixture(tobiko.SharedFixture):
                                         self.stack_name or
                                         self.fixture_name)
 
-        template = template or self.template
-        if template:
-            if isinstance(template, collections.Mapping):
-                template = _template.heat_template(template)
-            else:
-                template = tobiko.get_fixture(template)
-            if not isinstance(template, _template.HeatTemplateFixture):
-                msg = "Object {!r} is not an HeatTemplateFixture".format(
-                    template)
-                raise TypeError(msg)
-            self.template = template
-
-        self._parameters = parameters
-
-        if tobiko.is_fixture(client):
-            self.client_fixture = client
-        elif client:
-            self.client = client
+        self.template = _template.heat_template(template or self.template)
+        self.parameters = _stack_parameters(
+            stack=self, obj=(parameters or self.parameters))
+        self.client = client or self.client
 
         if wait_interval:
             self.wait_interval = wait_interval
 
     def setup_fixture(self):
         self.setup_template()
-        self.setup_parameters()
         self.setup_client()
         self.setup_stack()
 
     def setup_template(self):
         tobiko.setup_fixture(self.template)
 
-    def setup_parameters(self):
-        self.parameters = {}
-        # Merge all parameters dictionaries in the class hierarchy
-        for cls in reversed(type(self).__mro__):
-            parameters = cls.__dict__.get('parameters')
-            if parameters:
-                self.parameters.update(parameters)
-
-        if self._parameters:
-            self.parameters.update(self._parameters)
-
-        # Add template's missing stack parameters
-        template_parameters = set(self.template.template.get('parameters', []))
-        missing_parameters = sorted(template_parameters - set(self.parameters))
-        for name in missing_parameters:
-            value = getattr(self, name, None)
-            if value is not None:
-                self.parameters[name] = value
-
     def setup_client(self):
-        client_fixture = self.client_fixture
-        if client_fixture:
-            self.client = tobiko.setup_fixture(client_fixture).client
-        elif not self.client:
-            self.client = _client.get_heat_client()
+        self.client = _client.heat_client(self.client)
 
     def setup_stack(self):
         self.create_stack()
@@ -159,13 +132,15 @@ class HeatStackFixture(tobiko.SharedFixture):
                     expected_status={DELETE_COMPLETE})
 
             self.stack = self._outputs = None
+            # Compile template parameters
+            parameters = tobiko.reset_fixture(self.parameters).values
             try:
                 LOG.debug('Creating stack %r (re-tries left %d)...',
                           self.stack_name, retry)
                 stack_id = self.client.stacks.create(
                     stack_name=self.stack_name,
                     template=self.template.template_yaml,
-                    parameters=self.parameters)['stack']['id']
+                    parameters=parameters)['stack']['id']
             except exc.HTTPConflict:
                 LOG.debug('Stack %r already exists.', self.stack_name)
             else:
@@ -252,78 +227,139 @@ class HeatStackFixture(tobiko.SharedFixture):
 
     def __getattr__(self, name):
         try:
-            return self.get_stack_outputs().get_output(name)
-        except InvalidHeatStackOutputKey:
+            return self.get_stack_outputs().get_value(name)
+        except HeatStackOutputKeyError:
             pass
         message = "Object {!r} has no attribute {!r}".format(self, name)
         raise AttributeError(message)
 
 
-class HeatStackOutputsFixture(tobiko.SharedFixture):
+class HeatStackKeyError(tobiko.TobikoException):
+    message = "key {key!r} not found in stack {name!r}"
 
+
+class HeatStackParameterKeyError(HeatStackKeyError):
+    message = "parameter key {key!r} not found in stack {name!r}"
+
+
+class HeatStackOutputKeyError(HeatStackKeyError):
+    message = "output key {key!r} not found in stack {name!r}"
+
+
+class HeatStackNamespaceFixture(tobiko.SharedFixture):
+
+    key_error = HeatStackKeyError
     _keys = None
     _values = None
 
     def __init__(self, stack):
-        super(HeatStackOutputsFixture, self).__init__()
+        super(HeatStackNamespaceFixture, self).__init__()
         if not isinstance(stack, HeatStackFixture):
             message = "Object {!r} is not an HeatStackFixture".format(stack)
             raise TypeError(message)
         self.stack = stack
 
     def setup_fixture(self):
-        self.get_output_keys()
-        self.get_output_values()
+        self.setup_keys()
+        self.setup_values()
 
-    def get_output_keys(self):
+    def setup_keys(self):
         keys = self._keys
         if keys is None:
-            self._keys = keys = frozenset(tobiko.setup_fixture(
-                self.stack.template).outputs.keys())
+            self._keys = keys = self.get_keys()
             self.addCleanup(self.cleanup_keys)
         return keys
 
-    keys = property(get_output_keys)
+    keys = tobiko.fixture_property(setup_keys)
+
+    def get_keys(self):
+        raise NotImplementedError
 
     def cleanup_keys(self):
         del self._keys
 
-    def get_output_values(self):
+    def setup_values(self):
         values = self._values
         if values is None:
-            # Can't get output values before stack creation is complete
-            self.stack.wait_for_create_complete()
-            outputs = self.stack.get_stack(resolve_outputs=True).outputs
-            self._values = values = {o['output_key']: o['output_value']
-                                    for o in outputs}
-            self.addCleanup(self.cleanup_output_values)
+            self._values = values = self.get_values()
+            self.addCleanup(self.cleanup_values)
         return values
 
-    def cleanup_output_values(self):
+    values = tobiko.fixture_property(setup_values)
+
+    def get_values(self):
+        raise NotImplementedError
+
+    def cleanup_values(self):
         del self._values
 
-    values = property(get_output_values)
-
-    def get_output(self, key):
-        # Match template outputs definition before fetching getting values
-        if key not in self.keys:
-            LOG.error('Output key %r not found in stack %r template', key,
-                      self.stack.stack_name)
-        else:
+    def get_value(self, key):
+        # Match template outputs definition before getting value
+        if key in self.keys:
             try:
                 return self.values[key]
             except KeyError:
-                LOG.error('Output key %r not found in stack %r outputs', key,
+                LOG.error('Key %r not found in stack %r', key,
                           self.stack.stack_name)
-        raise InvalidHeatStackOutputKey(name=self.stack.stack_name, key=key)
+        else:
+            LOG.error('Key %r not found in template for stack %r', key,
+                      self.stack.stack_name)
+        raise self.key_error(name=self.stack.stack_name, key=key)
+
+    def set_value(self, key, value):
+        # Match template outputs definition before setting value
+        if key in self.keys:
+            self.values[key] = value
+        else:
+            LOG.error('Key %r not found in template for stack %r', key,
+                      self.stack.stack_name)
+        raise self.key_error(name=self.stack.stack_name, key=key)
 
     def __getattr__(self, name):
         try:
-            return self.get_output(name)
-        except InvalidHeatStackOutputKey:
+            return self.get_value(name)
+        except self.key_error:
             pass
         message = "Object {!r} has no attribute {!r}".format(self, name)
         raise AttributeError(message)
+
+
+class HeatStackParametersFixture(HeatStackNamespaceFixture):
+
+    key_error = HeatStackParameterKeyError
+
+    def __init__(self, stack, parameters=None):
+        super(HeatStackParametersFixture, self).__init__(stack)
+        self.parameters = parameters and dict(parameters) or {}
+
+    def get_keys(self):
+        template = tobiko.setup_fixture(self.stack.template)
+        return frozenset(template.parameters or [])
+
+    def get_values(self):
+        values = dict(self.parameters)
+        missing_keys = sorted(self.keys - set(values))
+        for key in missing_keys:
+            value = getattr(self.stack, key, None)
+            if value is not None:
+                values[key] = value
+        return values
+
+
+class HeatStackOutputsFixture(HeatStackNamespaceFixture):
+
+    key_error = HeatStackOutputKeyError
+
+    def get_keys(self):
+        template = tobiko.setup_fixture(self.stack.template)
+        return frozenset(template.outputs or [])
+
+    def get_values(self):
+        # Can't get output values before stack creation is complete
+        self.stack.wait_for_create_complete()
+        outputs = self.stack.get_stack(resolve_outputs=True).outputs
+        return {o['output_key']: o['output_value']
+                for o in outputs}
 
 
 def check_stack_status(stack, expected):
@@ -339,10 +375,6 @@ def check_stack_status(stack, expected):
                           observed=observed,
                           expected=expected,
                           status_reason=stack.stack_status_reason)
-
-
-class InvalidHeatStackOutputKey(tobiko.TobikoException, AttributeError):
-    message = "output key {key!r} not found in stack {name!r}"
 
 
 class HeatStackNotFound(tobiko.TobikoException):
