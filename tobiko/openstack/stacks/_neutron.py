@@ -103,6 +103,24 @@ class NetworkStackFixture(heat.HeatStackFixture):
         return neutron.show_router(self.gateway_id)
 
     @property
+    def ipv4_gateway_port_details(self):
+        return neutron.find_port(
+            [{'subnet_id': self.ipv4_subnet_id,
+              'ip_address': self.ipv4_subnet_details['gateway_ip']}],
+            properties=['fixed_ips'],
+            device_id=self.gateway_id,
+            network_id=self.network_id)
+
+    @property
+    def ipv6_gateway_port_details(self):
+        return neutron.find_port(
+            [{'subnet_id': self.ipv6_subnet_id,
+              'ip_address': self.ipv6_subnet_details['gateway_ip']}],
+            properties=['fixed_ips'],
+            device_id=self.gateway_id,
+            network_id=self.network_id)
+
+    @property
     def gateway_network_details(self):
         return neutron.show_network(self.gateway_network_id)
 

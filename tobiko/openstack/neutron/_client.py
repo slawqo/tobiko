@@ -62,18 +62,25 @@ def get_neutron_client(session=None, shared=True, init_client=None,
     return client.client
 
 
-def find_network(obj, properties=None, client=None, **params):
+def find_network(obj=None, properties=None, client=None, **params):
     """Look for the unique network matching some property values"""
     return _find.find_resource(
         obj=obj, resource_type='network', properties=properties,
-        resources=list_networks(client=client, **params))
+        resources=list_networks(client=client, **params), **params)
 
 
-def find_subnet(obj, properties=None, client=None, **params):
+def find_port(obj=None, properties=None, client=None, **params):
+    """Look for the unique network matching some property values"""
+    return _find.find_resource(
+        obj=obj, resource_type='port', properties=properties,
+        resources=list_ports(client=client, **params), **params)
+
+
+def find_subnet(obj=None, properties=None, client=None, **params):
     """Look for the unique subnet matching some property values"""
     return _find.find_resource(
         obj=obj, resource_type='subnet', properties=properties,
-        resources=list_subnets(client=client, **params))
+        resources=list_subnets(client=client, **params), **params)
 
 
 def list_networks(show=False, client=None, **params):
@@ -81,6 +88,13 @@ def list_networks(show=False, client=None, **params):
     if show:
         networks = [show_network(n['id'], client=client) for n in networks]
     return networks
+
+
+def list_ports(show=False, client=None, **params):
+    ports = neutron_client(client).list_ports(**params)['ports']
+    if show:
+        ports = [show_port(p['id'], client=client) for p in ports]
+    return ports
 
 
 def list_subnets(show=False, client=None, **params):
@@ -99,6 +113,10 @@ def list_subnet_cidrs(client=None, **params):
 
 def show_network(network, client=None, **params):
     return neutron_client(client).show_network(network, **params)['network']
+
+
+def show_port(port, client=None, **params):
+    return neutron_client(client).show_port(port, **params)['port']
 
 
 def show_router(router, client=None, **params):

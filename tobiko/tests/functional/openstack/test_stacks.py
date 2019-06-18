@@ -59,20 +59,6 @@ class NetworkTestCase(testtools.TestCase):
         self.assertEqual(neutron.show_subnet(self.stack.ipv6_subnet_id),
                          subnet)
 
-    def test_ipv4_subnet_gateway_ip(self):
-        if not self.stack.has_ipv4 or self.stack.has_gateway:
-            tobiko.skip('Stack {!s} has no IPv4 gateway',
-                        self.stack.stack_name)
-        self.assertEqual(str(self.stack.ipv4_cidr.ip + 1),
-                         self.stack.ipv4_subnet_details['gateway_ip'])
-
-    def test_ipv6_subnet_gateway_ip(self):
-        if not self.stack.has_ipv6 or self.stack.has_gateway:
-            tobiko.skip('Stack {!s} has no IPv6 gateway',
-                        self.stack.stack_name)
-        self.assertEqual(str(self.stack.ipv6_cidr.ip + 1),
-                         self.stack.ipv6_subnet_details['gateway_ip'])
-
     def test_gateway_network(self):
         if not self.stack.has_gateway:
             tobiko.skip('Stack {!s} has no gateway',
@@ -80,6 +66,22 @@ class NetworkTestCase(testtools.TestCase):
         self.assertEqual(
             self.stack.gateway_network_id,
             self.stack.gateway_details['external_gateway_info']['network_id'])
+
+    def test_ipv4_gateway_ip(self):
+        if not self.stack.has_ipv4 or not self.stack.has_gateway:
+            tobiko.skip('Stack {!s} has no IPv4 gateway',
+                        self.stack.stack_name)
+        self.assertEqual(
+            self.stack.ipv4_gateway_port_details['fixed_ips'][0]['ip_address'],
+            self.stack.ipv4_subnet_details['gateway_ip'])
+
+    def test_ipv6_gateway_ip(self):
+        if not self.stack.has_ipv6 or not self.stack.has_gateway:
+            tobiko.skip('Stack {!s} has no IPv6 gateway',
+                        self.stack.stack_name)
+        self.assertEqual(
+            self.stack.ipv6_gateway_port_details['fixed_ips'][0]['ip_address'],
+            self.stack.ipv6_subnet_details['gateway_ip'])
 
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-write')

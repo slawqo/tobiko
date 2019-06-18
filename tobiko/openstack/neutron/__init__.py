@@ -24,10 +24,13 @@ NeutronClientFixture = _client.NeutronClientFixture
 find_network = _client.find_network
 list_networks = _client.list_networks
 find_subnet = _client.find_subnet
+find_port = _client.find_port
+list_ports = _client.list_ports
 list_subnets = _client.list_subnets
 list_subnet_cidrs = _client.list_subnet_cidrs
 show_network = _client.show_network
 show_router = _client.show_router
+show_port = _client.show_port
 show_subnet = _client.show_subnet
 
 new_ipv4_cidr = _cidr.new_ipv4_cidr

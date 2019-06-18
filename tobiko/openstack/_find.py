@@ -17,20 +17,23 @@ from __future__ import absolute_import
 import tobiko
 
 
-def find_resource(obj, resources, resource_type, properties=None):
-    resources = list(find_resources(obj, resources, properties=properties))
+def find_resource(obj, resources, resource_type, properties=None, **params):
+    if obj:
+        resources = list(find_resources(obj, resources, properties=properties))
     count = len(resources)
     if count == 0:
         raise ResourceNotFound(obj=obj,
                                resource_type=resource_type,
-                               properties=properties)
+                               properties=properties,
+                               params=params)
     if count > 1:
         resource_ids = [r['id'] for r in resources]
         raise MultipleResourcesFound(obj=obj,
                                      resource_type=resource_type,
                                      properties=properties,
                                      count=len(resources),
-                                     resource_ids=resource_ids)
+                                     resource_ids=resource_ids,
+                                     params=params)
     return resources[0]
 
 
@@ -38,16 +41,18 @@ def find_resources(obj, resources, properties=None):
     properties = properties or ('id', 'name')
     for resource in resources:
         for property_name in properties:
-            if obj == resource[property_name]:
+            value = resource[property_name]
+            if obj == value:
                 yield resource
                 break
 
 
 class ResourceNotFound(tobiko.TobikoException):
-    message = ("No such {resource_type} found for {obj!r} in "
-               "properties {properties!r}")
+    message = ("No such {resource_type} found for obj={obj!r}, "
+               "properties={properties!r} and params={params!r}")
 
 
 class MultipleResourcesFound(tobiko.TobikoException):
-    message = ("{count} {resource_type}d found for {obj!r} in "
-               "properties {properties!r}: {resource_ids}")
+    message = ("{count} {resource_type}s found for obj={obj!r}, "
+               "properties={properties!r} and params={params!r}: "
+               "{resource_ids}")
