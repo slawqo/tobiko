@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import netaddr
+from oslo_log import log
 
 import tobiko
 from tobiko import config
@@ -28,6 +29,7 @@ from tobiko.shell import ssh
 
 
 CONF = config.CONF
+LOG = log.getLogger(__name__)
 
 
 @neutron.skip_if_missing_networking_extensions('port-security')
@@ -68,16 +70,20 @@ class NetworkStackFixture(heat.HeatStackFixture):
     def value_specs(self):
         return {}
 
-    #: Floating IP network where the Neutron floating IPs are created
-    gateway_network = CONF.tobiko.neutron.floating_network
+    @property
+    def gateway_network(self):
+        """Floating IP network where the Neutron floating IPs are created"""
+        return CONF.tobiko.neutron.floating_network
 
     @property
     def has_gateway(self):
         """Whenever to setup gateway router"""
         return bool(self.gateway_network)
 
-    # Whenever cat obtain network MTU value
-    has_net_mtu = neutron.has_networking_extensions('net-mtu')
+    @property
+    def has_net_mtu(self):
+        """Whenever can obtain network MTU value"""
+        return neutron.has_networking_extensions('net-mtu')
 
     @property
     def network_details(self):
@@ -129,17 +135,15 @@ class NetworkStackFixture(heat.HeatStackFixture):
 @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
 class NetworkWithNetMtuWriteStackFixture(NetworkStackFixture):
 
-    # Whenever cat obtain network MTU value
-    has_net_mtu = True
-
-    #: Value for maximum transfer unit on the internal network
-    mtu = 1000
+    @property
+    def custom_mtu_size(self):
+        return CONF.tobiko.neutron.custom_mtu_size
 
     @property
     def value_specs(self):
-        return dict(
-            super(NetworkWithNetMtuWriteStackFixture, self).value_specs,
-            mtu=int(self.mtu))
+        value_specs = super(
+            NetworkWithNetMtuWriteStackFixture, self).value_specs
+        return dict(value_specs, mtu=self.custom_mtu_size)
 
 
 @neutron.skip_if_missing_networking_extensions('security-group')

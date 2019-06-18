@@ -32,4 +32,14 @@ def register_tobiko_options(conf):
                          help="The CIDR block to allocate IPv6 subnets from"),
               cfg.IntOpt('ipv6_prefixlen',
                          default=64,
-                         help="The mask bits for IPv6 subnets")])
+                         help="The mask bits for IPv6 subnets"),
+              cfg.IntOpt('custom_mtu_size',
+                         default=1400,
+                         help=("Customized maximum transfer unit size\n"
+                               "Notes:\n"
+                               " - MTU values as small as 1000 has been seen "
+                               "breaking networking binding due to an "
+                               "unknown cause.\n"
+                               " - Too big MTU values (like greater than 1400)"
+                               " may be refused during network creation")),
+              ])

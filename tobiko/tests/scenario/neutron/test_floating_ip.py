@@ -108,18 +108,6 @@ class FloatingIPTest(base.TobikoTest):
                   count=5,
                   check=False).assert_not_replied()
 
-    @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
-    def test_mtu_net_attribute(self):
-        """Test 'mtu' network attribute"""
-        if self.expected_net_mtu:
-            self.assertEqual(self.expected_net_mtu,
-                             self.observed_net_mtu)
-
-    @property
-    def expected_net_mtu(self):
-        """Expected MTU value for internal network"""
-        return self.stack.network_stack.mtu
-
     @property
     def observed_net_mtu(self):
         """Actual MTU value for internal network"""
@@ -220,13 +208,17 @@ class FloatingIPWithNetMtuWritableFixture(stacks.FloatingIpServerStackFixture):
 
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
-class FlatingIpWithMtuWritableTest(FloatingIPTest):
+class FloatingIpWithMtuWritableTest(FloatingIPTest):
     """Tests connectivity via floating IP with a custom MTU value"""
 
     #: Resources stack with floating IP and Nova server
     stack = tobiko.required_setup_fixture(FloatingIPWithNetMtuWritableFixture)
 
-    @classmethod
-    def setUpClass(cls):
-        super(FlatingIpWithMtuWritableTest, cls).setUpClass()
-        tobiko.skip('Disable this test to see if it fixes the problem')
+    def test_net_mtu_write(self):
+        """Test 'mtu' network attribute"""
+        self.assertEqual(self.expected_net_mtu, self.observed_net_mtu)
+
+    @property
+    def expected_net_mtu(self):
+        """Expected MTU value for internal network"""
+        return self.stack.network_stack.custom_mtu_size
