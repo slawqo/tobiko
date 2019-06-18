@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
+
 import netaddr
 from neutronclient.v2_0 import client as neutronclient
 
@@ -82,7 +84,9 @@ def list_networks(show=False, client=None, **params):
 
 
 def list_subnets(show=False, client=None, **params):
-    subnets = neutron_client(client).list_subnets(**params)['subnets']
+    subnets = neutron_client(client).list_subnets(**params)
+    if isinstance(subnets, collections.Mapping):
+        subnets = subnets['subnets']
     if show:
         subnets = [show_subnet(s['id'], client=client) for s in subnets]
     return subnets

@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 from tobiko.openstack.neutron import _client
+from tobiko.openstack.neutron import _cidr
 from tobiko.openstack.neutron import _extension
 
 
@@ -28,6 +29,9 @@ list_subnet_cidrs = _client.list_subnet_cidrs
 show_network = _client.show_network
 show_router = _client.show_router
 show_subnet = _client.show_subnet
+
+new_ipv4_cidr = _cidr.new_ipv4_cidr
+new_ipv6_cidr = _cidr.new_ipv6_cidr
 
 get_networking_extensions = _extension.get_networking_extensions
 missing_networking_extensions = _extension.missing_networking_extensions

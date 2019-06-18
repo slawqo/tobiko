@@ -94,7 +94,7 @@ class NeutronApiTestCase(testtools.TestCase):
                         stack=self.stack.stack_name)
         subnet = neutron.show_subnet(self.stack.ipv4_subnet_id)
         self.assertEqual(self.stack.ipv4_subnet_id, subnet['id'])
-        self.assertEqual(str(self.stack.ipv4_cidr), subnet['cidr'])
+        self.assertEqual(self.stack.ipv4_subnet_details, subnet)
 
     def test_show_ipv6_subnet(self):
         if not self.stack.has_ipv6:
@@ -102,4 +102,4 @@ class NeutronApiTestCase(testtools.TestCase):
                         stack=self.stack.stack_name)
         subnet = neutron.show_subnet(self.stack.ipv6_subnet_id)
         self.assertEqual(self.stack.ipv6_subnet_id, subnet['id'])
-        self.assertEqual(str(self.stack.ipv6_cidr), subnet['cidr'])
+        self.assertEqual(self.stack.ipv6_subnet_details, subnet)
