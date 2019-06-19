@@ -21,6 +21,7 @@ import tobiko
 from tobiko import config
 from tobiko.openstack import heat
 from tobiko.openstack import neutron
+from tobiko.openstack import images
 from tobiko.openstack.stacks import _hot
 from tobiko.openstack.stacks import _nova
 from tobiko.shell import ssh
@@ -164,16 +165,24 @@ class FloatingIpServerStackFixture(heat.HeatStackFixture):
     network_stack = tobiko.required_setup_fixture(NetworkStackFixture)
 
     #: Glance image used to create a Nova server instance
-    image = CONF.tobiko.nova.image
+    image_fixture = tobiko.required_setup_fixture(images.CirrosImageFixture)
+
+    @property
+    def image(self):
+        return self.image_fixture.image_id
+
+    @property
+    def username(self):
+        """username used to login to a Nova server instance"""
+        return self.image_fixture.username
+
+    @property
+    def password(self):
+        """password used to login to a Nova server instance"""
+        return self.image_fixture.password
 
     #: Nova flavor used to create a Nova server instance
     flavor = CONF.tobiko.nova.flavor
-
-    #: username used to login to a Nova server instance
-    username = CONF.tobiko.nova.username
-
-    #: password used to login to a Nova server instance
-    password = CONF.tobiko.nova.password
 
     #: Whenever port security on internal network is enable
     port_security_enabled = False
