@@ -24,7 +24,8 @@ import tobiko
 
 LOG = log.getLogger(__name__)
 
-CONFIG_MODULES = ['tobiko.openstack.keystone.config',
+CONFIG_MODULES = ['tobiko.openstack.glance.config',
+                  'tobiko.openstack.keystone.config',
                   'tobiko.openstack.neutron.config',
                   'tobiko.openstack.nova.config',
                   'tobiko.shell.ssh.config',
