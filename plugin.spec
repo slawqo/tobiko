@@ -41,3 +41,10 @@ subparsers:
                       help: |
                           The set of tests to execute
                       default: neutron
+                  refsec:
+                      type: Value
+                      help: |
+                          specific gerrit patch refsec to
+                          checkout, example:
+                          --refsec refs/changes/66/665966/7
+                      default: ''

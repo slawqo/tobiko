@@ -11,10 +11,35 @@
       name: "{{ required_packages }}"
       state: present
 
+- name: "Ensure {{ test.dir }} doesn't exist"
+  file:
+    path: "{{ test.dir }}"
+    state: absent
+
 - name: Clone Tobiko project
   git:
       repo: 'https://review.opendev.org/x/tobiko'
       dest: "{{ test.dir }}"
+  when: test.refsec == ''
+
+- name: Checkout specific gerrit patch
+  git:
+      repo: 'https://review.opendev.org/x/tobiko'
+      dest: "{{ test.dir }}"
+      refspec: "{{ test.refsec }}"
+      version: 'FETCH_HEAD'
+  when: test.refsec != ''
+
+- name: output gerrit patch log
+  shell: |
+        git log -n 1
+  register: git_log
+  args:
+    chdir: "{{ test.dir }}"
+  when: test.refsec != ''
+
+- debug: var=git_log.stdout_lines
+  when: test.refsec != ''
 
 - name: Create Virtualenv
   vars:
@@ -23,6 +48,10 @@
       virtualenv: "{{ test.venv }}"
       name: "{{ packages }}"
       state: latest
+
+  args:
+    chdir: "{{ test.dir }}"
+  when: test.gerrit-patch != ''
 
 - name: Install Tobiko
   pip:
