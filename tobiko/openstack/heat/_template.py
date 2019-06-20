@@ -57,6 +57,11 @@ class HeatTemplateFixture(tobiko.SharedFixture):
         template = self.template
         return template and template.get('parameters') or None
 
+    @property
+    def resources(self):
+        template = self.template
+        return template and template.get('resources') or None
+
 
 class HeatTemplateFileFixture(HeatTemplateFixture):
 

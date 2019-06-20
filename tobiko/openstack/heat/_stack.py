@@ -134,7 +134,9 @@ class HeatStackFixture(tobiko.SharedFixture):
                 stack = self.wait_for_stack_status(
                     expected_status={DELETE_COMPLETE})
 
-            self.stack = self._outputs = None
+            # Cleanup cached objects
+            self.stack = self._outputs = self._resources = None
+
             # Compile template parameters
             parameters = self.get_stack_parameters()
             try:
@@ -151,6 +153,15 @@ class HeatStackFixture(tobiko.SharedFixture):
                 LOG.debug('Creating stack %r (id=%r)...', self.stack_name,
                           stack_id)
 
+    _resources = None
+
+    @tobiko.fixture_property
+    def resources(self):
+        resources = self._resources
+        if not self._resources:
+            self._resources = resources = HeatStackResourceFixture(self)
+        return resources
+
     def cleanup_fixture(self):
         self.setup_client()
         self.cleanup_stack()
@@ -162,7 +173,7 @@ class HeatStackFixture(tobiko.SharedFixture):
         """Deletes stack."""
         if not stack_id:
             stack_id = self.stack_id
-            self.stack = self._outputs = None
+            self.stack = self._outputs = self._resources = None
         try:
             self.client.stacks.delete(stack_id)
         except exc.NotFound:
@@ -239,6 +250,10 @@ class HeatStackFixture(tobiko.SharedFixture):
 
 class HeatStackKeyError(tobiko.TobikoException):
     message = "key {key!r} not found in stack {name!r}"
+
+
+class HeatStackResourceKeyError(HeatStackKeyError):
+    message = "resource key {key!r} not found in stack {name!r}"
 
 
 class HeatStackParameterKeyError(HeatStackKeyError):
@@ -395,3 +410,22 @@ class HeatStackCreationFailed(InvalidHeatStackStatus):
 
 class HeatStackDeletionFailed(InvalidHeatStackStatus):
     pass
+
+
+class HeatStackResourceFixture(HeatStackNamespaceFixture):
+
+    key_error = HeatStackResourceKeyError
+
+    def get_keys(self):
+        template = tobiko.setup_fixture(self.stack.template)
+        return frozenset(template.resources or [])
+
+    def get_values(self):
+        self.stack.wait_for_create_complete()
+        client = self.stack.client
+        resources = client.resources.list(self.stack.stack_id)
+        return {r.resource_name: r for r in resources}
+
+    @property
+    def fixture_name(self):
+        return self.stack_name + '.resources'
