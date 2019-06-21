@@ -42,6 +42,7 @@ class NetworkTestCase(testtools.TestCase):
         self.assertEqual(self.stack.network_details['mtu'],
                          self.stack.outputs.mtu)
 
+    @testtools.skip('Subnet CIDR allocation is broken')
     def test_ipv4_subnet_cidr(self):
         if not self.stack.has_ipv4:
             tobiko.skip('Stack {!s} has no ipv4 subnet', self.stack.stack_name)
@@ -51,9 +52,10 @@ class NetworkTestCase(testtools.TestCase):
         self.assertEqual(neutron.show_subnet(self.stack.ipv4_subnet_id),
                          subnet)
 
+    @testtools.skip('Subnet CIDR allocation is broken')
     def test_ipv6_subnet_cidr(self):
         if not self.stack.has_ipv6:
-            tobiko.skip('Stack {!s} has no ipv4 subnet', self.stack.stack_name)
+            tobiko.skip('Stack {!s} has no ipv6 subnet', self.stack.stack_name)
         subnet = neutron.find_subnet(str(self.stack.ipv6_subnet_cidr),
                                      properties=['cidr'])
         self.assertEqual(neutron.show_subnet(self.stack.ipv6_subnet_id),
