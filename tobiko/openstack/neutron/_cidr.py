@@ -13,10 +13,13 @@
 #    under the License.
 from __future__ import absolute_import
 
+import random
+
 import netaddr
+from netaddr.strategy import ipv4
+from netaddr.strategy import ipv6
 
 import tobiko
-
 from tobiko.openstack.neutron import _client
 
 
@@ -59,7 +62,7 @@ class CIDRGeneratorFixture(tobiko.SharedFixture):
         self.client = _client.neutron_client(self.client)
 
     def setup_cidr_generator(self):
-        self.cidr_generator = self.cidr.subnet(self.prefixlen)
+        self.cidr_generator = random_subnets(self.cidr, self.prefixlen)
 
     def new_cidr(self):
         used_cidrs = set(_client.list_subnet_cidrs(client=self.client))
@@ -94,3 +97,40 @@ class IPv6CIDRGeneratorFixture(CIDRGeneratorFixture):
 class NoSuchCIDRLeft(tobiko.TobikoException):
     message = ("No such subnet CIDR left "
                "(CIDR={cidr!s}, prefixlen={prefixlen!s})")
+
+
+def random_subnets(cidr, prefixlen):
+    """
+    A generator that divides up this IPNetwork's subnet into smaller
+    subnets based on a specified CIDR prefix.
+
+    :param prefixlen: a CIDR prefix indicating size of subnets to be
+        returned.
+
+    :return: an iterator containing random IPNetwork subnet objects.
+    """
+
+    version = cidr.version
+    module = {4: ipv4, 6: ipv6}[version]
+    width = module.width
+    if not 0 <= cidr.prefixlen <= width:
+        message = "CIDR prefix /{!r} invalid for IPv{!s}!".format(
+            prefixlen, cidr.version)
+        raise ValueError(message)
+
+    if not cidr.prefixlen <= prefixlen:
+        #   Don't return anything.
+        raise StopIteration
+
+    # Calculate number of subnets to be returned.
+    max_subnets = 2 ** (width - cidr.prefixlen) // 2 ** (width - prefixlen)
+
+    base_subnet = module.int_to_str(cidr.first)
+    i = 0
+    rand = random.Random(cidr)
+    while True:
+        subnet = netaddr.IPNetwork('%s/%d' % (base_subnet, prefixlen), version)
+        subnet.value += (subnet.size * rand.randrange(0, max_subnets))
+        subnet.prefixlen = prefixlen
+        i += 1
+        yield subnet
