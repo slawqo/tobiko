@@ -238,11 +238,16 @@ set::
 for Nova instances created by Tobiko::
 
     wget http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
-    openstack image create cirros \
+    openstack image create cirros-0.4.0 \
       --file cirros-0.4.0-x86_64-disk.img \
       --disk-format qcow2 \
       --container-format bare \
       --public
+
+Add reference to above image into your :ref:`tobiko-conf` file::
+
+    [glance]
+    cirros_image = cirros-0.4.0
 
 Create a flavor to be used with above image::
 
@@ -255,7 +260,6 @@ Create an SSH key file to be used to ssh to Nova server instances::
 Add reference to above resources into your :ref:`tobiko-conf` file::
 
     [nova]
-    image = cirros
     flavor = m1.tiny
     key_file=~/.ssh/id_rsa
 

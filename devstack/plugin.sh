@@ -18,6 +18,8 @@ function configure_tobiko {
   fi
 
   configure_tobiko_default "${tobiko_config}"
+  configure_tobiko_cirros "${tobiko_config}"
+  configure_tobiko_glance "${tobiko_config}"
   configure_tobiko_keystone "${tobiko_config}"
   configure_tobiko_nova "${tobiko_config}"
   configure_tobiko_neutron "${tobiko_config}"
@@ -34,6 +36,18 @@ function configure_tobiko {
 }
 
 
+function configure_tobiko_cirros {
+  echo_summary "Write [cirros] section to ${TOBIKO_CONFIG}"
+  local tobiko_config=$1
+
+  iniset_nonempty "${tobiko_config}" cirros name "${TOBIKO_CIRROS_IMAGE_NAME}"
+  iniset_nonempty "${tobiko_config}" cirros url "${TOBIKO_CIRROS_IMAGE_URL}"
+  iniset_nonempty "${tobiko_config}" cirros file "${TOBIKO_CIRROS_IMAGE_FILE}"
+  iniset_nonempty "${tobiko_config}" cirros username "${TOBIKO_CIRROS_USERNAME}"
+  iniset_nonempty "${tobiko_config}" cirros password "${TOBIKO_CIRROS_PASSWORD}"
+}
+
+
 function configure_tobiko_default {
   echo_summary "Write [DEFAULT] section to ${TOBIKO_CONFIG}"
   local tobiko_config=$1
@@ -43,6 +57,15 @@ function configure_tobiko_default {
   iniset ${tobiko_config} DEFAULT log_file "${TOBIKO_LOG_FILE}"
   iniset ${tobiko_config} DEFAULT debug "${TOBIKO_DEBUG}"
 }
+
+
+function configure_tobiko_glance {
+  echo_summary "Write [glance] section to ${TOBIKO_CONFIG}"
+  local tobiko_config=$1
+
+  iniset_nonempty "${tobiko_config}" glance image_dir "${TOBIKO_GLANCE_IMAGE_DIR}"
+}
+
 
 function configure_tobiko_keystone {
   echo_summary "Write [keystone] section to ${TOBIKO_CONFIG}"
@@ -95,15 +118,6 @@ function configure_tobiko_nova {
   echo_summary "Write [nova] section to ${TOBIKO_CONFIG}"
   local tobiko_config=$1
 
-  # Write image ID
-  local image_name=${TOBIKO_NOVA_IMAGE:-}
-  if [ "${image_name}" != "" ]; then
-    local image_id=$(openstack image show -f value -c id "${image_name}")
-  else
-    local image_id=$(openstack image list --limit 1 -f value -c ID --public --status active)
-  fi
-  iniset "${tobiko_config}" nova image "${image_id}"
-
   # Write flavor ID
   local flavor_name=${TOBIKO_NOVA_FLAVOR:-}
   if [ "${flavor_name}" != "" ]; then
@@ -135,6 +149,14 @@ function configure_tobiko_neutron {
     local floating_network=${networks[0]}
   fi
   iniset "${tobiko_config}" neutron floating_network "${floating_network}"
+}
+
+
+function iniset_nonempty {
+  # Calls iniset only when option value is not an empty string
+  if [ -n "$4" ]; then
+    iniset "$@"
+  fi
 }
 
 

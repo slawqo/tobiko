@@ -13,29 +13,20 @@
 #    under the License.
 from __future__ import absolute_import
 
-
 from tobiko import config
 from tobiko.openstack import glance
 
 CONF = config.CONF
 
 
-class CirrosImageFixture(glance.GlanceImageFixture):
+CIRROS_IMAGE_URL = \
+    'http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img'
 
-    @property
-    def image(self):
-        """glance image used to create a Nova server instance"""
-        return CONF.tobiko.nova.image
 
-    @property
-    def username(self):
-        """username used to login to a Nova server instance"""
-        return CONF.tobiko.nova.username
+class CirrosGlanceImageFixture(glance.URLGlanceImageFixture):
 
-    @property
-    def password(self):
-        """password used to login to a Nova server instance"""
-        return CONF.tobiko.nova.password
-
-    def create_image(self):
-        raise NotImplementedError
+    image_url = CIRROS_IMAGE_URL
+    image_name = CONF.tobiko.cirros.image_name
+    image_file = CONF.tobiko.cirros.image_file
+    username = CONF.tobiko.cirros.username or 'cirros'
+    password = CONF.tobiko.cirros.password or 'gocubsgo'

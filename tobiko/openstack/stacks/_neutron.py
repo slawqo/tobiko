@@ -169,7 +169,8 @@ class FloatingIpServerStackFixture(heat.HeatStackFixture):
     network_stack = tobiko.required_setup_fixture(NetworkStackFixture)
 
     #: Glance image used to create a Nova server instance
-    image_fixture = tobiko.required_setup_fixture(images.CirrosImageFixture)
+    image_fixture = tobiko.required_setup_fixture(
+        images.CirrosGlanceImageFixture)
 
     @property
     def image(self):

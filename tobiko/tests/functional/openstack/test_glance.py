@@ -23,10 +23,14 @@ from tobiko.openstack import images
 
 
 class GlanceApiTestCase(testtools.TestCase):
-    """Tests network creation"""
+    """Tests glance images API"""
 
     #: Stack of resources with a network with a gateway router
-    fixture = tobiko.required_setup_fixture(images.CirrosImageFixture)
+    fixture = tobiko.required_setup_fixture(images.CirrosGlanceImageFixture)
+
+    def test_get_image(self):
+        image = glance.get_image(self.fixture.image_id)
+        self.assertEqual(self.fixture.image_id, image['id'])
 
     def test_find_image_with_id(self):
         image = glance.find_image(self.fixture.image_id)

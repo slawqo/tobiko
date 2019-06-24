@@ -2,9 +2,13 @@
 debug = true
 log_file = tobiko.log
 log_dir = .
+
+[cirros]
+image_name = cirros
+
 [nova]
-image = cirros
 flavor = m1.tiny
 key_file = ~/.ssh/id_rsa
+
 [neutron]
 floating_network = "{{ test.floating_network }}"

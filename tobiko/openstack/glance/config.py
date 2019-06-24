@@ -16,7 +16,27 @@ from __future__ import absolute_import
 from oslo_config import cfg
 
 
+CIRROS_IMAGE_URL = \
+    'http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img'
+
+
 def register_tobiko_options(conf):
     conf.register_opts(
         group=cfg.OptGroup('glance'),
-        opts=[])
+        opts=[cfg.StrOpt('image_dir',
+                         default='~/.tobiko/cache/glance/images',
+                         help=("Default directory where to look for image "
+                               "files")), ])
+
+    conf.register_opts(
+        group=cfg.OptGroup('cirros'),
+        opts=[cfg.StrOpt('image_name',
+                         help="Default CirrOS image name"),
+              cfg.StrOpt('image_url',
+                         help="Default CirrOS image URL"),
+              cfg.StrOpt('image_file',
+                         help="Default CirrOS image filename"),
+              cfg.StrOpt('username',
+                         help="Default CirrOS username"),
+              cfg.StrOpt('password',
+                         help="Default CirrOS password"), ])

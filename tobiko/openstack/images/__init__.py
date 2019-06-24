@@ -16,4 +16,4 @@ from __future__ import absolute_import
 
 from tobiko.openstack.images import _cirros
 
-CirrosImageFixture = _cirros.CirrosImageFixture
+CirrosGlanceImageFixture = _cirros.CirrosGlanceImageFixture
