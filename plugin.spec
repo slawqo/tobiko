@@ -31,11 +31,11 @@ subparsers:
                       default: "{{ ansible_env.HOME }}/tobiko_venv"
                       help: |
                           path of existing virtual environment
-                  external_net:
+                  floating_network:
                       type: Value
                       default: "public"
                       help: |
-                          Name of overcloud's external-net
+                          Name of overcloud's floating_network
                   tests:
                       type: Value
                       help: |
