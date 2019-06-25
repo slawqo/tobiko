@@ -159,15 +159,16 @@ def list_required_fixtures(objects):
     for name, obj in visit_objects(objects):
         if is_fixture(obj):
             result.append(name)
-            continue
+            if not inspect.isclass(obj):
+                obj = type(obj)
 
-        if is_test_method(obj):
+        elif is_test_method(obj):
             # Test methods also require test class fixtures
             if '.' in name:
                 parent_name = name.rsplit('.', 1)[0]
                 objects.append(parent_name)
 
-        objects.extend(get_required_fixture(obj))
+        objects.extend(get_required_fixtures(obj))
 
     result.sort()
     return result
@@ -179,40 +180,57 @@ def is_test_method(obj):
             obj.__name__.startswith('test_'))
 
 
-def get_required_fixture(obj):
+def get_required_fixtures(obj):
     '''Get fixture names required by given :param obj:'''
-    required_fixtures = getattr(obj, '__tobiko_required_fixtures__', None)
-    if required_fixtures is None:
-        required_fixtures = []
+    required_names = getattr(obj, '__tobiko_required_fixtures__', None)
+    if required_names is None:
+        if is_test_method(obj):
+            # Get fixtures from default values that are fixtures
+            required = {default
+                        for default in six.get_function_defaults(obj) or []
+                        if is_fixture(default)}
+
+        elif inspect.isclass(obj):
+            # Get fixtures from members of type RequiredFixtureProperty
+            required = {prop.fixture
+                        for prop in get_required_fixture_properties(obj)}
+        else:
+            # Other types have no fixtures
+            required = set()
+
+        # Return every fixture name only once
+        required_names = sorted([get_fixture_name(fixture)
+                                 for fixture in required])
         try:
             # try to cache list for later use
-            obj.__tobiko_required_fixtures__ = required_fixtures
+            obj.__tobiko_required_fixtures__ = required_names
         except AttributeError:
             pass
 
-        if is_test_method(obj):
-            defaults = six.get_function_defaults(obj)
-            if defaults:
-                for default in defaults:
-                    if is_fixture(default):
-                        required_fixtures.append(get_fixture_name(default))
+    return required_names
 
-        elif inspect.isclass(obj):
-            # inspect.getmembers() would iterate over such many
-            # testtools.TestCase members too, so let exclude members from
-            # very base classes
-            mro_index = obj.__mro__.index(testtools.TestCase)
-            if mro_index > 0:
-                member_names = sorted(set(
-                    [name
-                     for cls in obj.__mro__[:mro_index]
-                     for name in cls.__dict__]))
-                for member_name in member_names:
-                    member = getattr(obj, member_name)
-                    if isinstance(member, RequiredFixtureProperty):
-                        required_fixtures.append(member.fixture)
 
-    return required_fixtures
+def get_required_fixture_properties(cls):
+    """Get list of members of type RequiredFixtureProperty of given class"""
+
+    # inspect.getmembers() would iterate over such many testtools.TestCase
+    # members too, so let exclude members from those very common base classes
+    # that we know doesn't have members of type RequiredFixtureProperty
+    base_classes = cls.__mro__
+    for base_class in [testtools.TestCase, SharedFixture]:
+        if issubclass(cls, base_class):
+            base_classes = base_classes[:base_classes.index(base_class)]
+            break
+
+    # Get all members for selected class without calling properties or methods
+    members = {}
+    for base_class in reversed(base_classes):
+        members.update(base_class.__dict__)
+
+    # Return all members that are instances of RequiredFixtureProperty
+    return [member
+            for _, member in sorted(members.items())
+            if isinstance(member, RequiredFixtureProperty)]
 
 
 def init_fixture(obj, name):
