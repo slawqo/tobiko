@@ -1,0 +1,3 @@
+CI_TOOLS_DIR=$(dirname "${BASH_SOURCE[0]}")
+CI_TOOLS_DIR=$("${CI_TOOLS_DIR}/realpath" "${CI_TOOLS_DIR}")
+PATH=${CI_TOOLS_DIR}:${PATH}
