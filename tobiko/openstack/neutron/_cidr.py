@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
 import random
 
 import netaddr
@@ -23,12 +24,12 @@ import tobiko
 from tobiko.openstack.neutron import _client
 
 
-def new_ipv4_cidr():
-    return tobiko.setup_fixture(IPv4CIDRGeneratorFixture).new_cidr()
+def new_ipv4_cidr(seed=None):
+    return tobiko.setup_fixture(IPv4CIDRGeneratorFixture).new_cidr(seed=seed)
 
 
-def new_ipv6_cidr():
-    return tobiko.setup_fixture(IPv6CIDRGeneratorFixture).new_cidr()
+def new_ipv6_cidr(seed):
+    return tobiko.setup_fixture(IPv6CIDRGeneratorFixture).new_cidr(seed=seed)
 
 
 class CIDRGeneratorFixture(tobiko.SharedFixture):
@@ -51,7 +52,6 @@ class CIDRGeneratorFixture(tobiko.SharedFixture):
     def setup_fixture(self):
         self.setup_config()
         self.setup_client()
-        self.setup_cidr_generator()
 
     def setup_config(self):
         from tobiko import config
@@ -61,12 +61,10 @@ class CIDRGeneratorFixture(tobiko.SharedFixture):
     def setup_client(self):
         self.client = _client.neutron_client(self.client)
 
-    def setup_cidr_generator(self):
-        self.cidr_generator = random_subnets(self.cidr, self.prefixlen)
-
-    def new_cidr(self):
+    def new_cidr(self, seed):
         used_cidrs = set(_client.list_subnet_cidrs(client=self.client))
-        for cidr in self.cidr_generator:
+        for cidr in random_subnets(cidr=self.cidr, prefixlen=self.prefixlen,
+                                   seed=seed):
             if cidr not in used_cidrs:
                 return cidr
         raise NoSuchCIDRLeft(cidr=self.cidr, prefixlen=self.prefixlen)
@@ -99,7 +97,7 @@ class NoSuchCIDRLeft(tobiko.TobikoException):
                "(CIDR={cidr!s}, prefixlen={prefixlen!s})")
 
 
-def random_subnets(cidr, prefixlen):
+def random_subnets(cidr, prefixlen, seed=None):
     """
     A generator that divides up this IPNetwork's subnet into smaller
     subnets based on a specified CIDR prefix.
@@ -127,7 +125,7 @@ def random_subnets(cidr, prefixlen):
 
     base_subnet = module.int_to_str(cidr.first)
     i = 0
-    rand = random.Random(cidr)
+    rand = random.Random(hash(seed) ^ os.getpid())
     while True:
         subnet = netaddr.IPNetwork('%s/%d' % (base_subnet, prefixlen), version)
         subnet.value += (subnet.size * rand.randrange(0, max_subnets))

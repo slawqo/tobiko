@@ -50,7 +50,7 @@ class NetworkStackFixture(heat.HeatStackFixture):
     @property
     def ipv4_cidr(self):
         if self.has_ipv4:
-            return neutron.new_ipv4_cidr()
+            return neutron.new_ipv4_cidr(seed=self.fixture_name)
         else:
             return None
 
@@ -62,7 +62,7 @@ class NetworkStackFixture(heat.HeatStackFixture):
     @property
     def ipv6_cidr(self):
         if self.has_ipv6:
-            return neutron.new_ipv6_cidr()
+            return neutron.new_ipv6_cidr(seed=self.fixture_name)
         else:
             return None
 
