@@ -2,7 +2,8 @@
 
 set -eu
 
-source $(dirname "$0")/lib
+source $(dirname "$0")/activate
+
 
 OS_VIRTUAL_ENV=$(realpath "${OS_VIRTUAL_ENV:-.tox/scenario}")
 
