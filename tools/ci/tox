@@ -2,7 +2,7 @@
 
 set -eu
 
-source $(dirname "$0")/lib
+source $(dirname "$0")/activate
 
 
 # Prefer python 3 over python 2
