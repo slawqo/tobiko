@@ -51,7 +51,7 @@
 
   args:
     chdir: "{{ test.dir }}"
-  when: test.gerrit-patch != ''
+  when: test.refsec != ''
 
 - name: Install Tobiko
   pip:
