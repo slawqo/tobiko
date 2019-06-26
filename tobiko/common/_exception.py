@@ -13,6 +13,15 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
+import sys
+
+from oslo_log import log
+import six
+
+
+LOG = log.getLogger(__name__)
+
 
 class TobikoException(Exception):
     """Base Tobiko Exception.
@@ -72,3 +81,27 @@ def check_valid_type(obj, *valid_types):
             obj, types_str)
         raise TypeError(message)
     return obj
+
+
+class ExceptionInfo(collections.namedtuple('ExceptionInfo',
+                                           ['type', 'value', 'traceback'])):
+
+    reraise_on_exit = True
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, _type, _value, _traceback):
+        if self.reraise_on_exit:
+            LOG.exception("Exception occurred while handling %s(%s) "
+                          "exception.", _type, _value)
+            self.reraise()
+
+    def reraise(self):
+        six.reraise(*self)
+
+
+def exc_info(reraise=True):
+    info = ExceptionInfo(*sys.exc_info())
+    info.reraise_on_exit = reraise
+    return info

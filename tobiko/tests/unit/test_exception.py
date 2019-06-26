@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import sys
+
 import tobiko
 from tobiko.tests import unit
 
@@ -102,3 +104,21 @@ class TestCheckValidType(unit.TobikoUnitTest):
                    ).format(repr(obj), tyes_str)
 
         self.assertEqual(message, str(ex))
+
+
+class TestExcInfo(unit.TobikoUnitTest):
+
+    def test_exc_info(self):
+        try:
+            raise RuntimeError('some error')
+        except RuntimeError:
+            exc_info = tobiko.exc_info()
+            exc_type, exc_value, traceback = sys.exc_info()
+
+        self.assertEqual((exc_type, exc_value, traceback), exc_info)
+        self.assertIs(RuntimeError, exc_info.type)
+        self.assertIs(exc_value, exc_info.value)
+        self.assertIs(traceback, exc_info.traceback)
+
+        reraised = self.assertRaises(RuntimeError, exc_info.reraise)
+        self.assertIs(exc_value, reraised)

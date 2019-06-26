@@ -82,7 +82,7 @@ class AnsibleManager(object):
                       'username': credentials.username,
                       'project_name': credentials.project_name,
                       'password': credentials.project_name.password,
-                      'image': CONF.tobiko.nova.image,
+                      'image': CONF.tobiko.glance.cirros_image,
                       'flavor': CONF.tobiko.nova.flavor}
 
         self.variable_manager.extra_vars = extra_vars
