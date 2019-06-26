@@ -1,0 +1,50 @@
+#!/bin/bash
+
+set -eu
+
+source $(dirname "$0")/lib
+
+OS_VIRTUAL_ENV=$(realpath "${OS_VIRTUAL_ENV:-.tox/scenario}")
+
+
+function os {
+    os_setup
+
+    openstack "$@"
+}
+
+
+function os_setup {
+    if ! os_activate; then
+        # Cleanup and create virtualenv directory
+        tox -r -e venv --notest
+
+        os_activate
+    fi
+}
+
+
+function os_activate {
+    local venv_script=${OS_VIRTUAL_ENV}/bin/activate
+    if ! [ -r "${venv_script}" ]; then
+        return 1
+    fi
+
+    if ! os_is_active; then
+        # Activate only once
+        set +eu
+        source "${venv_script}"
+        set -eu
+        os_is_active
+    fi
+}
+
+
+function os_is_active {
+    [ "$(python_prefix)" == "${OS_VIRTUAL_ENV}" ]
+}
+
+
+if [ $(basename "$0") == os ]; then
+    os "$@"
+fi
