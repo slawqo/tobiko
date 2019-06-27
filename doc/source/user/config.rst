@@ -230,26 +230,10 @@ You need to make sure ref:`authentication-environment-variables` are properly
 set::
 
     source openstackrc
-    openstack image list
     openstack flavor list
     openstack network list
 
-`Get an image <https://docs.openstack.org/image-guide/obtain-images.html>`__
-for Nova instances created by Tobiko::
-
-    wget http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
-    openstack image create cirros-0.4.0 \
-      --file cirros-0.4.0-x86_64-disk.img \
-      --disk-format qcow2 \
-      --container-format bare \
-      --public
-
-Add reference to above image into your :ref:`tobiko-conf` file::
-
-    [glance]
-    cirros_image = cirros-0.4.0
-
-Create a flavor to be used with above image::
+Create a flavor to be used with by Nova instances::
 
     openstack flavor create --vcpus 1 --ram 64 --disk 1 m1.tiny
 
