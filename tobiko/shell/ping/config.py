@@ -41,7 +41,7 @@ def register_tobiko_options(conf):
                          help="Size in bytes of ICMP messages (including "
                               "headers and payload)"),
               cfg.IntOpt('timeout',
-                         default=60.,
+                         default=90.,
                          help="Maximum time in seconds a sequence of ICMP "
                               "messages is sent to a destination host before "
                               "reporting as a failure")])
