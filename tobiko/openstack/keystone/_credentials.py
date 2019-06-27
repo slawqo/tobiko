@@ -14,8 +14,10 @@
 from __future__ import absolute_import
 
 import collections
+import sys
 
 from oslo_log import log
+import yaml
 
 import tobiko
 
@@ -265,3 +267,11 @@ def api_version_from_url(auth_url):
         LOG.warning('Unable to get Keystone API version from auth_url:  %r',
                     auth_url)
         return None
+
+
+def print_credentials():
+    credentials = default_keystone_credentials()
+    yaml.dump(dict(credentials.to_dict()),
+              sys.stdout,
+              indent=4,
+              sort_keys=True)
