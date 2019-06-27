@@ -33,7 +33,7 @@ class ExecuteTest(testtools.TestCase):
 
     def test_succeed(self, command='true', stdin=None, stdout=None,
                      stderr=None, **kwargs):
-        process = self.execute(command,
+        process = self.execute(command=command,
                                stdin=stdin,
                                stdout=bool(stdout),
                                stderr=bool(stderr),
@@ -75,22 +75,24 @@ class ExecuteTest(testtools.TestCase):
 
     def test_fails(self, command='false', exit_status=None, stdin=None,
                    stdout=None, stderr=None, **kwargs):
-        ex = self.assertRaises(sh.ShellCommandFailed, self.execute, command,
+        ex = self.assertRaises(sh.ShellCommandFailed,
+                               self.execute,
+                               command=command,
                                stdin=stdin,
                                stdout=bool(stdout),
                                stderr=bool(stderr),
                                **kwargs)
         self.assertEqual(self.expected_command(command), ex.command)
         if stdin:
-            self.assertEqual(stdin, str(ex.stdin))
+            self.assertEqual(stdin, ex.stdin)
         else:
             self.assertIsNone(ex.stdin)
         if stdout:
-            self.assertEqual(stdout, str(ex.stdout))
+            self.assertEqual(stdout, ex.stdout)
         else:
             self.assertIsNone(ex.stdout)
         if stderr:
-            self.assertEqual(stderr, str(ex.stderr))
+            self.assertEqual(stderr, ex.stderr)
         else:
             self.assertIsNone(ex.stderr)
         if exit_status:
@@ -116,7 +118,9 @@ class ExecuteTest(testtools.TestCase):
 
     def test_timeout_expires(self, command='sleep 5', timeout=0.1, stdin=None,
                              stdout=None, stderr=None, **kwargs):
-        ex = self.assertRaises(sh.ShellTimeoutExpired, self.execute, command,
+        ex = self.assertRaises(sh.ShellTimeoutExpired,
+                               self.execute,
+                               command=command,
                                timeout=timeout,
                                stdin=stdin,
                                stdout=bool(stdout),
@@ -137,22 +141,23 @@ class ExecuteTest(testtools.TestCase):
             self.assertIsNone(ex.stderr)
         self.assertEqual(timeout, ex.timeout)
 
-    def execute(self, command, **kwargs):
+    def execute(self, **kwargs):
         kwargs.setdefault('shell', self.shell)
         kwargs.setdefault('ssh_client', self.ssh_client)
-        return sh.execute(command, **kwargs)
+        return sh.execute(**kwargs)
 
     def expected_command(self, command):
         command = sh.shell_command(command)
-        shell = sh.shell_command(self.shell)
-        return shell + [str(command)]
+        if self.shell:
+            command = sh.shell_command(self.shell) + [str(command)]
+        return str(command)
 
 
 class LocalExecuteTest(ExecuteTest):
 
-    def execute(self, command, **kwargs):
+    def execute(self, **kwargs):
         kwargs.setdefault('shell', self.shell)
-        return sh.local_execute(command, **kwargs)
+        return sh.local_execute(**kwargs)
 
 
 class SSHExecuteTest(ExecuteTest):
@@ -164,9 +169,9 @@ class SSHExecuteTest(ExecuteTest):
     def ssh_client(self):
         return self.server_stack.ssh_client
 
-    def execute(self, command, **kwargs):
+    def execute(self, **kwargs):
         kwargs.setdefault('shell', self.shell)
-        return sh.ssh_execute(self.ssh_client, command, **kwargs)
+        return sh.ssh_execute(ssh_client=self.ssh_client, **kwargs)
 
 
 class ExecuteWithSSHCommandTest(ExecuteTest):
