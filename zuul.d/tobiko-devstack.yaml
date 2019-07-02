@@ -81,11 +81,11 @@
     post-run: playbooks/post-tobiko-devstack.yaml
     irrelevant-files:
       - ^.*\.rst$
-      - ^doc/.*$
-      - ^infrared/.*$
-      - ^releasenotes/.*$
-      - ^report/.*$
-      - ^tobiko/tests/unit/.*$
+      - ^doc/
+      - ^infrared/
+      - ^releasenotes/
+      - ^report/
+      - ^tobiko/tests/unit/
 
 
 - job:
@@ -96,7 +96,13 @@
     vars:
       tox_envlist: functional
     irrelevant-files:
-      - ^tobiko/tests/scenario/.*$
+      - ^.*\.rst$
+      - ^doc/
+      - ^infrared/
+      - ^releasenotes/
+      - ^report/
+      - ^tobiko/tests/scenario/
+      - ^tobiko/tests/unit/
 
 
 - job:
@@ -139,7 +145,13 @@
     vars:
       tox_envlist: scenario
     irrelevant-files:
-      - ^tobiko/tests/functional/.*$
+      - ^.*\.rst$
+      - ^doc/
+      - ^infrared/
+      - ^releasenotes/
+      - ^report/
+      - ^tobiko/tests/functional/
+      - ^tobiko/tests/unit/
 
 
 - job:
