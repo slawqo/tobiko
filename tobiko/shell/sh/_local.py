@@ -18,11 +18,14 @@ from __future__ import absolute_import
 import fcntl
 import os
 import subprocess
+import sys
 
 from oslo_log import log
 
+import tobiko
 from tobiko.shell.sh import _io
 from tobiko.shell.sh import _execute
+from tobiko.shell.sh import _path
 from tobiko.shell.sh import _process
 
 
@@ -54,33 +57,40 @@ def local_process(command, environment=None, current_dir=None, timeout=None,
         stderr=stderr)
 
 
+class LocalExecutePathFixture(_path.ExecutePathFixture):
+
+    executable_dirs = [os.path.realpath(os.path.join(d, 'bin'))
+                       for d in [sys.prefix, sys.exec_prefix]]
+    environ = os.environ
+
+
 class LocalShellProcessFixture(_process.ShellProcessFixture):
 
+    path_execute = tobiko.required_fixture(LocalExecutePathFixture)
+
     def create_process(self):
+        tobiko.setup_fixture(self.path_execute)
         parameters = self.parameters
-        popen_params = {}
-        if parameters.stdin:
-            popen_params.update(stdin=subprocess.PIPE)
-        if parameters.stdout:
-            popen_params.update(stdout=subprocess.PIPE)
-        if parameters.stderr:
-            popen_params.update(stderr=subprocess.PIPE)
-        return subprocess.Popen(
-            args=self.command,
-            bufsize=parameters.buffer_size,
-            shell=False,
-            cwd=parameters.current_dir,
-            env=merge_dictionaries(os.environ, parameters.environment),
-            universal_newlines=False,
-            **popen_params)
+        args = self.command
+        stdin = parameters.stdin and subprocess.PIPE or None
+        stdout = parameters.stdout and subprocess.PIPE or None
+        stderr = parameters.stderr and subprocess.PIPE or None
+        env = merge_dictionaries(os.environ, parameters.environment)
+        return subprocess.Popen(args=args,
+                                bufsize=parameters.buffer_size,
+                                shell=False,
+                                universal_newlines=False,
+                                env=env,
+                                cwd=parameters.current_dir,
+                                stdin=stdin,
+                                stdout=stdout,
+                                stderr=stderr)
 
     def setup_stdin(self):
-        set_non_blocking(self.process.stdin.fileno())
         self.stdin = _io.ShellStdin(delegate=self.process.stdin,
                               buffer_size=self.parameters.buffer_size)
 
     def setup_stdout(self):
-        set_non_blocking(self.process.stdout.fileno())
         self.stdout = _io.ShellStdout(delegate=self.process.stdout,
                                       buffer_size=self.parameters.buffer_size)
 

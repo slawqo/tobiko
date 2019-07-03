@@ -39,6 +39,7 @@ ShellExecuteResult = _execute.ShellExecuteResult
 local_execute = _local.local_execute
 local_process = _local.local_process
 LocalShellProcessFixture = _local.LocalShellProcessFixture
+LocalExecutePathFixture = _local.LocalExecutePathFixture
 
 process = _process.process
 ShellProcessFixture = _process.ShellProcessFixture

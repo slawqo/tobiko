@@ -15,46 +15,22 @@
 #    under the License.
 from __future__ import absolute_import
 
-import contextlib
-import os
-import subprocess
-
+from oslo_log import log
 import testtools
 import yaml
 
 from tobiko.openstack import keystone
+from tobiko.shell import sh
+
+
+LOG = log.getLogger(__name__)
 
 
 class TobikoKeystoneCredentialsCommandTest(testtools.TestCase):
 
     def test_execute(self):
-        with execute('tobiko-keystone-credentials') as process:
+        with sh.local_process('tobiko-keystone-credentials') as process:
             actual = yaml.full_load(process.stdout)
-
+        process.check_exit_status()
         expected = keystone.default_keystone_credentials().to_dict()
         self.assertEqual(expected, actual)
-
-
-@contextlib.contextmanager
-def execute(command, check_exit_status=0):
-    process = subprocess.Popen(command,
-                               shell=True,
-                               env=os.environ,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE,
-                               universal_newlines=True)
-
-    try:
-        yield process
-
-        process.wait()
-        if (check_exit_status is not None and
-                check_exit_status != process.returncode):
-            error = process.stderr.read()
-            message = "Unexpected exit status ({!s}):\n{!s}".format(
-                process.returncode, error)
-            raise RuntimeError(message)
-
-    finally:
-        if process.returncode is None:
-            process.kill()
