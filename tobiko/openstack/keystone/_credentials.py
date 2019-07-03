@@ -60,10 +60,9 @@ class KeystoneCredentials(collections.namedtuple(
                                 'trust_id'])):
 
     def to_dict(self):
-        return collections.OrderedDict(
-            (k, v)
-            for k, v in self._asdict().items()
-            if v is not None)
+        return {k: v
+                for k, v in self._asdict().items()
+                if v is not None}
 
     def __repr__(self):
         params = self.to_dict()
@@ -71,7 +70,7 @@ class KeystoneCredentials(collections.namedtuple(
             params['password'] = '***'
         return 'keystone_credentials({!s})'.format(
             ", ".join("{!s}={!r}".format(k, v)
-                      for k, v in params.items()))
+                      for k, v in sorted(params.items())))
 
     required_params = ('auth_url', 'username', 'password', 'project_name')
 
