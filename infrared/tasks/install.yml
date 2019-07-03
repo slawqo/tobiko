@@ -49,10 +49,6 @@
       name: "{{ packages }}"
       state: latest
 
-  args:
-    chdir: "{{ test.dir }}"
-  when: test.refsec != ''
-
 - name: Install Tobiko
   pip:
       chdir: "{{ test.dir }}"
