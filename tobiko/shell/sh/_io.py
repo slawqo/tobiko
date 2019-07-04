@@ -94,8 +94,17 @@ class ShellReadable(ShellIOBase):
 
     def read(self, size=None):
         size = size or self.buffer_size
-        chunk = self.delegate.read(size)
-        self._data_chunks.append(chunk)
+        try:
+            chunk = self.delegate.read(size)
+        except IOError:
+            chunk = None
+            try:
+                self.close()
+            except Exception:
+                pass
+
+        if chunk:
+            self._data_chunks.append(chunk)
         return chunk
 
     @property
@@ -110,6 +119,8 @@ class ShellWritable(ShellIOBase):
         return True
 
     def write(self, data):
+        if not isinstance(data, six.binary_type):
+            data = data.encode()
         witten_bytes = self.delegate.write(data)
         if witten_bytes is None:
             witten_bytes = len(data)

@@ -18,7 +18,12 @@ from __future__ import absolute_import
 from tobiko.shell.sh import _command
 from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
+from tobiko.shell.sh import _local
+from tobiko.shell.sh import _process
+from tobiko.shell.sh import _ssh
 
+
+shell_command = _command.shell_command
 
 ShellError = _exception.ShellError
 ShellCommandFailed = _exception.ShellCommandFailed
@@ -28,7 +33,16 @@ ShellProcessNotTeriminated = _exception.ShellProcessNotTeriminated
 ShellStdinClosed = _exception.ShellStdinClosed
 
 execute = _execute.execute
-local_execute = _execute.local_execute
-ssh_execute = _execute.ssh_execute
+execute_process = _execute.execute_process
+ShellExecuteResult = _execute.ShellExecuteResult
 
-shell_command = _command.shell_command
+local_execute = _local.local_execute
+local_process = _local.local_process
+LocalShellProcessFixture = _local.LocalShellProcessFixture
+
+process = _process.process
+ShellProcessFixture = _process.ShellProcessFixture
+
+ssh_process = _ssh.ssh_process
+ssh_execute = _ssh.ssh_execute
+SSHShellProcessFixture = _ssh.SSHShellProcessFixture

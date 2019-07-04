@@ -221,8 +221,10 @@ def execute_ping(parameters, ssh_client=None, check=True, **params):
                              "to execute ping on a CirrOS image.")
 
     command = get_ping_command(parameters)
-    result = sh.execute(command=command, ssh_client=ssh_client,
-                        timeout=parameters.timeout, check=False, wait=True)
+    result = sh.execute(command=command,
+                        ssh_client=ssh_client,
+                        timeout=parameters.timeout,
+                        expect_exit_status=None)
 
     if check and result.exit_status and result.stderr:
         handle_ping_command_error(error=str(result.stderr))
