@@ -4,22 +4,6 @@
       dest: "~/os-faults.yaml"
       mode: 0755
 
-- name: Set up Overcloud resources wget cirros img
-  shell: |
-    source "{{ test.overcloudrc }}"
-    wget -c http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
-
-- name: Set up Overcloud resources create cirros img
-  shell: |
-    source "{{ test.overcloudrc }}"
-    openstack image list --name cirros --status active --limit 1 \
-    -f value -c Name| grep -q -w cirros || \
-    openstack image create cirros \
-      --file cirros-0.4.0-x86_64-disk.img \
-      --disk-format qcow2 \
-      --container-format bare \
-      --public
-
 - name: Set up Overcloud resources create m.tiny flavor
   shell: |
     source "{{ test.overcloudrc }}"
