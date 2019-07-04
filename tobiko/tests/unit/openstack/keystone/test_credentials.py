@@ -77,9 +77,12 @@ class KeystoneCredentialsTest(openstack.OpenstackTest):
         credentials.validate()
         self.assertEqual(V2_PARAMS, credentials.to_dict())
         self.assertEqual(
-            "keystone_credentials(api_version=2, "
-            "auth_url='http://10.0.0.1:5678/v2.0', username='demo', "
-            "password='***', project_name='demo')",
+            "keystone_credentials("
+            "api_version=2, "
+            "auth_url='http://10.0.0.1:5678/v2.0', "
+            "password='***', "
+            "project_name='demo', "
+            "username='demo')",
             repr(credentials))
 
     def test_validate_from_params_v3(self):
@@ -87,11 +90,14 @@ class KeystoneCredentialsTest(openstack.OpenstackTest):
         credentials.validate()
         self.assertEqual(V3_PARAMS, credentials.to_dict())
         self.assertEqual(
-            "keystone_credentials(api_version=3, "
-            "auth_url='http://10.0.0.1:5678/v3', username='demo', "
-            "password='***', project_name='demo', "
+            "keystone_credentials("
+            "api_version=3, "
+            "auth_url='http://10.0.0.1:5678/v3', "
+            "password='***', "
+            "project_domain_name='Default', "
+            "project_name='demo', "
             "user_domain_name='Default', "
-            "project_domain_name='Default')",
+            "username='demo')",
             repr(credentials))
 
     def test_validate_without_auth_url(self):
