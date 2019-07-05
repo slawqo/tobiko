@@ -24,6 +24,7 @@ import requests
 
 import tobiko
 from tobiko.openstack.glance import _client
+from tobiko.openstack.glance import _io
 
 
 LOG = log.getLogger(__name__)
@@ -270,6 +271,7 @@ class FileGlanceImageFixture(UploadGranceImageFixture):
 
     image_file = None
     image_dir = None
+    compression_type = None
 
     def __init__(self, image_file=None, image_dir=None, **kwargs):
         super(FileGlanceImageFixture, self).__init__(**kwargs)
@@ -299,9 +301,11 @@ class FileGlanceImageFixture(UploadGranceImageFixture):
     def get_image_data(self):
         image_file = self.real_image_file
         image_size = os.path.getsize(image_file)
-        image_data = io.open(image_file, 'rb')
-        LOG.debug('Reading image %r data from file %r (%d bytes)',
+        LOG.debug('Uploading image %r data from file %r (%d bytes)',
                   self.image_name, image_file, image_size)
+        image_data = _io.open_file(filename=image_file,
+                                   mode='rb',
+                                   compression_type=self.compression_type)
         return image_data, image_size
 
 
@@ -358,6 +362,7 @@ class URLGlanceImageFixture(FileGlanceImageFixture):
                 expected_size, actual_size)
             raise RuntimeError(message)
         os.rename(temp_file, image_file)
+
         return super(URLGlanceImageFixture, self).get_image_data()
 
 
