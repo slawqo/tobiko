@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import contextlib
 import io
 import os
 import tempfile
@@ -22,8 +23,8 @@ from oslo_log import log
 import requests
 
 import tobiko
-from tobiko.openstack import _find
 from tobiko.openstack.glance import _client
+
 
 LOG = log.getLogger(__name__)
 
@@ -32,36 +33,36 @@ class GlanceImageStatus(object):
 
     #: The Image service reserved an image ID for the image in the catalog but
     # did not yet upload any image data.
-    QUEUED = 'queued'
+    QUEUED = u'queued'
 
     #: The Image service is in the process of saving the raw data for the
     # image into the backing store.
-    SAVING = 'saving'
+    SAVING = u'saving'
 
     #: The image is active and ready for consumption in the Image service.
-    ACTIVE = 'active'
+    ACTIVE = u'active'
 
     #: An image data upload error occurred.
-    KILLED = 'killed'
+    KILLED = u'killed'
 
     #: The Image service retains information about the image but the image is
     # no longer available for use.
-    DELETED = 'deleted'
+    DELETED = u'deleted'
 
     #: Similar to the deleted status. An image in this state is not
     # recoverable.
-    PENDING_DELETE = 'pending_delete'
+    PENDING_DELETE = u'pending_delete'
 
     #: The image data is not available for use.
-    DEACTIVATE = 'deactivated'
+    DEACTIVATED = u'deactivated'
 
     #: Data has been staged as part of the interoperable image import process.
     # It is not yet available for use. (Since Image API 2.6)
-    UPLOADING = 'uploading'
+    UPLOADING = u'uploading'
 
     #: The image data is being processed as part of the interoperable image
     # import process, but is not yet available for use. (Since Image API 2.6)
-    IMPORTING = 'importing'
+    IMPORTING = u'importing'
 
 
 class GlanceImageFixture(tobiko.SharedFixture):
@@ -70,8 +71,8 @@ class GlanceImageFixture(tobiko.SharedFixture):
     image_name = None
     username = None
     password = None
-    _image = None
-    sleep_interval = 1.
+    image = None
+    wait_interval = 1.
 
     def __init__(self, image_name=None, username=None, password=None,
                  client=None):
@@ -105,49 +106,72 @@ class GlanceImageFixture(tobiko.SharedFixture):
     def setup_image(self):
         return self.wait_for_image_active()
 
-    def wait_for_image_active(self):
-        image = self.get_image()
-        while GlanceImageStatus.ACTIVE != image.status:
-            check_image_status(image, {GlanceImageStatus.QUEUED,
-                                       GlanceImageStatus.SAVING})
-            LOG.debug('Waiting for image %r to change from %r to %r...',
-                      self.image_name, image.status, GlanceImageStatus.ACTIVE)
-            time.sleep(self.sleep_interval)
-            image = self.get_image()
-
-    @property
-    def image(self):
-        return self._image or self.get_image()
-
     def get_image(self):
-        self._image = image = _client.find_image(self.image_name,
-                                                 client=self.client)
-        LOG.debug('Got image %r: %r', self.image_name, image)
-        return image
+        images = _client.list_images(client=self.client,
+                                     filters={'name': self.image_name},
+                                     limit=1)
+        if images:
+            self.image = image = images[0]
+            LOG.debug('Found image %r (%r): %r', self.image_name, image['id'],
+                      image)
+            return image
+        else:
+            self.image = None
+            LOG.debug('Glance image %r not found', self.image_name)
+            return None
 
     def delete_image(self, image_id=None):
         if not image_id:
             image_id = self.image_id
-            self._image = None
+            self.image = None
+        LOG.debug('Deleting Glance image %r (%r)...', self.image_name,
+                  image_id)
         if _client.delete_image(image_id=image_id, client=self.client):
-            LOG.debug("Deleted image %r: %r", self.image_name, image_id)
-        else:
-            LOG.debug('Image %r not deleted because not found',
-                      image_id or self.image_name)
+            LOG.debug('Deleted Glance image %r (%r).', self.image_name,
+                      image_id)
 
     @property
     def image_id(self):
-        return self.image.id
+        return (self.image or self.get_image()).id
 
     @property
     def image_status(self):
-        return self.image.status
+        return (self.image or self.get_image()).status
+
+    def wait_for_image_active(self, check=True):
+        return self.wait_for_image_status(
+            expected_status={GlanceImageStatus.ACTIVE}, check=check)
+
+    def wait_for_image_deleted(self, check=True):
+        return self.wait_for_image_status(
+            expected_status={GlanceImageStatus.DELETED}, check=check)
+
+    def wait_for_getting_active_image(self, check=True):
+        return self.wait_for_image_status(
+            expected_status=GETTING_ACTIVE_STATUS, check=check)
+
+    def wait_for_image_status(self, expected_status, check=True):
+        """Waits for the image to reach the given status."""
+        image = self.image or self.get_image()
+        while (image and image.status not in expected_status and
+               is_image_status_changing(image)):
+
+            LOG.debug("Waiting for %r (id=%r) stack status "
+                      "(observed=%r, expected=%r)", self.image_name,
+                      image.id, image.status, expected_status)
+            time.sleep(self.wait_interval)
+            image = self.get_image()
+
+        if check:
+            check_image_status(image, expected_status)
+        return image
 
 
 class UploadGranceImageFixture(GlanceImageFixture):
 
     disk_format = "raw"
     container_format = "bare"
+    create_image_retries = None
 
     def __init__(self, disk_format=None, container_format=None, **kwargs):
         super(UploadGranceImageFixture, self).__init__(**kwargs)
@@ -161,31 +185,68 @@ class UploadGranceImageFixture(GlanceImageFixture):
         tobiko.check_valid_type(self.disk_format, str)
 
     def setup_image(self):
-        try:
-            return self.wait_for_image_active()
-        except _find.ResourceNotFound:
-            pass
-        except InvalidGlanceImageStatus as ex:
-            self.delete_image(image_id=ex.image_id)
+        self.create_image()
 
-        new_image = self.create_image()
-        image = self.get_image()
-        if image['id'] != new_image['id']:
-            self.delete_image(image_id=new_image['id'])
-        else:
-            check_image_status(image, {GlanceImageStatus.QUEUED})
-            self.upload_image()
-        return self.wait_for_image_active()
+    def create_image(self, retries=None):
+        with self._cleanup_image_ids() as cleanup_image_ids:
+            retries = retries or self.create_image_retries or 1
+            while retries >= 0:
+                image = self.wait_for_getting_active_image(
+                    check=(not retries))
+                if is_image_getting_active(image):
+                    break
+                retries -= 1
 
-    def create_image(self):
-        image = _client.create_image(client=self.client,
-                                    name=self.image_name,
-                                    disk_format=self.disk_format,
-                                    container_format=self.container_format)
-        LOG.debug("Created image %r: %r", self.image_name, image)
+                if image:
+                    LOG.debug('Delete existing image: %r (id=%r)',
+                              self.image_name, image.id)
+                    self.delete_image(image.id)
+                    self.wait_for_image_deleted()
+
+                # Cleanup cached objects
+                self.image = image = None
+
+                try:
+                    LOG.debug('Creating Glance image %r (re-tries left %d)...',
+                              self.image_name, retries)
+                    image_id = _client.create_image(
+                        client=self.client,
+                        name=self.image_name,
+                        disk_format=self.disk_format,
+                        container_format=self.container_format)['id']
+                except Exception:
+                    LOG.exception('Image creation failed %r.', self.image_name)
+                else:
+                    cleanup_image_ids.add(image_id)
+                    LOG.debug('Created image %r (id=%r)...', self.image_name,
+                              image_id)
+
+            if image:
+                if image.id in cleanup_image_ids:
+                    LOG.debug('Image created: %r (id=%r)',
+                              self.image_name, image.id)
+                    self.upload_image()
+                    cleanup_image_ids.remove(image.id)
+                else:
+                    LOG.debug('Existing image found: %r (id=%r)',
+                              self.image_name, image.id)
+
+        self.wait_for_image_active()
         return image
 
+    @contextlib.contextmanager
+    def _cleanup_image_ids(self):
+        created_image_ids = set()
+        try:
+            yield created_image_ids
+        finally:
+            for image_id in created_image_ids:
+                LOG.warning("Delete duplicate image %r (id=%r).",
+                            self.image_name, image_id)
+                self.delete_image(image_id)
+
     def upload_image(self):
+        check_image_status(self.image, {GlanceImageStatus.QUEUED})
         image_data, image_size = self.get_image_data()
         with image_data:
             _client.upload_image(image_id=self.image_id,
@@ -293,13 +354,42 @@ class URLGlanceImageFixture(FileGlanceImageFixture):
 
 
 def check_image_status(image, expected_status):
-    if image.status not in expected_status:
-        raise InvalidGlanceImageStatus(image_name=image.name,
-                                       image_id=image.id,
-                                       actual_status=image.status,
-                                       expected_status=expected_status)
+    if image:
+        image_status = image.status or GlanceImageStatus.DELETED
+        if image_status not in expected_status:
+            raise InvalidGlanceImageStatus(image_name=image.name,
+                                           image_id=image.id,
+                                           actual_status=image.status,
+                                           expected_status=expected_status)
+    elif GlanceImageStatus.DELETED not in expected_status:
+        raise RuntimeError('Grance image not found')
 
 
 class InvalidGlanceImageStatus(tobiko.TobikoException):
     message = ("Invalid image {image_name!r} (id {image_id!r}) status: "
                "{actual_status!r} not in {expected_status!r}")
+
+
+class GlanceImageCreationFailed(tobiko.TobikoException):
+    message = ("Failed creating image {image_name!r}: status "
+               "({observed!r}) not in ({expected!r})")
+
+
+CHANGING_STATUS = {GlanceImageStatus.QUEUED,
+                   GlanceImageStatus.IMPORTING,
+                   GlanceImageStatus.PENDING_DELETE,
+                   GlanceImageStatus.SAVING,
+                   GlanceImageStatus.UPLOADING}
+
+
+def is_image_status_changing(image):
+    return image and image.status in CHANGING_STATUS
+
+
+GETTING_ACTIVE_STATUS = {GlanceImageStatus.QUEUED,
+                         GlanceImageStatus.SAVING,
+                         GlanceImageStatus.ACTIVE}
+
+
+def is_image_getting_active(image):
+    return image and image.status in GETTING_ACTIVE_STATUS
