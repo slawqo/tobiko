@@ -222,20 +222,20 @@ Install required Python OpenStack clients::
     pip install --upgrade \
         -c https://opendev.org/openstack/requirements/raw/branch/master/upper-constraints.txt \
         python-openstackclient \
-        python-glanceclient \
-        python-novaclient \
         python-neutronclient
 
-You need to make sure ref:`authentication-environment-variables` are properly
+You need to make sure :ref:`authentication-environment-variables` are properly
 set::
 
     source openstackrc
-    openstack flavor list
     openstack network list
 
-Create a flavor to be used with by Nova instances::
 
-    openstack flavor create --vcpus 1 --ram 64 --disk 1 m1.tiny
+Add reference to the network where Tobiko should create floating IP instances
+in :ref:`tobiko-conf` file::
+
+    [neutron]
+    floating_network = public
 
 Create an SSH key file to be used to ssh to Nova server instances::
 
@@ -244,14 +244,7 @@ Create an SSH key file to be used to ssh to Nova server instances::
 Add reference to above resources into your :ref:`tobiko-conf` file::
 
     [nova]
-    flavor = m1.tiny
     key_file=~/.ssh/id_rsa
-
-Add reference to the network where Tobiko should create floating IP instances
-in :ref:`tobiko-conf` file::
-
-    [neutron]
-    floating_network = public
 
 
 What's Next
