@@ -118,15 +118,6 @@ function configure_tobiko_nova {
   echo_summary "Write [nova] section to ${TOBIKO_CONFIG}"
   local tobiko_config=$1
 
-  # Write flavor ID
-  local flavor_name=${TOBIKO_NOVA_FLAVOR:-}
-  if [ "${flavor_name}" != "" ]; then
-    local flavor_id=$(openstack flavor show -f value -c id "${flavor_name}")
-  else
-    local flavor_id=$(openstack flavor list --limit 1 -f value -c ID --public)
-  fi
-  iniset "${tobiko_config}" nova flavor "${flavor_id}"
-
   # Write key_file
   local key_file=${TOBIKO_NOVA_KEY_FILE:-}
   if ! [ -r "${key_file}" ]; then
