@@ -28,19 +28,21 @@ def register_tobiko_options(conf):
                          help=("Default directory where to look for image "
                                "files")), ])
 
-    conf.register_opts(
-        group=cfg.OptGroup('cirros'),
-        opts=[cfg.StrOpt('image_name',
-                         help="Default CirrOS image name"),
-              cfg.StrOpt('image_url',
-                         help="Default CirrOS image URL"),
-              cfg.StrOpt('image_file',
-                         help="Default CirrOS image filename"),
-              cfg.StrOpt('container_format',
-                         help="Default CirrOS container format"),
-              cfg.StrOpt('disk_format',
-                         help="Default CirrOS disk format"),
-              cfg.StrOpt('username',
-                         help="Default CirrOS username"),
-              cfg.StrOpt('password',
-                         help="Default CirrOS password"), ])
+    for name in ['CirrOS']:
+        group_name = name.lower()
+        conf.register_opts(
+            group=cfg.OptGroup(group_name),
+            opts=[cfg.StrOpt('image_name',
+                             help="Default " + name + " image name"),
+                  cfg.StrOpt('image_url',
+                             help="Default " + name + " image URL"),
+                  cfg.StrOpt('image_file',
+                             help="Default " + name + " image filename"),
+                  cfg.StrOpt('container_format',
+                             help="Default " + name + " container format"),
+                  cfg.StrOpt('disk_format',
+                             help="Default " + name + " disk format"),
+                  cfg.StrOpt('username',
+                             help="Default " + name + " username"),
+                  cfg.StrOpt('password',
+                             help="Default " + name + " password"), ])
