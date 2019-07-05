@@ -1,0 +1,81 @@
+heat_template_version: newton
+
+description: |
+  Creates a nova SSH keypair to be used for creating Nova servers
+
+
+parameters:
+
+  disk:
+    type: number
+    description: |
+      Size of local disk in GB. The “0” size is a special case that uses the
+      native base image size as the size of the ephemeral root volume.
+    default: 0
+
+  ephemeral:
+    type: number
+    description: Size of a secondary ephemeral data disk in GB.
+    default: 0
+
+  extra_specs:
+    type: json
+    description: Key/Value pairs to extend the capabilities of the flavor.
+    default: {}
+
+  is_public:
+    type: boolean
+    description: |
+      Scope of flavor accessibility. Public or private. Default value is True,
+      means public, shared across all projects.
+    default: true
+
+  name:
+    type: string
+    description: Name of the flavor.
+
+  ram:
+    type: number
+    description: Memory in MB for the flavor
+
+  rxtx_factor:
+    type: number
+    description: RX/TX factor.
+    default: 1.0
+
+  swap:
+    type: number
+    description: Swap space in MB.
+    default: 0
+
+  vcpus:
+    type: number
+    description: Number of VCPUs for the flavor
+    default: 1
+
+
+resources:
+
+  flavor:
+    type: OS::Nova::Flavor
+    properties:
+      disk: {get_param: disk}
+      ephemeral: {get_param: ephemeral}
+      extra_specs: {get_param: extra_specs}
+      is_public: {get_param: is_public}
+      name: {get_param: name}
+      ram: {get_param: ram}
+      rxtx_factor: {get_param: rxtx_factor}
+      swap: {get_param: swap}
+      vcpus: {get_param: vcpus}
+
+
+outputs:
+
+  flavor_id:
+    description: unique Nova flavor ID
+    value: {get_resource: flavor}
+
+  falvor_name:
+    description: Nova flavor name
+    value: {get_attr: [flavor, show, name]}

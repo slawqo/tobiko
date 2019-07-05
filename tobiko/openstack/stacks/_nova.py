@@ -44,6 +44,28 @@ class KeyPairStackFixture(heat.HeatStackFixture):
             self.public_key = as_str(fd.read())
 
 
+class FlavorStackFixture(heat.HeatStackFixture):
+    template = _hot.heat_template_file('nova/flavor.yaml')
+
+    disk = None
+    ephemeral = None
+    extra_specs = None
+    is_public = None
+    name = None
+    rxtx_factor = None
+    swap = None
+    vcpus = None
+
+    def get_stack_parameters(self):
+        parameters = super(FlavorStackFixture, self).get_stack_parameters()
+        parameters.setdefault('name', self.stack_name)
+        return parameters
+
+
+class CirrosFlavorStackFixture(FlavorStackFixture):
+    ram = 64
+
+
 def as_str(text):
     if isinstance(text, six.string_types):
         return text

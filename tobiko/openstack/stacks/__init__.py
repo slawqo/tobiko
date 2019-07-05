@@ -19,6 +19,8 @@ from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _nova
 
 KeyPairStackFixture = _nova.KeyPairStackFixture
+FlavorStackFixture = _nova.FlavorStackFixture
+CirrosFlavorStackFixture = _nova.CirrosFlavorStackFixture
 
 NetworkStackFixture = _neutron.NetworkStackFixture
 NetworkWithNetMtuWriteStackFixture = (

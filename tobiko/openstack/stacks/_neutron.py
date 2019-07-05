@@ -186,8 +186,14 @@ class FloatingIpServerStackFixture(heat.HeatStackFixture):
         """password used to login to a Nova server instance"""
         return self.image_fixture.password
 
-    #: Nova flavor used to create a Nova server instance
-    flavor = CONF.tobiko.nova.flavor
+    # Stack used to create flavor for Nova server instance
+    flavor_stack = tobiko.required_setup_fixture(
+        _nova.CirrosFlavorStackFixture)
+
+    @property
+    def flavor(self):
+        """Flavor for Nova server instance"""
+        return self.flavor_stack.flavor_id
 
     #: Whenever port security on internal network is enable
     port_security_enabled = False

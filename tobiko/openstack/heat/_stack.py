@@ -93,6 +93,9 @@ class HeatStackFixture(tobiko.SharedFixture):
     def setup_stack(self):
         self.create_stack()
 
+    def get_stack_parameters(self):
+        return tobiko.reset_fixture(self.parameters).values
+
     def create_stack(self, retry=None):
         """Creates stack based on passed parameters."""
         created_stack_ids = set()
@@ -133,7 +136,7 @@ class HeatStackFixture(tobiko.SharedFixture):
 
             self.stack = self._outputs = None
             # Compile template parameters
-            parameters = tobiko.reset_fixture(self.parameters).values
+            parameters = self.get_stack_parameters()
             try:
                 LOG.debug('Creating stack %r (re-tries left %d)...',
                           self.stack_name, retry)
