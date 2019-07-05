@@ -30,7 +30,7 @@ LOG = log.getLogger(__name__)
 
 
 def local_execute(command, environment=None, timeout=None, shell=None,
-                  stdin=True, stdout=True, stderr=True, expect_exit_status=0,
+                  stdin=None, stdout=None, stderr=None, expect_exit_status=0,
                   **kwargs):
     """Execute command on local host using local shell"""
     process = local_process(command=command,
