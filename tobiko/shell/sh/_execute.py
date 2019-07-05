@@ -40,7 +40,7 @@ class ShellExecuteResult(object):
 
 
 def execute(command, environment=None, timeout=None, shell=None,
-            stdin=True, stdout=True, stderr=True, ssh_client=None,
+            stdin=None, stdout=None, stderr=None, ssh_client=None,
             expect_exit_status=0, **kwargs):
     """Execute command inside a remote or local shell
 

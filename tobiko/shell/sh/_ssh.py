@@ -29,7 +29,7 @@ LOG = log.getLogger(__name__)
 
 
 def ssh_execute(ssh_client, command, environment=None, timeout=None,
-                stdin=True, stdout=True, stderr=True, shell=None,
+                stdin=None, stdout=None, stderr=None, shell=None,
                 expect_exit_status=0, **kwargs):
     """Execute command on local host using local shell"""
     process = ssh_process(command=command,

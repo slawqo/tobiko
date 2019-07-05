@@ -330,8 +330,8 @@ class ShellProcessFixture(tobiko.SharedFixture):
 
         LOG.debug("Command '%s' succeeded (exit_status=%d):\n"
                   "stdin:\n%s\n"
-                  "stderr:\n%s\n"
-                  "stdout:\n%s",
+                  "stdout:\n%s\n"
+                  "stderr:\n%s",
                   self.command, exit_status,
                   self.stdin, self.stdout, self.stderr)
 
@@ -370,7 +370,10 @@ class ShellProcessTimeout(object):
 
 
 def str_from_stream(stream):
-    return stream and str(stream) or None
+    if stream is not None:
+        return str(stream)
+    else:
+        return None
 
 
 def default_shell_command():
