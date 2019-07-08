@@ -56,11 +56,6 @@ class FlavorStackFixture(heat.HeatStackFixture):
     swap = None
     vcpus = None
 
-    def get_stack_parameters(self):
-        parameters = super(FlavorStackFixture, self).get_stack_parameters()
-        parameters.setdefault('name', self.stack_name)
-        return parameters
-
 
 class CirrosFlavorStackFixture(FlavorStackFixture):
     ram = 64

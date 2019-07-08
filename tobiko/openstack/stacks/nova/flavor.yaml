@@ -30,10 +30,6 @@ parameters:
       means public, shared across all projects.
     default: true
 
-  name:
-    type: string
-    description: Name of the flavor.
-
   ram:
     type: number
     description: Memory in MB for the flavor
@@ -56,6 +52,12 @@ parameters:
 
 resources:
 
+  flavor_name:
+    type: OS::Heat::RandomString
+    description: Random unique flavor name
+    properties:
+      length: 16
+
   flavor:
     type: OS::Nova::Flavor
     properties:
@@ -63,7 +65,7 @@ resources:
       ephemeral: {get_param: ephemeral}
       extra_specs: {get_param: extra_specs}
       is_public: {get_param: is_public}
-      name: {get_param: name}
+      name: {get_attr: [flavor_name, value]}
       ram: {get_param: ram}
       rxtx_factor: {get_param: rxtx_factor}
       swap: {get_param: swap}
@@ -76,6 +78,6 @@ outputs:
     description: unique Nova flavor ID
     value: {get_resource: flavor}
 
-  falvor_name:
+  flavor_name:
     description: Nova flavor name
-    value: {get_attr: [flavor, show, name]}
+    value: {get_attr: [flavor_name, value]}
