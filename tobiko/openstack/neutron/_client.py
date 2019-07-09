@@ -62,25 +62,37 @@ def get_neutron_client(session=None, shared=True, init_client=None,
     return client.client
 
 
-def find_network(obj=None, properties=None, client=None, **params):
-    """Look for the unique network matching some property values"""
-    return _find.find_resource(
-        obj=obj, resource_type='network', properties=properties,
-        resources=list_networks(client=client, **params), **params)
+def find_network(obj, properties=None, client=None, check_found=True,
+                 check_unique=True, **params):
+    """Look for a network matching some property values"""
+    resources = list_networks(client=client, **params)
+    return _find.find_resource(obj=obj,
+                               resources=resources,
+                               properties=properties,
+                               check_found=check_found,
+                               check_unique=check_unique)
 
 
-def find_port(obj=None, properties=None, client=None, **params):
-    """Look for the unique network matching some property values"""
-    return _find.find_resource(
-        obj=obj, resource_type='port', properties=properties,
-        resources=list_ports(client=client, **params), **params)
+def find_port(obj, properties=None, client=None, check_found=True,
+              check_unique=True, **params):
+    """Look for a port matching some property values"""
+    resources = list_ports(client=client, **params)
+    return _find.find_resource(obj=obj,
+                               resources=resources,
+                               properties=properties,
+                               check_found=check_found,
+                               check_unique=check_unique)
 
 
-def find_subnet(obj=None, properties=None, client=None, **params):
-    """Look for the unique subnet matching some property values"""
-    return _find.find_resource(
-        obj=obj, resource_type='subnet', properties=properties,
-        resources=list_subnets(client=client, **params), **params)
+def find_subnet(obj, properties=None, client=None, check_found=True,
+                check_unique=False, **params):
+    """Look for a subnet matching some property values"""
+    resources = list_subnets(client=client, **params)
+    return _find.find_resource(obj=obj,
+                               resources=resources,
+                               properties=properties,
+                               check_found=check_found,
+                               check_unique=check_unique)
 
 
 def list_networks(show=False, client=None, **params):

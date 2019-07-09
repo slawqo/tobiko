@@ -64,24 +64,30 @@ def delete_image(image_id, client=None, **params):
     try:
         glance_client(client).images.delete(image_id, **params)
     except exc.HTTPNotFound:
-        pass
+        return False
+    else:
+        return True
 
 
-def get_image(image_id, client=None):
+def get_image(image_id, check_found=True, client=None):
     try:
         return glance_client(client).images.get(image_id=image_id)
-    except exc.HTTPNotFound as ex:
-        raise GlanceImageNotFound(cause=ex)
+    except exc.HTTPNotFound:
+        if check_found:
+            raise
+        else:
+            return None
 
 
-def find_image(obj=None, properties=None, client=None, **params):
-    """Look for the unique network matching some property values"""
-
-    images = list_images(client=client, limit=1, **params)
-    for image in _find.find_resources(obj, images, properties=properties):
-        return image
-
-    raise GlanceImageNotFound(obj=obj, properties=properties, params=params)
+def find_image(obj=None, properties=None, client=None, check_found=True,
+               check_unique=False, **params):
+    """Look for an image matching some property values"""
+    resources = list_images(client=client, **params)
+    return _find.find_resource(obj=obj,
+                               resources=resources,
+                               properties=properties,
+                               check_found=check_found,
+                               check_unique=check_unique)
 
 
 def list_images(client=None, **params):
@@ -92,8 +98,3 @@ def upload_image(image_id, image_data, client=None, **params):
     """Look for the unique network matching some property values"""
     return glance_client(client).images.upload(
         image_id=image_id, image_data=image_data, **params)
-
-
-class GlanceImageNotFound(_find.ResourceNotFound):
-    message = ("No such image found for obj={obj!r}, "
-               "properties={properties!r} and params={params!r}")

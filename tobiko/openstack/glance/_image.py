@@ -22,6 +22,7 @@ from oslo_log import log
 import requests
 
 import tobiko
+from tobiko.openstack import _find
 from tobiko.openstack.glance import _client
 
 LOG = log.getLogger(__name__)
@@ -118,24 +119,21 @@ class GlanceImageFixture(tobiko.SharedFixture):
     def image(self):
         return self._image or self.get_image()
 
-    def get_image(self, **kwargs):
-        self._image = image = _client.find_image(
-            self.image_name, client=self.client, **kwargs)
+    def get_image(self):
+        self._image = image = _client.find_image(self.image_name,
+                                                 client=self.client)
         LOG.debug('Got image %r: %r', self.image_name, image)
         return image
 
     def delete_image(self, image_id=None):
-        try:
-            if not image_id:
-                image_id = self.image_id
-                self._image = None
-            _client.delete_image(image_id=image_id, client=self.client)
-        except _client.GlanceImageNotFound:
+        if not image_id:
+            image_id = self.image_id
+            self._image = None
+        if _client.delete_image(image_id=image_id, client=self.client):
+            LOG.debug("Deleted image %r: %r", self.image_name, image_id)
+        else:
             LOG.debug('Image %r not deleted because not found',
                       image_id or self.image_name)
-            return None
-        else:
-            LOG.debug("Deleted image %r: %r", self.image_name, image_id)
 
     @property
     def image_id(self):
@@ -165,7 +163,7 @@ class UploadGranceImageFixture(GlanceImageFixture):
     def setup_image(self):
         try:
             return self.wait_for_image_active()
-        except _client.GlanceImageNotFound:
+        except _find.ResourceNotFound:
             pass
         except InvalidGlanceImageStatus as ex:
             self.delete_image(image_id=ex.image_id)

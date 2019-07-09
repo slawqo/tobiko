@@ -20,7 +20,6 @@ from tobiko.openstack.glance import _image
 glance_client = _client.glance_client
 get_glance_client = _client.get_glance_client
 GlanceClientFixture = _client.GlanceClientFixture
-GlanceImageNotFound = _client.GlanceImageNotFound
 create_image = _client.create_image
 get_image = _client.get_image
 find_image = _client.find_image
