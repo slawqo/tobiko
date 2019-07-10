@@ -163,8 +163,16 @@ class GlanceImageFixture(tobiko.SharedFixture):
             image = self.get_image()
 
         if check:
-            check_image_status(image, expected_status)
+            self.check_image_status(image, expected_status)
         return image
+
+    def check_image_status(self, image, expected_status):
+        image_status = image and image.status or GlanceImageStatus.DELETED
+        if image_status not in expected_status:
+            raise InvalidGlanceImageStatus(image_name=self.image_name,
+                                           image_id=image.id,
+                                           actual_status=image_status,
+                                           expected_status=expected_status)
 
 
 class UploadGranceImageFixture(GlanceImageFixture):
@@ -246,7 +254,7 @@ class UploadGranceImageFixture(GlanceImageFixture):
                 self.delete_image(image_id)
 
     def upload_image(self):
-        check_image_status(self.image, {GlanceImageStatus.QUEUED})
+        self.check_image_status(self.image, {GlanceImageStatus.QUEUED})
         image_data, image_size = self.get_image_data()
         with image_data:
             _client.upload_image(image_id=self.image_id,
@@ -351,18 +359,6 @@ class URLGlanceImageFixture(FileGlanceImageFixture):
             raise RuntimeError(message)
         os.rename(temp_file, image_file)
         return super(URLGlanceImageFixture, self).get_image_data()
-
-
-def check_image_status(image, expected_status):
-    if image:
-        image_status = image.status or GlanceImageStatus.DELETED
-        if image_status not in expected_status:
-            raise InvalidGlanceImageStatus(image_name=image.name,
-                                           image_id=image.id,
-                                           actual_status=image.status,
-                                           expected_status=expected_status)
-    elif GlanceImageStatus.DELETED not in expected_status:
-        raise RuntimeError('Grance image not found')
 
 
 class InvalidGlanceImageStatus(tobiko.TobikoException):
