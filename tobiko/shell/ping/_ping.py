@@ -17,7 +17,6 @@ from __future__ import absolute_import
 
 import time
 
-import netaddr
 from neutron_lib import constants
 from oslo_log import log
 
@@ -156,7 +155,8 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
             execute_parameters = _parameters.get_ping_parameters(
                 default=parameters,
                 deadline=deadline,
-                count=(parameters.count - count))
+                count=(parameters.count - count),
+                timeout=end_of_time - now)
         else:
             # Deadline ping parameter cause ping to be executed until count
             # messages are received or deadline is expired
@@ -167,7 +167,8 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
                 default=parameters,
                 deadline=deadline,
                 count=min(parameters.count - count,
-                          parameters.interval * deadline))
+                          parameters.interval * deadline),
+                timeout=end_of_time - now)
 
         # Command timeout would typically give ping command additional seconds
         # to safely reach deadline before shell command timeout expires, while
@@ -177,7 +178,6 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
         try:
             result = execute_ping(parameters=execute_parameters,
                                   ssh_client=ssh_client,
-                                  timeout=end_of_time - now,
                                   check=check)
         except sh.ShellError as ex:
             LOG.exception("Error executing ping command")
@@ -213,13 +213,7 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
                                     message_type=until)
 
 
-def execute_ping(parameters, ssh_client=None, check=True, **params):
-    if not ssh_client:
-        is_cirros_image = params.setdefault('is_cirros_image', False)
-        if is_cirros_image:
-            raise ValueError("'ssh_client' parameter is required when "
-                             "to execute ping on a CirrOS image.")
-
+def execute_ping(parameters, ssh_client=None, check=True):
     command = get_ping_command(parameters)
     result = sh.execute(command=command,
                         ssh_client=ssh_client,
@@ -234,54 +228,19 @@ def execute_ping(parameters, ssh_client=None, check=True, **params):
 def get_ping_command(parameters):
     options = []
 
-    ip_version = parameters.ip_version
+    ip_version = _parameters.get_ping_ip_version(parameters)
+
+    ping_command = 'ping'
+    if ip_version == constants.IP_VERSION_6:
+        ping_command = 'ping6'
+
     host = parameters.host
-    if host:
-        try:
-            host = netaddr.IPAddress(host)
-        except netaddr.core.AddrFormatError:
-            # NOTE: host could be an host name not an IP address so
-            # this is fine
-            LOG.debug("Unable to obtain IP version from host address: %r",
-                      host)
-        else:
-            if ip_version != host.version:
-                if ip_version:
-                    raise ValueError("Mismatching destination IP version.")
-                else:
-                    ip_version = host.version
-    else:
+    if not host:
         raise ValueError("Ping host destination hasn't been specified")
 
     source = parameters.source
     if source:
-        try:
-            source = netaddr.IPAddress(source)
-        except netaddr.core.AddrFormatError:
-            # NOTE: source could be a device name and not an IP address
-            # so this is fine
-            LOG.debug("Unable to obtain IP version from source address: "
-                      "%r", source)
-        else:
-            if ip_version != source.version:
-                if ip_version:
-                    raise ValueError("Mismatching source IP version.")
-                else:
-                    ip_version = source.version
         options += ['-I', source]
-
-    is_cirros_image = parameters.is_cirros_image
-    ping_command = 'ping'
-    if not ip_version:
-        LOG.warning("Unable to obtain IP version from neither source "
-                    "or destination IP addresses: assuming IPv4")
-        ip_version = constants.IP_VERSION_4
-
-    elif ip_version == constants.IP_VERSION_6:
-        if is_cirros_image:
-            options += ['-6']
-        else:
-            ping_command = 'ping6'
 
     deadline = parameters.deadline
     if deadline > 0:
@@ -292,12 +251,7 @@ def get_ping_command(parameters):
     if count > 0:
         options += ['-c', int(count)]
 
-    payload_size = parameters.payload_size
-    packet_size = parameters.packet_size
-    if not payload_size and packet_size:
-        payload_size = get_icmp_payload_size(package_size=int(packet_size),
-                                             ip_version=ip_version)
-
+    payload_size = _parameters.get_ping_payload_size(parameters)
     if payload_size:
         options += ['-s', int(payload_size)]
 
@@ -307,11 +261,6 @@ def get_ping_command(parameters):
 
     fragmentation = parameters.fragmentation
     if fragmentation is False:
-        if is_cirros_image:
-            msg = ("'is_cirros_image' parameter must be set to False"
-                   " when 'fragmention' parameter is False "
-                   "(is_cirros_image={!r})").format(is_cirros_image)
-            raise ValueError(msg)
         options += ['-M', 'do']
 
     return [ping_command] + options + [host]
@@ -356,19 +305,3 @@ def handle_ping_command_error(error):
                     raise _exception.UnknowHostError(details=details)
 
                 raise _exception.PingError(details=text)
-
-
-IP_HEADER_SIZE = {4: 20, 6: 40}
-ICMP_HEADER_SIZE = {4: 8, 6: 4}
-
-
-def get_icmp_payload_size(package_size, ip_version):
-    """Return the maximum size of ping payload that will fit into MTU."""
-    header_size = IP_HEADER_SIZE[ip_version] + ICMP_HEADER_SIZE[ip_version]
-    if package_size < header_size:
-        message = ("package size {package_size!s} is smaller than package "
-                   "header size {header_size!s}").format(
-                       package_size=package_size,
-                       header_size=header_size)
-        raise ValueError(message)
-    return package_size - header_size

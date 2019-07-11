@@ -15,36 +15,18 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
 
-class PingParameters(object):
-    """Recollect parameters to be used to format ping command line
+import netaddr
+from oslo_log import log
 
-    PingParameters class is a data model recollecting parameters used to
-    create a ping command line. It provides the feature of copying default
-    values from another instance of PingParameters passed using constructor
-    parameter 'default'.
-    """
 
-    def __init__(self, host=None, count=None, deadline=None,
-                 fragmentation=None, interval=None, is_cirros_image=None,
-                 ip_version=None, payload_size=None, packet_size=None,
-                 source=None, timeout=None):
-        self.count = count
-        self.deadline = deadline
-        self.host = host
-        self.fragmentation = fragmentation
-        self.interval = interval
-        self.ip_version = ip_version
-        self.is_cirros_image = is_cirros_image
-        self.packet_size = packet_size
-        self.payload_size = payload_size
-        self.source = source
-        self.timeout = timeout
+LOG = log.getLogger(__name__)
 
-    def __repr__(self):
-        return "PingParameters({!s})".format(
-            ", ".join("{!s}={!r}".format(k, v)
-                      for k, v in self.__dict__.items()))
+
+PING_PARAMETER_NAMES = ['host', 'count', 'deadline', 'fragmentation',
+                        'interval', 'ip_version', 'packet_size', 'source',
+                        'timeout']
 
 
 def get_ping_parameters(default=None, **ping_params):
@@ -62,8 +44,8 @@ def get_ping_parameters(default=None, **ping_params):
 
 def ping_parameters(default=None, count=None, deadline=None,
                     fragmentation=None, host=None, interval=None,
-                    is_cirros_image=None, ip_version=None, packet_size=None,
-                    payload_size=None, source=None, timeout=None):
+                    ip_version=None, packet_size=None, source=None,
+                    timeout=None):
     """Validate parameters and initialize a new PingParameters instance
 
     :param default: (PingParameters or None) instance from where to take
@@ -86,23 +68,18 @@ def ping_parameters(default=None, count=None, deadline=None,
 
     :param fragmentation: (bool or None) when False this would tell ping
     to forbid ICMP messages fragmentation. Default value can be configured
-    using 'fragmentation' option in [ping] config section.
+    using 'fragmentation' option in [ping] config section. Fragmentation can't
+    be disabled when using ping provided by BusyBox (IE with CirrOS images).
 
     :param interval: (int or None) interval of time before sending following
     ICMP message. Default value can be configured using 'interval' option
     in [ping] config section.
 
-    :param is_cirros_image: (bool or None) when True means that ping command
-    has to be formated for being executed on a CirrOS based guess instance.
-
     :param ip_version: (4, 6 or None) If not None it makes sure it will
     use specified IP version for sending ICMP packages.
 
-    :param packet_size: ICMP message size. Default value can be configured
-    using 'package_size' option in [ping] config section.
-
-    :param payload_size: (int or None) if not None, it specifies ICMP message
-    size minus ICMP and IP header size.
+    :param packet_size: (int or None) if not None, it specifies the total ICMP
+    message size (headers + payload).
 
     :param source: (str or None) IP address or interface name from where
     to send ICMP message.
@@ -116,86 +93,121 @@ def ping_parameters(default=None, count=None, deadline=None,
     :raises ValueError: in case some parameter has an unexpected value
     """
 
-    if packet_size:
-        if payload_size:
-            msg = ("Can't set 'package_size' and 'payload_size' parameters "
-                   "at the same time: package_size={!r}, payload_size={!r}"
-                   ).format(packet_size, payload_size)
-            raise ValueError(msg)
+    if default is None:
+        default = default_ping_parameters()
 
-    count = count or 1
-    if count < 1:
-        msg = ("Count is not positive: count={!r}").format(count)
-        raise ValueError(msg)
-
-    if default is not False:
-        default = default or default_ping_parameters()
-        # Copy default parameters
-        count = count or default.count
-        if deadline is None:
-            deadline = default.deadline
-        host = host or default.host
-        if fragmentation is None:
-            fragmentation = default.fragmentation
-        interval = interval or default.interval
-        ip_version = ip_version or default.ip_version
-        packet_size = packet_size or default.packet_size
-        payload_size = payload_size or default.payload_size
-        source = source or default.source
-        timeout = timeout or default.timeout
-
-    count = int(count)
-    if count < 1:
-        msg = "'count' parameter cannot be smaller than 1"
-        raise ValueError(msg)
-
-    deadline = int(deadline)
-    if deadline < 0:
-        msg = ("'deadline' parameter cannot be smaller than 0 "
-               "(deadline={!r})").format(deadline)
-        raise ValueError(msg)
-
-    interval = int(interval)
-    if interval < 1:
-        msg = ("'interval' parameter cannot be smaller than 1 "
-               "(interval={!r})").format(interval)
-        raise ValueError(msg)
-
-    timeout = int(timeout)
-    if timeout < 1:
-        msg = ("'timeout' parameter cannot be smaller than 1 "
-               "(timeout={!r})").format(timeout)
-        raise ValueError(msg)
-
-    if is_cirros_image:
-        if fragmentation is False:
-            msg = ("'fragmentation' parameter cannot be False when "
-                   "pinging from a CirrOS image (is_cirros_image={!r})"
-                   ).format(is_cirros_image)
-            raise ValueError(msg)
-
-        if interval != 1:
-            msg = ("Cannot specify 'interval' parameter when pinging from a "
-                   "CirrOS image (interval={!r}, is_cirros_image={!r})"
-                   ).format(interval, is_cirros_image)
-            raise ValueError(msg)
-
-    return PingParameters(count=count, host=host,
-                          deadline=deadline, fragmentation=fragmentation,
-                          interval=interval, is_cirros_image=is_cirros_image,
-                          ip_version=ip_version, packet_size=packet_size,
-                          payload_size=payload_size, source=source,
-                          timeout=timeout)
+    return PingParameters(
+        count=get_positive_integer('count', count, default),
+        host=get_address('host', host, default),
+        deadline=get_positive_integer('deadline', deadline, default),
+        fragmentation=get_boolean('fragmentation', fragmentation, default),
+        interval=get_positive_integer('interval', interval, default),
+        ip_version=get_positive_integer('ip_version', ip_version, default),
+        packet_size=get_positive_integer('packet_size', packet_size, default),
+        source=get_address('source', source, default),
+        timeout=get_positive_integer('timeout', timeout, default))
 
 
 def default_ping_parameters():
     from tobiko import config
     CONF = config.CONF
-    return ping_parameters(
-        default=False,
-        count=CONF.tobiko.ping.count,
-        deadline=CONF.tobiko.ping.deadline,
-        fragmentation=CONF.tobiko.ping.fragmentation,
-        interval=CONF.tobiko.ping.interval,
-        packet_size=CONF.tobiko.ping.packet_size,
-        timeout=CONF.tobiko.ping.timeout)
+    return ping_parameters(default=False,
+                           count=CONF.tobiko.ping.count,
+                           deadline=CONF.tobiko.ping.deadline,
+                           fragmentation=CONF.tobiko.ping.fragmentation,
+                           interval=CONF.tobiko.ping.interval,
+                           packet_size=CONF.tobiko.ping.packet_size,
+                           timeout=CONF.tobiko.ping.timeout)
+
+
+class PingParameters(collections.namedtuple('PingParameters',
+                                            PING_PARAMETER_NAMES)):
+    """Recollect parameters to be used to format ping command line
+
+    PingParameters class is a data model recollecting parameters used to
+    create a ping command line. It provides the feature of copying default
+    values from another instance of PingParameters passed using constructor
+    parameter 'default'.
+    """
+
+
+def get_ping_ip_version(parameters):
+    ip_version = parameters.ip_version
+    if ip_version is not None:
+        ip_version = int(ip_version)
+        if ip_version not in [4, 6]:
+            message = "Invalid IP version: {!r}".format(ip_version)
+            raise ValueError(message)
+    for address in [parameters.host, parameters.source]:
+        if isinstance(address, netaddr.IPAddress):
+            if ip_version != address.version:
+                if ip_version:
+                    meassage = ("{!s} address IP version is not {!r}"
+                                ).format(address, ip_version)
+                    raise ValueError(meassage)
+                ip_version = address.version
+    return ip_version
+
+
+def get_ping_payload_size(parameters):
+    packet_size = parameters.packet_size
+    if packet_size is None:
+        return None
+
+    header_size = get_ping_header_size(parameters)
+    if packet_size < header_size:
+        message = ("packet size {packet_size!s} can't be smaller than "
+                   "header size {header_size!s}").format(
+                       packet_size=packet_size,
+                       header_size=header_size)
+        raise ValueError(message)
+    return packet_size - header_size
+
+
+def get_positive_integer(name, value, default=None):
+    if value is None and default:
+        return get_positive_integer(name, getattr(default, name))
+    if value is not None:
+        value = int(value)
+        if value <= 0:
+            message = "{!r} value must be positive: {!r}".format(
+                name, value)
+            raise ValueError(message)
+    return value
+
+
+def get_boolean(name, value, default=None):
+    if value is None and default:
+        return get_boolean(name, getattr(default, name))
+    if value is not None:
+        value = bool(value)
+    return value
+
+
+def get_address(name, value, default=None):
+    if value is None and default:
+        return get_address(name, getattr(default, name))
+    if value is not None:
+        try:
+            value = netaddr.IPAddress(value)
+        except netaddr.core.AddrFormatError:
+            # NOTE: value may be an host name so this is fine
+            value = str(value)
+    return value
+
+
+IP_HEADER_SIZE = {4: 20, 6: 40}
+ICMP_HEADER_SIZE = {4: 8, 6: 4}
+
+
+def get_ping_header_size(parameters):
+    ip_version = get_ping_ip_version(parameters)
+    if ip_version is None:
+        message = "can't get ICMP header size without knowing IP version"
+        raise ValueError(message)
+
+    if ip_version not in IP_HEADER_SIZE or ip_version not in ICMP_HEADER_SIZE:
+        message = "Invalid IP version: {!r}".format(ip_version)
+        raise ValueError(message)
+
+    return IP_HEADER_SIZE[ip_version] + ICMP_HEADER_SIZE[ip_version]
