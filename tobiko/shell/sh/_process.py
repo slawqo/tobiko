@@ -227,58 +227,76 @@ class ShellProcessFixture(tobiko.SharedFixture):
         self.comunicate(stdin=None, timeout=timeout, wait=True)
 
     def comunicate(self, stdin=None, stdout=True, stderr=True, timeout=None,
-                   wait=True):
+                   wait=True, buffer_size=None):
         timeout = ShellProcessTimeout(timeout=timeout)
         # Avoid waiting for data in the first loop
         poll_interval = 0.
         poll_files = _io.select_opened_files([stdin and self.stdin,
                                               stdout and self.stdout,
                                               stderr and self.stderr])
-        buffer_size = self.parameters.buffer_size
-        while wait or stdin or poll_files:
+        while wait or stdin:
             self.check_timeout(timeout=timeout)
-            if stdin:
-                self.check_is_running()
-                self.check_stdin_is_opened()
-            else:
-                wait = wait and self.is_running
-
+            wait = wait and (poll_files or self.is_running)
             read_ready, write_ready = _io.select_files(files=poll_files,
                                                        timeout=poll_interval)
             if read_ready or write_ready:
                 # Avoid waiting for data the next time
                 poll_interval = 0.
+                if self.stdin in write_ready:
+                    # Write data to remote STDIN
+                    stdin = self._write_to_stdin(stdin)
+                    if not stdin:
+                        if wait:
+                            self.stdin.close()
+                        else:
+                            # Stop polling STDIN for write
+                            self.stdin.flush()
+                            poll_files.remove(self.stdin)
+                if self.stdout in read_ready:
+                    # Read data from remote STDOUT
+                    self._read_from_stdout(buffer_size=buffer_size)
+                if self.stderr in read_ready:
+                    # Read data from remote STDERR
+                    self._read_from_stderr(buffer_size=buffer_size)
             else:
                 # Wait for data in the following loops
                 poll_interval = min(self.poll_interval,
                                     self.check_timeout(timeout=timeout))
-
-            if self.stdin in write_ready:
-                # Write data to remote STDIN
-                sent_bytes = self.stdin.write(stdin)
-                if sent_bytes:
-                    stdin = stdin[sent_bytes:]
-                    if not stdin:
-                        self.stdin.flush()
-                else:
-                    LOG.debug("STDIN channel closed by peer on %r", self)
-                    self.stdin.close()
-
-            if self.stdout in read_ready:
-                # Read data from remote STDOUT
-                chunk = self.stdout.read(buffer_size)
-                if not chunk:
-                    LOG.debug("STDOUT channel closed by peer on %r", self)
-                    self.stdout.close()
-
-            if self.stderr in read_ready:
-                # Read data from remote STDERR
-                chunk = self.stderr.read(buffer_size)
-                if not chunk:
-                    LOG.debug("STDERR channel closed by peer on %r", self)
-                    self.stderr.close()
-
+            # Remove closed streams
             poll_files = _io.select_opened_files(poll_files)
+
+    def _write_to_stdin(self, data, check=True):
+        """Write data to STDIN"""
+        if check:
+            self.check_stdin_is_opened()
+        sent_bytes = self.stdin.write(data)
+        if sent_bytes:
+            return data[sent_bytes:] or None
+        else:
+            LOG.debug("%r closed by peer on %r", self.stdin, self)
+            self.stdin.close()
+
+    def _read_from_stdout(self, buffer_size=None):
+        """Read data from remote stream"""
+        # Read data from remote stream
+        chunk = self.stdout.read(buffer_size)
+        if chunk:
+            return chunk
+        else:
+            LOG.debug("%r closed by peer on %r", self.stdout, self)
+            self.stdout.close()
+            return None
+
+    def _read_from_stderr(self, buffer_size=None):
+        """Read data from remote stream"""
+        # Read data from remote stream
+        chunk = self.stderr.read(buffer_size)
+        if chunk:
+            return chunk
+        else:
+            LOG.debug("%r closed by peer on %r", self.stderr, self)
+            self.stderr.close()
+            return None
 
     def time_left(self, now=None, timeout=None):
         now = now or time.time()

@@ -19,6 +19,7 @@ from tobiko.shell.sh import _command
 from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _local
+from tobiko.shell.sh import _io
 from tobiko.shell.sh import _process
 from tobiko.shell.sh import _ssh
 
@@ -35,6 +36,8 @@ ShellStdinClosed = _exception.ShellStdinClosed
 execute = _execute.execute
 execute_process = _execute.execute_process
 ShellExecuteResult = _execute.ShellExecuteResult
+
+join_chunks = _io.join_chunks
 
 local_execute = _local.local_execute
 local_process = _local.local_process

@@ -80,12 +80,6 @@ class ShellIOBase(io.IOBase):
     def closed(self):
         return self.delegate.closed
 
-    def __bool__(self):
-        for chunk in self._data_chunks:
-            if chunk:
-                return True
-        return False
-
 
 class ShellReadable(ShellIOBase):
 
@@ -97,11 +91,13 @@ class ShellReadable(ShellIOBase):
         try:
             chunk = self.delegate.read(size)
         except IOError:
+            LOG.exception('Error reading from %r', self)
             chunk = None
             try:
                 self.close()
             except Exception:
-                pass
+                LOG.exception('Error closing %r', self)
+            raise
 
         if chunk:
             self._data_chunks.append(chunk)
@@ -204,3 +200,17 @@ def is_writable_file(f):
 
 def select_write_ready_files(files):
     return {f for f in files if f.write_ready}
+
+
+def join_chunks(chunks):
+    chunk_it = iter(chunks)
+    data = None
+    for chunk in chunk_it:
+        if chunk:
+            data = chunk
+            break
+    if data:
+        # Use a zero-length chunk to join other chunks
+        return data + data[:0].join(chunk for chunk in chunk_it if chunk)
+    else:
+        return None
