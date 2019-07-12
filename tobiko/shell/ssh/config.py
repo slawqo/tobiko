@@ -52,7 +52,7 @@ def register_tobiko_options(conf):
                            default=5.,
                            help="SSH connect timeout in seconds"),
               cfg.IntOpt('connection_attempts',
-                         default=24,
+                         default=60,
                          help=("Incremental seconds to wait after every "
                                "failed SSH connection attempt")),
               cfg.FloatOpt('connection_interval',

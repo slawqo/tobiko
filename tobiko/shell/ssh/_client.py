@@ -292,8 +292,7 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
                 connection_attempts=None, proxy_command=None,
                 proxy_client=None, **parameters):
     client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.load_system_host_keys()
+    client.set_missing_host_key_policy(paramiko.WarningPolicy())
 
     login = _command.ssh_login(hostname=hostname, username=username, port=port)
     attempts = connection_attempts or 1
@@ -317,7 +316,8 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
             if attempt >= attempts:
                 raise
 
-            LOG.debug("Error logging in to %r: \n(%s)", login, ex)
+            LOG.debug("Error logging in to %r: \n(%s)", login, ex,
+                      exc_info=1)
             sleep_time = start_time + interval - time.time()
             if sleep_time > 0.:
                 LOG.debug("Retrying connecting to %r in %d seconds...", login,
