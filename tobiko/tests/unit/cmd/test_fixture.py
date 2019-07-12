@@ -51,35 +51,16 @@ class FixtureUtilTest(unit.TobikoUnitTest):
         self.mock_error = self.patch(argparse.ArgumentParser, 'error',
                                      side_effect=self.fail)
 
-    def patch_argv(self, subcommand=None, arguments=None,
-                   config_file=None, repo_type=None, repo_url=None,
-                   test_path=None, top_dir=None, group_regex=None,
-                   blacklist_file=None, whitelist_file=None,
-                   black_regex=None, filters=None):
+    def patch_argv(self, subcommand=None, arguments=None, filters=None,
+                   **options):
         subcommand = subcommand or 'list'
-        arguments = list(arguments or [])
-        if config_file:
-            arguments += ['--config', config_file]
-        if repo_type:
-            arguments += ['--repo-type', repo_type]
-        if repo_url:
-            arguments += ['--repo-url', repo_url]
-        if test_path:
-            arguments += ['--test-path', test_path]
-        if top_dir:
-            arguments += ['--top-dir', top_dir]
-        if group_regex:
-            arguments += ['--group-regex', group_regex]
-        if blacklist_file:
-            arguments += ['--blacklist-file', blacklist_file]
-        if whitelist_file:
-            arguments += ['--whitelist-file', whitelist_file]
-        if black_regex:
-            arguments += ['--black-regex', black_regex]
+        arguments = arguments or []
+        if options:
+            arguments += make_options(**options)
         if filters:
             arguments += list(filters)
-        return self.patch(sys, 'argv',
-                          [self.command_name, subcommand] + arguments)
+        argv = [self.command_name, subcommand] + arguments
+        return self.patch(sys, 'argv', argv)
 
     def test_init(self, subcommand=None, arguments=None, filters=None,
                   config_file=None, repo_type=None,
@@ -264,3 +245,29 @@ class FixtureUtilTest(unit.TobikoUnitTest):
         if not os.path.isdir(os.path.join(top_dir, '.stestr')):
             command = ['stestr', '--top-dir', top_dir, 'init']
             subprocess.check_call(command)
+
+
+def make_options(config_file=None, repo_type=None, repo_url=None,
+                 test_path=None, top_dir=None, group_regex=None,
+                 blacklist_file=None, whitelist_file=None,
+                 black_regex=None):
+    options = []
+    if config_file:
+        options += ['--config', config_file]
+    if repo_type:
+        options += ['--repo-type', repo_type]
+    if repo_url:
+        options += ['--repo-url', repo_url]
+    if test_path:
+        options += ['--test-path', test_path]
+    if top_dir:
+        options += ['--top-dir', top_dir]
+    if group_regex:
+        options += ['--group-regex', group_regex]
+    if blacklist_file:
+        options += ['--blacklist-file', blacklist_file]
+    if whitelist_file:
+        options += ['--whitelist-file', whitelist_file]
+    if black_regex:
+        options += ['--black-regex', black_regex]
+    return options
