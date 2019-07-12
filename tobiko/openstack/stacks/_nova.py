@@ -58,7 +58,7 @@ class FlavorStackFixture(heat.HeatStackFixture):
 
 
 class CirrosFlavorStackFixture(FlavorStackFixture):
-    ram = 64
+    ram = 128
 
 
 def as_str(text):
