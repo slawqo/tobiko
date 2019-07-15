@@ -18,7 +18,6 @@ import abc
 from oslo_log import log
 
 import tobiko
-from tobiko.openstack import keystone
 
 
 LOG = log.getLogger(__name__)
@@ -47,6 +46,7 @@ class OpenstackClientFixture(tobiko.SharedFixture):
         return client
 
     def get_session(self):
+        from tobiko.openstack import keystone
         return keystone.keystone_session(self.session)
 
     @abc.abstractmethod

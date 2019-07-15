@@ -68,9 +68,10 @@ class KeystoneSessionFixture(tobiko.SharedFixture):
             credentials.validate()
             loader = loading.get_plugin_loader('password')
             params = credentials.to_dict()
-            del params['api_version']  # parameter not required
+            # api version parameter is not accepted
+            params.pop('api_version', None)
             auth = loader.load_from_options(**params)
-            self.session = _session.Session(auth=auth, verify=False)
+            self.session = session = _session.Session(auth=auth, verify=False)
             self.credentials = credentials
 
 

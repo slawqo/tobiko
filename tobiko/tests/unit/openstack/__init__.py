@@ -14,16 +14,33 @@
 #    under the License.
 from __future__ import absolute_import
 
+from keystoneclient import discover
+from keystoneclient.v3 import Client
+from oslo_log import log
 import mock
 
 from tobiko.openstack import keystone
 from tobiko.tests import unit
 
+LOG = log.getLogger(__name__)
+
+
+class KeystoneDiscoverMock(object):
+
+    def __init__(self, session, **kwargs):
+        self.session = session
+        self.kwargs = kwargs
+
+    def create_client(self, version, unstable):
+        LOG.debug("Create a mock keystone client for version {!r} "
+                  "(unestable = {!r})", version, unstable)
+        return Client(session=self.session)
+
 
 class OpenstackTest(unit.TobikoUnitTest):
 
     default_keystone_credentials = keystone.keystone_credentials(
-        auth_url='http://127.0.0.1:5000/identiy/v3',
+        auth_url='http://127.0.0.1:5000/v3',
         username='default',
         project_name='default',
         password='this is a secret')
@@ -34,6 +51,7 @@ class OpenstackTest(unit.TobikoUnitTest):
 
         self.patch(config.CONF.tobiko, 'keystone',
                    self.default_keystone_credentials)
+        self.patch(discover, 'Discover', KeystoneDiscoverMock)
 
     def patch_get_heat_client(self, *args, **kwargs):
         from heatclient import client
