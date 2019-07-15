@@ -19,9 +19,13 @@ import os
 
 import six
 
+import tobiko
 from tobiko import config
 from tobiko.openstack import heat
+from tobiko.openstack import neutron
 from tobiko.openstack.stacks import _hot
+from tobiko.openstack.stacks import _neutron
+from tobiko.shell import ssh
 
 
 CONF = config.CONF
@@ -57,8 +61,75 @@ class FlavorStackFixture(heat.HeatStackFixture):
     vcpus = None
 
 
-class CirrosFlavorStackFixture(FlavorStackFixture):
-    ram = 128
+@neutron.skip_if_missing_networking_extensions('port-security')
+class ServerStackFixture(heat.HeatStackFixture):
+
+    #: Heat template file
+    template = _hot.heat_template_file('neutron/floating_ip_server.yaml')
+
+    #: stack with the key pair for the server instance
+    key_pair_stack = tobiko.required_setup_fixture(KeyPairStackFixture)
+
+    #: stack with the internal where the server port is created
+    network_stack = tobiko.required_setup_fixture(_neutron.NetworkStackFixture)
+
+    #: Glance image used to create a Nova server instance
+    image_fixture = None
+
+    @property
+    def image(self):
+        return self.image_fixture.image_id
+
+    @property
+    def username(self):
+        """username used to login to a Nova server instance"""
+        return self.image_fixture.username
+
+    @property
+    def password(self):
+        """password used to login to a Nova server instance"""
+        return self.image_fixture.password
+
+    # Stack used to create flavor for Nova server instance
+    flavor_stack = None
+
+    @property
+    def flavor(self):
+        """Flavor for Nova server instance"""
+        return self.flavor_stack.flavor_id
+
+    #: Whenever port security on internal network is enable
+    port_security_enabled = False
+
+    #: Security groups to be associated to network ports
+    security_groups = []
+
+    @property
+    def key_name(self):
+        return self.key_pair_stack.key_name
+
+    @property
+    def network(self):
+        return self.network_stack.network_id
+
+    #: Floating IP network where the Neutron floating IP is created
+    floating_network = CONF.tobiko.neutron.floating_network
+
+    @property
+    def has_floating_ip(self):
+        return bool(self.floating_network)
+
+    @property
+    def ssh_client(self):
+        client = ssh.ssh_client(host=self.floating_ip_address,
+                                username=self.username,
+                                password=self.password)
+        return client
+
+    @property
+    def ssh_command(self):
+        return ssh.ssh_command(host=self.floating_ip_address,
+                               username=self.username)
 
 
 def as_str(text):

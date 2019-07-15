@@ -30,7 +30,7 @@ class FloatingIPTest(base.TobikoTest):
     """Tests connectivity via floating IPs"""
 
     #: Resources stack with floating IP and Nova server
-    stack = tobiko.required_setup_fixture(stacks.FloatingIpServerStackFixture)
+    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
     def test_stack_create_complete(self):
         self.stack.key_pair_stack.wait_for_create_complete()
@@ -118,7 +118,7 @@ class FloatingIPTest(base.TobikoTest):
 
 @neutron.skip_if_missing_networking_extensions('port-security',
                                                'security-group')
-class FloatingIPWithPortSecurityFixture(stacks.FloatingIpServerStackFixture):
+class FloatingIPWithPortSecurityFixture(stacks.CirrosServerStackFixture):
     """Heat stack for testing a floating IP instance with port security"""
 
     #: Resources stack with security group to allow ping Nova servers
@@ -199,7 +199,7 @@ class FloatingIPWithICMPSecurityGroupTest(FloatingIPTest):
 # --- Test net-mtu-write extension --------------------------------------------
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
-class FloatingIPWithNetMtuWritableFixture(stacks.FloatingIpServerStackFixture):
+class FloatingIPWithNetMtuWritableFixture(stacks.CirrosServerStackFixture):
     """Heat stack for testing floating IP with a custom MTU network value"""
 
     #: Heat stack for creating internal network with custom MTU value

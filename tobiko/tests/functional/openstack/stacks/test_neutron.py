@@ -20,8 +20,6 @@ import testtools
 import tobiko
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
-from tobiko.shell import ping
-from tobiko.shell import sh
 
 
 class NetworkTestCase(testtools.TestCase):
@@ -93,29 +91,3 @@ class NetworkWithNetMtuWriteTestCase(NetworkTestCase):
 
     def test_net_mtu_write(self):
         self.assertEqual(self.stack.mtu, self.stack.outputs.mtu)
-
-
-class FloatingIpServerTest(testtools.TestCase):
-    """Tests connectivity to Nova instances via floating IPs"""
-
-    #: Stack of resources with a server attached to a floating IP
-    stack = tobiko.required_setup_fixture(stacks.FloatingIpServerStackFixture)
-
-    def test_ping(self):
-        """Test connectivity to floating IP address"""
-        ping.ping_until_received(
-            self.stack.floating_ip_address).assert_replied()
-
-    def test_ssh_connect(self):
-        """Test SSH connectivity via Paramiko SSHClient"""
-        self.stack.ssh_client.connect()
-
-    def test_ssh_command(self):
-        """Test SSH connectivity via OpenSSH client"""
-        sh.execute('true', shell=self.stack.ssh_command)
-
-    def test_hostname(self):
-        """Test that hostname of instance server matches Nova server name"""
-        result = sh.execute('hostname', ssh_client=self.stack.ssh_client)
-        hostname, = str(result.stdout).splitlines()
-        self.assertEqual(hostname, self.stack.server_name)

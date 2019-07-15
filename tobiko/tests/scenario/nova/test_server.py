@@ -23,7 +23,7 @@ from tobiko.openstack import nova
 
 class ServerStackResourcesTest(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(stacks.FloatingIpServerStackFixture)
+    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
     def test_server(self):
         "Test actual server details"

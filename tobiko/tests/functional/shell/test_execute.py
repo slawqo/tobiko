@@ -163,7 +163,7 @@ class LocalExecuteTest(ExecuteTest):
 class SSHExecuteTest(ExecuteTest):
 
     server_stack = tobiko.required_setup_fixture(
-        stacks.FloatingIpServerStackFixture)
+        stacks.CirrosServerStackFixture)
 
     @property
     def ssh_client(self):
@@ -177,7 +177,7 @@ class SSHExecuteTest(ExecuteTest):
 class ExecuteWithSSHCommandTest(ExecuteTest):
 
     server_stack = tobiko.required_setup_fixture(
-        stacks.FloatingIpServerStackFixture)
+        stacks.CirrosServerStackFixture)
 
     @property
     def shell(self):

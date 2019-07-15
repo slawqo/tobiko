@@ -15,15 +15,19 @@
 #    under the License.
 from __future__ import absolute_import
 
+from tobiko.openstack.stacks import _cirros
 from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _nova
 
-KeyPairStackFixture = _nova.KeyPairStackFixture
-FlavorStackFixture = _nova.FlavorStackFixture
-CirrosFlavorStackFixture = _nova.CirrosFlavorStackFixture
+CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
+CirrosImageFixture = _cirros.CirrosImageFixture
+CirrosServerStackFixture = _cirros.CirrosServerStackFixture
 
 NetworkStackFixture = _neutron.NetworkStackFixture
 NetworkWithNetMtuWriteStackFixture = (
     _neutron.NetworkWithNetMtuWriteStackFixture)
-FloatingIpServerStackFixture = _neutron.FloatingIpServerStackFixture
 SecurityGroupsFixture = _neutron.SecurityGroupsFixture
+
+ServerStackFixture = _nova.ServerStackFixture
+KeyPairStackFixture = _nova.KeyPairStackFixture
+FlavorStackFixture = _nova.FlavorStackFixture
