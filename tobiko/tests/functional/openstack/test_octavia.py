@@ -1,4 +1,6 @@
-# Copyright 2019 Red Hat
+# Copyright (c) 2019 Red Hat, Inc.
+#
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,10 +15,15 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.openstack.octavia import _client
+import testtools
+
+from tobiko.openstack import keystone
+from tobiko.openstack import octavia
 
 
-octavia_client = _client.octavia_client
-OCTAVIA_CLIENT_CLASSSES = _client.OCTAVIA_CLIENT_CLASSSES
-get_octavia_client = _client.get_octavia_client
-OctaviaClientFixture = _client.OctaviaClientFixture
+@keystone.skip_if_missing_service(name='octavia')
+class OctaviaClientAPITest(testtools.TestCase):
+
+    def test_get_octava_client(self):
+        client = octavia.get_octavia_client()
+        self.assertIsInstance(client, octavia.OCTAVIA_CLIENT_CLASSSES)

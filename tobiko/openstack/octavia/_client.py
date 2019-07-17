@@ -20,29 +20,36 @@ from tobiko.openstack import _client
 from tobiko.openstack import keystone
 
 
+OCTAVIA_CLIENT_CLASSSES = octavia.OctaviaAPI,
+
+
+def get_octavia_endpoint(keystone_client=None):
+    return keystone.find_service_endpoint(name='octavia',
+                                          client=keystone_client)
+
+
 class OctaviaClientFixture(_client.OpenstackClientFixture):
 
     def init_client(self, session):
         keystone_client = keystone.get_keystone_client(session=session)
-        endpoint = keystone.find_service_endpoint(name='octavia',
-                                                  client=keystone_client)
+        endpoint = get_octavia_endpoint(keystone_client=keystone_client)
         return octavia.OctaviaAPI(session=session, endpoint=endpoint.url)
 
 
-class OctaviaClientManatger(_client.OpenstackClientManager):
+class OctaviaClientManager(_client.OpenstackClientManager):
 
     def create_client(self, session):
         return OctaviaClientFixture(session=session)
 
 
-CLIENTS = OctaviaClientManatger()
+CLIENTS = OctaviaClientManager()
 
 
 def octavia_client(obj):
     if not obj:
         return get_octavia_client()
 
-    if isinstance(obj, octavia.OctaviaAPI):
+    if isinstance(obj, OCTAVIA_CLIENT_CLASSSES):
         return obj
 
     fixture = tobiko.setup_fixture(obj)

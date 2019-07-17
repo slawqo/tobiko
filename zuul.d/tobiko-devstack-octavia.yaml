@@ -1,0 +1,186 @@
+- job:
+    name: tobiko-devstack-octavia
+    parent: tobiko-devstack
+    abstract: true
+    nodeset: openstack-single-node
+    description: |
+      Base Tobiko devstack job to be used with octavia.
+
+    required-projects:
+      - openstack/barbican
+      - openstack/diskimage-builder
+      - openstack/heat
+      - openstack/neutron
+      - performa/os-faults
+      - openstack/octavia
+      - openstack/octavia-lib
+      - openstack/python-barbicanclient
+      - openstack/python-octaviaclient
+      - openstack/tripleo-image-elements
+      - x/tobiko
+    timeout: 7800
+    vars:
+      devstack_localrc:
+        MULTI_HOST: 0
+        USE_PYTHON3: true
+        NETWORK_API_EXTENSIONS: address-scope,agent,allowed-address-pairs,auto-allocated-topology,availability_zone,binding,default-subnetpools,dhcp_agent_scheduler,dns-domain-ports,dns-integration,dvr,empty-string-filtering,ext-gw-mode,external-net,extra_dhcp_opt,extraroute,filter-validation,fip-port-details,flavors,ip-substring-filtering,l3-flavors,l3-ha,l3_agent_scheduler,logging,metering,multi-provider,net-mtu,net-mtu-writable,network-ip-availability,network_availability_zone,pagination,port-security,project-id,provider,qos,qos-bw-minimum-ingress,qos-fip,quotas,quota_details,rbac-policies,router,router_availability_zone,security-group,port-mac-address-regenerate,port-security-groups-filtering,segment,service-type,sorting,standard-attr-description,standard-attr-revisions,standard-attr-segment,standard-attr-timestamp,standard-attr-tag,subnet_allocation,trunk,trunk-details,uplink-status-propagation
+        # TOBIKO_KEYSTONE_USERNAME: tobiko
+        # TOBIKO_KEYSTONE_PASSWORD: secret_tobiko
+        # TOBIKO_KEYSTONE_PROJECT_NAME: tobiko
+        TOBIKO_LOG_DIR: '{{ devstack_base_dir }}/tobiko_logs'
+      devstack_plugins:
+        heat: https://opendev.org/openstack/heat.git
+        neutron: https://opendev.org/openstack/neutron.git
+        octavia: https://opendev.org/openstack/octavia
+        os-faults: https://opendev.org/performa/os-faults.git
+        tobiko: https://opendev.org/x/tobiko.git
+      devstack_services:
+        heat: true
+        h-api: true
+        h-api-cfn: true
+        h-eng: true
+        n-cpu: true
+        # Octavia
+        octavia: true
+        o-cw: true
+        o-hk: true
+        o-hm: true
+        o-api: true
+        # NOTE(slaweq): we need to enable it as "legacy" service because for Fedora job
+        # it has to be disabled. If it would be disabled as "neutron-dns: false" then it
+        # devstack would consider that neutron-legacy isn't used and would not load proper
+        # files
+        q-dns: true
+        neutron-qos: true
+        neutron-segments: true
+        neutron-trunk: true
+        neutron-uplink-status-propagation: true
+        tempest: false
+        tls-proxy: false
+        # NOTE(slaweq): Swift can't run with python3 currently
+        s-account: false
+        s-container: false
+        s-object: false
+        s-proxy: false
+        # NOTE(slaweq): without Swift, c-bak cannot run (in the Gate at least)
+        c-bak: false
+      devstack_local_conf:
+        post-config:
+          $NEUTRON_CONF:
+            QUOTAS:
+              quota_router: 100
+              quota_floatingip: 500
+              quota_security_group: 100
+              quota_security_group_rule: 1000
+          $NOVA_CONF:
+            quota:
+              instances: 20
+      test_results_stage_name: test_results
+      zuul_copy_output:
+        '{{ devstack_base_dir }}/tobiko_logs': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.subunit': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.html': logs
+        '{{ stage_dir }}/stackviz': logs
+        '/var/log/dib-build/': logs
+        '/var/log/octavia-tenant-traffic.log': logs
+        '/var/log/octavia-amphora.log': logs
+      extensions_to_txt:
+        conf: true
+        log: true
+        yaml: true
+        yml: true
+
+    pre-run: playbooks/pre-tobiko-devstack.yaml
+    run: playbooks/tobiko-devstack.yaml
+    post-run: playbooks/post-tobiko-devstack.yaml
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/
+      - ^infrared/
+      - ^releasenotes/
+      - ^report/
+      - ^tobiko/tests/unit/
+
+
+- job:
+    name: tobiko-devstack-octavia-functional
+    parent: tobiko-devstack-octavia
+    description: |
+      Base Tobiko devstack job to execute functional tests.
+    vars:
+      tox_envlist: functional
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/
+      - ^infrared/
+      - ^releasenotes/
+      - ^report/
+      - ^tobiko/tests/scenario/
+      - ^tobiko/tests/unit/
+
+
+- job:
+    name: tobiko-devstack-octavia-scenario
+    parent: tobiko-devstack-octavia
+    nodeset: openstack-single-node
+    description: |
+      Integration test that runs all tests against DevStack provided cloud
+    vars:
+      tox_envlist: scenario
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/
+      - ^infrared/
+      - ^releasenotes/
+      - ^report/
+      - ^tobiko/tests/functional/
+      - ^tobiko/tests/unit/
+
+
+- job:
+    name: tobiko-devstack-octavia-scenario-multinode
+    parent: tobiko-devstack-octavia-scenario
+    abstract: true
+    description: |
+      Base Tobiko devstack job with multinode.
+    roles:
+      - zuul: openstack/neutron-tempest-plugin
+    pre-run: playbooks/multinode-devstack-pre-run.yaml
+    vars:
+      topology: multinode
+      devstack_localrc:
+        ENABLE_FILE_INJECTION: true
+        MULTI_HOST: 1
+      devstack_services:
+        n-cpu: false
+    group-vars:
+      subnode:
+        devstack_services:
+          c-vol: true
+          dstat: true
+          heat: false
+          h-api: false
+          h-api-cfn: false
+          h-eng: false
+          n-api-meta: true
+          placement-client: true
+          n-cpu: true
+          neutron-agent: true
+          peakmem_tracker: true
+          q-agt: true
+          q-l3: true
+          q-meta: true
+          tls-proxy: false
+
+
+- job:
+    name: tobiko-devstack-octavia-scenario-ubuntu-bionic
+    parent: tobiko-devstack-octavia-scenario-multinode
+    nodeset: openstack-three-node-bionic
+    vars:
+      devstack_services:
+        tls-proxy: true
+    group-vars:
+      subnode:
+        devstack_services:
+          tls-proxy: true
