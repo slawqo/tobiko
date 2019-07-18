@@ -20,6 +20,7 @@ from heatclient import exc
 from oslo_log import log
 
 import tobiko
+from tobiko import config
 from tobiko.openstack.heat import _client
 from tobiko.openstack.heat import _template
 
@@ -75,9 +76,18 @@ class HeatStackFixture(tobiko.SharedFixture):
         self.parameters = _stack_parameters(
             stack=self, obj=(parameters or self.parameters))
         self.client = client or self.client
+        if config.get_bool_env('TOBIKO_PREVENT_CREATE'):
+            self.retry_create_stack = 0
 
         if wait_interval:
             self.wait_interval = wait_interval
+
+    def _get_retry_value(self, retry):
+        if retry is None:
+            retry = self.retry_create_stack
+            if retry is None:
+                retry = 1
+        return int(retry)
 
     def setup_fixture(self):
         self.setup_template()
@@ -99,7 +109,7 @@ class HeatStackFixture(tobiko.SharedFixture):
     def create_stack(self, retry=None):
         """Creates stack based on passed parameters."""
         created_stack_ids = set()
-        retry = retry or self.retry_create_stack or 1
+        retry = self._get_retry_value(retry)
         while True:
             stack = self.wait_for_stack_status(
                 expected_status={CREATE_COMPLETE, CREATE_FAILED,
