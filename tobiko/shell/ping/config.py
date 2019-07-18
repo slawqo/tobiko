@@ -13,35 +13,42 @@
 #    under the License.
 from __future__ import absolute_import
 
+import itertools
+
 from oslo_config import cfg
+
+GROUP_NAME = "ping"
+OPTIONS = [
+    cfg.IntOpt('count',
+               default=1,
+               help="Number of ICMP messages to wait before ending "
+                    "ping command execution"),
+    cfg.IntOpt('deadline',
+               default=5,
+               help="Max seconds waited from ping command before "
+                    "self terminating himself"),
+    cfg.StrOpt('fragmentation',
+               default=True,
+               help="If disable it will not allow ICMP messages to "
+                    "be delivered in smaller fragments"),
+    cfg.StrOpt('interval',
+               default=1,
+               help="Seconds of time interval between "
+                    "consecutive before ICMP messages"),
+    cfg.IntOpt('packet_size',
+               default=None,
+               help="Size in bytes of ICMP messages (including "
+                    "headers and payload)"),
+    cfg.IntOpt('timeout',
+               default=90.,
+               help="Maximum time in seconds a sequence of ICMP "
+                    "messages is sent to a destination host before "
+                    "reporting as a failure")]
 
 
 def register_tobiko_options(conf):
+    conf.register_opts(group=cfg.OptGroup('ping'), opts=OPTIONS)
 
-    conf.register_opts(
-        group=cfg.OptGroup('ping'),
-        opts=[cfg.IntOpt('count',
-                         default=1,
-                         help="Number of ICMP messages to wait before ending "
-                              "ping command execution"),
-              cfg.IntOpt('deadline',
-                         default=5,
-                         help="Max seconds waited from ping command before "
-                              "self terminating himself"),
-              cfg.StrOpt('fragmentation',
-                         default=True,
-                         help="If disable it will not allow ICMP messages to "
-                              "be delivered in smaller fragments"),
-              cfg.StrOpt('interval',
-                         default=1,
-                         help="Seconds of time interval between "
-                              "consecutive before ICMP messages"),
-              cfg.IntOpt('packet_size',
-                         default=None,
-                         help="Size in bytes of ICMP messages (including "
-                              "headers and payload)"),
-              cfg.IntOpt('timeout',
-                         default=90.,
-                         help="Maximum time in seconds a sequence of ICMP "
-                              "messages is sent to a destination host before "
-                              "reporting as a failure")])
+
+def list_options():
+    return [(GROUP_NAME, itertools.chain(OPTIONS))]

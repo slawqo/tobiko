@@ -13,14 +13,22 @@
 #    under the License.
 from __future__ import absolute_import
 
+import itertools
+
 from oslo_config import cfg
+
+GROUP_NAME = "nova"
+OPTIONS = [
+    cfg.StrOpt('flavor',
+               help="Default flavor for new server instances"),
+    cfg.StrOpt('key_file', default='~/.ssh/id_rsa',
+               help="Default SSH key to login to server instances"),
+]
 
 
 def register_tobiko_options(conf):
-    conf.register_opts(
-        group=cfg.OptGroup('nova'),
-        opts=[cfg.StrOpt('flavor',
-                         help="Default flavor for new server instances"),
-              cfg.StrOpt('key_file', default='~/.ssh/id_rsa',
-                         help="Default SSH key to login to server instances"),
-              ])
+    conf.register_opts(group=cfg.OptGroup('nova'), opts=OPTIONS)
+
+
+def list_options():
+    return [(GROUP_NAME, itertools.chain(OPTIONS))]

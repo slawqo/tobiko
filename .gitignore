@@ -22,11 +22,13 @@ ChangeLog
 cover/
 doc/build/*
 dist/
-etc/
+etc/*.sample
 zuul/versioninfo
 
 # Files created by releasenotes build
 releasenotes/build
 
+# Docs related files
+doc/source/_static/config-samples/*.sample
+
 Pipfile.lock
-tobiko.conf

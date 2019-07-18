@@ -15,14 +15,22 @@
 #    under the License.
 from __future__ import absolute_import
 
+import itertools
+
 from oslo_config import cfg
+
+GROUP_NAME = 'shell'
+OPTIONS = [
+    cfg.StrOpt('command',
+               default='/bin/sh -c',
+               help="Default shell command used for executing "
+                    "local commands")
+]
 
 
 def register_tobiko_options(conf):
+    conf.register_opts(group=cfg.OptGroup('shell'), opts=OPTIONS)
 
-    conf.register_opts(
-        group=cfg.OptGroup('shell'),
-        opts=[cfg.StrOpt('command',
-                         default='/bin/sh -c',
-                         help="Default shell command used for executing "
-                              "local commands")])
+
+def list_options():
+    return [(GROUP_NAME, itertools.chain(OPTIONS))]

@@ -14,58 +14,65 @@
 from __future__ import absolute_import
 
 import getpass
+import itertools
 
 from oslo_config import cfg
 from oslo_log import log
 
+GROUP_NAME = 'ssh'
+OPTIONS = [
+    cfg.BoolOpt('debug',
+                default=False,
+                help=('Logout debugging messages of paramiko '
+                      'library')),
+    cfg.StrOpt('command',
+               default='/usr/bin/ssh',
+               help=('Default SSH client command')),
+    cfg.StrOpt('port',
+               default=22,
+               help=('Default SSH port')),
+    cfg.StrOpt('username',
+               default=getpass.getuser(),
+               help=('Default SSH username')),
+    cfg.ListOpt('config_files',
+                default=['/etc/ssh/ssh_config', '~/.ssh/config'],
+                help="Default user SSH configuration files"),
+    cfg.StrOpt('key_file',
+               default='~/.ssh/id_rsa',
+               help="Default SSH private key file"),
+    cfg.BoolOpt('allow_agent',
+                default=False,
+                help=("Set to False to disable connecting to the "
+                      "SSH agent")),
+    cfg.BoolOpt('compress',
+                default=False,
+                help="Set to True to turn on compression"),
+    cfg.FloatOpt('timeout',
+                 default=5.,
+                 help="SSH connect timeout in seconds"),
+    cfg.IntOpt('connection_attempts',
+               default=60,
+               help=("Incremental seconds to wait after every "
+                     "failed SSH connection attempt")),
+    cfg.FloatOpt('connection_interval',
+                 default=5.,
+                 help=("Minimal seconds to wait between every "
+                       "failed SSH connection attempt")),
+    cfg.StrOpt('proxy_jump',
+               default=None,
+               help="Default SSH proxy server"),
+    cfg.StrOpt('proxy_command',
+               default=None,
+               help="Default proxy command"),
+]
+
 
 def register_tobiko_options(conf):
-    conf.register_opts(
-        group=cfg.OptGroup('ssh'),
-        opts=[cfg.BoolOpt('debug',
-                          default=False,
-                          help=('Logout debugging messages of paramiko '
-                                'library')),
-              cfg.StrOpt('command',
-                         default='/usr/bin/ssh',
-                         help=('Default SSH client command')),
-              cfg.StrOpt('port',
-                         default=22,
-                         help=('Default SSH port')),
-              cfg.StrOpt('username',
-                         default=getpass.getuser(),
-                         help=('Default SSH username')),
-              cfg.ListOpt('config_files',
-                          default=['/etc/ssh/ssh_config', '~/.ssh/config'],
-                          help="Default user SSH configuration files"),
-              cfg.StrOpt('key_file',
-                         default='~/.ssh/id_rsa',
-                         help="Default SSH private key file"),
-              cfg.BoolOpt('allow_agent',
-                          default=False,
-                          help=("Set to False to disable connecting to the "
-                                "SSH agent")),
-              cfg.BoolOpt('compress',
-                          default=False,
-                          help="Set to True to turn on compression"),
-              cfg.FloatOpt('timeout',
-                           default=5.,
-                           help="SSH connect timeout in seconds"),
-              cfg.IntOpt('connection_attempts',
-                         default=60,
-                         help=("Incremental seconds to wait after every "
-                               "failed SSH connection attempt")),
-              cfg.FloatOpt('connection_interval',
-                           default=5.,
-                           help=("Minimal seconds to wait between every "
-                                 "failed SSH connection attempt")),
-              cfg.StrOpt('proxy_jump',
-                         default=None,
-                         help="Default SSH proxy server"),
-              cfg.StrOpt('proxy_command',
-                         default=None,
-                         help="Default proxy command"),
-              ])
+    conf.register_opts(group=cfg.OptGroup(GROUP_NAME), opts=OPTIONS)
+
+
+def list_options():
+    return [(GROUP_NAME, itertools.chain(OPTIONS))]
 
 
 def setup_tobiko_config(conf):
