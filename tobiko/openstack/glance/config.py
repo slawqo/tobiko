@@ -20,6 +20,10 @@ CIRROS_IMAGE_URL = \
     'http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img'
 
 
+GLANCE_IMAGE_NAMES = ['cirros',
+                      'ubuntu']
+
+
 def register_tobiko_options(conf):
     conf.register_opts(
         group=cfg.OptGroup('glance'),
@@ -28,7 +32,7 @@ def register_tobiko_options(conf):
                          help=("Default directory where to look for image "
                                "files")), ])
 
-    for name in ['CirrOS']:
+    for name in GLANCE_IMAGE_NAMES:
         group_name = name.lower()
         conf.register_opts(
             group=cfg.OptGroup(group_name),
