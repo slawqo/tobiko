@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from tobiko.openstack.stacks import _cirros
 from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _nova
+from tobiko.openstack.stacks import _ubuntu
 
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture
@@ -31,3 +32,7 @@ SecurityGroupsFixture = _neutron.SecurityGroupsFixture
 ServerStackFixture = _nova.ServerStackFixture
 KeyPairStackFixture = _nova.KeyPairStackFixture
 FlavorStackFixture = _nova.FlavorStackFixture
+
+UbuntuFlavorStackFixture = _ubuntu.UbuntuFlavorStackFixture
+UbuntuImageFixture = _ubuntu.UbuntuImageFixture
+UbuntuServerStackFixture = _ubuntu.UbuntuServerStackFixture
