@@ -26,7 +26,6 @@ UBUNTU_IMAGE_URL = \
 
 
 class UbuntuImageFixture(glance.URLGlanceImageFixture):
-
     image_url = CONF.tobiko.ubuntu.image_url or UBUNTU_IMAGE_URL
     image_name = CONF.tobiko.ubuntu.image_name
     image_file = CONF.tobiko.ubuntu.image_file
@@ -45,5 +44,5 @@ class UbuntuServerStackFixture(_nova.ServerStackFixture):
     #: Glance image used to create a Nova server instance
     image_fixture = tobiko.required_setup_fixture(UbuntuImageFixture)
 
-    #: Glance image used to create a Nova server instance
+    #: Flavor used to create a Nova server instance
     flavor_stack = tobiko.required_setup_fixture(UbuntuFlavorStackFixture)

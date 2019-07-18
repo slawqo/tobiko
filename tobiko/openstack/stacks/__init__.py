@@ -15,11 +15,16 @@
 #    under the License.
 from __future__ import absolute_import
 
+from tobiko.openstack.stacks import _centos
 from tobiko.openstack.stacks import _cirros
 from tobiko.openstack.stacks import _l3ha
 from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _nova
 from tobiko.openstack.stacks import _ubuntu
+
+CentosFlavorStackFixture = _centos.CentosFlavorStackFixture
+CentosImageFixture = _centos.CentosImageFixture
+CentosServerStackFixture = _centos.CentosServerStackFixture
 
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture

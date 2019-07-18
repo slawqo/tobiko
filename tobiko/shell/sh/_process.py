@@ -271,16 +271,21 @@ class ShellProcessFixture(tobiko.SharedFixture):
             self.check_stdin_is_opened()
         sent_bytes = self.stdin.write(data)
         if sent_bytes:
+            LOG.debug("Written %d bytes to STDIN (%s)", sent_bytes,
+                      self.command)
             return data[sent_bytes:] or None
         else:
             LOG.debug("%r closed by peer on %r", self.stdin, self)
             self.stdin.close()
+            return data
 
     def _read_from_stdout(self, buffer_size=None):
         """Read data from remote stream"""
         # Read data from remote stream
         chunk = self.stdout.read(buffer_size)
         if chunk:
+            LOG.debug("Read %d bytes from STDOUT (%s)", len(chunk),
+                      self.command)
             return chunk
         else:
             LOG.debug("%r closed by peer on %r", self.stdout, self)
@@ -292,6 +297,8 @@ class ShellProcessFixture(tobiko.SharedFixture):
         # Read data from remote stream
         chunk = self.stderr.read(buffer_size)
         if chunk:
+            LOG.debug("Read %d bytes from STDERR (%s)", len(chunk),
+                      self.command)
             return chunk
         else:
             LOG.debug("%r closed by peer on %r", self.stderr, self)

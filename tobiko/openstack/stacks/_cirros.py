@@ -45,7 +45,7 @@ class CirrosServerStackFixture(_nova.ServerStackFixture):
     #: Glance image used to create a Nova server instance
     image_fixture = tobiko.required_setup_fixture(CirrosImageFixture)
 
-    #: Glance image used to create a Nova server instance
+    #: Flavor used to create a Nova server instance
     flavor_stack = tobiko.required_setup_fixture(CirrosFlavorStackFixture)
 
 

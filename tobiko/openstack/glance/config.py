@@ -18,9 +18,6 @@ import itertools
 from oslo_config import cfg
 
 
-CIRROS_IMAGE_URL = \
-    'http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img'
-
 GROUP_NAME = 'glance'
 OPTIONS = [
     cfg.StrOpt('image_dir',
@@ -30,7 +27,8 @@ OPTIONS = [
 ]
 
 
-GLANCE_IMAGE_NAMES = ['cirros',
+GLANCE_IMAGE_NAMES = ['centos',
+                      'cirros',
                       'ubuntu']
 
 
