@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 from tobiko.openstack.keystone import _client
 from tobiko.openstack.keystone import _credentials
+from tobiko.openstack.keystone import _services
 from tobiko.openstack.keystone import _session
 
 keystone_client = _client.keystone_client
@@ -33,6 +34,10 @@ default_keystone_credentials = _credentials.default_keystone_credentials
 KeystoneCredentials = _credentials.KeystoneCredentials
 KeystoneCredentialsFixture = _credentials.KeystoneCredentialsFixture
 InvalidKeystoneCredentials = _credentials.InvalidKeystoneCredentials
+
+has_service = _services.has_service
+is_service_missing = _services.is_service_missing
+skip_if_missing_service = _services.skip_if_missing_service
 
 keystone_session = _session.keystone_session
 KeystoneSessionFixture = _session.KeystoneSessionFixture

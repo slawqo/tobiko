@@ -160,3 +160,13 @@ class KeystoneClientAPITest(testtools.TestCase):
         self.assertEqual(service.id, endpoint.service_id)
         self.assertEqual('public', endpoint.interface)
         self.assertTrue(endpoint.enabled)
+
+    @keystone.skip_if_missing_service(name='octavia')
+    def test_find_octavia_public_endpoint(self):
+        service = keystone.find_service(name='octavia')
+        endpoint = keystone.find_endpoint(service=service,
+                                          interface='public',
+                                          enabled=True)
+        self.assertEqual(service.id, endpoint.service_id)
+        self.assertEqual('public', endpoint.interface)
+        self.assertTrue(endpoint.enabled)

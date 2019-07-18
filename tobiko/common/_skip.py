@@ -49,7 +49,10 @@ def skip_if_match(reason, match, predicate, *args, **kwargs):
         def wrapped_method(*_args, **_kwargs):
             return_value = predicate(*args, **kwargs)
             if match(return_value):
-                skip(reason, return_value=return_value)
+                if '{return_value' in reason:
+                    skip(reason, return_value=return_value)
+                else:
+                    skip(reason)
             return method(*_args, **_kwargs)
 
         if obj is method:
