@@ -22,6 +22,7 @@ keystone_client = _client.keystone_client
 get_keystone_client = _client.get_keystone_client
 find_service = _client.find_service
 find_endpoint = _client.find_endpoint
+find_service_endpoint = _client.find_service_endpoint
 list_endpoints = _client.list_endpoints
 list_services = _client.list_services
 KeystoneClientFixture = _client.KeystoneClientFixture

@@ -174,6 +174,14 @@ def find_resources(resources, **params):
             yield resource
 
 
+def find_service_endpoint(enabled=True, interface='public', client=None,
+                          **params):
+    client = keystone_client(client)
+    service = find_service(client=client, enabled=enabled, **params)
+    return find_endpoint(client=client, service=service, interface=interface,
+                         enabled=enabled)
+
+
 class KeystoneResourceNotFound(tobiko.TobikoException):
     message = 'No such resource found with parameters {params!r}'
 
