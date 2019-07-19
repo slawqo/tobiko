@@ -12,38 +12,11 @@
 #    under the License.
 from __future__ import absolute_import
 
-import shutil
-import tempfile
-
-import mock
-from oslo_log import log
-
-from tobiko.common import _fixture
-from tobiko.tests import base
+from tobiko.tests.unit import _case
+from tobiko.tests.unit import _patch
 
 
-class TobikoUnitTest(base.TobikoTest):
+TobikoUnitTest = _case.TobikoUnitTest
 
-    def setUp(self):
-        super(TobikoUnitTest, self).setUp()
-        # Protect from mis-configuring logging
-        self.patch(log, 'setup')
-        self.fixture_manager = manager = _fixture.FixtureManager()
-        self.patch(_fixture, 'FIXTURES', manager)
-
-    def patch(self, obj, attribute, value=mock.DEFAULT, spec=None,
-              create=False, spec_set=None, autospec=None,
-              new_callable=None, **kwargs):
-        # pylint: disable=arguments-differ
-        context = mock.patch.object(target=obj, attribute=attribute, new=value,
-                                    spec=spec, create=create,
-                                    spec_set=spec_set, autospec=autospec,
-                                    new_callable=new_callable, **kwargs)
-        mocked = context.start()
-        self.addCleanup(context.stop)
-        return mocked
-
-    def create_tempdir(self, *args, **kwargs):
-        dir_path = tempfile.mkdtemp(*args, **kwargs)
-        self.addCleanup(shutil.rmtree(dir_path, ignore_errors=True))
-        return dir_path
+PatchFixture = _patch.PatchFixture
+PatchMixin = _patch.PatchMixin
