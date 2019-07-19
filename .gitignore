@@ -32,3 +32,6 @@ releasenotes/build
 doc/source/_static/config-samples/*.sample
 
 Pipfile.lock
+
+# Tobiko configuration file
+tobiko.conf
