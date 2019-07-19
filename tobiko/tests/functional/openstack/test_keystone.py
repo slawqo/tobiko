@@ -152,21 +152,17 @@ class KeystoneClientAPITest(testtools.TestCase):
         endpoint = keystone.find_endpoint(url=url)
         self.assertEqual(url, endpoint.url)
 
-    def test_find_keystone_public_endpoint(self):
+    def test_find_service_endpoint(self):
         service = keystone.find_service(name='keystone')
-        endpoint = keystone.find_endpoint(service=service,
-                                          interface='public',
-                                          enabled=True)
+        endpoint = keystone.find_service_endpoint(name='keystone')
         self.assertEqual(service.id, endpoint.service_id)
         self.assertEqual('public', endpoint.interface)
         self.assertTrue(endpoint.enabled)
 
     @keystone.skip_if_missing_service(name='octavia')
-    def test_find_octavia_public_endpoint(self):
+    def test_find_octavia_service_endpoint(self):
         service = keystone.find_service(name='octavia')
-        endpoint = keystone.find_endpoint(service=service,
-                                          interface='public',
-                                          enabled=True)
+        endpoint = keystone.find_service_endpoint(name='octavia')
         self.assertEqual(service.id, endpoint.service_id)
         self.assertEqual('public', endpoint.interface)
         self.assertTrue(endpoint.enabled)
