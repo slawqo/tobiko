@@ -237,15 +237,6 @@ in :ref:`tobiko-conf` file::
     [neutron]
     floating_network = public
 
-Create an SSH key file to be used to ssh to Nova server instances::
-
-    ssh-keygen -f ~/.ssh/id_rsa -P ''
-
-Add reference to above resources into your :ref:`tobiko-conf` file::
-
-    [nova]
-    key_file=~/.ssh/id_rsa
-
 
 What's Next
 -----------

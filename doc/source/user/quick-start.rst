@@ -128,34 +128,8 @@ To execute commands from a virtualenv created by Tox you can type as below::
 You need to make sure ref:`authentication-environment-variables` are properly
 set::
 
-    tox -e venv -- openstack image list
-    tox -e venv -- openstack flavor list
     tox -e venv -- openstack network list
 
-`Get an image <https://docs.openstack.org/image-guide/obtain-images.html>`__
-for Nova instances created by Tobiko::
-
-    wget -c http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
-    tox -e venv -- openstack image create cirros \
-      --file cirros-0.4.0-x86_64-disk.img \
-      --disk-format qcow2 \
-      --container-format bare \
-      --public
-
-Create a flavor to be used with above image::
-
-    tox -e venv -- openstack flavor create --vcpus 1 --ram 64 --disk 1 m1.tiny
-
-Create an SSH key file to be used to ssh to Nova server instances::
-
-    ssh-keygen -f ~/.ssh/id_rsa -P ''
-
-Add reference to above resources into your :ref:`tobiko-conf` file::
-
-    [nova]
-    image = cirros
-    flavor = m1.tiny
-    key_file=~/.ssh/id_rsa
 
 Add reference to the network where Tobiko should create floating IP instances
 in :ref:`tobiko-conf` file::
