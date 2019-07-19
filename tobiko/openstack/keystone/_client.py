@@ -29,13 +29,13 @@ class KeystoneClientFixture(_client.OpenstackClientFixture):
         return keystoneclient.Client(session=session)
 
 
-class KeystoneClientManatger(_client.OpenstackClientManager):
+class KeystoneClientManager(_client.OpenstackClientManager):
 
     def create_client(self, session):
         return KeystoneClientFixture(session=session)
 
 
-CLIENTS = KeystoneClientManatger()
+CLIENTS = KeystoneClientManager()
 
 
 CLIENT_CLASSES = (v2_client.Client, v3_client.Client)
