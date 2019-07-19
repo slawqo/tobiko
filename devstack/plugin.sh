@@ -120,9 +120,6 @@ function configure_tobiko_nova {
 
   # Write key_file
   local key_file=${TOBIKO_NOVA_KEY_FILE:-}
-  if ! [ -r "${key_file}" ]; then
-    ssh-keygen -t rsa -q -P "" -f "${key_file}"
-  fi
   iniset "${tobiko_config}" nova key_file "${key_file}"
 }
 

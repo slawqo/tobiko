@@ -26,6 +26,7 @@ from tobiko.openstack import neutron
 from tobiko.openstack.stacks import _hot
 from tobiko.openstack.stacks import _neutron
 from tobiko.shell import ssh
+from tobiko.shell import sh
 
 
 CONF = config.CONF
@@ -38,6 +39,7 @@ class KeyPairStackFixture(heat.HeatStackFixture):
     private_key = None
 
     def setup_fixture(self):
+        self.create_key_file()
         self.read_keys()
         super(KeyPairStackFixture, self).setup_fixture()
 
@@ -46,6 +48,19 @@ class KeyPairStackFixture(heat.HeatStackFixture):
             self.private_key = as_str(fd.read())
         with open(self.key_file + '.pub', 'r') as fd:
             self.public_key = as_str(fd.read())
+
+    def create_key_file(self):
+        key_file = os.path.realpath(self.key_file)
+        if not os.path.isfile(key_file):
+            key_dir = os.path.dirname(key_file)
+            if not os.path.isdir(key_dir):
+                os.makedirs(key_dir)
+                assert os.path.isdir(key_dir)
+            command = sh.shell_command(['ssh-keygen',
+                                        '-f', key_file,
+                                        '-P', ''])
+            sh.local_execute(command)
+            assert os.path.isfile(key_file)
 
 
 class FlavorStackFixture(heat.HeatStackFixture):
