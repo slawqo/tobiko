@@ -13,24 +13,46 @@
 #    under the License.
 from __future__ import absolute_import
 
+from keystoneclient import discover
 from keystoneclient.v2_0 import client as client_v2
 from keystoneclient.v3 import client as client_v3
+from oslo_log import log
 
 from tobiko.openstack import keystone
 from tobiko.tests.unit import openstack
 from tobiko.tests.unit.openstack import test_client
 
-
+LOG = log.getLogger(__name__)
 KEYSTONE_CLIENTS = client_v2.Client, client_v3.Client
 
 
+class DiscoverMock(object):
+
+    def __init__(self, session, **kwargs):
+        self.session = session
+        self.kwargs = kwargs
+
+    def create_client(self, version, unstable):
+        LOG.debug("Create a mock keystone client for version %r "
+                  "(unestable=%r)", version, unstable)
+        return client_v3.Client(session=self.session)
+
+
 class KeystoneClientFixtureTest(test_client.OpenstackClientFixtureTest):
+
+    def setUp(self):
+        super(KeystoneClientFixtureTest, self).setUp()
+        self.patch(discover, 'Discover', DiscoverMock)
 
     def create_client(self, session=None):
         return keystone.KeystoneClientFixture(session=session)
 
 
 class GetKeystoneClientTest(openstack.OpenstackTest):
+
+    def setUp(self):
+        super(GetKeystoneClientTest, self).setUp()
+        self.patch(discover, 'Discover', DiscoverMock)
 
     def test_get_keystone_client(self, session=None, shared=True):
         client1 = keystone.get_keystone_client(session=session, shared=shared)
@@ -51,6 +73,10 @@ class GetKeystoneClientTest(openstack.OpenstackTest):
 
 
 class KeystoneClientTest(openstack.OpenstackTest):
+
+    def setUp(self):
+        super(KeystoneClientTest, self).setUp()
+        self.patch(discover, 'Discover', DiscoverMock)
 
     def test_keystone_client_with_none(self):
         default_client = keystone.get_keystone_client()
