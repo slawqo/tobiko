@@ -19,8 +19,6 @@ from oslo_config import cfg
 
 GROUP_NAME = "nova"
 OPTIONS = [
-    cfg.StrOpt('flavor',
-               help="Default flavor for new server instances"),
     cfg.StrOpt('key_file', default='~/.ssh/id_rsa',
                help="Default SSH key to login to server instances"),
 ]
