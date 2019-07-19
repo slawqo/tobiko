@@ -59,6 +59,8 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.graphviz',
     'sphinx.ext.todo',
+    'oslo_config.sphinxext',
+    'oslo_config.sphinxconfiggen',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -111,3 +113,23 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# -- Options for oslo_config.sphinxconfiggen ---------------------------------
+
+_config_generator_config_files = [
+    'tobiko.conf',
+]
+
+
+def _get_config_generator_config_definition(conf):
+    config_file_path = '../../etc/oslo-config-generator/%s' % conf
+    # oslo_config.sphinxconfiggen appends '.conf.sample' to the filename,
+    # strip file extentension (.conf or .ini).
+    output_file_path = '_static/config-samples/%s' % conf.rsplit('.', 1)[0]
+    return (config_file_path, output_file_path)
+
+
+config_generator_config_file = [
+    _get_config_generator_config_definition(conf)
+    for conf in _config_generator_config_files
+]

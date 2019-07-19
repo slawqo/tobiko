@@ -13,33 +13,41 @@
 #    under the License.
 from __future__ import absolute_import
 
+import itertools
+
 from oslo_config import cfg
+
+GROUP_NAME = 'neutron'
+OPTIONS = [
+    cfg.StrOpt('floating_network',
+               help="Network for creating floating IPs"),
+    cfg.StrOpt('ipv4_cidr',
+               default='10.100.0.0/16',
+               help="The CIDR block to allocate IPv4 subnets from"),
+    cfg.IntOpt('ipv4_prefixlen',
+               default=24,
+               help="The mask bits for IPv4 subnets"),
+    cfg.StrOpt('ipv6_cidr',
+               default='2003::/48',
+               help="The CIDR block to allocate IPv6 subnets from"),
+    cfg.IntOpt('ipv6_prefixlen',
+               default=64,
+               help="The mask bits for IPv6 subnets"),
+    cfg.IntOpt('custom_mtu_size',
+               default=1400,
+               help=("Customized maximum transfer unit size\n"
+                     "Notes:\n"
+                     " - MTU values as small as 1000 has been seen "
+                     "breaking networking binding due to an "
+                     "unknown cause.\n"
+                     " - Too big MTU values (like greater than 1400)"
+                     " may be refused during network creation")),
+]
 
 
 def register_tobiko_options(conf):
-    conf.register_opts(
-        group=cfg.OptGroup('neutron'),
-        opts=[cfg.StrOpt('floating_network',
-                         help="Network for creating floating IPs"),
-              cfg.StrOpt('ipv4_cidr',
-                         default='10.100.0.0/16',
-                         help="The CIDR block to allocate IPv4 subnets from"),
-              cfg.IntOpt('ipv4_prefixlen',
-                         default=24,
-                         help="The mask bits for IPv4 subnets"),
-              cfg.StrOpt('ipv6_cidr',
-                         default='2003::/48',
-                         help="The CIDR block to allocate IPv6 subnets from"),
-              cfg.IntOpt('ipv6_prefixlen',
-                         default=64,
-                         help="The mask bits for IPv6 subnets"),
-              cfg.IntOpt('custom_mtu_size',
-                         default=1400,
-                         help=("Customized maximum transfer unit size\n"
-                               "Notes:\n"
-                               " - MTU values as small as 1000 has been seen "
-                               "breaking networking binding due to an "
-                               "unknown cause.\n"
-                               " - Too big MTU values (like greater than 1400)"
-                               " may be refused during network creation")),
-              ])
+    conf.register_opts(group=cfg.OptGroup(GROUP_NAME), opts=OPTIONS)
+
+
+def list_options():
+    return [(GROUP_NAME, itertools.chain(OPTIONS))]

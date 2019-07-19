@@ -11,3 +11,10 @@ Tobiko Documentation Contents
    :maxdepth: 1
 
    reference/index
+
+Configuration Reference
+-----------------------
+.. toctree::
+   :maxdepth: 2
+
+   configuration/index

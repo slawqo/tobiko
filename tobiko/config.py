@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import importlib
+import itertools
 import logging
 import os
 
@@ -35,6 +36,16 @@ CONFIG_MODULES = ['tobiko.openstack.glance.config',
 CONFIG_DIRS = [os.getcwd(),
                os.path.expanduser("~/.tobiko"),
                '/etc/tobiko']
+
+HTTP_CONF_GROUP_NAME = "http"
+
+HTTP_OPTIONS = [
+    cfg.StrOpt('http_proxy',
+               help="HTTP proxy URL for Rest APIs"),
+    cfg.StrOpt('https_proxy',
+               help="HTTPS proxy URL for Rest APIs"),
+    cfg.StrOpt('no_proxy',
+               help="Don't use proxy server to connect to listed hosts")]
 
 
 class GlobalConfig(object):
@@ -93,19 +104,28 @@ def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
 def register_tobiko_options(conf):
 
     conf.register_opts(
-        group=cfg.OptGroup('http'),
-        opts=[cfg.StrOpt('http_proxy',
-                         help="HTTP proxy URL for Rest APIs"),
-              cfg.StrOpt('https_proxy',
-                         help="HTTPS proxy URL for Rest APIs"),
-              cfg.StrOpt('no_proxy',
-                         help="Don't use proxy server to connect to listed "
-                         "hosts")])
+        group=cfg.OptGroup(HTTP_CONF_GROUP_NAME), opts=HTTP_OPTIONS)
 
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
         if hasattr(module, 'register_tobiko_options'):
             module.register_tobiko_options(conf=conf)
+
+
+def list_http_options():
+    return [
+        (HTTP_CONF_GROUP_NAME, itertools.chain(HTTP_OPTIONS))
+    ]
+
+
+def list_tobiko_options():
+    all_options = list_http_options()
+
+    for module_name in CONFIG_MODULES:
+        module = importlib.import_module(module_name)
+        if hasattr(module, 'list_options'):
+            all_options += module.list_options()
+    return all_options
 
 
 def setup_tobiko_config(conf):

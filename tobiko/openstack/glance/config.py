@@ -13,11 +13,21 @@
 #    under the License.
 from __future__ import absolute_import
 
+import itertools
+
 from oslo_config import cfg
 
 
 CIRROS_IMAGE_URL = \
     'http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img'
+
+GROUP_NAME = 'glance'
+OPTIONS = [
+    cfg.StrOpt('image_dir',
+               default='~/.tobiko/cache/glance/images',
+               help=("Default directory where to look for image "
+                     "files")),
+]
 
 
 GLANCE_IMAGE_NAMES = ['cirros',
@@ -25,28 +35,39 @@ GLANCE_IMAGE_NAMES = ['cirros',
 
 
 def register_tobiko_options(conf):
-    conf.register_opts(
-        group=cfg.OptGroup('glance'),
-        opts=[cfg.StrOpt('image_dir',
-                         default='~/.tobiko/cache/glance/images',
-                         help=("Default directory where to look for image "
-                               "files")), ])
+    conf.register_opts(group=cfg.OptGroup(GROUP_NAME), opts=OPTIONS)
 
+    for image_options in get_images_options():
+        conf.register_opts(group=image_options[0], opts=image_options[1])
+
+
+def get_images_options():
+    options = []
     for name in GLANCE_IMAGE_NAMES:
         group_name = name.lower()
-        conf.register_opts(
-            group=cfg.OptGroup(group_name),
-            opts=[cfg.StrOpt('image_name',
-                             help="Default " + name + " image name"),
-                  cfg.StrOpt('image_url',
-                             help="Default " + name + " image URL"),
-                  cfg.StrOpt('image_file',
-                             help="Default " + name + " image filename"),
-                  cfg.StrOpt('container_format',
-                             help="Default " + name + " container format"),
-                  cfg.StrOpt('disk_format',
-                             help="Default " + name + " disk format"),
-                  cfg.StrOpt('username',
-                             help="Default " + name + " username"),
-                  cfg.StrOpt('password',
-                             help="Default " + name + " password"), ])
+        options += [(
+            group_name,
+            [cfg.StrOpt('image_name',
+                        help="Default " + name + " image name"),
+             cfg.StrOpt('image_url',
+                        help="Default " + name + " image URL"),
+             cfg.StrOpt('image_file',
+                        help="Default " + name + " image filename"),
+             cfg.StrOpt('container_format',
+                        help="Default " + name + " container format"),
+             cfg.StrOpt('disk_format',
+                        help="Default " + name + " disk format"),
+             cfg.StrOpt('username',
+                        help="Default " + name + " username"),
+             cfg.StrOpt('password',
+                        help="Default " + name + " password")])]
+
+    return options
+
+
+def list_options():
+    options = [(GROUP_NAME, itertools.chain(OPTIONS))]
+    for image_options in get_images_options():
+        options += [
+            (image_options[0], itertools.chain(image_options[1]))]
+    return options

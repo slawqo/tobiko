@@ -13,40 +13,48 @@
 #    under the License.
 from __future__ import absolute_import
 
+import itertools
+
 from oslo_config import cfg
+
+GROUP_NAME = 'keystone'
+OPTIONS = [
+    cfg.IntOpt('api_version',
+               default=None,
+               help="Identity API version"),
+    cfg.StrOpt('auth_url',
+               default=None,
+               help="Identity service URL"),
+    cfg.StrOpt('username',
+               default=None,
+               help="Username"),
+    cfg.StrOpt('project_name',
+               default=None,
+               help="Project name"),
+    cfg.StrOpt('password',
+               default=None,
+               help="Password"),
+    cfg.StrOpt('domain_name',
+               default=None,
+               help="Domain name"),
+    cfg.StrOpt('user_domain_name',
+               default=None,
+               help="User domain name"),
+    cfg.StrOpt('project_domain_name',
+               default=None,
+               help="Project domain name"),
+    cfg.StrOpt('project_domain_id',
+               default=None,
+               help="Project domain ID"),
+    cfg.StrOpt('trust_id',
+               default=None,
+               help="Trust ID for trust scoping.")]
 
 
 def register_tobiko_options(conf):
 
-    conf.register_opts(
-        group=cfg.OptGroup('keystone'),
-        opts=[cfg.IntOpt('api_version',
-                         default=None,
-                         help="Identity API version"),
-              cfg.StrOpt('auth_url',
-                         default=None,
-                         help="Identity service URL"),
-              cfg.StrOpt('username',
-                         default=None,
-                         help="Username"),
-              cfg.StrOpt('project_name',
-                         default=None,
-                         help="Project name"),
-              cfg.StrOpt('password',
-                         default=None,
-                         help="Password"),
-              cfg.StrOpt('domain_name',
-                         default=None,
-                         help="Domain name"),
-              cfg.StrOpt('user_domain_name',
-                         default=None,
-                         help="User domain name"),
-              cfg.StrOpt('project_domain_name',
-                         default=None,
-                         help="Project domain name"),
-              cfg.StrOpt('project_domain_id',
-                         default=None,
-                         help="Project domain ID"),
-              cfg.StrOpt('trust_id',
-                         default=None,
-                         help="Trust ID for trust scoping.")])
+    conf.register_opts(group=cfg.OptGroup(GROUP_NAME), opts=OPTIONS)
+
+
+def list_options():
+    return [(GROUP_NAME, itertools.chain(OPTIONS))]
