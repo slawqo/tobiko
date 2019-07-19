@@ -308,13 +308,17 @@ class FixtureManager(object):
     def __init__(self):
         self.fixtures = {}
 
-    def get_fixture(self, obj, init=init_fixture):
+    def get_fixture(self, obj, init=None):
         name, obj = get_name_and_object(obj)
         fixture = self.fixtures.get(name)
         if fixture is None:
-            self.fixtures[name] = fixture = init(name=name, obj=obj)
+            init = init or self.init_fixture
+            self.fixtures[name] = fixture = init(obj=obj, name=name)
             assert isinstance(fixture, fixtures.Fixture)
         return fixture
+
+    def init_fixture(self, obj, name):
+        return init_fixture(obj=obj, name=name)
 
     def remove_fixture(self, obj):
         name = get_object_name(obj)
