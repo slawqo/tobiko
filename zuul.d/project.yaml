@@ -8,7 +8,7 @@
       - openstack-python36-jobs
       - openstack-python37-jobs
       - publish-to-pypi
-      - release-notes-jobs-python3
+      - build-release-notes-jobs-python3
     vars:
         rtd_webhook_id: '84947'
     check:
@@ -21,7 +21,6 @@
         - tobiko-devstack-scenario-centos-7-stein
         - tobiko-devstack-scenario-fedora-28
         - tobiko-devstack-scenario-ubuntu-bionic
-
     gate:
       jobs:
         - openstack-tox-pylint
