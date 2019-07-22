@@ -251,4 +251,18 @@ def get_int_env(name):
     return None
 
 
+def get_bool_env(name):
+    value = get_env(name)
+    if value:
+        value = str(value).lower()
+        if value in ["true", "1"]:
+            return True
+        elif value in ["false", '0']:
+            return False
+        else:
+            LOG.exception("Environment variable %r is not a boolean: %r",
+                          name, value)
+    return None
+
+
 init_config()

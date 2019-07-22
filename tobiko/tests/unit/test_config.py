@@ -16,6 +16,8 @@ from __future__ import absolute_import
 
 import os
 
+import mock
+
 from tobiko.tests import unit
 from tobiko import config
 
@@ -103,3 +105,22 @@ class HttpProxyFixtureTest(unit.TobikoUnitTest):
         self.assertEqual(self.MY_HTTP_PROXY, fixture.http_proxy)
         self.assertEqual({'no_proxy': self.MY_NO_PROXY,
                           'http_proxy': self.MY_HTTP_PROXY}, os.environ)
+
+    def test_get_bool_env(self):
+        env_option = "TEST_OPTION"
+
+        true_values = ['True', 'true', 'TRUE', 'TrUe', '1']
+        false_values = ['False', 'false', 'FALSE', 'FaLsE', '0']
+        invalid_values = [None, 'something else', '']
+
+        for value in true_values:
+            with mock.patch.dict('os.environ', {env_option: value}):
+                self.assertIs(True, config.get_bool_env(env_option))
+
+        for value in false_values:
+            with mock.patch.dict('os.environ', {env_option: value}):
+                self.assertIs(False, config.get_bool_env(env_option))
+
+        for value in invalid_values:
+            with mock.patch.dict('os.environ', {env_option: value}):
+                self.assertIsNone(config.get_bool_env(env_option))

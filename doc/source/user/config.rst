@@ -238,6 +238,20 @@ in :ref:`tobiko-conf` file::
     floating_network = public
 
 
+Skipping resources creation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In some cases, for example when Tobiko is run after upgrade of cloud, it may be expected
+that resources used for tests should be already created. Tobiko should not try to create
+resources than and just run tests using what is already created.
+To configure Tobiko to not create test resources, environment variable ``TOBIKO_PREVENT_CREATE``
+can be used::
+
+    export TOBIKO_PREVENT_CREATE=True
+
+If this is set to ``True`` or ``1`` then Tobiko will not try to create resources like VMs,
+networks or routers and just run validation of what is exists in the cloud already.
+
 What's Next
 -----------
 

@@ -238,6 +238,11 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
     def test_setup_when_create_conflict(self):
         self.test_setup(create_conflict=True)
 
+    def test_setup_when_prevent_to_create_set(self):
+        with mock.patch.dict('os.environ', {'TOBIKO_PREVENT_CREATE': 'True'}):
+            self.test_setup(stacks=[mock_stack('CREATE_COMPLETE')],
+                            call_create=False)
+
     def test_cleanup(self):
         client = MockClient()
         stack = MyStack(client=client)
