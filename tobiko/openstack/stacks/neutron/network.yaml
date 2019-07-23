@@ -12,7 +12,7 @@ parameters:
     type: boolean
     default: false
 
-  value_specs:
+  network_value_specs:
     description: Extra network creation parameters
     type: json
     default: {}
@@ -79,8 +79,18 @@ parameters:
     constraints:
     - custom_constraint: neutron.network
 
+  gateway_value_specs:
+    description: Extra gateway router creation parameters
+    type: json
+    default: {}
+
   has_net_mtu:
-    description: whenever net mtu extension is available
+    description: whenever net-mtu extension is available
+    type: boolean
+    default: false
+
+  has_l3_ha:
+    description: whenever l3-ha extension is available
     type: boolean
     default: false
 
@@ -108,6 +118,11 @@ conditions:
   has_net_mtu:
     get_param: has_net_mtu
 
+  has_l3_ha:
+    and:
+    - get_param: has_l3_ha
+    - get_param: has_gateway
+
 
 resources:
 
@@ -115,7 +130,7 @@ resources:
     type: OS::Neutron::Net
     properties:
       port_security_enabled: {get_param: port_security_enabled}
-      value_specs: {get_param: value_specs}
+      value_specs: {get_param: network_value_specs}
 
   ipv4_subnet:
     type: OS::Neutron::Subnet
@@ -143,6 +158,7 @@ resources:
     properties:
       external_gateway_info:
         network: {get_param: gateway_network}
+      value_specs: {get_param: gateway_value_specs}
 
   ipv4_gateway_interface:
     type: OS::Neutron::RouterInterface

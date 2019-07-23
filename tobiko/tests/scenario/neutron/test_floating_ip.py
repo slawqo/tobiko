@@ -90,7 +90,7 @@ class FloatingIPTest(base.TobikoTest):
         """Actual port security group"""
         return set(self.stack.outputs.security_groups)
 
-    # --- test net-mtu and net-mtu-writable extensions -----------------------
+    # --- test net-mtu and net-mtu-writable extensions ------------------------
 
     @neutron.skip_if_missing_networking_extensions('net-mtu')
     def test_ping_with_net_mtu(self):
@@ -112,6 +112,15 @@ class FloatingIPTest(base.TobikoTest):
     def observed_net_mtu(self):
         """Actual MTU value for internal network"""
         return self.stack.network_stack.outputs.mtu
+
+    # --- test l3_ha extension ------------------------------------------------
+
+    @neutron.skip_if_missing_networking_extensions('l3-ha')
+    def test_l3_ha(self):
+        """Test 'mtu' network attribute"""
+        gateway = self.stack.network_stack.gateway_details
+        self.assertEqual(self.stack.network_stack.ha,
+                         gateway['ha'])
 
 
 # --- Test with port security enabled -----------------------------------------
@@ -222,3 +231,24 @@ class FloatingIpWithMtuWritableTest(FloatingIPTest):
     def expected_net_mtu(self):
         """Expected MTU value for internal network"""
         return self.stack.network_stack.custom_mtu_size
+
+
+# --- Test la-h3 extension --------------------------------------------
+
+@neutron.skip_if_missing_networking_extensions('l3-ha')
+class FloatingIPWithL3HAFixture(stacks.CirrosServerStackFixture):
+    """Heat stack for testing floating IP with a custom MTU network value"""
+
+    #: Heat stack for creating internal network with custom MTU value
+    network_stack = tobiko.required_setup_fixture(
+        stacks.NetworkWithL3HAStackFixture)
+
+
+@neutron.skip_if_missing_networking_extensions('l3-ha')
+@neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent',
+                                           count=2)
+class NetworkWithL3HATest(FloatingIPTest):
+    """Tests connectivity via floating IP with a custom MTU value"""
+
+    #: Resources stack with floating IP and Nova server
+    stack = tobiko.required_setup_fixture(FloatingIPWithL3HAFixture)

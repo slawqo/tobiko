@@ -27,6 +27,7 @@ CirrosServerStackFixture = _cirros.CirrosServerStackFixture
 NetworkStackFixture = _neutron.NetworkStackFixture
 NetworkWithNetMtuWriteStackFixture = (
     _neutron.NetworkWithNetMtuWriteStackFixture)
+NetworkWithL3HAStackFixture = _neutron.NetworkWithL3HAStackFixture
 SecurityGroupsFixture = _neutron.SecurityGroupsFixture
 
 ServerStackFixture = _nova.ServerStackFixture
