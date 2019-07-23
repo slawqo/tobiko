@@ -118,6 +118,13 @@ def list_subnets(show=False, client=None, **params):
     return subnets
 
 
+def list_agents(client=None, **params):
+    agents = neutron_client(client).list_agents(**params)
+    if isinstance(agents, collections.Mapping):
+        agents = agents['agents']
+    return agents
+
+
 def list_subnet_cidrs(client=None, **params):
     return [netaddr.IPNetwork(subnet['cidr'])
             for subnet in list_subnets(client=client, **params)]

@@ -103,3 +103,41 @@ class NeutronApiTestCase(testtools.TestCase):
         subnet = neutron.show_subnet(self.stack.ipv6_subnet_id)
         self.assertEqual(self.stack.ipv6_subnet_id, subnet['id'])
         self.assertEqual(self.stack.ipv6_subnet_details, subnet)
+
+    def test_find_agents_with_binary_id(self):
+        agents = neutron.list_agents(binary='neutron-l3-agent')
+        self.assertTrue(agents)
+
+
+class AgentTest(testtools.TestCase):
+
+    def test_skip_if_missing_agents(self, count=1, should_skip=False,
+                                    **params):
+        if should_skip:
+            expected_exeption = self.skipException
+        else:
+            expected_exeption = self.failureException
+
+        @neutron.skip_if_missing_networking_agents(count=count, **params)
+        def method():
+            raise self.fail('Not skipped')
+
+        exception = self.assertRaises(expected_exeption, method)
+        if should_skip:
+            agents = neutron.list_agents(**params)
+            message = "missing {!r} agent(s)".format(count - len(agents))
+            if params:
+                message += " with {!s}".format(
+                    ','.join('{!s}={!r}'.format(k, v)
+                             for k, v in params.items()))
+            self.assertEqual(message, str(exception))
+        else:
+            self.assertEqual('Not skipped', str(exception))
+
+    def test_skip_if_missing_agents_with_no_agents(self):
+        self.test_skip_if_missing_agents(binary='never-never-land',
+                                         should_skip=True)
+
+    def test_skip_if_missing_agents_with_big_count(self):
+        self.test_skip_if_missing_agents(count=1000000,
+                                         should_skip=True)

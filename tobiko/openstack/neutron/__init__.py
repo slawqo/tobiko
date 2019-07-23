@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+from tobiko.openstack.neutron import _agent
 from tobiko.openstack.neutron import _client
 from tobiko.openstack.neutron import _cidr
 from tobiko.openstack.neutron import _extension
@@ -28,6 +29,7 @@ find_port = _client.find_port
 list_ports = _client.list_ports
 list_subnets = _client.list_subnets
 list_subnet_cidrs = _client.list_subnet_cidrs
+list_agents = _client.list_agents
 show_network = _client.show_network
 show_router = _client.show_router
 show_port = _client.show_port
@@ -39,5 +41,7 @@ new_ipv6_cidr = _cidr.new_ipv6_cidr
 get_networking_extensions = _extension.get_networking_extensions
 missing_networking_extensions = _extension.missing_networking_extensions
 has_networking_extensions = _extension.has_networking_extensions
+
 skip_if_missing_networking_extensions = (
     _extension.skip_if_missing_networking_extensions)
+skip_if_missing_networking_agents = _agent.skip_if_missing_networking_agents
