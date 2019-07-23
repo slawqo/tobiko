@@ -33,9 +33,18 @@ CONFIG_MODULES = ['tobiko.openstack.glance.config',
                   'tobiko.shell.ping.config',
                   'tobiko.shell.sh.config']
 
-CONFIG_DIRS = [os.getcwd(),
-               os.path.expanduser("~/.tobiko"),
-               '/etc/tobiko']
+
+def _iter_config_dirs():
+    home_dir = os.path.realpath(os.path.expanduser("~"))
+    current_dir = os.path.realpath(os.getcwd())
+    while home_dir in current_dir:
+        yield current_dir
+        current_dir = os.path.dirname(current_dir)
+    yield os.path.expanduser("~/.tobiko")
+    yield '/etc/tobiko'
+
+
+CONFIG_DIRS = list(_iter_config_dirs())
 
 HTTP_CONF_GROUP_NAME = "http"
 
