@@ -14,14 +14,31 @@
 from __future__ import absolute_import
 
 
-def find_by_attributes(objects, **attributes):
+def find_by_attributes(objects, exclude=False, **attributes):
+    exclude = bool(exclude)
     if attributes:
         selection = []
         for obj in objects:
             for key, value in attributes.items():
-                if value != getattr(obj, key):
+                matching = value == getattr(obj, key)
+                if matching is exclude:
                     break
             else:
                 selection.append(obj)
         objects = selection
     return objects
+
+
+def find_by_items(mappings, exclude=False, **items):
+    exclude = bool(exclude)
+    if items:
+        selection = []
+        for mapping in mappings:
+            for key, value in items.items():
+                matching = value == mapping[key]
+                if matching is exclude:
+                    break
+            else:
+                selection.append(mapping)
+        mappings = selection
+    return mappings
