@@ -18,7 +18,7 @@ import tobiko
 from tobiko.openstack.neutron import _client
 
 
-class NetworkingAgentaFixture(tobiko.SharedFixture):
+class NetworkingAgentFixture(tobiko.SharedFixture):
 
     client = None
     agents = None
@@ -35,17 +35,8 @@ class NetworkingAgentaFixture(tobiko.SharedFixture):
 
 
 def get_networking_agents(**params):
-    agents = tobiko.setup_fixture(NetworkingAgentaFixture).agents
-    if params:
-        selected_agents = []
-        for agent in agents:
-            for key, value in params.items():
-                if value != agent[key]:
-                    break
-            else:
-                selected_agents.append(agent)
-        agents = selected_agents
-    return agents
+    agents = tobiko.setup_fixture(NetworkingAgentFixture).agents
+    return tobiko.find_by_items(agents, **params)
 
 
 def missing_networking_agents(count=1, **params):

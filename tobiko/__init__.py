@@ -30,6 +30,7 @@ check_valid_type = _exception.check_valid_type
 exc_info = _exception.exc_info
 
 find_by_attributes = _find.find_by_attributes
+find_by_items = _find.find_by_items
 
 is_fixture = _fixture.is_fixture
 get_fixture = _fixture.get_fixture
