@@ -14,9 +14,13 @@
 from __future__ import absolute_import
 
 from novaclient import client as novaclient
+from novaclient.v2 import client as client_v2
 
 import tobiko
 from tobiko.openstack import _client
+
+
+CLIENT_CLASSES = (client_v2.Client,)
 
 
 class NovaClientFixture(_client.OpenstackClientFixture):
@@ -38,7 +42,7 @@ def nova_client(obj):
     if not obj:
         return get_nova_client()
 
-    if isinstance(obj, novaclient.Client):
+    if isinstance(obj, CLIENT_CLASSES):
         return obj
 
     fixture = tobiko.setup_fixture(obj)

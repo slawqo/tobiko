@@ -13,8 +13,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-from novaclient.v2 import client as novaclient
-
 from tobiko.openstack import keystone
 from tobiko.openstack import nova
 from tobiko.tests.unit import openstack
@@ -36,8 +34,8 @@ class GetNovaClientTest(openstack.OpenstackTest):
             self.assertIs(client1, client2)
         else:
             self.assertIsNot(client1, client2)
-        self.assertIsInstance(client1, novaclient.Client)
-        self.assertIsInstance(client2, novaclient.Client)
+        self.assertIsInstance(client1, nova.CLIENT_CLASSES)
+        self.assertIsInstance(client2, nova.CLIENT_CLASSES)
 
     def test_get_nova_client_with_not_shared(self):
         self.test_get_nova_client(shared=False)
@@ -45,3 +43,24 @@ class GetNovaClientTest(openstack.OpenstackTest):
     def test_get_nova_client_with_session(self):
         session = keystone.get_keystone_session()
         self.test_get_nova_client(session=session)
+
+
+class NeutronClientTest(openstack.OpenstackTest):
+
+    def test_neutron_client_with_none(self):
+        default_client = nova.get_nova_client()
+        client = nova.nova_client(None)
+        self.assertIsInstance(client, nova.CLIENT_CLASSES)
+        self.assertIs(default_client, client)
+
+    def test_neutron_client_with_client(self):
+        default_client = nova.get_nova_client()
+        client = nova.nova_client(default_client)
+        self.assertIsInstance(client, nova.CLIENT_CLASSES)
+        self.assertIs(default_client, client)
+
+    def test_neutron_client_with_fixture(self):
+        fixture = nova.NovaClientFixture()
+        client = nova.nova_client(fixture)
+        self.assertIsInstance(client, nova.CLIENT_CLASSES)
+        self.assertIs(client, fixture.client)
