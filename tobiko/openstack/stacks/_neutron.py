@@ -63,13 +63,23 @@ class NetworkStackFixture(heat.HeatStackFixture):
             return None
 
     @property
-    def value_specs(self):
+    def network_value_specs(self):
+        """Extra network creation parameters"""
         return {}
 
     @property
     def gateway_network(self):
         """Floating IP network where the Neutron floating IPs are created"""
         return CONF.tobiko.neutron.floating_network
+
+    ha = False
+
+    @property
+    def gateway_value_specs(self):
+        value_specs = {}
+        if self.has_l3_ha:
+            value_specs.update(ha=(self.ha or False))
+        return value_specs
 
     @property
     def has_gateway(self):
@@ -80,6 +90,11 @@ class NetworkStackFixture(heat.HeatStackFixture):
     def has_net_mtu(self):
         """Whenever can obtain network MTU value"""
         return neutron.has_networking_extensions('net-mtu')
+
+    @property
+    def has_l3_ha(self):
+        """Whenever can obtain gateway router HA value"""
+        return neutron.has_networking_extensions('l3-ha')
 
     @property
     def network_details(self):
@@ -136,10 +151,15 @@ class NetworkWithNetMtuWriteStackFixture(NetworkStackFixture):
         return CONF.tobiko.neutron.custom_mtu_size
 
     @property
-    def value_specs(self):
-        value_specs = super(
-            NetworkWithNetMtuWriteStackFixture, self).value_specs
+    def network_value_specs(self):
+        value_specs = super(NetworkWithNetMtuWriteStackFixture,
+                            self).network_value_specs
         return dict(value_specs, mtu=self.custom_mtu_size)
+
+
+@neutron.skip_if_missing_networking_extensions('l3-ha')
+class NetworkWithL3HAStackFixture(NetworkStackFixture):
+    ha = True
 
 
 @neutron.skip_if_missing_networking_extensions('security-group')
