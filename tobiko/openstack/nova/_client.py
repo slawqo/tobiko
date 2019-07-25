@@ -60,3 +60,9 @@ def get_nova_client(session=None, shared=True, init_client=None,
                                 init_client=init_client)
     tobiko.setup_fixture(client)
     return client.client
+
+
+def list_hypervisors(client=None, detailed=True, **params):
+    client = nova_client(client)
+    hypervisors = client.hypervisors.list(detailed=detailed)
+    return tobiko.find_by_attributes(hypervisors, **params)

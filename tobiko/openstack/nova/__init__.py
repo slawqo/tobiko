@@ -14,8 +14,13 @@
 from __future__ import absolute_import
 
 from tobiko.openstack.nova import _client
+from tobiko.openstack.nova import _hypervisor
 
-nova_client = _client.nova_client
-get_nova_client = _client.get_nova_client
-NovaClientFixture = _client.NovaClientFixture
+
 CLIENT_CLASSES = _client.CLIENT_CLASSES
+get_nova_client = _client.get_nova_client
+list_hypervisors = _client.list_hypervisors
+nova_client = _client.nova_client
+NovaClientFixture = _client.NovaClientFixture
+
+skip_if_missing_hypervisors = _hypervisor.skip_if_missing_hypervisors
