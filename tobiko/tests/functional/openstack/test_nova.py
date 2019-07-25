@@ -36,23 +36,41 @@ class KeyPairTest(testtools.TestCase):
 
 class ClientTest(testtools.TestCase):
 
+    @nova.skip_if_missing_hypervisors(count=1)
     def test_list_hypervisors(self):
         hypervisors = nova.list_hypervisors()
         self.assertTrue(hypervisors)
         self.assertEqual(1, hypervisors[0].id)
         self.assertTrue(hasattr(hypervisors[0], 'cpu_info'))
 
+    @nova.skip_if_missing_hypervisors(count=1)
     def test_list_hypervisors_without_details(self):
         hypervisors = nova.list_hypervisors(detailed=False)
         self.assertTrue(hypervisors)
         self.assertEqual(1, hypervisors[0].id)
         self.assertFalse(hasattr(hypervisors[0], 'cpu_info'))
 
+    @nova.skip_if_missing_hypervisors(count=1)
     def test_list_hypervisors_with_hypervisor_hostname(self):
         hypervisor = nova.list_hypervisors()[0]
         hypervisors = nova.list_hypervisors(
             hypervisor_hostname=hypervisor.hypervisor_hostname)
         self.assertEqual([hypervisor], hypervisors)
+
+    @nova.skip_if_missing_hypervisors(count=1)
+    def test_find_hypervisor(self):
+        hypervisor = nova.find_hypervisor()
+        self.assertIsNotNone(hypervisor)
+
+    @nova.skip_if_missing_hypervisors(count=2)
+    def test_find_hypervisor_with_unique(self):
+        self.assertRaises(tobiko.MultipleObjectsFound, nova.find_hypervisor,
+                          unique=True)
+
+    @nova.skip_if_missing_hypervisors(count=2)
+    def test_find_hypervisor_without_unique(self):
+        hypervisor = nova.find_hypervisor()
+        self.assertIsNotNone(hypervisor)
 
 
 class HypervisorTest(testtools.TestCase):

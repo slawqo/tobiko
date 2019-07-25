@@ -35,7 +35,7 @@ class HypervisorListFixture(tobiko.SharedFixture):
 
 def get_hypervisors(**params):
     hypervisors = tobiko.setup_fixture(HypervisorListFixture).hypervisors
-    return tobiko.find_by_attributes(hypervisors, **params)
+    return tobiko.select(hypervisors).with_attributes(**params)
 
 
 def missing_hypervisors(count=1, **params):

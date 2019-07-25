@@ -19,6 +19,7 @@ from tobiko.common import _find
 from tobiko.common import _fixture
 from tobiko.common.managers import testcase as testcase_manager
 from tobiko.common.managers import loader as loader_manager
+from tobiko.common import _select
 from tobiko.common import _skip
 
 
@@ -52,6 +53,11 @@ load_object = loader_manager.load_object
 load_module = loader_manager.load_module
 
 discover_testcases = testcase_manager.discover_testcases
+
+Selection = _select.Selection
+select = _select.select
+ObjectNotFound = _select.ObjectNotFound
+MultipleObjectsFound = _select.MultipleObjectsFound
 
 SkipException = _skip.SkipException
 skip = _skip.skip

@@ -65,4 +65,12 @@ def get_nova_client(session=None, shared=True, init_client=None,
 def list_hypervisors(client=None, detailed=True, **params):
     client = nova_client(client)
     hypervisors = client.hypervisors.list(detailed=detailed)
-    return tobiko.find_by_attributes(hypervisors, **params)
+    return tobiko.select(hypervisors).with_attributes(**params)
+
+
+def find_hypervisor(client=None, unique=False, **params):
+    hypervisors = list_hypervisors(client=client, **params)
+    if unique:
+        return hypervisors.unique
+    else:
+        return hypervisors.first
