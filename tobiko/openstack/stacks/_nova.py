@@ -56,11 +56,13 @@ class KeyPairStackFixture(heat.HeatStackFixture):
             if not os.path.isdir(key_dir):
                 os.makedirs(key_dir)
                 assert os.path.isdir(key_dir)
-            command = sh.shell_command(['ssh-keygen',
-                                        '-f', key_file,
-                                        '-P', ''])
-            sh.local_execute(command)
-            assert os.path.isfile(key_file)
+            try:
+                sh.local_execute(['ssh-keygen', '-f', key_file, '-P', ''])
+            except sh.ShellCommandFailed:
+                if not os.path.isfile(key_file):
+                    raise
+            else:
+                assert os.path.isfile(key_file)
 
 
 class FlavorStackFixture(heat.HeatStackFixture):
