@@ -30,10 +30,10 @@ list_ports = _client.list_ports
 list_subnets = _client.list_subnets
 list_subnet_cidrs = _client.list_subnet_cidrs
 list_agents = _client.list_agents
-show_network = _client.show_network
-show_router = _client.show_router
-show_port = _client.show_port
-show_subnet = _client.show_subnet
+get_network = _client.get_network
+get_router = _client.get_router
+get_port = _client.get_port
+get_subnet = _client.get_subnet
 
 new_ipv4_cidr = _cidr.new_ipv4_cidr
 new_ipv6_cidr = _cidr.new_ipv6_cidr

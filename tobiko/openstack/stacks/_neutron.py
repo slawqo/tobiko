@@ -98,11 +98,11 @@ class NetworkStackFixture(heat.HeatStackFixture):
 
     @property
     def network_details(self):
-        return neutron.show_network(self.network_id)
+        return neutron.get_network(self.network_id)
 
     @property
     def ipv4_subnet_details(self):
-        return neutron.show_subnet(self.ipv4_subnet_id)
+        return neutron.get_subnet(self.ipv4_subnet_id)
 
     @property
     def ipv4_subnet_cidr(self):
@@ -110,7 +110,7 @@ class NetworkStackFixture(heat.HeatStackFixture):
 
     @property
     def ipv6_subnet_details(self):
-        return neutron.show_subnet(self.ipv6_subnet_id)
+        return neutron.get_subnet(self.ipv6_subnet_id)
 
     @property
     def ipv6_subnet_cidr(self):
@@ -118,29 +118,25 @@ class NetworkStackFixture(heat.HeatStackFixture):
 
     @property
     def gateway_details(self):
-        return neutron.show_router(self.gateway_id)
+        return neutron.get_router(self.gateway_id)
 
     @property
     def ipv4_gateway_port_details(self):
         return neutron.find_port(
-            [{'subnet_id': self.ipv4_subnet_id,
-              'ip_address': self.ipv4_subnet_details['gateway_ip']}],
-            properties=['fixed_ips'],
+            fixed_ips='subnet_id=' + self.ipv4_subnet_id,
             device_id=self.gateway_id,
             network_id=self.network_id)
 
     @property
     def ipv6_gateway_port_details(self):
         return neutron.find_port(
-            [{'subnet_id': self.ipv6_subnet_id,
-              'ip_address': self.ipv6_subnet_details['gateway_ip']}],
-            properties=['fixed_ips'],
+            fixed_ips='subnet_id=' + self.ipv6_subnet_id,
             device_id=self.gateway_id,
             network_id=self.network_id)
 
     @property
     def gateway_network_details(self):
-        return neutron.show_network(self.gateway_network_id)
+        return neutron.get_network(self.gateway_network_id)
 
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-writable')

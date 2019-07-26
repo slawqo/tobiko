@@ -44,18 +44,14 @@ class NetworkTestCase(testtools.TestCase):
         if not self.stack.has_ipv4:
             tobiko.skip('Stack {!s} has no ipv4 subnet', self.stack.stack_name)
 
-        subnet = neutron.find_subnet(str(self.stack.ipv4_subnet_cidr),
-                                     properties=['cidr'])
-        self.assertEqual(neutron.show_subnet(self.stack.ipv4_subnet_id),
-                         subnet)
+        subnet = neutron.find_subnet(cidr=str(self.stack.ipv4_subnet_cidr))
+        self.assertEqual(neutron.get_subnet(self.stack.ipv4_subnet_id), subnet)
 
     def test_ipv6_subnet_cidr(self):
         if not self.stack.has_ipv6:
             tobiko.skip('Stack {!s} has no ipv6 subnet', self.stack.stack_name)
-        subnet = neutron.find_subnet(str(self.stack.ipv6_subnet_cidr),
-                                     properties=['cidr'])
-        self.assertEqual(neutron.show_subnet(self.stack.ipv6_subnet_id),
-                         subnet)
+        subnet = neutron.find_subnet(cidr=str(self.stack.ipv6_subnet_cidr))
+        self.assertEqual(neutron.get_subnet(self.stack.ipv6_subnet_id), subnet)
 
     def test_gateway_network(self):
         if not self.stack.has_gateway:

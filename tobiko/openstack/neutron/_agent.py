@@ -34,9 +34,9 @@ class NetworkingAgentFixture(tobiko.SharedFixture):
         self.agents = _client.list_agents(client=self.client)
 
 
-def get_networking_agents(**params):
+def get_networking_agents(**attributes):
     agents = tobiko.setup_fixture(NetworkingAgentFixture).agents
-    return tobiko.find_by_items(agents, **params)
+    return agents.with_items(**attributes)
 
 
 def missing_networking_agents(count=1, **params):

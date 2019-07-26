@@ -20,7 +20,6 @@ from neutronclient.v2_0 import client as neutronclient
 
 import tobiko
 from tobiko.openstack import _client
-from tobiko.openstack import _find
 
 
 class NeutronClientFixture(_client.OpenstackClientFixture):
@@ -62,85 +61,86 @@ def get_neutron_client(session=None, shared=True, init_client=None,
     return client.client
 
 
-def find_network(obj, properties=None, client=None, check_found=True,
-                 check_unique=True, **params):
+_RAISE_ERROR = object()
+
+
+def find_network(client=None, unique=False, default=_RAISE_ERROR,
+                 **attributes):
     """Look for a network matching some property values"""
-    resources = list_networks(client=client, **params)
-    return _find.find_resource(obj=obj,
-                               resources=resources,
-                               properties=properties,
-                               check_found=check_found,
-                               check_unique=check_unique)
+    networks = list_networks(client=client, **attributes)
+    if default is _RAISE_ERROR or networks:
+        if unique:
+            return networks.first
+        else:
+            return networks.unique
+    else:
+        return default
 
 
-def find_port(obj, properties=None, client=None, check_found=True,
-              check_unique=True, **params):
+def find_port(client=None, unique=False, default=_RAISE_ERROR, **attributes):
     """Look for a port matching some property values"""
-    resources = list_ports(client=client, **params)
-    return _find.find_resource(obj=obj,
-                               resources=resources,
-                               properties=properties,
-                               check_found=check_found,
-                               check_unique=check_unique)
+    ports = list_ports(client=client, **attributes)
+    if default is _RAISE_ERROR or ports:
+        if unique:
+            return ports.first
+        else:
+            return ports.unique
+    else:
+        return default
 
 
-def find_subnet(obj, properties=None, client=None, check_found=True,
-                check_unique=False, **params):
+def find_subnet(client=None, unique=False, default=_RAISE_ERROR, **attributes):
     """Look for a subnet matching some property values"""
-    resources = list_subnets(client=client, **params)
-    return _find.find_resource(obj=obj,
-                               resources=resources,
-                               properties=properties,
-                               check_found=check_found,
-                               check_unique=check_unique)
+    subnets = list_subnets(client=client, **attributes)
+    if default is _RAISE_ERROR or subnets:
+        if unique:
+            return subnets.first
+        else:
+            return subnets.unique
+    else:
+        return default
 
 
-def list_networks(show=False, client=None, **params):
+def list_networks(client=None, **params):
     networks = neutron_client(client).list_networks(**params)['networks']
-    if show:
-        networks = [show_network(n['id'], client=client) for n in networks]
-    return networks
+    return tobiko.select(networks)
 
 
-def list_ports(show=False, client=None, **params):
+def list_ports(client=None, **params):
     ports = neutron_client(client).list_ports(**params)['ports']
-    if show:
-        ports = [show_port(p['id'], client=client) for p in ports]
-    return ports
+    return tobiko.select(ports)
 
 
-def list_subnets(show=False, client=None, **params):
+def list_subnets(client=None, **params):
     subnets = neutron_client(client).list_subnets(**params)
     if isinstance(subnets, collections.Mapping):
         subnets = subnets['subnets']
-    if show:
-        subnets = [show_subnet(s['id'], client=client) for s in subnets]
-    return subnets
+    return tobiko.select(subnets)
 
 
 def list_agents(client=None, **params):
     agents = neutron_client(client).list_agents(**params)
     if isinstance(agents, collections.Mapping):
         agents = agents['agents']
-    return agents
+    return tobiko.select(agents)
 
 
 def list_subnet_cidrs(client=None, **params):
-    return [netaddr.IPNetwork(subnet['cidr'])
-            for subnet in list_subnets(client=client, **params)]
+    return tobiko.select(netaddr.IPNetwork(subnet['cidr'])
+                         for subnet in list_subnets(client=client, **params))
 
 
-def show_network(network, client=None, **params):
+def get_network(network, client=None, **params):
     return neutron_client(client).show_network(network, **params)['network']
 
 
-def show_port(port, client=None, **params):
+def get_port(port, client=None, **params):
     return neutron_client(client).show_port(port, **params)['port']
 
 
-def show_router(router, client=None, **params):
+def get_router(router, client=None, **params):
     return neutron_client(client).show_router(router, **params)['router']
 
 
-def show_subnet(subnet, client=None, **params):
+def get_subnet(subnet, client=None, **params):
     return neutron_client(client).show_subnet(subnet, **params)['subnet']

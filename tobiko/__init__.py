@@ -15,7 +15,6 @@ from __future__ import absolute_import
 
 from tobiko.common import _asserts
 from tobiko.common import _exception
-from tobiko.common import _find
 from tobiko.common import _fixture
 from tobiko.common.managers import testcase as testcase_manager
 from tobiko.common.managers import loader as loader_manager
@@ -29,9 +28,6 @@ fail = _asserts.fail
 TobikoException = _exception.TobikoException
 check_valid_type = _exception.check_valid_type
 exc_info = _exception.exc_info
-
-find_by_attributes = _find.find_by_attributes
-find_by_items = _find.find_by_items
 
 is_fixture = _fixture.is_fixture
 get_fixture = _fixture.get_fixture

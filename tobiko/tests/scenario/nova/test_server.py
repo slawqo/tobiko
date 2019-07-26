@@ -39,5 +39,5 @@ class ServerStackResourcesTest(testtools.TestCase):
         port = self.stack.resources.port
         self.assertEqual('OS::Neutron::Port', port.resource_type)
         # Verify actual port status (is alive, etc.)
-        port_data = neutron.show_port(port.physical_resource_id)
+        port_data = neutron.get_port(port.physical_resource_id)
         self.assertEqual(port.physical_resource_id, port_data['id'])
