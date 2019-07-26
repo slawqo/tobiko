@@ -21,6 +21,7 @@ from oslo_log import log
 import testtools
 import yaml
 
+import tobiko
 from tobiko.openstack import keystone
 from tobiko.shell import sh
 
@@ -66,17 +67,19 @@ class KeystoneClientAPITest(testtools.TestCase):
         service = keystone.find_service()
         self.assertTrue(service.id)
 
-    def test_find_service_with_check_unique(self):
-        self.assertRaises(keystone.MultipleKeystoneResourcesFound,
-                          keystone.find_service, check_unique=True)
+    def test_find_service_with_unique(self):
+        self.assertRaises(tobiko.MultipleObjectsFound,
+                          keystone.find_service,
+                          unique=True)
 
     def test_find_service_not_found(self):
-        self.assertRaises(keystone.KeystoneResourceNotFound,
-                          keystone.find_service, name='never-never-land')
+        self.assertRaises(tobiko.ObjectNotFound,
+                          keystone.find_service,
+                          name='never-never-land')
 
-    def test_find_service_without_check_found(self):
-        service = keystone.find_service(check_found=False,
-                                        name='never-never-land')
+    def test_find_service_with_defaulkt(self):
+        service = keystone.find_service(name='never-never-land',
+                                        default=None)
         self.assertIsNone(service)
 
     def test_find_service_by_name(self):
@@ -123,18 +126,19 @@ class KeystoneClientAPITest(testtools.TestCase):
         endpoint = keystone.find_endpoint()
         self.assertTrue(endpoint.id)
 
-    def test_find_endpoint_with_check_unique(self):
-        self.assertRaises(keystone.MultipleKeystoneResourcesFound,
-                          keystone.find_endpoint, check_unique=True)
+    def test_find_endpoint_with_unique(self):
+        self.assertRaises(tobiko.MultipleObjectsFound,
+                          keystone.find_endpoint,
+                          unique=True)
 
     def test_find_endpoint_not_found(self):
-        self.assertRaises(keystone.KeystoneResourceNotFound,
+        self.assertRaises(tobiko.ObjectNotFound,
                           keystone.find_endpoint,
                           service='never-never-land')
 
-    def test_find_endpoint_without_check_found(self):
-        service = keystone.find_endpoint(check_found=False,
-                                         service='never-never-land')
+    def test_find_endpoint_with_default(self):
+        service = keystone.find_endpoint(service='never-never-land',
+                                         default=None)
         self.assertIsNone(service)
 
     def test_find_endpoint_by_service(self):

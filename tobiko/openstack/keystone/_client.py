@@ -65,31 +65,43 @@ def get_keystone_client(session=None, shared=True, init_client=None,
     return client.client
 
 
-def find_endpoint(client=None, check_found=True, check_unique=False,
-                  **params):
-    endpoints = list_endpoints(client=client, **params)
-    return find_resource(resources=endpoints, check_found=check_found,
-                         check_unique=check_unique)
+_RAISE_ERROR = object()
 
 
-def find_service(client=None, check_found=True, check_unique=False,
-                 **params):
-    services = list_services(client=client, **params)
-    return find_resource(resources=services, check_found=check_found,
-                         check_unique=check_unique)
+def find_endpoint(client=None, unique=False, default=_RAISE_ERROR,
+                  **attributes):
+    endpoints = list_endpoints(client=client, **attributes)
+    if default is _RAISE_ERROR or endpoints:
+        if unique:
+            return endpoints.unique
+        else:
+            return endpoints.first
+    else:
+        return default
+
+
+def find_service(client=None, unique=False, default=_RAISE_ERROR, **attribute):
+    services = list_services(client=client, **attribute)
+    if default is _RAISE_ERROR or services:
+        if unique:
+            return services.unique
+        else:
+            return services.first
+    else:
+        return default
 
 
 def list_endpoints(client=None, service=None, interface=None, region=None,
-                   translate=True, **params):
+                   translate=True, **attributes):
     client = keystone_client(client)
 
-    service = service or params.pop('service_id', None)
+    service = service or attributes.pop('service_id', None)
     if service:
-        params['service_id'] = base.getid(service)
+        attributes['service_id'] = base.getid(service)
 
-    region = region or params.pop('region_id', None)
+    region = region or attributes.pop('region_id', None)
     if region:
-        params['region_id'] = base.getid(region)
+        attributes['region_id'] = base.getid(region)
 
     if client.version == 'v2.0':
         endpoints = client.endpoints.list()
@@ -100,30 +112,31 @@ def list_endpoints(client=None, service=None, interface=None, region=None,
         endpoints = client.endpoints.list(service=service,
                                           interface=interface,
                                           region=region)
-    if params:
-        endpoints = find_resources(endpoints, **params)
-    return list(endpoints)
+    endpoints = tobiko.select(endpoints)
+    if attributes:
+        endpoints = endpoints.with_attributes(**attributes)
+    return endpoints
 
 
-def list_services(client=None, name=None, service_type=None, **params):
+def list_services(client=None, name=None, service_type=None, **attributes):
     client = keystone_client(client)
 
-    service_type = service_type or params.pop('type', None)
+    service_type = service_type or attributes.pop('type', None)
     if service_type:
-        params['type'] = base.getid(service_type)
+        attributes['type'] = base.getid(service_type)
 
     if name:
-        params['name'] = name
+        attributes['name'] = name
 
     if client.version == 'v2.0':
         services = client.services.list()
     else:
         services = client.services.list(name=name,
                                         service_type=service_type)
-
-    if params:
-        services = find_resources(services, **params)
-    return list(services)
+    services = tobiko.select(services)
+    if attributes:
+        services = services.with_attributes(**attributes)
+    return services
 
 
 def translate_v2_endpoints(v2_endpoints, interface=None):
@@ -143,48 +156,9 @@ def translate_v2_endpoints(v2_endpoints, interface=None):
     return endpoints
 
 
-def find_resource(resources, check_found=True, check_unique=True, **params):
-    """Look for a service matching some property values"""
-    resource_it = find_resources(resources, **params)
-    try:
-        resource = next(resource_it)
-    except StopIteration:
-        resource = None
-
-    if check_found and resource is None:
-        raise KeystoneResourceNotFound(params=params)
-
-    if check_unique:
-        duplicate_ids = [s.id for s in resource_it]
-        if duplicate_ids:
-            raise MultipleKeystoneResourcesFound(params=params)
-
-    return resource
-
-
-def find_resources(resources, **params):
-    """Look for a service matching some property values"""
-    # Remove parameters with None value
-    for resource in resources:
-        for name, match in params.items():
-            value = getattr(resource, name)
-            if match is not None and match != value:
-                break
-        else:
-            yield resource
-
-
 def find_service_endpoint(enabled=True, interface='public', client=None,
                           **params):
     client = keystone_client(client)
     service = find_service(client=client, enabled=enabled, **params)
     return find_endpoint(client=client, service=service, interface=interface,
                          enabled=enabled)
-
-
-class KeystoneResourceNotFound(tobiko.TobikoException):
-    message = 'No such resource found with parameters {params!r}'
-
-
-class MultipleKeystoneResourcesFound(tobiko.TobikoException):
-    message = 'Multiple resources found with parameters {params!r}'
