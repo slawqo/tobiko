@@ -108,18 +108,10 @@ class GlanceImageFixture(tobiko.SharedFixture):
         return self.wait_for_image_active()
 
     def get_image(self):
-        images = _client.list_images(client=self.client,
-                                     filters={'name': self.image_name},
-                                     limit=1)
-        if images:
-            self.image = image = images[0]
-            LOG.debug('Found image %r (%r): %r', self.image_name, image['id'],
-                      image)
-            return image
-        else:
-            self.image = None
-            LOG.debug('Glance image %r not found', self.image_name)
-            return None
+        self.image = image = _client.find_image(client=self.client,
+                                                default=None,
+                                                name=self.image_name)
+        return image
 
     def delete_image(self, image_id=None):
         if not image_id:

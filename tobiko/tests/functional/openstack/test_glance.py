@@ -32,10 +32,10 @@ class GlanceApiTestCase(testtools.TestCase):
         image = glance.get_image(self.fixture.image_id)
         self.assertEqual(self.fixture.image_id, image['id'])
 
-    def test_find_image_with_id(self):
-        image = glance.find_image(self.fixture.image_id)
+    def test_find_image_by_id(self):
+        image = glance.find_image(id=self.fixture.image_id)
         self.assertEqual(self.fixture.image_id, image['id'])
 
-    def test_find_image_with_name(self):
-        image = glance.find_image(self.fixture.image_name)
+    def test_find_image_by_name(self):
+        image = glance.find_image(name=self.fixture.image_name)
         self.assertEqual(self.fixture.image_name, image['name'])

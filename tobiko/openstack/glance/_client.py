@@ -18,7 +18,6 @@ from glanceclient import exc
 
 import tobiko
 from tobiko.openstack import _client
-from tobiko.openstack import _find
 
 
 class GlanceClientFixture(_client.OpenstackClientFixture):
@@ -69,29 +68,34 @@ def delete_image(image_id, client=None, **params):
         return True
 
 
-def get_image(image_id, check_found=True, client=None):
+_RAISE_ERROR = object()
+
+
+def get_image(image_id, client=None, default=_RAISE_ERROR):
     try:
         return glance_client(client).images.get(image_id=image_id)
     except exc.HTTPNotFound:
-        if check_found:
+        if default is _RAISE_ERROR:
             raise
         else:
-            return None
+            return default
 
 
-def find_image(obj=None, properties=None, client=None, check_found=True,
-               check_unique=False, **params):
+def find_image(client=None, unique=False, default=_RAISE_ERROR, **filters):
     """Look for an image matching some property values"""
-    resources = list_images(client=client, **params)
-    return _find.find_resource(obj=obj,
-                               resources=resources,
-                               properties=properties,
-                               check_found=check_found,
-                               check_unique=check_unique)
+    images = list_images(client=client, limit=2, **filters)
+    if default is _RAISE_ERROR or images:
+        if unique:
+            return images.unique
+        else:
+            return images.first
+    else:
+        return default
 
 
-def list_images(client=None, **params):
-    return list(glance_client(client).images.list(**params))
+def list_images(client=None, limit=None, **filters):
+    images = glance_client(client).images.list(limit=limit, filters=filters)
+    return tobiko.select(images)
 
 
 def upload_image(image_id, image_data, client=None, **params):
