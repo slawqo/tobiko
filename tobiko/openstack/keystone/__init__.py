@@ -26,8 +26,6 @@ find_service_endpoint = _client.find_service_endpoint
 list_endpoints = _client.list_endpoints
 list_services = _client.list_services
 KeystoneClientFixture = _client.KeystoneClientFixture
-KeystoneResourceNotFound = _client.KeystoneResourceNotFound
-MultipleKeystoneResourcesFound = _client.MultipleKeystoneResourcesFound
 
 keystone_credentials = _credentials.keystone_credentials
 get_keystone_credentials = _credentials.get_keystone_credentials

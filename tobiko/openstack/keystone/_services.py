@@ -25,21 +25,16 @@ class ServiceListFixture(tobiko.SharedFixture):
     def setup_fixture(self):
         self.services = _client.list_services()
 
-    def has_service(self, **params):
-        try:
-            _client.find_resource(self.services,
-                                  check_found=True,
-                                  check_unique=False,
-                                  **params)
-        except _client.KeystoneResourceNotFound:
-            return False
-        else:
-            return True
+    def has_service(self, **attributes):
+        services = self.services
+        if services and attributes:
+            services = services.with_attributes(**attributes)
+        return bool(services)
 
 
-def has_service(**params):
+def has_service(**attributes):
     fixture = tobiko.setup_fixture(ServiceListFixture)
-    return fixture.has_service(**params)
+    return fixture.has_service(**attributes)
 
 
 def is_service_missing(**params):
