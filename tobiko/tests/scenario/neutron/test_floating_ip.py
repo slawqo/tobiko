@@ -14,19 +14,20 @@
 #    under the License.
 from __future__ import absolute_import
 
+import testtools
+
 import tobiko
 from tobiko import config
 from tobiko.shell import ping
 from tobiko.shell import sh
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
-from tobiko.tests import base
 
 
 CONF = config.CONF
 
 
-class FloatingIPTest(base.TobikoTest):
+class FloatingIPTest(testtools.TestCase):
     """Tests connectivity via floating IPs"""
 
     #: Resources stack with floating IP and Nova server

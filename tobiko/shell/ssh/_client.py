@@ -261,14 +261,17 @@ class SSHClientManager(object):
             # Put a placeholder client to avoid infinite recursive lookup
             self.clients[host_key] = None
             proxy_client = self.get_proxy_client(host=host,
+                                                 proxy_jump=proxy_jump,
                                                  config_files=config_files)
             self.clients[host_key] = client = SSHClientFixture(
                 host=host, hostname=hostname, port=port, username=username,
                 proxy_client=proxy_client, **connect_parameters)
         return client
 
-    def get_proxy_client(self, host=None, host_config=None,
+    def get_proxy_client(self, host=None, proxy_jump=None, host_config=None,
                          config_files=None):
+        if isinstance(proxy_jump, SSHClientFixture):
+            return proxy_jump
         host_config = host_config or _config.ssh_host_config(
             host=host, config_files=config_files)
         proxy_host = host_config.proxy_jump

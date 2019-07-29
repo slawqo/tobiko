@@ -74,3 +74,7 @@ def find_hypervisor(client=None, unique=False, **params):
         return hypervisors.unique
     else:
         return hypervisors.first
+
+
+def get_server(server=None, client=None):
+    return nova_client(client).servers.get(server)

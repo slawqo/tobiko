@@ -53,6 +53,10 @@ parameters:
     constraints:
     - custom_constraint: neutron.network
 
+  scheduler_hints:
+    type: json
+    description: Hints to create server
+
 
 conditions:
 
@@ -86,6 +90,7 @@ resources:
       flavor: {get_param: flavor}
       networks:
         - port: {get_resource: port}
+      scheduler_hints: {get_param: scheduler_hints}
 
   floating_ip:
     type: OS::Neutron::FloatingIP
@@ -115,3 +120,6 @@ outputs:
 
   server_name:
     value: {get_attr: [server, name]}
+
+  server_id:
+    value: {get_resource: server}

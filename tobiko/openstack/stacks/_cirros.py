@@ -47,3 +47,19 @@ class CirrosServerStackFixture(_nova.ServerStackFixture):
 
     #: Glance image used to create a Nova server instance
     flavor_stack = tobiko.required_setup_fixture(CirrosFlavorStackFixture)
+
+
+class CirrosPeerServerStackFixture(CirrosServerStackFixture,
+                                   _nova.PeerServerStackFixture):
+    #: Peer server used to reach this one
+    peer_stack = tobiko.required_setup_fixture(CirrosServerStackFixture)
+
+
+class CirrosSameHostServerStackFixture(
+        CirrosPeerServerStackFixture, _nova.SameHostServerStackFixture):
+    pass
+
+
+class CirrosDifferentHostServerStackFixture(
+        CirrosPeerServerStackFixture, _nova.DifferentHostServerStackFixture):
+    pass

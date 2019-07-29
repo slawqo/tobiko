@@ -23,6 +23,10 @@ from tobiko.openstack.stacks import _ubuntu
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture
 CirrosServerStackFixture = _cirros.CirrosServerStackFixture
+CirrosPeerServerStackFixture = _cirros.CirrosPeerServerStackFixture
+CirrosDifferentHostServerStackFixture = (
+    _cirros.CirrosDifferentHostServerStackFixture)
+CirrosSameHostServerStackFixture = _cirros.CirrosSameHostServerStackFixture
 
 NetworkStackFixture = _neutron.NetworkStackFixture
 NetworkWithNetMtuWriteStackFixture = (

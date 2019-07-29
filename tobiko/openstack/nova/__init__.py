@@ -24,4 +24,6 @@ nova_client = _client.nova_client
 NovaClientFixture = _client.NovaClientFixture
 find_hypervisor = _client.find_hypervisor
 
+get_server = _client.get_server
+
 skip_if_missing_hypervisors = _hypervisor.skip_if_missing_hypervisors
