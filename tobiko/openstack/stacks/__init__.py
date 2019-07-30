@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 from tobiko.openstack.stacks import _cirros
+from tobiko.openstack.stacks import _l3ha
 from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _nova
 from tobiko.openstack.stacks import _ubuntu
@@ -28,10 +29,15 @@ CirrosDifferentHostServerStackFixture = (
     _cirros.CirrosDifferentHostServerStackFixture)
 CirrosSameHostServerStackFixture = _cirros.CirrosSameHostServerStackFixture
 
+L3haNetworkStackFixture = _l3ha.L3haNetworkStackFixture
+L3haServerStackFixture = _l3ha.L3haServerStackFixture
+L3haPeerServerStackFixture = _l3ha.L3haPeerServerStackFixture
+L3haDifferentHostServerStackFixture = _l3ha.L3haDifferentHostServerStackFixture
+L3haSameHostServerStackFixture = _l3ha.L3haSameHostServerStackFixture
+
 NetworkStackFixture = _neutron.NetworkStackFixture
 NetworkWithNetMtuWriteStackFixture = (
     _neutron.NetworkWithNetMtuWriteStackFixture)
-NetworkWithL3HAStackFixture = _neutron.NetworkWithL3HAStackFixture
 SecurityGroupsFixture = _neutron.SecurityGroupsFixture
 
 ServerStackFixture = _nova.ServerStackFixture

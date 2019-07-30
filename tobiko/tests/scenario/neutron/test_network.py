@@ -64,8 +64,6 @@ class NetworkTest(testtools.TestCase):
                          gateway['ha'])
 
 
-# --- Same compute host VM to VM scenario -------------------------------------
-
 class SameHostNetworkTest(NetworkTest):
 
     #: Resources stack with Nova server to send messages to
@@ -81,8 +79,6 @@ class SameHostNetworkTest(NetworkTest):
                          getattr(receiver, 'OS-EXT-SRV-ATTR:host'))
 
 
-# --- Different compute host VM to VM scenario --------------------------------
-
 @nova.skip_if_missing_hypervisors(count=2, state='up', status='enabled')
 class DifferentHostNetworkTest(NetworkTest):
 
@@ -97,3 +93,31 @@ class DifferentHostNetworkTest(NetworkTest):
                          self.stack.scheduler_hints)
         self.assertNotEqual(getattr(sender, 'OS-EXT-SRV-ATTR:host'),
                             getattr(receiver, 'OS-EXT-SRV-ATTR:host'))
+
+
+# --- l3-ha extension VM to VM scenario ---------------------------------------
+
+@neutron.skip_if_missing_networking_extensions('l3-ha')
+@neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent',
+                                           count=2)
+class L3haNetworkTest(NetworkTest):
+    #: Resources stack with floating IP and Nova server
+    stack = tobiko.required_setup_fixture(stacks.L3haPeerServerStackFixture)
+
+
+@neutron.skip_if_missing_networking_extensions('l3-ha')
+@neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent',
+                                           count=2)
+class L3haSameHostNetworkTest(SameHostNetworkTest):
+    #: Resources stack with Nova server to send messages to
+    stack = tobiko.required_setup_fixture(
+        stacks.L3haSameHostServerStackFixture)
+
+
+@neutron.skip_if_missing_networking_extensions('l3-ha')
+@neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent',
+                                           count=2)
+class L3haDifferentHostNetworkTest(SameHostNetworkTest):
+    #: Resources stack with Nova server to send messages to
+    stack = tobiko.required_setup_fixture(
+        stacks.L3haDifferentHostServerStackFixture)

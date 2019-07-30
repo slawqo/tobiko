@@ -153,11 +153,6 @@ class NetworkWithNetMtuWriteStackFixture(NetworkStackFixture):
         return dict(value_specs, mtu=self.custom_mtu_size)
 
 
-@neutron.skip_if_missing_networking_extensions('l3-ha')
-class NetworkWithL3HAStackFixture(NetworkStackFixture):
-    ha = True
-
-
 @neutron.skip_if_missing_networking_extensions('security-group')
 class SecurityGroupsFixture(heat.HeatStackFixture):
     """Heat stack with some security groups

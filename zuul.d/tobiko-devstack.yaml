@@ -59,6 +59,9 @@
               quota_floatingip: 500
               quota_security_group: 100
               quota_security_group_rule: 1000
+          $NOVA_CONF:
+            QUOTAS:
+              quota_instances: 20
         test-config:
           $TEMPEST_CONFIG:
             compute:

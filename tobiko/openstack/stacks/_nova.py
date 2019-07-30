@@ -219,6 +219,10 @@ class PeerServerStackFixture(ServerStackFixture):
                                username=self.username,
                                proxy_command=proxy_command)
 
+    @property
+    def network(self):
+        return self.peer_stack.network
+
 
 @nova.skip_if_missing_hypervisors(count=2, state='up', status='enabled')
 class DifferentHostServerStackFixture(PeerServerStackFixture):

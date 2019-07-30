@@ -234,22 +234,11 @@ class FloatingIpWithMtuWritableTest(FloatingIPTest):
         return self.stack.network_stack.custom_mtu_size
 
 
-# --- Test la-h3 extension --------------------------------------------
-
-@neutron.skip_if_missing_networking_extensions('l3-ha')
-class FloatingIPWithL3HAFixture(stacks.CirrosServerStackFixture):
-    """Heat stack for testing floating IP with a custom MTU network value"""
-
-    #: Heat stack for creating internal network with custom MTU value
-    network_stack = tobiko.required_setup_fixture(
-        stacks.NetworkWithL3HAStackFixture)
-
+# --- Test la-h3 extension ----------------------------------------------------
 
 @neutron.skip_if_missing_networking_extensions('l3-ha')
 @neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent',
                                            count=2)
-class NetworkWithL3HATest(FloatingIPTest):
-    """Tests connectivity via floating IP with a custom MTU value"""
-
+class FloatingIpWithL3HATest(FloatingIPTest):
     #: Resources stack with floating IP and Nova server
-    stack = tobiko.required_setup_fixture(FloatingIPWithL3HAFixture)
+    stack = tobiko.required_setup_fixture(stacks.L3haServerStackFixture)
