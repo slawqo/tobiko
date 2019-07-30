@@ -18,6 +18,7 @@ from __future__ import absolute_import
 import testtools
 
 import tobiko
+from tobiko.openstack import nova
 from tobiko.openstack import stacks
 from tobiko.shell import sh
 
@@ -56,6 +57,7 @@ class SameHostNetworkTest(NetworkTest):
 # --- Different compute host VM to VM scenario --------------------------------
 
 
+@nova.skip_if_missing_hypervisors(count=2, state='up', status='enabled')
 class DifferentHostNetworkTest(NetworkTest):
 
     #: Resources stack with Nova server to send messages to

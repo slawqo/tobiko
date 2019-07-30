@@ -199,6 +199,7 @@ class PeerServerStackFixture(ServerStackFixture):
                                proxy_command=self.peer_stack.ssh_command)
 
 
+@nova.skip_if_missing_hypervisors(count=2, state='up', status='enabled')
 class DifferentHostServerStackFixture(PeerServerStackFixture):
 
     @property
