@@ -132,6 +132,9 @@
     abstract: true
     description: |
       Base Tobiko devstack job with multinode.
+    roles:
+      - zuul: openstack/neutron-tempest-plugin
+    pre-run: playbooks/multinode-devstack-pre-run.yaml
     vars:
       topology: multinode
       devstack_localrc:
@@ -154,6 +157,8 @@
           neutron-agent: true
           peakmem_tracker: true
           q-agt: true
+          q-l3: true
+          q-meta: true
           tls-proxy: false
 
 
