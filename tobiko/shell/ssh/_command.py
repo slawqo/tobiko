@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import subprocess
+
 import six
 
 from tobiko.shell.ssh import _config
@@ -30,7 +32,8 @@ def ssh_login(hostname, username=None, port=None):
 
 
 def ssh_command(host, username=None, port=None, command=None,
-                config_files=None, host_config=None, **options):
+                config_files=None, host_config=None, proxy_command=None,
+                **options):
     host_config = host_config or _config.ssh_host_config(
         host=host, config_files=config_files)
 
@@ -49,16 +52,22 @@ def ssh_command(host, username=None, port=None, command=None,
     if port:
         command += ['-p', port]
 
+    if proxy_command:
+        if not isinstance(proxy_command, six.string_types):
+            proxy_command = subprocess.list2cmdline(proxy_command)
+        options['ProxyCommand'] = proxy_command
+
     for name, value in host_config.host_config.items():
         if name not in {'hostname', 'port', 'user'}:
             options.setdefault(name, value)
-    options.setdefault('userknownhostsfile', '/dev/null')
-    options.setdefault('stricthostkeychecking', 'no')
-    options.setdefault('loglevel', 'quiet')
-    options.setdefault('connecttimeout', int(host_config.timeout))
-    options.setdefault('connectionattempts', host_config.connection_attempts)
+    options.setdefault('UserKnownHostsFile', '/dev/null')
+    options.setdefault('StrictHostKeyChecking', 'no')
+    options.setdefault('LogLevel', 'quiet')
+    options.setdefault('ConnectTimeout', int(host_config.timeout))
+    options.setdefault('ConnectionAttempts', host_config.connection_attempts)
     if options:
         for name, value in sorted(options.items()):
+            name = name.replace('_', '')
             command += ['-o', '{!s}={!s}'.format(name, value)]
 
     return command

@@ -18,8 +18,10 @@ from __future__ import absolute_import
 import testtools
 
 import tobiko
+from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
+from tobiko.shell import ping
 from tobiko.shell import sh
 
 
@@ -28,16 +30,41 @@ class NetworkTest(testtools.TestCase):
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosPeerServerStackFixture)
 
+    def test_stack_create_complete(self):
+        self.stack.key_pair_stack.wait_for_create_complete()
+        self.stack.network_stack.wait_for_create_complete()
+        self.stack.peer_stack.wait_for_create_complete()
+        self.stack.wait_for_create_complete()
+
     def test_ssh(self):
         """Test SSH connectivity to floating IP address"""
-        result = sh.execute("hostname",
-                            ssh_client=self.stack.ssh_client)
-        hostname = result.stdout.rstrip()
-        self.assertEqual(self.stack.server_name.lower(), hostname)
+        result = sh.execute("hostname", ssh_client=self.stack.ssh_client)
+        self.assertEqual(self.stack.server_name.lower(),
+                         result.stdout.rstrip())
+
+    def test_ssh_from_cli(self):
+        """Test SSH connectivity to floating IP address from CLI"""
+        result = sh.execute("hostname", shell=self.stack.ssh_command)
+        self.assertEqual(self.stack.server_name.lower(),
+                         result.stdout.rstrip())
+
+    def test_ping(self):
+        """Test ICMP connectivity to floating IP address"""
+        ping.ping_until_received(
+            self.stack.ip_address,
+            ssh_client=self.stack.peer_stack.ssh_client).assert_replied()
+
+    # --- test l3_ha extension ------------------------------------------------
+
+    @neutron.skip_if_missing_networking_extensions('l3-ha')
+    def test_l3_ha(self):
+        """Test 'mtu' network attribute"""
+        gateway = self.stack.network_stack.gateway_details
+        self.assertEqual(self.stack.network_stack.ha,
+                         gateway['ha'])
 
 
 # --- Same compute host VM to VM scenario -------------------------------------
-
 
 class SameHostNetworkTest(NetworkTest):
 
@@ -55,7 +82,6 @@ class SameHostNetworkTest(NetworkTest):
 
 
 # --- Different compute host VM to VM scenario --------------------------------
-
 
 @nova.skip_if_missing_hypervisors(count=2, state='up', status='enabled')
 class DifferentHostNetworkTest(NetworkTest):

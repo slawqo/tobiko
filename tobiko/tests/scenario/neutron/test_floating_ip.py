@@ -41,14 +41,14 @@ class FloatingIPTest(testtools.TestCase):
     def test_ssh(self):
         """Test SSH connectivity to floating IP address"""
         result = sh.execute("hostname", ssh_client=self.stack.ssh_client)
-        hostname, = str(result.stdout).splitlines()
-        self.assertEqual(self.stack.server_name.lower(), hostname)
+        self.assertEqual(self.stack.server_name.lower(),
+                         result.stdout.rstrip())
 
     def test_ssh_from_cli(self):
         """Test SSH connectivity to floating IP address from CLI"""
         result = sh.execute("hostname", shell=self.stack.ssh_command)
-        hostname, = str(result.stdout).splitlines()
-        self.assertEqual(self.stack.server_name.lower(), hostname)
+        self.assertEqual(self.stack.server_name.lower(),
+                         result.stdout.rstrip())
 
     def test_ping(self):
         """Test ICMP connectivity to floating IP address"""

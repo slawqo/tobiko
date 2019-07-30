@@ -194,9 +194,11 @@ class PeerServerStackFixture(ServerStackFixture):
 
     @property
     def ssh_command(self):
+        proxy_command = self.peer_stack.ssh_command + [
+            'nc', self.ip_address, '22']
         return ssh.ssh_command(host=self.ip_address,
                                username=self.username,
-                               proxy_command=self.peer_stack.ssh_command)
+                               proxy_command=proxy_command)
 
 
 @nova.skip_if_missing_hypervisors(count=2, state='up', status='enabled')
