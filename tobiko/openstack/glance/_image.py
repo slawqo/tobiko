@@ -23,6 +23,7 @@ from oslo_log import log
 import requests
 
 import tobiko
+from tobiko.config import get_bool_env
 from tobiko.openstack.glance import _client
 from tobiko.openstack.glance import _io
 
@@ -185,6 +186,8 @@ class UploadGranceImageFixture(GlanceImageFixture):
             self.disk_format = disk_format
         tobiko.check_valid_type(self.disk_format, str)
 
+        self.prevent_image_create = get_bool_env('TOBIKO_PREVENT_CREATE')
+
     def setup_image(self):
         self.create_image()
 
@@ -198,29 +201,32 @@ class UploadGranceImageFixture(GlanceImageFixture):
                     break
                 retries -= 1
 
-                if image:
-                    LOG.debug('Delete existing image: %r (id=%r)',
-                              self.image_name, image.id)
-                    self.delete_image(image.id)
-                    self.wait_for_image_deleted()
+                if not self.prevent_image_create:
+                    if image:
+                        LOG.debug('Delete existing image: %r (id=%r)',
+                                  self.image_name, image.id)
+                        self.delete_image(image.id)
+                        self.wait_for_image_deleted()
 
-                # Cleanup cached objects
-                self.image = image = None
+                    # Cleanup cached objects
+                    self.image = image = None
 
-                try:
-                    LOG.debug('Creating Glance image %r (re-tries left %d)...',
-                              self.image_name, retries)
-                    image_id = _client.create_image(
-                        client=self.client,
-                        name=self.image_name,
-                        disk_format=self.disk_format,
-                        container_format=self.container_format)['id']
-                except Exception:
-                    LOG.exception('Image creation failed %r.', self.image_name)
-                else:
-                    cleanup_image_ids.add(image_id)
-                    LOG.debug('Created image %r (id=%r)...', self.image_name,
-                              image_id)
+                    try:
+                        LOG.debug('Creating Glance image %r '
+                                  '(re-tries left %d)...',
+                                  self.image_name, retries)
+                        image_id = _client.create_image(
+                            client=self.client,
+                            name=self.image_name,
+                            disk_format=self.disk_format,
+                            container_format=self.container_format)['id']
+                    except Exception:
+                        LOG.exception('Image creation failed %r.',
+                                      self.image_name)
+                    else:
+                        cleanup_image_ids.add(image_id)
+                        LOG.debug('Created image %r (id=%r)...',
+                                  self.image_name, image_id)
 
             if image:
                 if image.id in cleanup_image_ids:

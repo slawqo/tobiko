@@ -250,7 +250,7 @@ can be used::
     export TOBIKO_PREVENT_CREATE=True
 
 If this is set to ``True`` or ``1`` then Tobiko will not try to create resources like VMs,
-networks or routers and just run validation of what is exists in the cloud already.
+networks, routers or images and just run validation of what is exists in the cloud already.
 
 What's Next
 -----------
