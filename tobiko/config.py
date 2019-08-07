@@ -245,7 +245,7 @@ def get_env(name):
     if value:
         return value
     else:
-        LOG.debug("Environment variable %r is not defined")
+        LOG.debug("Environment variable %r is not defined", name)
         return None
 
 
