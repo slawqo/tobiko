@@ -14,6 +14,7 @@ from __future__ import absolute_import
 
 import inspect
 import shutil
+import os
 import tempfile
 
 from oslo_log import log
@@ -21,6 +22,25 @@ import testtools
 
 import tobiko
 from tobiko.tests.unit import _patch
+
+
+class PatchEnvironFixture(tobiko.SharedFixture):
+
+    original_environ = None
+    patch_environ = None
+    new_environ = None
+
+    def __init__(self, **patch_environ):
+        super(PatchEnvironFixture, self).__init__()
+        self.patch_environ = patch_environ
+
+    def setup_fixture(self):
+        self.original_environ = os.environ
+        self.new_environ = dict(os.environ, **self.patch_environ)
+        os.environ = self.new_environ
+
+    def cleanup_fixture(self):
+        os.environ = self.original_environ
 
 
 class FixtureManagerPatch(tobiko.FixtureManager, _patch.PatchFixture):
@@ -38,6 +58,12 @@ class FixtureManagerPatch(tobiko.FixtureManager, _patch.PatchFixture):
 
 class TobikoUnitTest(_patch.PatchMixin, testtools.TestCase):
 
+    patch_environ = {
+        'http_proxy': 'http://127.0.0.1:88888',
+        'https_proxy': 'http://127.0.0.1:88888',
+        'no_proxy': '127.0.0.1'
+    }
+
     def setUp(self):
         super(TobikoUnitTest, self).setUp()
         # Protect from mis-configuring logging
@@ -46,6 +72,7 @@ class TobikoUnitTest(_patch.PatchMixin, testtools.TestCase):
         # Make sure each unit test uses it's own fixture manager
         self.fixture_manager = manager = FixtureManagerPatch()
         self.useFixture(manager)
+        self.useFixture(PatchEnvironFixture(**self.patch_environ))
 
     def create_tempdir(self, *args, **kwargs):
         dir_path = tempfile.mkdtemp(*args, **kwargs)
