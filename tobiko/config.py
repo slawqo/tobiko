@@ -272,6 +272,3 @@ def get_bool_env(name):
             LOG.exception("Environment variable %r is not a boolean: %r",
                           name, value)
     return None
-
-
-init_config()

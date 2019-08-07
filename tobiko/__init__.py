@@ -59,3 +59,7 @@ SkipException = _skip.SkipException
 skip = _skip.skip
 skip_if = _skip.skip_if
 skip_until = _skip.skip_until
+
+
+from tobiko import config  # noqa
+config.init_config()
