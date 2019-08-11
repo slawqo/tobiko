@@ -31,7 +31,8 @@ CONFIG_MODULES = ['tobiko.openstack.glance.config',
                   'tobiko.openstack.nova.config',
                   'tobiko.shell.ssh.config',
                   'tobiko.shell.ping.config',
-                  'tobiko.shell.sh.config']
+                  'tobiko.shell.sh.config',
+                  'tobiko.tripleo.config']
 
 
 def _iter_config_dirs():
