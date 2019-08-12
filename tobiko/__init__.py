@@ -58,7 +58,7 @@ MultipleObjectsFound = _select.MultipleObjectsFound
 SkipException = _skip.SkipException
 skip = _skip.skip
 skip_if = _skip.skip_if
-skip_until = _skip.skip_until
+skip_unless = _skip.skip_unless
 
 
 from tobiko import config  # noqa

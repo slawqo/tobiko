@@ -35,12 +35,16 @@ def skip_if(reason, predicate, *args, **kwargs):
     return skip_if_match(reason, bool, predicate, *args, **kwargs)
 
 
-def skip_until(reason, predicate, *args, **kwargs):
+def skip_unless(reason, predicate, *args, **kwargs):
     return skip_if_match(reason, lambda x: bool(not x), predicate, *args,
                          **kwargs)
 
 
 def skip_if_match(reason, match, predicate, *args, **kwargs):
+
+    if not callable(predicate):
+        args = (predicate,) + args
+        predicate = bool
 
     def decorator(obj):
         method = _get_decorated_method(obj)

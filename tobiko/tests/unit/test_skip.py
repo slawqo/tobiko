@@ -24,24 +24,24 @@ def condition(value):
 
 class PositiveSkipMethodTest(unit.TobikoUnitTest):
 
-    @tobiko.skip_if('condition value was true',
-                    condition, True)
+    @tobiko.skip_if('condition value was true', True)
+    def test_skip_if_condition(self):
+        self.fail('Not skipped')
+
+    @tobiko.skip_if('condition value was true', condition, True)
     def test_skip_if_condition_called_with_args(self):
         self.fail('Not skipped')
 
-    @tobiko.skip_if('condition value was true',
-                    condition, value=True)
+    @tobiko.skip_if('condition value was true', condition, value=True)
     def test_skip_if_condition_called_with_kwargs(self):
         self.fail('Not skipped')
 
-    @tobiko.skip_until('condition value was false',
-                       condition, False)
-    def test_skip_until_condition_called_with_args(self):
+    @tobiko.skip_unless('condition value was false', condition, False)
+    def test_skip_unless_condition_called_with_args(self):
         self.fail('Not skipped')
 
-    @tobiko.skip_until('condition value was false',
-                       condition, value=False)
-    def test_skip_until_condition_called_with_kwargs(self):
+    @tobiko.skip_unless('condition value was false', condition, value=False)
+    def test_skip_unless_condition_called_with_kwargs(self):
         self.fail('Not skipped')
 
 
@@ -58,8 +58,11 @@ class NegativeSkipBase(unit.TobikoUnitTest):
 
 class NegativeSkipMethodTest(NegativeSkipBase):
 
-    @tobiko.skip_if('condition value was false',
-                    condition, False)
+    @tobiko.skip_if('condition value was false', False)
+    def test_skip_if_conditions(self):
+        self.test_method_called = True
+
+    @tobiko.skip_if('condition value was false', condition, False)
     def test_skip_if_condition_called_with_args(self):
         self.test_method_called = True
 
@@ -68,38 +71,32 @@ class NegativeSkipMethodTest(NegativeSkipBase):
     def test_skip_if_condition_called_with_kwargs(self):
         self.test_method_called = True
 
-    @tobiko.skip_until('condition value was true',
-                       condition, True)
-    def test_skip_until_condition_called_with_args(self):
+    @tobiko.skip_unless('condition value was true', condition, True)
+    def test_skip_unless_condition_called_with_args(self):
         self.test_method_called = True
 
-    @tobiko.skip_until('condition value was true',
-                       condition, value=True)
-    def test_skip_until_condition_called_with_kwargs(self):
+    @tobiko.skip_unless('condition value was true', condition, value=True)
+    def test_skip_unless_condition_called_with_kwargs(self):
         self.test_method_called = True
 
 
-@tobiko.skip_if('condition value was true',
-                condition, True)
+@tobiko.skip_if('condition value was true', condition, True)
 class PositiveSkipIfConditionCalledWithArgsFixture(tobiko.SharedFixture):
     pass
 
 
-@tobiko.skip_if('condition value was true',
-                condition, value=True)
+@tobiko.skip_if('condition value was true', condition, value=True)
 class PositiveSkipIfConditionCalledWithKwargsFixture(tobiko.SharedFixture):
     pass
 
 
-@tobiko.skip_until('condition value was false',
-                   condition, False)
-class PositiveSkipUntilConditionCalledWithArgsFixture(tobiko.SharedFixture):
+@tobiko.skip_unless('condition value was false', condition, False)
+class PositiveSkipUnlessConditionCalledWithArgsFixture(tobiko.SharedFixture):
     pass
 
 
-@tobiko.skip_until('condition value was false',
-                   condition, value=False)
-class PositiveSkipUntilConditionCalledWithKwargsFixture(tobiko.SharedFixture):
+@tobiko.skip_unless('condition value was false', condition, value=False)
+class PositiveSkipUnlessConditionCalledWithKwargsFixture(tobiko.SharedFixture):
     pass
 
 
@@ -117,40 +114,36 @@ class PositiveSkipFixtureTest(unit.TobikoUnitTest):
             PositiveSkipIfConditionCalledWithKwargsFixture)
         self.assertEqual('condition value was true', str(ex))
 
-    def test_skip_until_condition_called_with_args(self):
+    def test_skip_unless_condition_called_with_args(self):
         ex = self.assertRaises(
             self.skipException, tobiko.setup_fixture,
-            PositiveSkipUntilConditionCalledWithArgsFixture)
+            PositiveSkipUnlessConditionCalledWithArgsFixture)
         self.assertEqual('condition value was false', str(ex))
 
-    def test_skip_until_condition_called_with_kwargs(self):
+    def test_skip_unless_condition_called_with_kwargs(self):
         ex = self.assertRaises(
             self.skipException, tobiko.setup_fixture,
-            PositiveSkipUntilConditionCalledWithKwargsFixture)
+            PositiveSkipUnlessConditionCalledWithKwargsFixture)
         self.assertEqual('condition value was false', str(ex))
 
 
-@tobiko.skip_if('condition value was false',
-                condition, False)
+@tobiko.skip_if('condition value was false', condition, False)
 class NegativeSkipIfConditionCalledWithArgsFixture(tobiko.SharedFixture):
     pass
 
 
-@tobiko.skip_if('condition value was false',
-                condition, value=False)
+@tobiko.skip_if('condition value was false', condition, value=False)
 class NegativeSkipIfConditionCalledWithKwargsFixture(tobiko.SharedFixture):
     pass
 
 
-@tobiko.skip_until('condition value was true',
-                   condition, True)
-class NegativeSkipUntilConditionCalledWithArgsFixture(tobiko.SharedFixture):
+@tobiko.skip_unless('condition value was true', condition, True)
+class NegativeSkipUnlessConditionCalledWithArgsFixture(tobiko.SharedFixture):
     pass
 
 
-@tobiko.skip_until('condition value was true',
-                   condition, value=True)
-class NegativeSkipUntilConditionCalledWithKwargsFixture(tobiko.SharedFixture):
+@tobiko.skip_unless('condition value was true', condition, value=True)
+class NegativeSkipUnlessConditionCalledWithKwargsFixture(tobiko.SharedFixture):
     pass
 
 
@@ -168,78 +161,70 @@ class NegativeSkipFixtureTest(unit.TobikoUnitTest):
         self.assertIsInstance(
             fixture, NegativeSkipIfConditionCalledWithKwargsFixture)
 
-    def test_skip_until_condition_called_with_args(self):
+    def test_skip_unless_condition_called_with_args(self):
         fixture = tobiko.setup_fixture(
-            NegativeSkipUntilConditionCalledWithArgsFixture)
+            NegativeSkipUnlessConditionCalledWithArgsFixture)
         self.assertIsInstance(
-            fixture, NegativeSkipUntilConditionCalledWithArgsFixture)
+            fixture, NegativeSkipUnlessConditionCalledWithArgsFixture)
 
-    def test_skip_until_condition_called_with_kwargs(self):
+    def test_skip_unless_condition_called_with_kwargs(self):
         fixture = tobiko.setup_fixture(
-            NegativeSkipUntilConditionCalledWithKwargsFixture)
+            NegativeSkipUnlessConditionCalledWithKwargsFixture)
         self.assertIsInstance(
-            fixture, NegativeSkipUntilConditionCalledWithKwargsFixture)
+            fixture, NegativeSkipUnlessConditionCalledWithKwargsFixture)
 
 
-@tobiko.skip_if('condition value was true',
-                condition, True)
+@tobiko.skip_if('condition value was true', condition, True)
 class PositiveSkipIfConditionCalledWithArgsTest(unit.TobikoUnitTest):
 
     def test_fail(self):
         self.fail('Not skipped')
 
 
-@tobiko.skip_if('condition value was true',
-                condition, value=True)
+@tobiko.skip_if('condition value was true', condition, value=True)
 class PositiveSkipIfConditionCalledWithKwargsTest(unit.TobikoUnitTest):
 
     def test_fail(self):
         self.fail('Not skipped')
 
 
-@tobiko.skip_until('condition value was false',
-                   condition, False)
-class PositiveSkipUntilConditionCalledWithArgsTest(unit.TobikoUnitTest):
+@tobiko.skip_unless('condition value was false', condition, False)
+class PositiveSkipUnlessConditionCalledWithArgsTest(unit.TobikoUnitTest):
 
     def test_fail(self):
         self.fail('Not skipped')
 
 
-@tobiko.skip_until('condition value was false',
-                   condition, value=False)
-class PositiveSkipUntilConditionCalledWithKwargsTest(unit.TobikoUnitTest):
+@tobiko.skip_unless('condition value was false', condition, value=False)
+class PositiveSkipUnlessConditionCalledWithKwargsTest(unit.TobikoUnitTest):
 
     def test_fail(self):
         self.fail('Not skipped')
 
 
-@tobiko.skip_if('condition value was true',
-                condition, False)
+@tobiko.skip_if('condition value was true', condition, False)
 class NegativeSkipIfConditionCalledWithArgsTest(NegativeSkipBase):
 
     def test_fail(self):
         self.test_method_called = True
 
 
-@tobiko.skip_if('condition value was true',
-                condition, value=False)
+@tobiko.skip_if('condition value was true', condition, value=False)
 class NegativeSkipIfConditionCalledWithKwargsTest(NegativeSkipBase):
 
     def test_fail(self):
         self.test_method_called = True
 
 
-@tobiko.skip_until('condition value was false',
-                   condition, True)
-class NegativeSkipUntilConditionCalledWithArgsTest(NegativeSkipBase):
+@tobiko.skip_unless('condition value was false', condition, True)
+class NegativeSkipUnlessConditionCalledWithArgsTest(NegativeSkipBase):
 
     def test_fail(self):
         self.test_method_called = True
 
 
-@tobiko.skip_until('condition value was false',
-                   condition, value=True)
-class NegativeSkipUntilConditionCalledWithKwargsTest(NegativeSkipBase):
+@tobiko.skip_unless('condition value was false', condition, value=True)
+class NegativeSkipUnlessConditionCalledWithKwargsTest(NegativeSkipBase):
 
     def test_fail(self):
         self.test_method_called = True
