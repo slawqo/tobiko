@@ -183,10 +183,10 @@ class HttpProxyFixture(tobiko.SharedFixture):
                 os.environ['http_proxy'] = http_proxy
             if https_proxy:
                 os.environ['https_proxy'] = https_proxy
-            if http_proxy or https_proxy:
+            if no_proxy:
+                os.environ['no_proxy'] = no_proxy
+            if http_proxy or https_proxy or no_proxy:
                 source = 'tobiko.conf'
-                if no_proxy:
-                    os.environ['no_proxy'] = no_proxy
 
         if source:
             LOG.info("Using HTTP proxy configuration defined in %s:\n"
