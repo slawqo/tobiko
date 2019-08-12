@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import getpass
 import os
 import socket
 import time
@@ -105,6 +106,9 @@ class SSHConnectFailure(tobiko.TobikoException):
 class SSHClientFixture(tobiko.SharedFixture):
 
     host = None
+    port = 22
+    username = getpass.getuser()
+
     client = None
 
     default = tobiko.required_setup_fixture(_config.SSHDefaultConfigFixture)

@@ -24,8 +24,8 @@ OPTIONS = [
                help="hostname or IP address to be used to connect to "
                     "undercloud host"),
     cfg.IntOpt('undercloud_ssh_port',
-               default=22,
-               help="TCP port of undercloud port"),
+               default=None,
+               help="TCP port of SSH server on undercloud host"),
     cfg.StrOpt('undercloud_ssh_username',
                default='stack',
                help="Username with access to stackrc and overcloudrc files"),

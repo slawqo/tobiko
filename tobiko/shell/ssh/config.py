@@ -13,7 +13,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import getpass
 import itertools
 
 from oslo_config import cfg
@@ -29,10 +28,10 @@ OPTIONS = [
                default='/usr/bin/ssh',
                help=('Default SSH client command')),
     cfg.StrOpt('port',
-               default=22,
+               default=None,
                help=('Default SSH port')),
     cfg.StrOpt('username',
-               default=getpass.getuser(),
+               default=None,
                help=('Default SSH username')),
     cfg.ListOpt('config_files',
                 default=['/etc/ssh/ssh_config', '~/.ssh/config'],

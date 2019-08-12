@@ -33,8 +33,9 @@ class UndercloudConfigTest(unit.TobikoUnitTest):
 
     def test_undercloud_ssh_port(self):
         value = self.conf.undercloud_ssh_port
-        self.assertIsInstance(value, int)
-        self.assertIn(value, six.moves.range(1, 2 ** 16))
+        if value is not None:
+            self.assertIsInstance(value, int)
+            self.assertIn(value, six.moves.range(1, 2 ** 16))
 
     def test_undercloud_ssh_username(self):
         self.assertIsInstance(self.conf.undercloud_ssh_username,
