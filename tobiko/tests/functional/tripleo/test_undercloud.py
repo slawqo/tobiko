@@ -15,26 +15,20 @@ from __future__ import absolute_import
 
 import testtools
 
-import tobiko
 from tobiko import config
 from tobiko.shell import sh
-from tobiko.shell import ssh
-
+from tobiko.tripleo import undercloud
 
 CONF = config.CONF
 TRIPLEO_CONF = CONF.tobiko.tripleo
 
 
-@tobiko.skip_unless('Undercloud SSH hostname not defined',
-                    TRIPLEO_CONF.undercloud_ssh_hostname,)
+@undercloud.skip_if_missing_undercloud
 class UndercloudSshConnectionTest(testtools.TestCase):
 
     def setUp(self):
         super(UndercloudSshConnectionTest, self).setUp()
-        self.ssh_client = ssh.ssh_client(
-            host=TRIPLEO_CONF.undercloud_ssh_hostname,
-            port=TRIPLEO_CONF.undercloud_ssh_port,
-            username=TRIPLEO_CONF.undercloud_ssh_username)
+        self.ssh_client = undercloud.undercloud_ssh_client()
 
     def test_connect_to_undercloud(self):
         self.ssh_client.connect()
@@ -63,3 +57,7 @@ class UndercloudSshConnectionTest(testtools.TestCase):
             name, value = line.split('=')
             env[name] = value
         return env
+
+    def test_execute_command(self):
+        result = sh.execute('hostname', ssh_client=self.ssh_client)
+        self.assertTrue(result.stdout.startswith('undercloud-0'))
