@@ -20,7 +20,6 @@ from tobiko.shell import sh
 from tobiko.tripleo import undercloud
 
 CONF = config.CONF
-TRIPLEO_CONF = CONF.tobiko.tripleo
 
 
 @undercloud.skip_if_missing_undercloud
@@ -34,13 +33,15 @@ class UndercloudSshConnectionTest(testtools.TestCase):
         self.ssh_client.connect()
 
     def test_fetch_undercloud_credentials(self):
-        self._test_fetch_credentials(rcfile=TRIPLEO_CONF.undercloud_rcfile)
+        env = undercloud.load_undercloud_rcfile()
+        self._test_fetch_credentials(env=env)
 
     def test_fetch_overcloud_credentials(self):
-        self._test_fetch_credentials(rcfile=TRIPLEO_CONF.overcloud_rcfile)
+        env = undercloud.load_overcloud_rcfile()
+        self._test_fetch_credentials(env=env)
 
-    def _test_fetch_credentials(self, rcfile):
-        env = self.fetch_os_env(rcfile=rcfile)
+    def _test_fetch_credentials(self, env):
+
         self.assertTrue(env['OS_AUTH_URL'])
         self.assertTrue(env.get('OS_USERNAME') or env.get('OS_USER_ID'))
         self.assertTrue(env['OS_PASSWORD'])
@@ -48,15 +49,6 @@ class UndercloudSshConnectionTest(testtools.TestCase):
                         env.get('OS_PROJECT_NAME') or
                         env.get('OS_TENANT_ID') or
                         env.get('OS_PROJECT_ID'))
-
-    def fetch_os_env(self, rcfile):
-        command = ". {rcfile}; env | grep '^OS_'".format(rcfile=rcfile)
-        result = sh.execute(command, ssh_client=self.ssh_client)
-        env = {}
-        for line in result.stdout.splitlines():
-            name, value = line.split('=')
-            env[name] = value
-        return env
 
     def test_execute_command(self):
         result = sh.execute('hostname', ssh_client=self.ssh_client)

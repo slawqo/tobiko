@@ -1,8 +1,11 @@
 from __future__ import absolute_import
 
 import tobiko
-
 from tobiko.shell import ssh
+from tobiko.shell import sh
+from tobiko import config
+
+CONF = config.CONF
 
 
 def undercloud_ssh_client():
@@ -12,6 +15,24 @@ def undercloud_ssh_client():
 
 def undercloud_host_config():
     return tobiko.setup_fixture(UndecloudHostConfig)
+
+
+def fetch_os_env(rcfile):
+    command = ". {rcfile}; env | grep '^OS_'".format(rcfile=rcfile)
+    result = sh.execute(command, ssh_client=undercloud_ssh_client())
+    env = {}
+    for line in result.stdout.splitlines():
+        name, value = line.split('=')
+        env[name] = value
+    return env
+
+
+def load_undercloud_rcfile():
+    return fetch_os_env(rcfile=CONF.tobiko.tripleo.undercloud_rcfile)
+
+
+def load_overcloud_rcfile():
+    return fetch_os_env(rcfile=CONF.tobiko.tripleo.overcloud_rcfile)
 
 
 def has_undercloud():
@@ -33,9 +54,7 @@ class UndecloudHostConfig(tobiko.SharedFixture):
     key_filename = None
 
     def setup_fixture(self):
-        from tobiko import config
-        conf = config.CONF.tobiko.tripleo
-        self.hostname = conf.undercloud_ssh_hostname
-        self.port = conf.undercloud_ssh_port
-        self.username = conf.undercloud_ssh_username
-        self.key_filename = conf.ssh_key_filename
+        self.hostname = CONF.tobiko.tripleo.undercloud_ssh_hostname
+        self.port = CONF.tobiko.tripleo.undercloud_ssh_port
+        self.username = CONF.tobiko.tripleo.undercloud_ssh_username
+        self.key_filename = CONF.tobiko.tripleo.ssh_key_filename
