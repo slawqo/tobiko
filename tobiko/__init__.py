@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from tobiko.common import _asserts
 from tobiko.common import _exception
 from tobiko.common import _fixture
+from tobiko.common import _logging
 from tobiko.common.managers import testcase as testcase_manager
 from tobiko.common.managers import loader as loader_manager
 from tobiko.common import _select
@@ -44,6 +45,9 @@ cleanup_fixture = _fixture.cleanup_fixture
 list_required_fixtures = _fixture.list_required_fixtures
 SharedFixture = _fixture.SharedFixture
 FixtureManager = _fixture.FixtureManager
+
+CaptureLogTest = _logging.CaptureLogTest
+CaptureLogFixture = _logging.CaptureLogFixture
 
 load_object = loader_manager.load_object
 load_module = loader_manager.load_module

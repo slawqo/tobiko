@@ -1,4 +1,5 @@
-# Copyright 2019 Red Hat
+# Copyright (c) 2019 Red Hat
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,11 +14,19 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.tests.unit import _case
-from tobiko.tests.unit import _patch
+from oslo_log import log
+
+import tobiko
+from tobiko.tests import unit
 
 
-TobikoUnitTest = _case.TobikoUnitTest
+LOG = log.getLogger(__name__)
 
-PatchFixture = _patch.PatchFixture
-PatchMixin = _patch.PatchMixin
+
+class CapureLogTest(unit.TobikoUnitTest):
+
+    def test_capture_log_content(self):
+        with tobiko.CaptureLogFixture() as capture:
+            LOG.warning('Some debug line')
+        content = capture.getDetails()['log']
+        self.assertEqual('Some debug line\n', content.as_text())

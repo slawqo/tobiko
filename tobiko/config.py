@@ -20,8 +20,11 @@ import os
 
 from oslo_config import cfg
 from oslo_log import log
+import testtools
+from testtools import monkey
 
 import tobiko
+
 
 LOG = log.getLogger(__name__)
 
@@ -46,6 +49,14 @@ def _iter_config_dirs():
 
 
 CONFIG_DIRS = list(_iter_config_dirs())
+
+LOGGING_CONF_GROUP_NAME = "logging"
+
+LOGGING_OPTIONS = [
+    cfg.BoolOpt('capture_log',
+                default=True,
+                help="Whenever to capture LOG during test case excecution"),
+]
 
 HTTP_CONF_GROUP_NAME = "http"
 
@@ -88,9 +99,15 @@ class GlobalConfig(object):
 CONF = GlobalConfig()
 
 
+class InitConfigFixture(tobiko.SharedFixture):
+
+    def setup_fixture(self):
+        init_tobiko_config()
+        init_environ_config()
+
+
 def init_config():
-    init_tobiko_config()
-    init_environ_config()
+    tobiko.setup_fixture(InitConfigFixture)
 
 
 def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
@@ -112,6 +129,9 @@ def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
 
 
 def register_tobiko_options(conf):
+
+    conf.register_opts(
+        group=cfg.OptGroup(LOGGING_CONF_GROUP_NAME), opts=LOGGING_OPTIONS)
 
     conf.register_opts(
         group=cfg.OptGroup(HTTP_CONF_GROUP_NAME), opts=HTTP_OPTIONS)
@@ -151,6 +171,8 @@ def setup_tobiko_config(conf):
         warnings_logger.logger.setLevel(log.ERROR)
 
     tobiko.setup_fixture(HttpProxyFixture)
+    if conf.logging.capture_log:
+        monkey.patch(testtools, 'TestCase', tobiko.CaptureLogTest)
 
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
