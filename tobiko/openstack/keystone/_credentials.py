@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import collections
+import os
 import sys
 
 from oslo_log import log
@@ -147,25 +148,40 @@ class KeystoneCredentialsFixture(tobiko.SharedFixture):
 
 class EnvironKeystoneCredentialsFixture(KeystoneCredentialsFixture):
 
+    environ = None
+
+    def __init__(self, credentials=None, environ=None):
+        super(EnvironKeystoneCredentialsFixture, self).__init__(
+            credentials=credentials)
+        if environ is not None:
+            self.environ = environ
+
+    def setup_fixture(self):
+        if self.environ is None:
+            self.environ = self.get_environ()
+        super(EnvironKeystoneCredentialsFixture, self).setup_fixture()
+
+    def get_environ(self):
+        return os.environ
+
     def get_credentials(self):
-        from tobiko import config
-        auth_url = config.get_env('OS_AUTH_URL')
+        auth_url = self.get_env('OS_AUTH_URL')
         if not auth_url:
             LOG.debug("OS_AUTH_URL environment variable not defined")
             return None
 
         api_version = (
-            config.get_int_env('OS_IDENTITY_API_VERSION') or
+            self.get_int_env('OS_IDENTITY_API_VERSION') or
             api_version_from_url(auth_url))
         username = (
-            config.get_env('OS_USERNAME') or
-            config.get_env('OS_USER_ID'))
-        password = config.get_env('OS_PASSWORD')
+            self.get_env('OS_USERNAME') or
+            self.get_env('OS_USER_ID'))
+        password = self.get_env('OS_PASSWORD')
         project_name = (
-            config.get_env('OS_PROJECT_NAME') or
-            config.get_env('OS_TENANT_NAME') or
-            config.get_env('OS_PROJECT_ID') or
-            config.get_env('OS_TENANT_ID'))
+            self.get_env('OS_PROJECT_NAME') or
+            self.get_env('OS_TENANT_NAME') or
+            self.get_env('OS_PROJECT_ID') or
+            self.get_env('OS_TENANT_ID'))
         if api_version == 2:
             return keystone_credentials(
                 api_version=api_version,
@@ -175,16 +191,16 @@ class EnvironKeystoneCredentialsFixture(KeystoneCredentialsFixture):
                 project_name=project_name)
         else:
             domain_name = (
-                config.get_env('OS_DOMAIN_NAME') or
-                config.get_env('OS_DOMAIN_ID'))
+                self.get_env('OS_DOMAIN_NAME') or
+                self.get_env('OS_DOMAIN_ID'))
             user_domain_name = (
-                config.get_env('OS_USER_DOMAIN_NAME') or
-                config.get_env('OS_USER_DOMAIN_ID'))
+                self.get_env('OS_USER_DOMAIN_NAME') or
+                self.get_env('OS_USER_DOMAIN_ID'))
             project_domain_name = (
-                config.get_env('OS_PROJECT_DOMAIN_NAME'))
+                self.get_env('OS_PROJECT_DOMAIN_NAME'))
             project_domain_id = (
-                config.get_env('OS_PROJECT_DOMAIN_ID'))
-            trust_id = config.get_env('OS_TRUST_ID')
+                self.get_env('OS_PROJECT_DOMAIN_ID'))
+            trust_id = self.get_env('OS_TRUST_ID')
             return keystone_credentials(
                 api_version=api_version,
                 auth_url=auth_url,
@@ -196,6 +212,15 @@ class EnvironKeystoneCredentialsFixture(KeystoneCredentialsFixture):
                 project_domain_name=project_domain_name,
                 project_domain_id=project_domain_id,
                 trust_id=trust_id)
+
+    def get_env(self, name):
+        return self.environ.get(name, None)
+
+    def get_int_env(self, name):
+        value = self.get_env(name=name)
+        if value is not None:
+            value = int(value)
+        return value
 
 
 class ConfigKeystoneCredentialsFixture(KeystoneCredentialsFixture):

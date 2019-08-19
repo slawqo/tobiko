@@ -32,7 +32,11 @@ get_keystone_credentials = _credentials.get_keystone_credentials
 default_keystone_credentials = _credentials.default_keystone_credentials
 KeystoneCredentials = _credentials.KeystoneCredentials
 KeystoneCredentialsFixture = _credentials.KeystoneCredentialsFixture
+EnvironKeystoneCredentialsFixture = \
+    _credentials.EnvironKeystoneCredentialsFixture
 InvalidKeystoneCredentials = _credentials.InvalidKeystoneCredentials
+DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES = \
+    _credentials.DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES
 
 has_service = _services.has_service
 is_service_missing = _services.is_service_missing

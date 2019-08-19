@@ -41,9 +41,17 @@ OPTIONS = [
 
 
 def register_tobiko_options(conf):
-
     conf.register_opts(group=cfg.OptGroup(GROUP_NAME), opts=OPTIONS)
 
 
 def list_options():
     return [(GROUP_NAME, itertools.chain(OPTIONS))]
+
+
+def setup_tobiko_config(conf):
+    # pylint: disable=unused-argument
+    from tobiko.openstack import keystone
+    from tobiko.tripleo import undercloud
+    if undercloud.has_undercloud():
+        keystone.DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES.append(
+            undercloud.OvercloudKeystoneCredentialsFixture)

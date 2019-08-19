@@ -1,9 +1,10 @@
 from __future__ import absolute_import
 
 import tobiko
+from tobiko import config
+from tobiko.openstack import keystone
 from tobiko.shell import ssh
 from tobiko.shell import sh
-from tobiko import config
 
 CONF = config.CONF
 
@@ -35,14 +36,25 @@ def load_overcloud_rcfile():
     return fetch_os_env(rcfile=CONF.tobiko.tripleo.overcloud_rcfile)
 
 
+class UndercloudKeystoneCredentialsFixture(
+        keystone.EnvironKeystoneCredentialsFixture):
+    def get_environ(self):
+        return load_undercloud_rcfile()
+
+
+class OvercloudKeystoneCredentialsFixture(
+        keystone.EnvironKeystoneCredentialsFixture):
+    def get_environ(self):
+        return load_overcloud_rcfile()
+
+
 def has_undercloud():
     host_config = undercloud_host_config()
     return bool(host_config.hostname)
 
 
 skip_if_missing_undercloud = tobiko.skip_unless(
-    'TripleO Undercloud hostname is not configured',
-    has_undercloud)
+    'TripleO undercloud hostname not configured', has_undercloud)
 
 
 class UndecloudHostConfig(tobiko.SharedFixture):
