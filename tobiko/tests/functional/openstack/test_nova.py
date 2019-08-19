@@ -36,6 +36,9 @@ class KeyPairTest(testtools.TestCase):
 
 class ClientTest(testtools.TestCase):
 
+    #: Stack of resources with a server attached to a floating IP
+    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+
     @nova.skip_if_missing_hypervisors(count=1)
     def test_list_hypervisors(self):
         hypervisors = nova.list_hypervisors()
@@ -71,6 +74,11 @@ class ClientTest(testtools.TestCase):
     def test_find_hypervisor_without_unique(self):
         hypervisor = nova.find_hypervisor()
         self.assertIsNotNone(hypervisor)
+
+    def test_get_console_output(self):
+        output = nova.get_console_output(server=self.stack.server_id,
+                                         length=50)
+        self.assertTrue(output)
 
 
 class HypervisorTest(testtools.TestCase):

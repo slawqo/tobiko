@@ -23,6 +23,7 @@ list_hypervisors = _client.list_hypervisors
 nova_client = _client.nova_client
 NovaClientFixture = _client.NovaClientFixture
 find_hypervisor = _client.find_hypervisor
+get_console_output = _client.get_console_output
 
 get_server = _client.get_server
 

@@ -76,5 +76,10 @@ def find_hypervisor(client=None, unique=False, **params):
         return hypervisors.first
 
 
-def get_server(server=None, client=None):
+def get_server(server, client=None):
     return nova_client(client).servers.get(server)
+
+
+def get_console_output(server, length=None, client=None):
+    return nova_client(client).servers.get_console_output(server=server,
+                                                          length=length)
