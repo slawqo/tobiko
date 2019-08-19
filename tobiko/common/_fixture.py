@@ -415,9 +415,9 @@ class RequiredFixtureProperty(object):
         if instance is None:
             return self
         else:
-            return self.get_fixture()
+            return self.get_fixture(instance)
 
-    def get_fixture(self):
+    def get_fixture(self, _instance):
         return get_fixture(self.fixture)
 
     @property
@@ -427,5 +427,11 @@ class RequiredFixtureProperty(object):
 
 class RequiredSetupFixtureProperty(RequiredFixtureProperty):
 
-    def get_fixture(self):
-        return setup_fixture(self.fixture)
+    def get_fixture(self, _instance):
+        fixture = setup_fixture(self.fixture)
+        if (hasattr(_instance, 'addCleanup') and
+                hasattr(_instance, 'getDetails')):
+            _instance.addCleanup(testtools.testcase.gather_details,
+                                 fixture.getDetails(),
+                                 _instance.getDetails())
+        return fixture

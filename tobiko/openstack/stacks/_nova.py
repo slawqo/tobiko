@@ -18,6 +18,7 @@ from __future__ import absolute_import
 import os
 
 import six
+from testtools import content
 
 import tobiko
 from tobiko import config
@@ -174,6 +175,21 @@ class ServerStackFixture(heat.HeatStackFixture):
     @property
     def server_details(self):
         return nova.get_server(self.server_id)
+
+    max_console_output_length = 64 * 1024
+
+    def getDetails(self):
+        server_id = content.Content(
+            content.UTF8_TEXT, lambda: [self.server_id.encode()])
+        console_output = content.Content(
+            content.UTF8_TEXT, lambda: [self.console_output.encode()])
+        return {self.stack_name + '.server_id': server_id,
+                self.stack_name + '.console_output': console_output}
+
+    @property
+    def console_output(self):
+        return nova.get_console_output(server=self.server_id,
+                                       length=self.max_console_output_length)
 
 
 class PeerServerStackFixture(ServerStackFixture):

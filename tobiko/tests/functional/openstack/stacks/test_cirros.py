@@ -49,3 +49,7 @@ class CirrosServerStackTest(testtools.TestCase):
         hostname, = sh.execute(
             'hostname', ssh_client=self.stack.ssh_client).stdout.splitlines()
         self.assertEqual(hostname, self.stack.server_name)
+
+    def test_console_output(self):
+        output = self.stack.console_output
+        self.assertTrue(output)
