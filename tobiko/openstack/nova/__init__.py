@@ -20,6 +20,8 @@ from tobiko.openstack.nova import _hypervisor
 CLIENT_CLASSES = _client.CLIENT_CLASSES
 get_nova_client = _client.get_nova_client
 list_hypervisors = _client.list_hypervisors
+list_servers = _client.list_servers
+find_server = _client.find_server
 nova_client = _client.nova_client
 NovaClientFixture = _client.NovaClientFixture
 find_hypervisor = _client.find_hypervisor

@@ -76,6 +76,20 @@ def find_hypervisor(client=None, unique=False, **params):
         return hypervisors.first
 
 
+def list_servers(client=None, **params):
+    client = nova_client(client)
+    servers = client.servers.list()
+    return tobiko.select(servers).with_attributes(**params)
+
+
+def find_server(client=None, unique=False, **params):
+    servers = list_servers(client=client, **params)
+    if unique:
+        return servers.unique
+    else:
+        return servers.first
+
+
 def get_server(server, client=None):
     return nova_client(client).servers.get(server)
 

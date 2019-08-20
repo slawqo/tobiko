@@ -80,6 +80,19 @@ class ClientTest(testtools.TestCase):
                                          length=50)
         self.assertTrue(output)
 
+    def test_list_servers(self):
+        server_id = self.stack.server_id
+        for server in nova.list_servers():
+            if server_id == server.id:
+                break
+        else:
+            self.fail('Server {} not found'.format(server_id))
+
+    def test_find_server(self):
+        server_id = self.stack.server_id
+        server = nova.find_server(id=server_id, unique=True)
+        self.assertEqual(server_id, server.id)
+
 
 class HypervisorTest(testtools.TestCase):
 
