@@ -15,15 +15,12 @@
 #    under the License.
 from __future__ import absolute_import
 
-import testtools
-
 import tobiko
 from tobiko.shell import sh
 from tobiko.openstack import stacks
 from tobiko.tests.functional.openstack.stacks import test_cirros
 
 
-@testtools.skip('BUG: this often fails probably because of some timeout')
 class UbuntuServerStackTest(test_cirros.CirrosServerStackTest):
     """Tests connectivity to Nova instances via floating IPs"""
 
