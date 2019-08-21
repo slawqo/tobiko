@@ -13,13 +13,24 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.openstack.octavia import _client
+import itertools
+
+from oslo_config import cfg
+
+GROUP_NAME = 'octavia'
+OPTIONS = [
+    cfg.IntOpt('check_interval',
+               default=5,
+               help='Interval to check for status changes, in seconds.'),
+    cfg.IntOpt('check_timeout',
+               default=360,
+               help='Timeout, in seconds, to wait for a status change.'),
+]
 
 
-OCTAVIA_CLIENT_CLASSSES = _client.OCTAVIA_CLIENT_CLASSSES
-get_loadbalancer = _client.get_loadbalancer
-get_octavia_client = _client.get_octavia_client
-octavia_client = _client.octavia_client
-OctaviaClientFixture = _client.OctaviaClientFixture
+def register_tobiko_options(conf):
+    conf.register_opts(group=cfg.OptGroup(GROUP_NAME), opts=OPTIONS)
 
-get_loadbalancer = _client.get_loadbalancer
+
+def list_options():
+    return [(GROUP_NAME, itertools.chain(OPTIONS))]

@@ -1,0 +1,25 @@
+heat_template_version: 2015-10-15
+
+description: A Load Balancer
+
+parameters:
+    vip_subnet_id:
+        type: string
+        description: ID of the load balancer public subnet
+        constraints:
+        - custom_constraint: neutron.subnet
+
+resources:
+    loadbalancer:
+        type: OS::Octavia::LoadBalancer
+        properties:
+            vip_subnet: { get_param: vip_subnet_id }
+
+outputs:
+    loadbalancer_id:
+        description: Load Balancer ID
+        value: { get_resource: loadbalancer }
+
+    loadbalancer_vip:
+        description: IP address of the load balancer's VIP port
+        value: { get_attr: [ loadbalancer, vip_address ] }

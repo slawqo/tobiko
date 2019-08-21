@@ -250,3 +250,15 @@
 
 # Default ubuntu password (string value)
 #password = <None>
+
+[octavia]
+
+#
+# From tobiko
+#
+
+# Interval to check for status changes, in seconds (integer value)
+#check_interval = 5
+
+# Timeout, in seconds, to wait for a status change (integer value)
+#check_timeout = 360

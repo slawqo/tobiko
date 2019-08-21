@@ -1,0 +1,37 @@
+heat_template_version: 2015-10-15
+
+description: A Load Balancer Member
+
+parameters:
+    pool_id:
+        type: string
+        description: The ID of the load balancer's pool
+
+    member_address:
+        type: string
+        description: The IP address of the member
+
+    subnet_id:
+        type: string
+        description: the ID of the subnet used by member
+        constraints:
+        - custom_constraint: neutron.subnet
+
+    application_port:
+        type: number
+        default: 80
+        description: The port number of the member's application
+
+resources:
+    member:
+        type: OS::Octavia::PoolMember
+        properties:
+            pool: { get_param: pool_id }
+            address: { get_param: member_address }
+            subnet: { get_param: subnet_id }
+            protocol_port: { get_param: application_port }
+
+outputs:
+    member_id:
+        description: member ID
+        value: { get_resource: member }

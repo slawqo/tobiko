@@ -21,6 +21,7 @@ from tobiko.openstack.stacks import _fedora
 from tobiko.openstack.stacks import _l3ha
 from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _nova
+from tobiko.openstack.stacks import _octavia
 from tobiko.openstack.stacks import _ubuntu
 
 CentosFlavorStackFixture = _centos.CentosFlavorStackFixture
@@ -59,3 +60,9 @@ FlavorStackFixture = _nova.FlavorStackFixture
 UbuntuFlavorStackFixture = _ubuntu.UbuntuFlavorStackFixture
 UbuntuImageFixture = _ubuntu.UbuntuImageFixture
 UbuntuServerStackFixture = _ubuntu.UbuntuServerStackFixture
+
+OctaviaLoadbalancerStackFixture = _octavia.OctaviaLoadbalancerStackFixture
+OctaviaListenerStackFixture = _octavia.OctaviaListenerStackFixture
+OctaviaMemberServerStackFixture = _octavia.OctaviaMemberServerStackFixture
+OctaviaServerStackFixture = _octavia.OctaviaServerStackFixture
+OctaviaClientServerStackFixture = _octavia.OctaviaClientServerStackFixture
