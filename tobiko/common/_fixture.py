@@ -15,11 +15,13 @@ from __future__ import absolute_import
 
 import os
 import inspect
+import itertools
 
 import fixtures
 from oslo_log import log
 import six
 import testtools
+from testtools import content
 
 import tobiko
 
@@ -431,7 +433,67 @@ class RequiredSetupFixtureProperty(RequiredFixtureProperty):
         fixture = setup_fixture(self.fixture)
         if (hasattr(_instance, 'addCleanup') and
                 hasattr(_instance, 'getDetails')):
-            _instance.addCleanup(testtools.testcase.gather_details,
-                                 fixture.getDetails(),
+            _instance.addCleanup(gather_details, fixture.getDetails(),
                                  _instance.getDetails())
         return fixture
+
+
+def gather_details(source_dict, target_dict):
+    """Merge the details from ``source_dict`` into ``target_dict``.
+
+    ``gather_details`` evaluates all details in ``source_dict``. Do not use it
+    if the details are not ready to be evaluated.
+
+    :param source_dict: A dictionary of details will be gathered.
+    :param target_dict: A dictionary into which details will be gathered.
+    """
+    for name, content_object in source_dict.items():
+        disambiguator = itertools.count(1)
+        content_id = get_details_content_id(content_object)
+        new_name = name
+        while new_name in target_dict:
+            if content_id == get_details_content_id(target_dict[new_name]):
+                break
+            new_name = '{!s}-{!s}'.format(name, next(disambiguator))
+
+        if new_name not in target_dict:
+            target_dict[new_name] = copy_details_content(
+                content_object=content_object, content_id=content_id)
+
+
+testtools.testcase.gather_details = gather_details
+
+
+def copy_details_content(content_object, content_id):
+    content_bytes = list(content_object.iter_bytes())
+    return details_content(content_type=content_object.content_type,
+                           get_bytes=lambda: content_bytes,
+                           content_id=content_id)
+
+
+def details_content(content_id, get_bytes=None, get_text=None,
+                    content_type=None):
+    content_type = content_type or content.UTF8_TEXT
+    get_bytes = get_bytes or get_text_to_get_bytes(get_text)
+    content_object = content.Content(
+        content_type=content_type,
+        get_bytes=get_bytes)
+    content_object.content_id = content_id
+    return content_object
+
+
+def get_text_to_get_bytes(get_text):
+    assert callable(get_text)
+
+    def get_bytes():
+        for t in get_text():
+            yield t.encode()
+
+    return get_bytes
+
+
+def get_details_content_id(content_object):
+    try:
+        return content_object.content_id
+    except AttributeError:
+        return id(content_object)

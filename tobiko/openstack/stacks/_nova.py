@@ -18,7 +18,6 @@ from __future__ import absolute_import
 import os
 
 import six
-from testtools import content
 
 import tobiko
 from tobiko import config
@@ -179,12 +178,16 @@ class ServerStackFixture(heat.HeatStackFixture):
     max_console_output_length = 64 * 1024
 
     def getDetails(self):
-        server_id = content.Content(
-            content.UTF8_TEXT, lambda: [self.server_id.encode()])
-        console_output = content.Content(
-            content.UTF8_TEXT, lambda: [self.console_output.encode()])
-        return {self.stack_name + '.server_id': server_id,
-                self.stack_name + '.console_output': console_output}
+        return {
+            'server_console_output': tobiko.details_content(
+                content_id=self.fixture_name,
+                get_text=self._get_server_console_output_text)}
+
+    def _get_server_console_output_text(self):
+        yield 'Server Console Output [server_id=' + self.server_id + ']:\n'
+        yield '-' * 80 + '\n'
+        yield self.console_output
+        yield '-' * 80 + '\n'
 
     @property
     def console_output(self):

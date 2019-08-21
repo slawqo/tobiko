@@ -45,8 +45,13 @@ class CaptureLogFixture(_fixture.SharedFixture):
         self.addCleanup(self.logger.removeHandler, handler)
 
     def getDetails(self):
-        if self.handler:
-            return {'log': self.handler.content}
+        handler = self.handler
+        if handler:
+            content_object = _fixture.details_content(
+                content_type=content.UTF8_TEXT,
+                content_id=self.fixture_name,
+                get_text=handler.format_all)
+            return {'log': content_object}
         else:
             return {}
 
@@ -67,13 +72,9 @@ class CaptureLogHandler(logging.Handler):
     def emit(self, record):
         self.records.append(record)
 
-    @property
-    def content(self):
-        return content.Content(content.UTF8_TEXT, self.format_all)
-
     def format_all(self):
         for record in self.records:
-            yield (self.format(record) + '\n').encode()
+            yield self.format(record) + '\n'
 
 
 class CaptureLogTest(testtools.TestCase):

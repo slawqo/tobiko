@@ -45,6 +45,7 @@ cleanup_fixture = _fixture.cleanup_fixture
 list_required_fixtures = _fixture.list_required_fixtures
 SharedFixture = _fixture.SharedFixture
 FixtureManager = _fixture.FixtureManager
+details_content = _fixture.details_content
 
 CaptureLogTest = _logging.CaptureLogTest
 CaptureLogFixture = _logging.CaptureLogFixture
