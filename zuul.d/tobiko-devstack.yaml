@@ -13,6 +13,7 @@
       - openstack/devstack-gate
       - openstack/heat
       - openstack/neutron
+      - performa/os-faults
       - x/tobiko
     timeout: 7200
     vars:
@@ -26,6 +27,7 @@
       devstack_plugins:
         heat: https://opendev.org/openstack/heat.git
         neutron: https://opendev.org/openstack/neutron.git
+        os-faults: https://opendev.org/performa/os-faults.git
         tobiko: https://opendev.org/x/tobiko.git
       devstack_services:
         heat: true
@@ -80,6 +82,7 @@
         yaml: true
         yml: true
 
+    pre-run: playbooks/pre-tobiko-devstack.yaml
     run: playbooks/tobiko-devstack.yaml
     post-run: playbooks/post-tobiko-devstack.yaml
     irrelevant-files:
