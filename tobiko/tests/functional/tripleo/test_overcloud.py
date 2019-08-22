@@ -16,24 +16,17 @@ from __future__ import absolute_import
 import testtools
 
 from tobiko import config
-from tobiko.shell import sh
-from tobiko.tripleo import undercloud
+from tobiko.tripleo import overcloud
+
 
 CONF = config.CONF
 
 
-@undercloud.skip_if_missing_undercloud
-class UndercloudSshConnectionTest(testtools.TestCase):
+@overcloud.skip_if_missing_overcloud
+class OvercloudSshConnectionTest(testtools.TestCase):
 
-    def setUp(self):
-        super(UndercloudSshConnectionTest, self).setUp()
-        self.ssh_client = undercloud.undercloud_ssh_client()
-
-    def test_connect_to_undercloud(self):
-        self.ssh_client.connect()
-
-    def test_fetch_undercloud_credentials(self):
-        env = undercloud.load_undercloud_rcfile()
+    def test_fetch_overcloud_credentials(self):
+        env = overcloud.load_overcloud_rcfile()
         self.assertTrue(env['OS_AUTH_URL'])
         self.assertTrue(env.get('OS_USERNAME') or env.get('OS_USER_ID'))
         self.assertTrue(env['OS_PASSWORD'])
@@ -41,7 +34,3 @@ class UndercloudSshConnectionTest(testtools.TestCase):
                         env.get('OS_PROJECT_NAME') or
                         env.get('OS_TENANT_ID') or
                         env.get('OS_PROJECT_ID'))
-
-    def test_execute_command(self):
-        result = sh.execute('hostname', ssh_client=self.ssh_client)
-        self.assertTrue(result.stdout.startswith('undercloud-0'))
