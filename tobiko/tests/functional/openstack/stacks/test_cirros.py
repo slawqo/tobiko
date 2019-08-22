@@ -51,5 +51,7 @@ class CirrosServerStackTest(testtools.TestCase):
         self.assertEqual(hostname, self.stack.server_name)
 
     def test_console_output(self):
+        # wait for server to be ready for connection
+        self.stack.ssh_client.connect()
         output = self.stack.console_output
         self.assertTrue(output)
