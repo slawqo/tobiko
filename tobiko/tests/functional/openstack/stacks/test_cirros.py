@@ -46,9 +46,10 @@ class CirrosServerStackTest(testtools.TestCase):
         """Test that hostname of instance server matches Nova server name"""
         self.stack.ssh_client.connect()
 
-        hostname, = sh.execute(
-            'hostname', ssh_client=self.stack.ssh_client).stdout.splitlines()
-        self.assertEqual(hostname, self.stack.server_name)
+        stdout = sh.execute('hostname',
+                            ssh_client=self.stack.ssh_client).stdout
+        hostname = stdout.strip().split('.', 1)[0]
+        self.assertEqual(self.stack.server_name, hostname)
 
     def test_console_output(self):
         # wait for server to be ready for connection
