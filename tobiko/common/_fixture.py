@@ -487,7 +487,7 @@ def get_text_to_get_bytes(get_text):
 
     def get_bytes():
         for t in get_text():
-            yield t.encode()
+            yield t.encode(errors='ignore')
 
     return get_bytes
 
