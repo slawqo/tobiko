@@ -108,13 +108,34 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
             buffer_size=self.parameters.buffer_size)
 
     def poll_exit_status(self):
-        if self.process.exit_status_ready():
-            return self.process.recv_exit_status()
-        else:
-            return None
+        process = self.process
+        exit_status = process.exit_status
+        if exit_status < 0:
+            exit_status = None
+        return exit_status
+
+    def get_exit_status(self, timeout=None):
+        process = self.process
+        exit_status = process.exit_status
+        if exit_status < 0:
+            timeout = self.check_timeout(timeout=timeout)
+            LOG.debug("Waiting for remote command termination: "
+                      "timeout=%r, command=%r", timeout, self.command)
+            process.status_event.wait(timeout=timeout)
+            assert process.status_event.is_set()
+            exit_status = process.exit_status
+            if exit_status < 0:
+                exit_status = None
+        return exit_status
 
     def kill(self):
-        self.process.close()
+        process = self.process
+        LOG.debug('Killing remote process: %r', self.command)
+        try:
+            process.kill()
+        except Exception:
+            LOG.exception("Failed killing remote process: %r",
+                          self.command)
 
 
 class SSHChannelFile(paramiko.ChannelFile):

@@ -102,15 +102,28 @@ class LocalShellProcessFixture(_process.ShellProcessFixture):
     def poll_exit_status(self):
         return self.process.poll()
 
+    def get_exit_status(self, timeout=None):
+        exit_status = self.process.returncode
+        if exit_status is None:
+            timeout = self.check_timeout(timeout=timeout)
+            LOG.debug("Waiting for remote command termination: "
+                      "timeout=%r, command=%r", timeout, self.command)
+            exit_status = timeout.wait(timeout=timeout)
+        return exit_status
+
     def kill(self):
+        process = self.process
+        LOG.debug('Killing local process: %r', self.command)
         try:
-            self.process.kill()
+            process.kill()
         except Exception:
-            LOG.exception('Failed killing subprocess')
+            LOG.exception('Failed killing local process: %r (PID=%r)',
+                          self.command, self.pid)
 
     @property
     def pid(self):
-        return self.process.pid
+        process = self.process
+        return process and process.pid or None
 
 
 def set_non_blocking(fd):
