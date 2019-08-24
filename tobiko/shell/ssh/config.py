@@ -47,14 +47,14 @@ OPTIONS = [
                 default=False,
                 help="Set to True to turn on compression"),
     cfg.FloatOpt('timeout',
-                 default=5.,
+                 default=10.,
                  help="SSH connect timeout in seconds"),
     cfg.IntOpt('connection_attempts',
                default=60,
-               help=("Incremental seconds to wait after every "
-                     "failed SSH connection attempt")),
+               help=("Maximum number of connection attempts to be tried "
+                     "before timeout")),
     cfg.FloatOpt('connection_interval',
-                 default=5.,
+                 default=10.,
                  help=("Minimal seconds to wait between every "
                        "failed SSH connection attempt")),
     cfg.StrOpt('proxy_jump',
