@@ -178,16 +178,15 @@ class ServerStackFixture(heat.HeatStackFixture):
     max_console_output_length = 64 * 1024
 
     def getDetails(self):
-        return {
-            'server_console_output': tobiko.details_content(
-                content_id=self.fixture_name,
-                get_text=self._get_server_console_output_text)}
+        details = super(ServerStackFixture, self).getDetails()
+        details[self.fixture_name] = tobiko.details_content(
+            content_id=self.fixture_name, get_json=self._get_server_details)
+        return details
 
-    def _get_server_console_output_text(self):
-        yield 'Server Console Output [server_id=' + self.server_id + ']:\n'
-        yield '-' * 80 + '\n'
-        yield self.console_output
-        yield '-' * 80 + '\n'
+    def _get_server_details(self):
+        # pylint: disable=protected-access
+        return {'server': self.server_details._info,
+                'console_output': self.console_output}
 
     @property
     def console_output(self):

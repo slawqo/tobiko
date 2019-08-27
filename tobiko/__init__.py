@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 from tobiko.common import _asserts
+from tobiko.common import _detail
 from tobiko.common import _exception
 from tobiko.common import _fixture
 from tobiko.common import _logging
@@ -22,6 +23,8 @@ from tobiko.common.managers import loader as loader_manager
 from tobiko.common import _select
 from tobiko.common import _skip
 
+
+details_content = _detail.details_content
 
 FailureException = _asserts.FailureException
 fail = _asserts.fail
@@ -45,7 +48,6 @@ cleanup_fixture = _fixture.cleanup_fixture
 list_required_fixtures = _fixture.list_required_fixtures
 SharedFixture = _fixture.SharedFixture
 FixtureManager = _fixture.FixtureManager
-details_content = _fixture.details_content
 
 CaptureLogTest = _logging.CaptureLogTest
 CaptureLogFixture = _logging.CaptureLogFixture

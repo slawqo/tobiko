@@ -20,6 +20,7 @@ from oslo_log import log
 import testtools
 from testtools import content
 
+from tobiko.common import _detail
 from tobiko.common import _fixture
 
 
@@ -47,7 +48,7 @@ class CaptureLogFixture(_fixture.SharedFixture):
     def getDetails(self):
         handler = self.handler
         if handler:
-            content_object = _fixture.details_content(
+            content_object = _detail.details_content(
                 content_type=content.UTF8_TEXT,
                 content_id=self.fixture_name,
                 get_text=handler.format_all)
