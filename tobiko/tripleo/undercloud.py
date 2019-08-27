@@ -68,11 +68,21 @@ class UndecloudHostConfig(tobiko.SharedFixture):
     username = None
     key_filename = None
 
+    def __init__(self, **kwargs):
+        super(UndecloudHostConfig, self).__init__()
+        self._connect_parameters = ssh.gather_ssh_connect_parameters(**kwargs)
+
     def setup_fixture(self):
         self.hostname = CONF.tobiko.tripleo.undercloud_ssh_hostname
         self.port = CONF.tobiko.tripleo.undercloud_ssh_port
         self.username = CONF.tobiko.tripleo.undercloud_ssh_username
-        self.key_filename = CONF.tobiko.tripleo.ssh_key_filename
+        self.key_filename = CONF.tobiko.tripleo.undercloud_ssh_key_filename
+
+    @property
+    def connect_parameters(self):
+        parameters = ssh.gather_ssh_connect_parameters(self)
+        parameters.update(self._connect_parameters)
+        return parameters
 
 
 def undercloud_keystone_client():

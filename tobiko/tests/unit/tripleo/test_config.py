@@ -26,7 +26,7 @@ TIPLEO_CONF = CONF.tobiko.tripleo
 class TripleoConfigTest(unit.TobikoUnitTest):
 
     def test_ssh_key_filename(self):
-        self.assertIsInstance(TIPLEO_CONF.ssh_key_filename,
+        self.assertIsInstance(TIPLEO_CONF.undercloud_ssh_key_filename,
                               six.string_types)
 
 

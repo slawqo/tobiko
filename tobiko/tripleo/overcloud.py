@@ -13,12 +13,17 @@
 #    under the License.
 from __future__ import absolute_import
 
+import io
+import os
+
 import six
 
 import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
 from tobiko.openstack import nova
+from tobiko.shell import sh
+from tobiko.shell import ssh
 from tobiko.tripleo import undercloud
 
 
@@ -56,6 +61,13 @@ def find_overcloud_node(**params):
     return nova.find_server(client=client, **params)
 
 
+def overcloud_ssh_client(hostname, ip_version=None, network_name=None):
+    host_config = overcloud_host_config(hostname=hostname,
+                                        ip_version=ip_version,
+                                        network_name=network_name)
+    return ssh.ssh_client(host=hostname, host_config=host_config)
+
+
 def overcloud_host_config(hostname, ip_version=None, network_name=None):
     host_config = OvercloudHostConfig(host=hostname,
                                       ip_version=ip_version,
@@ -72,15 +84,52 @@ def overcloud_node_ip_address(ip_version=None, network_name=None,
                                        network_name=network_name)
 
 
+class OvercloudSshKeyFileFixture(tobiko.SharedFixture):
+
+    key_filename = os.path.expanduser(
+        CONF.tobiko.tripleo.overcloud_ssh_key_filename)
+
+    def setup_fixture(self):
+        key_filename = self.key_filename
+        if not os.path.isfile(key_filename):
+            self.setup_key_file()
+            assert os.path.isfile(key_filename)
+
+    def setup_key_file(self):
+        key_filename = self.key_filename
+        key_dirname = os.path.dirname(key_filename)
+        tobiko.makedirs(key_dirname, mode=0o700)
+
+        ssh_client = undercloud.undercloud_ssh_client()
+        _get_undercloud_file(ssh_client=ssh_client,
+                             source='~/.ssh/id_rsa',
+                             destination=key_filename,
+                             mode=0o600)
+        _get_undercloud_file(ssh_client=ssh_client,
+                             source='~/.ssh/id_rsa.pub',
+                             destination=key_filename + '.pub',
+                             mode=0o600)
+
+
+def _get_undercloud_file(ssh_client, source, destination, mode):
+    content = sh.execute(['cat', source],
+                         ssh_client=ssh_client).stdout
+    with io.open(destination, 'wb') as fd:
+        fd.write(content.encode())
+    os.chmod(destination, mode)
+
+
 class OvercloudHostConfig(tobiko.SharedFixture):
     hostname = None
     port = None
     username = None
-    key_filename = None
+    key_file = tobiko.required_setup_fixture(OvercloudSshKeyFileFixture)
     ip_version = None
     network_name = None
+    key_filename = None
 
-    def __init__(self, host, ip_version=None, network_name=None):
+    def __init__(self, host, ip_version=None, network_name=None,
+                 **kwargs):
         super(OvercloudHostConfig, self).__init__()
         tobiko.check_valid_type(host, six.string_types)
         self.host = host
@@ -88,11 +137,19 @@ class OvercloudHostConfig(tobiko.SharedFixture):
             self.ip_version = ip_version
         if network_name:
             self.network_name = network_name
+        self._connect_parameters = ssh.gather_ssh_connect_parameters(**kwargs)
 
     def setup_fixture(self):
-        self.hostname = overcloud_node_ip_address(
+        self.hostname = self.hostname or overcloud_node_ip_address(
             name=self.host, ip_version=self.ip_version,
             network_name=self.network_name)
-        self.port = CONF.tobiko.tripleo.overcloud_ssh_port
-        self.username = CONF.tobiko.tripleo.overcloud_ssh_username
-        self.key_filename = CONF.tobiko.tripleo.ssh_key_filename
+        self.port = self.port or CONF.tobiko.tripleo.overcloud_ssh_port
+        self.username = (self.username or
+                         CONF.tobiko.tripleo.overcloud_ssh_username)
+        self.key_filename = self.key_filename or self.key_file.key_filename
+
+    @property
+    def connect_parameters(self):
+        parameters = ssh.gather_ssh_connect_parameters(self)
+        parameters.update(self._connect_parameters)
+        return parameters

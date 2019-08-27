@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
+
 import netaddr
 import testtools
 
@@ -61,13 +63,22 @@ class OvercloudNovaApiTest(testtools.TestCase):
         self.assertIsInstance(overcloud_node_ip, netaddr.IPAddress)
 
     def test_overcloud_host_config(self):
+        hostname = overcloud.find_overcloud_node().name
         host_config = tobiko.setup_fixture(
-            overcloud.overcloud_host_config(hostname='controller-0'))
-        self.assertEqual('controller-0', host_config.host)
+            overcloud.overcloud_host_config(hostname=hostname))
+        self.assertEqual(hostname, host_config.host)
         self.assertIsInstance(host_config.hostname, netaddr.IPAddress)
         self.assertEqual(CONF.tobiko.tripleo.overcloud_ssh_port,
                          host_config.port)
         self.assertEqual(CONF.tobiko.tripleo.overcloud_ssh_username,
                          host_config.username)
-        self.assertEqual(CONF.tobiko.tripleo.ssh_key_filename,
-                         host_config.key_filename)
+        key_filename = os.path.expanduser(
+            CONF.tobiko.tripleo.overcloud_ssh_key_filename)
+        self.assertEqual(key_filename, host_config.key_filename)
+        self.assertTrue(os.path.isfile(key_filename))
+        self.assertTrue(os.path.isfile(key_filename + '.pub'))
+
+    def test_overcloud_ssh_client_connection(self):
+        hostname = overcloud.find_overcloud_node().name
+        ssh_client = overcloud.overcloud_ssh_client(hostname=hostname)
+        ssh_client.connect()

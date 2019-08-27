@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
+
 import getpass
 import os
 import socket
@@ -31,12 +33,48 @@ from tobiko.shell.ssh import _command
 LOG = log.getLogger(__name__)
 
 
+def valid_hostname(value):
+    hostname = str(value)
+    if not hostname:
+        message = "Invalid hostname: {!r}".format(hostname)
+        raise ValueError(message)
+    return hostname
+
+
+def valid_port(value):
+    port = int(value)
+    if port <= 0 or port > 65535:
+        message = "Invalid port number: {!r}".format(port)
+        raise ValueError(message)
+    return port
+
+
+def valid_path(value):
+    return os.path.abspath(os.path.expanduser(value))
+
+
+def positive_float(value):
+    value = float(value)
+    if value <= 0.:
+        message = "{!r} is not positive".format(value)
+        raise ValueError(message)
+    return value
+
+
+def positive_int(value):
+    value = int(value)
+    if value <= 0:
+        message = "{!r} is not positive".format(value)
+        raise ValueError(message)
+    return value
+
+
 SSH_CONNECT_PARAMETERS = {
     #: The server to connect to
-    'hostname': str,
+    'hostname': valid_hostname,
 
     #: The server port to connect to
-    'port': int,
+    'port': valid_port,
 
     #: The username to authenticate as (defaults to the current local username)
     'username': str,
@@ -50,10 +88,10 @@ SSH_CONNECT_PARAMETERS = {
 
     #: The filename, or list of filenames, of optional private key(s) and/or
     #: certs to try for authentication
-    'key_filename': str,
+    'key_filename': os.path.expanduser,
 
     #: An optional timeout (in seconds) for the TCP connect
-    'timeout': float,
+    'timeout': positive_float,
 
     #: Set to False to disable connecting to the SSH agent
     'allow_agent': bool,
@@ -83,20 +121,75 @@ SSH_CONNECT_PARAMETERS = {
 
     #: An optional timeout (in seconds) to wait for the SSH banner to be
     #: presented.
-    'banner_timeout': float,
+    'banner_timeout': positive_float,
 
     #: An optional timeout (in seconds) to wait for an authentication response
-    'auth_timeout': float,
+    'auth_timeout': positive_float,
 
     #: Number of connection attempts to be tried before timeout
-    'connection_attempts': int,
+    'connection_attempts': positive_int,
 
     #: Minimum amount of time to wait between two connection attempts
-    'connection_interval': float,
+    'connection_interval': positive_float,
 
     #: Command to be executed to open proxy sock
     'proxy_command': str,
 }
+
+
+def gather_ssh_connect_parameters(source=None, destination=None, schema=None,
+                                  remove_from_schema=False, **kwargs):
+    if schema is None:
+        assert not remove_from_schema
+        schema = SSH_CONNECT_PARAMETERS
+    parameters = {}
+
+    if source:
+        # gather from object
+        if isinstance(source, collections.Mapping):
+            parameters.update(_items_from_mapping(mapping=source,
+                                                  schema=schema))
+        else:
+            parameters.update(_items_from_object(obj=source,
+                                                 schema=schema))
+
+    if kwargs:
+        # gather from kwargs
+        parameters.update(_items_from_mapping(mapping=kwargs, schema=schema))
+        kwargs = exclude_mapping_items(kwargs, schema)
+        if kwargs:
+            message = "Invalid SSH connection parameters: {!r}".format(kwargs)
+            raise ValueError(message)
+
+    if remove_from_schema and parameters:
+        # update schema
+        for name in parameters:
+            del schema[name]
+
+    if destination is not None:
+        destination.update(parameters)
+    return parameters
+
+
+def _items_from_mapping(mapping, schema):
+    for name, init in schema.items():
+        value = mapping.get(name)
+        if value is not None:
+            yield name, init(value)
+
+
+def _items_from_object(obj, schema):
+    for name, init in schema.items():
+        value = getattr(obj, name, None)
+        if value is not None:
+            yield name, init(value)
+
+
+def exclude_mapping_items(mapping, exclude):
+        # Exclude parameters that are already in target dictionary
+    return {key: value
+            for key, value in mapping.items()
+            if key not in exclude}
 
 
 class SSHConnectFailure(tobiko.TobikoException):
@@ -118,9 +211,10 @@ class SSHClientFixture(tobiko.SharedFixture):
     proxy_client = None
     proxy_sock = None
     connect_parameters = None
+    schema = SSH_CONNECT_PARAMETERS
 
     def __init__(self, host=None, proxy_client=None, host_config=None,
-                 config_files=None, **connect_parameters):
+                 config_files=None, schema=None, **kwargs):
         super(SSHClientFixture, self).__init__()
         if host:
             self.host = host
@@ -130,14 +224,10 @@ class SSHClientFixture(tobiko.SharedFixture):
             self.host_config = host_config
         if config_files:
             self.config_files = config_files
-        invalid_parameters = sorted([name
-                                     for name in connect_parameters
-                                     if name not in SSH_CONNECT_PARAMETERS])
-        if invalid_parameters:
-            message = "Invalid SSH connection parameters: {!s}".format(
-                ', '.join(invalid_parameters))
-            raise ValueError(message)
-        self._connect_parameters = connect_parameters
+
+        self.schema = schema = dict(schema or self.schema)
+        self._connect_parameters = gather_ssh_connect_parameters(
+            schema=schema, **kwargs)
 
     def setup_fixture(self):
         self.setup_host_config()
@@ -157,89 +247,55 @@ class SSHClientFixture(tobiko.SharedFixture):
         - parameters got from ~/.ssh/config and tobiko.conf
         - parameters got from fixture object attributes
         """
+        self.connect_parameters = self.get_connect_parameters()
 
-        # Get default parameter values from self object
-        self.connect_parameters = parameters = items_from_object(
-            schema=SSH_CONNECT_PARAMETERS, obj=self)
-        LOG.debug('Default parameters for host %r:\n%r', self.host,
-                  parameters)
+    def get_connect_parameters(self, schema=None):
+        schema = dict(schema or self.schema)
+        parameters = {}
+        for gather_parameters in [self.gather_initial_connect_parameters,
+                                  self.gather_host_config_connect_parameters,
+                                  self.gather_default_connect_parameters]:
+            gather_parameters(destination=parameters,
+                              schema=schema,
+                              remove_from_schema=True)
+        if parameters:
+            LOG.debug('SSH connect parameters for host %r:\n%r', self.host,
+                      parameters)
+        return parameters
 
-        # Override parameters from host configuration files
-        parameters.update(
-            items_from_mapping(schema=SSH_CONNECT_PARAMETERS,
-                               mapping=self.host_config.connect_parameters))
-        LOG.debug('Configured connect parameters for host %r:\n%r',
-                  self.host, parameters)
+    def gather_initial_connect_parameters(self, **kwargs):
+        parameters = gather_ssh_connect_parameters(
+            source=self._connect_parameters, **kwargs)
+        if parameters:
+            LOG.debug('Initial SSH connect parameters for host %r:\n'
+                      '%r', self.host, parameters)
+        return parameters
 
-        # Override parameters with __init__ parameters
-        parameters.update(
-            items_from_mapping(schema=SSH_CONNECT_PARAMETERS,
-                               mapping=self._connect_parameters))
-        LOG.debug('Resulting connect parameters for host %r:\n%r', self.host,
-                  parameters)
+    def gather_host_config_connect_parameters(self, **kwargs):
+        parameters = gather_ssh_connect_parameters(
+            source=self.host_config.connect_parameters, **kwargs)
+        if parameters:
+            LOG.debug('Host configured SSH connect parameters for host %r:\n'
+                      '%r', self.host, parameters)
+        return parameters
 
-        # Validate hostname
-        hostname = parameters.get('hostname')
-        if not hostname:
-            message = "Invalid hostname: {!r}".format(hostname)
-            raise ValueError(message)
-
-        # Expand key_filename
-        key_filename = parameters.get('key_filename')
-        if key_filename:
-            key_filename = os.path.expanduser(key_filename)
-            if not os.path.exists(key_filename):
-                message = "key_filename {!r} doesn't exist".format(hostname)
-                raise ValueError(message)
-            parameters['key_filename'] = key_filename
-
-        # Validate connection timeout
-        timeout = parameters.get('timeout')
-        if not timeout or timeout < 0.:
-            message = "Invalid timeout: {!r}".format(timeout)
-            raise ValueError(message)
-
-        # Validate connection attempts
-        connection_attempts = parameters.get('connection_attempts')
-        if not connection_attempts or connection_attempts < 0:
-            message = "Invalid connection attempts: {!r}".format(
-                connection_attempts)
-            raise ValueError(message)
-
-        # Validate connection attempts
-        connection_interval = parameters.get('connection_interval')
-        if not connection_interval or connection_interval < 0.:
-            message = "Invalid connection interval: {!r}".format(
-                connection_interval)
-            raise ValueError(message)
-
-        # Validate connection port
-        port = parameters.get('port')
-        if not port or port < 1 or port > 65535:
-            message = "Invalid port: {!r}".format(port)
-            raise ValueError(message)
+    def gather_default_connect_parameters(self, **kwargs):
+        parameters = gather_ssh_connect_parameters(source=self, **kwargs)
+        if parameters:
+            LOG.debug('Default SSH connect parameters for host %r:\n'
+                      '%r', self.host, parameters)
+        return parameters
 
     def setup_ssh_client(self):
         self.client, self.proxy_sock = ssh_connect(
-            proxy_client=self.proxy_client, **self.connect_parameters)
+            proxy_client=self.proxy_client,
+            **self.connect_parameters)
         self.addCleanup(self.client.close)
         if self.proxy_sock:
             self.addCleanup(self.proxy_sock.close)
 
     def connect(self):
         return tobiko.setup_fixture(self).client
-
-
-def items_from_mapping(schema, mapping):
-    return ((key, init(mapping.get(key)))
-            for key, init in schema.items()
-            if mapping.get(key) is not None)
-
-
-def items_from_object(schema, obj):
-    return {key: init(getattr(obj, key, None))
-            for key, init in schema.items()
-            if getattr(obj, key, None) is not None}
 
 
 UNDEFINED_CLIENT = 'UNDEFINED_CLIENT'
@@ -269,7 +325,8 @@ class SSHClientManager(object):
                                                  config_files=config_files)
             self.clients[host_key] = client = SSHClientFixture(
                 host=host, hostname=hostname, port=port, username=username,
-                proxy_client=proxy_client, **connect_parameters)
+                proxy_client=proxy_client, host_config=host_config,
+                **connect_parameters)
         return client
 
     def get_proxy_client(self, host=None, proxy_jump=None, host_config=None,
