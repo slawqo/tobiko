@@ -357,9 +357,8 @@ class URLGlanceImageFixture(FileGlanceImageFixture):
 
     def _download_image_file(self, image_file, chunks, expected_size):
         image_dir = os.path.dirname(image_file)
-        if not os.path.isdir(image_dir):
-            LOG.debug('Creating image directory: %r', image_dir)
-            os.makedirs(image_dir)
+        LOG.debug('Ensure image directory exists: %r', image_dir)
+        tobiko.makedirs(image_dir)
 
         fd, temp_file = tempfile.mkstemp(dir=image_dir)
         with io.open(fd, 'wb', io.DEFAULT_BUFFER_SIZE) as image_data:
