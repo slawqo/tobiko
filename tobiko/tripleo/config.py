@@ -19,6 +19,12 @@ from oslo_config import cfg
 
 GROUP_NAME = 'tripleo'
 OPTIONS = [
+    # TripleO options
+    cfg.StrOpt('ssh_key_filename',
+               default='~/.ssh/id_rsa',
+               help="SSH key filename used to login to TripleO nodes"),
+
+    # Undercloud options
     cfg.StrOpt('undercloud_ssh_hostname',
                default=None,
                help="hostname or IP address to be used to connect to "
@@ -29,12 +35,17 @@ OPTIONS = [
     cfg.StrOpt('undercloud_ssh_username',
                default='stack',
                help="Username with access to stackrc and overcloudrc files"),
-    cfg.StrOpt('ssh_key_filename',
-               default='~/.ssh/id_rsa',
-               help="SSH key filename used to login to TripleO nodes"),
     cfg.StrOpt('undercloud_rcfile',
                default='~/stackrc',
                help="Undercloud RC filename"),
+
+    # Overcloud options
+    cfg.IntOpt('overcloud_ssh_port',
+               default=None,
+               help="TCP port of SSH server on overcloud hosts"),
+    cfg.StrOpt('overcloud_ssh_username',
+               default='heat-admin',
+               help="Default username used to connect to overcloud nodes"),
     cfg.StrOpt('overcloud_rcfile',
                default='~/overcloudrc',
                help="Overcloud RC filename")]

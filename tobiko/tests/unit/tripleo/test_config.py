@@ -20,35 +20,50 @@ from tobiko.tests import unit
 
 
 CONF = config.CONF
+TIPLEO_CONF = CONF.tobiko.tripleo
+
+
+class TripleoConfigTest(unit.TobikoUnitTest):
+
+    def test_ssh_key_filename(self):
+        self.assertIsInstance(TIPLEO_CONF.ssh_key_filename,
+                              six.string_types)
 
 
 class UndercloudConfigTest(unit.TobikoUnitTest):
 
-    conf = CONF.tobiko.tripleo
-
     def test_undercloud_ssh_hostname(self):
-        value = self.conf.undercloud_ssh_hostname
+        value = TIPLEO_CONF.undercloud_ssh_hostname
         if value is not None:
             self.assertIsInstance(value, six.string_types)
 
     def test_undercloud_ssh_port(self):
-        value = self.conf.undercloud_ssh_port
+        value = TIPLEO_CONF.undercloud_ssh_port
         if value is not None:
             self.assertIsInstance(value, int)
             self.assertIn(value, six.moves.range(1, 2 ** 16))
 
     def test_undercloud_ssh_username(self):
-        self.assertIsInstance(self.conf.undercloud_ssh_username,
-                              six.string_types)
-
-    def test_ssh_key_filename(self):
-        self.assertIsInstance(self.conf.ssh_key_filename,
+        self.assertIsInstance(TIPLEO_CONF.undercloud_ssh_username,
                               six.string_types)
 
     def test_undercloud_rcfile(self):
-        self.assertIsInstance(self.conf.undercloud_rcfile,
+        self.assertIsInstance(TIPLEO_CONF.undercloud_rcfile,
+                              six.string_types)
+
+
+class OvercloudConfigTest(unit.TobikoUnitTest):
+
+    def test_overcloud_ssh_port(self):
+        value = TIPLEO_CONF.overcloud_ssh_port
+        if value is not None:
+            self.assertIsInstance(value, int)
+            self.assertIn(value, six.moves.range(1, 2 ** 16))
+
+    def test_overcloud_ssh_username(self):
+        self.assertIsInstance(TIPLEO_CONF.overcloud_ssh_username,
                               six.string_types)
 
     def test_overcloud_rcfile(self):
-        self.assertIsInstance(self.conf.overcloud_rcfile,
+        self.assertIsInstance(TIPLEO_CONF.overcloud_rcfile,
                               six.string_types)
