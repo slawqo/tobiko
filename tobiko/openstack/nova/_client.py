@@ -143,3 +143,27 @@ class HasNovaClientMixin(object):
     def get_server_console_output(self, server, **params):
         return get_console_output(server=server, client=self.nova_client,
                                   **params)
+
+
+class ServerStatusTimeout(tobiko.TobikoException):
+    message = ("Server {server_id} didn't change its status to {status} "
+               "status after {timeout} seconds")
+
+
+def wait_for_server_status(server_id, status, client=None, timeout=30.,
+                           sleep_time=5.):
+    start_time = time.time()
+    while True:
+        server = get_server(server_id, client)
+        if server.status == status:
+            break
+
+        if time.time() - start_time >= timeout:
+            raise ServerStatusTimeout(server_id=server_id,
+                                      status=status,
+                                      timeout=timeout)
+
+        LOG.debug('Waiting for server %r status to get from %r to %r',
+                  server_id, server.status, status)
+        time.sleep(sleep_time)
+    return server

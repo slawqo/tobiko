@@ -94,6 +94,12 @@ class ClientTest(testtools.TestCase):
         server = nova.find_server(id=server_id, unique=True)
         self.assertEqual(server_id, server.id)
 
+    def test_wait_for_server_status(self):
+        server_id = self.stack.server_id
+        server = nova.wait_for_server_status(server_id, 'ACTIVE')
+        self.assertEqual(server_id, server.id)
+        self.assertEqual('ACTIVE', server.status)
+
 
 class HypervisorTest(testtools.TestCase):
 
