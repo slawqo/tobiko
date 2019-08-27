@@ -73,3 +73,18 @@ class UndecloudHostConfig(tobiko.SharedFixture):
         self.port = CONF.tobiko.tripleo.undercloud_ssh_port
         self.username = CONF.tobiko.tripleo.undercloud_ssh_username
         self.key_filename = CONF.tobiko.tripleo.ssh_key_filename
+
+
+def undercloud_keystone_client():
+    session = undercloud_keystone_session()
+    return keystone.get_keystone_client(session=session)
+
+
+def undercloud_keystone_session():
+    return keystone.get_keystone_session(
+        credentials=UndercloudKeystoneCredentialsFixture)
+
+
+def undercloud_keystone_credentials():
+    return tobiko.setup_fixture(
+        UndercloudKeystoneCredentialsFixture).credentials
