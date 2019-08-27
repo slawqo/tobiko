@@ -16,10 +16,10 @@ from __future__ import absolute_import
 import netaddr
 import testtools
 
-import tobiko
 from tobiko import config
-from tobiko.shell import ping
+from tobiko.openstack import nova
 from tobiko.tripleo import overcloud
+import tobiko
 
 
 CONF = config.CONF
@@ -40,32 +40,34 @@ class OvercloudSshConnectionTest(testtools.TestCase):
 
 
 @overcloud.skip_if_missing_overcloud
-class OvercloudNovaAPITest(testtools.TestCase):
+class OvercloudNovaApiTest(testtools.TestCase):
 
     def test_list_overcloud_nodes(self):
         nodes = overcloud.list_overcloud_nodes()
         self.assertTrue(nodes)
-        expected_network_name = None
         for node in nodes:
-            network_name, node_ip = get_recheable_node_ip(node=node)
-            self.assertTrue(node_ip)
-            if expected_network_name:
-                self.assertEqual(expected_network_name, network_name)
-            else:
-                expected_network_name = network_name
+            node_ip = nova.find_server_ip_address(server=node,
+                                                  check_connectivity=True)
+            self.assertIsInstance(node_ip, netaddr.IPAddress)
 
     def test_find_overcloud_nodes(self):
         node = overcloud.find_overcloud_node()
-        network_name, node_ip = get_recheable_node_ip(node=node)
-        self.assertTrue(network_name)
-        self.assertTrue(node_ip)
+        node_ip = nova.find_server_ip_address(server=node,
+                                              check_connectivity=True)
+        self.assertIsInstance(node_ip, netaddr.IPAddress)
 
+    def test_get_overcloud_node_ip_address(self):
+        overcloud_node_ip = overcloud.overcloud_node_ip_address()
+        self.assertIsInstance(overcloud_node_ip, netaddr.IPAddress)
 
-def get_recheable_node_ip(node):
-    for network_name, addresses in node.addresses.items():
-        for address in addresses:
-            ip_address = netaddr.IPAddress(address['addr'],
-                                           version=address['version'])
-            if ping.ping(host=ip_address).received:
-                return network_name, ip_address
-    tobiko.fail('Unrecheable overcloud node {!r}', node.id)
+    def test_overcloud_host_config(self):
+        host_config = tobiko.setup_fixture(
+            overcloud.overcloud_host_config(hostname='controller-0'))
+        self.assertEqual('controller-0', host_config.host)
+        self.assertIsInstance(host_config.hostname, netaddr.IPAddress)
+        self.assertEqual(CONF.tobiko.tripleo.overcloud_ssh_port,
+                         host_config.port)
+        self.assertEqual(CONF.tobiko.tripleo.overcloud_ssh_username,
+                         host_config.username)
+        self.assertEqual(CONF.tobiko.tripleo.ssh_key_filename,
+                         host_config.key_filename)

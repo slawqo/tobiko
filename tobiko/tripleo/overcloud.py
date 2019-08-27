@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import six
+
 import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
@@ -52,3 +54,45 @@ def find_overcloud_node(**params):
     session = undercloud.undercloud_keystone_session()
     client = nova.get_nova_client(session=session)
     return nova.find_server(client=client, **params)
+
+
+def overcloud_host_config(hostname, ip_version=None, network_name=None):
+    host_config = OvercloudHostConfig(host=hostname,
+                                      ip_version=ip_version,
+                                      network_name=network_name)
+    return tobiko.setup_fixture(host_config)
+
+
+def overcloud_node_ip_address(ip_version=None, network_name=None,
+                              **params):
+    server = find_overcloud_node(**params)
+    ip_version = ip_version or CONF.tobiko.tripleo.overcloud_ip_version
+    network_name = network_name or CONF.tobiko.tripleo.overcloud_network_name
+    return nova.find_server_ip_address(server=server, ip_version=ip_version,
+                                       network_name=network_name)
+
+
+class OvercloudHostConfig(tobiko.SharedFixture):
+    hostname = None
+    port = None
+    username = None
+    key_filename = None
+    ip_version = None
+    network_name = None
+
+    def __init__(self, host, ip_version=None, network_name=None):
+        super(OvercloudHostConfig, self).__init__()
+        tobiko.check_valid_type(host, six.string_types)
+        self.host = host
+        if ip_version:
+            self.ip_version = ip_version
+        if network_name:
+            self.network_name = network_name
+
+    def setup_fixture(self):
+        self.hostname = overcloud_node_ip_address(
+            name=self.host, ip_version=self.ip_version,
+            network_name=self.network_name)
+        self.port = CONF.tobiko.tripleo.overcloud_ssh_port
+        self.username = CONF.tobiko.tripleo.overcloud_ssh_username
+        self.key_filename = CONF.tobiko.tripleo.ssh_key_filename

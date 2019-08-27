@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 from tobiko.openstack.nova import _client
 from tobiko.openstack.nova import _hypervisor
+from tobiko.openstack.nova import _server
 
 
 CLIENT_CLASSES = _client.CLIENT_CLASSES
@@ -26,7 +27,9 @@ nova_client = _client.nova_client
 NovaClientFixture = _client.NovaClientFixture
 find_hypervisor = _client.find_hypervisor
 get_console_output = _client.get_console_output
-
 get_server = _client.get_server
 
 skip_if_missing_hypervisors = _hypervisor.skip_if_missing_hypervisors
+
+find_server_ip_address = _server.find_server_ip_address
+list_server_ip_addresses = _server.list_server_ip_addresses

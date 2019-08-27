@@ -48,7 +48,12 @@ OPTIONS = [
                help="Default username used to connect to overcloud nodes"),
     cfg.StrOpt('overcloud_rcfile',
                default='~/overcloudrc',
-               help="Overcloud RC filename")]
+               help="Overcloud RC filename"),
+    cfg.IntOpt('overcloud_ip_version',
+               help=("Default IP address version to be used to connect to "
+                     "overcloud nodes ")),
+    cfg.StrOpt('overcloud_network_name',
+               help="Name of network used to connect to overcloud nodes")]
 
 
 def register_tobiko_options(conf):
