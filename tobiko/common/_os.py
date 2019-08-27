@@ -21,7 +21,7 @@ from oslo_log import log
 LOG = log.getLogger(__name__)
 
 
-def makedirs(path, mode=0o777, exist_ok=True):
+def makedirs(name, mode=0o777, exist_ok=True):
     """Creates directory and its parents if directory doesn't exists.
 
     This emulates Python3 os.makedirs behavior[1]
@@ -29,7 +29,7 @@ def makedirs(path, mode=0o777, exist_ok=True):
     [1] https://docs.python.org/3/library/os.html#os.makedirs)
     """
     try:
-        os.makedirs(path, mode)
-    except os.error:
-        if not exist_ok:
+        os.makedirs(name, mode)
+    except Exception:
+        if not exist_ok or not os.path.isdir(name):
             raise

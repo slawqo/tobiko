@@ -19,8 +19,8 @@ import jinja2
 
 from oslo_log import log
 
+import tobiko
 from tobiko.fault import constants as fault_const
-from tobiko.common.utils import file as file_utils
 from tobiko.openstack import nova
 
 
@@ -49,7 +49,7 @@ class FaultConfig(object):
     def generate_config_file(self):
         """Generates os-faults configuration file."""
         LOG.info("Generating os-fault configuration file.")
-        file_utils.makedirs(self.DEFAULT_CONF_PATH)
+        tobiko.makedirs(self.DEFAULT_CONF_PATH)
         rendered_conf = self.get_rendered_configuration()
         with open(self.DEFAULT_CONF_FILE, "w") as f:
             f.write(rendered_conf)

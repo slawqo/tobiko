@@ -54,9 +54,7 @@ class KeyPairStackFixture(heat.HeatStackFixture):
         key_file = os.path.realpath(self.key_file)
         if not os.path.isfile(key_file):
             key_dir = os.path.dirname(key_file)
-            if not os.path.isdir(key_dir):
-                os.makedirs(key_dir)
-                assert os.path.isdir(key_dir)
+            tobiko.makedirs(key_dir)
             try:
                 sh.local_execute(['ssh-keygen', '-f', key_file, '-P', ''])
             except sh.ShellCommandFailed:

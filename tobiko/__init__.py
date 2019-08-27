@@ -20,6 +20,7 @@ from tobiko.common import _fixture
 from tobiko.common import _logging
 from tobiko.common.managers import testcase as testcase_manager
 from tobiko.common.managers import loader as loader_manager
+from tobiko.common import _os
 from tobiko.common import _select
 from tobiko.common import _skip
 
@@ -54,6 +55,8 @@ CaptureLogFixture = _logging.CaptureLogFixture
 
 load_object = loader_manager.load_object
 load_module = loader_manager.load_module
+
+makedirs = _os.makedirs
 
 discover_testcases = testcase_manager.discover_testcases
 
