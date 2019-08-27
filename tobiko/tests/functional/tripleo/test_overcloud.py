@@ -13,9 +13,12 @@
 #    under the License.
 from __future__ import absolute_import
 
+import netaddr
 import testtools
 
+import tobiko
 from tobiko import config
+from tobiko.shell import ping
 from tobiko.tripleo import overcloud
 
 
@@ -34,3 +37,35 @@ class OvercloudSshConnectionTest(testtools.TestCase):
                         env.get('OS_PROJECT_NAME') or
                         env.get('OS_TENANT_ID') or
                         env.get('OS_PROJECT_ID'))
+
+
+@overcloud.skip_if_missing_overcloud
+class OvercloudNovaAPITest(testtools.TestCase):
+
+    def test_list_overcloud_nodes(self):
+        nodes = overcloud.list_overcloud_nodes()
+        self.assertTrue(nodes)
+        expected_network_name = None
+        for node in nodes:
+            network_name, node_ip = get_recheable_node_ip(node=node)
+            self.assertTrue(node_ip)
+            if expected_network_name:
+                self.assertEqual(expected_network_name, network_name)
+            else:
+                expected_network_name = network_name
+
+    def test_find_overcloud_nodes(self):
+        node = overcloud.find_overcloud_node()
+        network_name, node_ip = get_recheable_node_ip(node=node)
+        self.assertTrue(network_name)
+        self.assertTrue(node_ip)
+
+
+def get_recheable_node_ip(node):
+    for network_name, addresses in node.addresses.items():
+        for address in addresses:
+            ip_address = netaddr.IPAddress(address['addr'],
+                                           version=address['version'])
+            if ping.ping(host=ip_address).received:
+                return network_name, ip_address
+    tobiko.fail('Unrecheable overcloud node {!r}', node.id)

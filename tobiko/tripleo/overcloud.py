@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
+from tobiko.openstack import nova
 from tobiko.tripleo import undercloud
 
 
@@ -39,3 +40,15 @@ class OvercloudKeystoneCredentialsFixture(
         keystone.EnvironKeystoneCredentialsFixture):
     def get_environ(self):
         return load_overcloud_rcfile()
+
+
+def list_overcloud_nodes(**params):
+    session = undercloud.undercloud_keystone_session()
+    client = nova.get_nova_client(session=session)
+    return nova.list_servers(client=client, **params)
+
+
+def find_overcloud_node(**params):
+    session = undercloud.undercloud_keystone_session()
+    client = nova.get_nova_client(session=session)
+    return nova.find_server(client=client, **params)
