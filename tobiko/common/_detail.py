@@ -19,6 +19,7 @@ import itertools
 from oslo_log import log
 import testtools
 from testtools import content
+import yaml
 
 
 LOG = log.getLogger(__name__)
@@ -64,13 +65,15 @@ def copy_details_content(content_object, content_id):
 
 
 def details_content(content_id, content_type=None, get_bytes=None,
-                    get_text=None, get_json=None):
+                    get_text=None, get_json=None, get_yaml=None):
     content_type = content_type or content.UTF8_TEXT
     if get_bytes is None:
         if get_text:
             get_bytes = get_text_to_get_bytes(get_text=get_text)
         elif get_json:
             get_bytes = get_json_to_get_bytes(get_json=get_json)
+        elif get_yaml:
+            get_bytes = get_yaml_to_get_bytes(get_yaml=get_yaml)
         else:
             message = ("Any of get_bytes, get_text or get_json parameters has "
                        "been specified")
@@ -97,6 +100,16 @@ def get_json_to_get_bytes(get_json):
     def get_text():
         obj = get_json()
         yield json.dumps(obj, indent=4, sort_keys=True).encode(errors='ignore')
+
+    return get_text
+
+
+def get_yaml_to_get_bytes(get_yaml):
+    assert callable(get_yaml)
+
+    def get_text():
+        obj = get_yaml()
+        yield yaml.dump(obj).encode(errors='ignore')
 
     return get_text
 

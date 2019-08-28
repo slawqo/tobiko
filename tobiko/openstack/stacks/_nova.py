@@ -177,14 +177,21 @@ class ServerStackFixture(heat.HeatStackFixture):
 
     def getDetails(self):
         details = super(ServerStackFixture, self).getDetails()
-        details[self.fixture_name] = tobiko.details_content(
-            content_id=self.fixture_name, get_json=self._get_server_details)
+        details[self.fixture_name + '.server'] = self._get_server_content()
+        details[self.fixture_name + '.console_output'] = (
+            self._get_console_output_content())
         return details
 
-    def _get_server_details(self):
+    def _get_server_content(self):
         # pylint: disable=protected-access
-        return {'server': self.server_details._info,
-                'console_output': self.console_output}
+        return tobiko.details_content(
+            content_id=self.fixture_name,
+            get_yaml=lambda: self.server_details._info)
+
+    def _get_console_output_content(self):
+        return tobiko.details_content(
+            content_id=self.fixture_name,
+            get_text=lambda: self.console_output)
 
     @property
     def console_output(self):
