@@ -1,12 +1,12 @@
 - nodeset:
-     name: openstack-three-node-fedora-28
+     name: openstack-three-node-fedora-latest
      nodes:
        - name: controller
-         label: fedora-28
+         label: fedora-29
        - name: compute1
-         label: fedora-28
+         label: fedora-29
        - name: compute2
-         label: fedora-28
+         label: fedora-29
      groups:
        # Node where tests are executed and test results collected
        - name: tempest

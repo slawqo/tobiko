@@ -189,9 +189,9 @@
 
 
 - job:
-    name: tobiko-devstack-scenario-fedora-28
+    name: tobiko-devstack-scenario-fedora-latest
     parent: tobiko-devstack-scenario
-    nodeset: openstack-three-node-fedora-28
+    nodeset: openstack-three-node-fedora-latest
     voting: false
     vars:
       devstack_localrc:
