@@ -186,7 +186,7 @@ class ServerStackFixture(heat.HeatStackFixture):
         # pylint: disable=protected-access
         return tobiko.details_content(
             content_id=self.fixture_name,
-            get_yaml=lambda: self.server_details._info)
+            get_json=lambda: self.server_details._info)
 
     def _get_console_output_content(self):
         return tobiko.details_content(
