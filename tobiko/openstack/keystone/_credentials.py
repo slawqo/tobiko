@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import collections
+import json
 import os
 import sys
 
@@ -21,6 +22,7 @@ from oslo_log import log
 import yaml
 
 import tobiko
+from tobiko.openstack.keystone import _config_files
 
 
 LOG = log.getLogger(__name__)
@@ -223,6 +225,58 @@ class EnvironKeystoneCredentialsFixture(KeystoneCredentialsFixture):
         return value
 
 
+class CloudsFileKeystoneCredentialsFixture(EnvironKeystoneCredentialsFixture):
+
+    def __init__(self, credentials=None, environ=None, clouds_files=None):
+        super(CloudsFileKeystoneCredentialsFixture, self).__init__(
+            credentials=credentials, environ=environ)
+        self.clouds_files = (
+            clouds_files or _config_files.get_cloud_config_files())
+
+    def _load_yaml_json_file(self, filelist):
+        for path in filelist:
+            if os.path.exists(path):
+                with open(path, 'r') as f:
+                    if path.endswith('json'):
+                        return path, json.load(f)
+                    else:
+                        return path, yaml.safe_load(f)
+        return None, {}
+
+    def get_credentials(self):
+        cloud_name = self.get_env("OS_CLOUD")
+        if not cloud_name:
+            LOG.debug('No OS_CLOUD env variable')
+            return None
+
+        file_name, clouds_config = self._load_yaml_json_file(self.clouds_files)
+
+        clouds_config = clouds_config.get("clouds")
+        if not clouds_config:
+            LOG.debug('No clouds configs found in any of %s',
+                      self.clouds_files)
+            return None
+
+        config = clouds_config.get(cloud_name)
+        if not config:
+            LOG.debug("No %s cloud config found in cloud configs file %s",
+                      cloud_name, file_name)
+            return None
+
+        auth = config.get("auth", {})
+        return keystone_credentials(
+            api_version=int(config.get("identity_api_version")),
+            auth_url=auth.get("auth_url"),
+            username=auth.get("username"),
+            password=auth.get("password"),
+            project_name=auth.get("project_name"),
+            domain_name=auth.get("domain_name"),
+            user_domain_name=auth.get("user_domain_name"),
+            project_domain_name=auth.get("project_domain_name"),
+            project_domain_id=auth.get("project_domain_id"),
+            trust_id=auth.get("trust_id"))
+
+
 class ConfigKeystoneCredentialsFixture(KeystoneCredentialsFixture):
 
     def get_credentials(self):
@@ -258,6 +312,7 @@ class ConfigKeystoneCredentialsFixture(KeystoneCredentialsFixture):
 
 
 DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES = [
+    CloudsFileKeystoneCredentialsFixture,
     EnvironKeystoneCredentialsFixture,
     ConfigKeystoneCredentialsFixture]
 
