@@ -24,6 +24,7 @@
         # TOBIKO_KEYSTONE_USERNAME: tobiko
         # TOBIKO_KEYSTONE_PASSWORD: secret_tobiko
         # TOBIKO_KEYSTONE_PROJECT_NAME: tobiko
+        TOBIKO_LOG_DIR: '{{ devstack_base_dir }}/tobiko_logs'
       devstack_plugins:
         heat: https://opendev.org/openstack/heat.git
         neutron: https://opendev.org/openstack/neutron.git
@@ -70,9 +71,7 @@
               min_compute_nodes: "{{ groups['compute'] | default(['controller']) | length }}"
       test_results_stage_name: test_results
       zuul_copy_output:
-        '{{ devstack_base_dir }}/tobiko/etc/tobiko.conf': logs
-        '{{ devstack_base_dir }}/tobiko/etc/accounts.yaml': logs
-        '{{ devstack_base_dir }}/tobiko/tobiko.log': logs
+        '{{ devstack_base_dir }}/tobiko_logs': logs
         '{{ stage_dir }}/{{ test_results_stage_name }}.subunit': logs
         '{{ stage_dir }}/{{ test_results_stage_name }}.html': logs
         '{{ stage_dir }}/stackviz': logs
