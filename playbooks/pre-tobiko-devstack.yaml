@@ -1,0 +1,29 @@
+---
+
+# devstack copies repos from hardcoded list of organizations only and performa
+# is not there so e.g. os-faults repo can't be copied there easily and we need
+# to do this on our own
+# copied from https://opendev.org/openstack/devstack/src/branch/master/roles/setup-devstack-source-dirs/tasks/main.yaml
+
+- hosts: all
+  tasks:
+    - name: Find source repos from performa organization
+      find:
+        paths:
+          - src/opendev.org/performa
+        file_type: directory
+      register: found_repos
+
+    - name: Copy Zuul repos into devstack working directory
+      command: rsync -a {{ item.path }} /opt/stack
+      with_items: '{{ found_repos.files }}'
+      become: yes
+
+    - name: Set ownership of repos
+      file:
+        path: /opt/stack
+        state: directory
+        recurse: true
+        owner: stack
+        group: stack
+      become: yes
