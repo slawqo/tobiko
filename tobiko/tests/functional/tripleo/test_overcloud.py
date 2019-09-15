@@ -16,11 +16,13 @@ from __future__ import absolute_import
 import os
 
 import netaddr
+import pandas as pd
 import testtools
 
 from tobiko import config
 from tobiko.openstack import nova
 from tobiko.tripleo import overcloud
+from tobiko.tripleo import pacemaker
 import tobiko
 
 
@@ -82,3 +84,19 @@ class OvercloudNovaApiTest(testtools.TestCase):
         hostname = overcloud.find_overcloud_node().name
         ssh_client = overcloud.overcloud_ssh_client(hostname=hostname)
         ssh_client.connect()
+
+
+@overcloud.skip_if_missing_overcloud
+class OvercloudPacemakerTest(testtools.TestCase):
+
+    """
+    Assert that all pacemaker resources are in
+    healthy state
+    """
+    def test_get_pacemaker_resource_table(self):
+        resource_table = pacemaker.get_pcs_resources_table()
+        self.assertIsInstance(resource_table, pd.DataFrame)
+
+    def test_pacemaker_resources_health(self):
+        pcs_health = pacemaker.PacemakerResourcesStatus()
+        self.assertTrue(pcs_health.all_healthy)
