@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 from tobiko.openstack.keystone import _client
+from tobiko.openstack.keystone import _clouds_file
 from tobiko.openstack.keystone import _credentials
 from tobiko.openstack.keystone import _services
 from tobiko.openstack.keystone import _session
@@ -26,6 +27,9 @@ find_service_endpoint = _client.find_service_endpoint
 list_endpoints = _client.list_endpoints
 list_services = _client.list_services
 KeystoneClientFixture = _client.KeystoneClientFixture
+
+CloudsFileKeystoneCredentialsFixture = (
+    _clouds_file.CloudsFileKeystoneCredentialsFixture)
 
 keystone_credentials = _credentials.keystone_credentials
 get_keystone_credentials = _credentials.get_keystone_credentials

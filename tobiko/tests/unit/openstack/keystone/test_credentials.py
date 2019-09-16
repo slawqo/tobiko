@@ -14,17 +14,14 @@
 #    under the License.
 from __future__ import absolute_import
 
-import json
 import os
-
-import mock
-import yaml
 
 import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
 from tobiko.openstack.keystone import _credentials
 from tobiko.tests.unit import openstack
+
 
 V2_PARAMS = {
     'api_version': 2,
@@ -64,17 +61,6 @@ V3_ENVIRON = {
     'OS_AUTH_URL': 'http://10.0.0.1:5678/v3',
     'OS_USER_DOMAIN_NAME': 'Default',
     'OS_PROJECT_DOMAIN_NAME': 'Default'}
-
-CLOUDS_CONFIG = {
-    'clouds': {
-        'test-cloud': {
-            'auth': {'auth_url': V3_PARAMS['auth_url'],
-                     'password': V3_PARAMS['password'],
-                     'project_domain_name': V3_PARAMS['project_domain_name'],
-                     'project_name': V3_PARAMS['project_name'],
-                     'user_domain_name': V3_PARAMS['user_domain_name'],
-                     'username': V3_PARAMS['username']},
-            'identity_api_version': str(V3_PARAMS['api_version'])}}}
 
 V3_ENVIRON_WITH_VERSION = dict(V3_ENVIRON, OS_IDENTITY_API_VERSION='3')
 
@@ -176,56 +162,6 @@ class EnvironKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V3_PARAMS, fixture.credentials.to_dict())
-
-
-class CloudsFileKeystoneCredentialsFixtureTestJson(openstack.OpenstackTest):
-
-    clouds_file_name = "/tmp/test-cloud-file.json"
-    json_cloud_data = json.dumps(CLOUDS_CONFIG)
-
-    def setUp(self):
-        super(CloudsFileKeystoneCredentialsFixtureTestJson, self).setUp()
-        self.patch(os, 'environ', {'OS_CLOUD': 'test-cloud'})
-        self.patch(os.path, 'exists', return_value=True)
-        mocked_open = mock.mock_open(read_data=self.json_cloud_data)
-        self.patch(_credentials, "open", mocked_open)
-
-    def test_setup_from_clouds_config_file(self):
-        fixture = _credentials.CloudsFileKeystoneCredentialsFixture(
-            clouds_files=[self.clouds_file_name])
-        fixture.setUp()
-        fixture.credentials.validate()
-        self.assertEqual(
-            V3_PARAMS, fixture.credentials.to_dict())
-
-    def test_setup_from_file_no_os_cloud_env_set(self):
-        self.patch(os, 'environ', {})
-        fixture = _credentials.CloudsFileKeystoneCredentialsFixture(
-            clouds_files=[self.clouds_file_name])
-        fixture.setUp()
-        self.assertIsNone(fixture.credentials)
-
-    def test_setup_from_file_no_clouds_config_in_file(self):
-        mocked_open = mock.mock_open(read_data=json.dumps({}))
-        self.patch(_credentials, "open", mocked_open)
-        fixture = _credentials.CloudsFileKeystoneCredentialsFixture(
-            clouds_files=[self.clouds_file_name])
-        fixture.setUp()
-        self.assertIsNone(fixture.credentials)
-
-    def test_setup_from_file_no_specified_cloud_config_in_file(self):
-        self.patch(os, 'environ', {'OS_CLOUD': 'some-other-cloud'})
-        fixture = _credentials.CloudsFileKeystoneCredentialsFixture(
-            clouds_files=[self.clouds_file_name])
-        fixture.setUp()
-        self.assertIsNone(fixture.credentials)
-
-
-class CloudsFileKeystoneCredentialsFixtureTestYaml(
-        CloudsFileKeystoneCredentialsFixtureTestJson):
-
-    clouds_file_name = "/tmp/test-cloud-file.yaml"
-    json_cloud_data = yaml.dump(CLOUDS_CONFIG)
 
 
 class ConfigKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
