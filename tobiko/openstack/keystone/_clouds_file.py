@@ -16,34 +16,52 @@ from __future__ import absolute_import
 import json
 import os
 
-import appdirs
 from oslo_log import log
 import yaml
 
+import tobiko
 from tobiko.openstack.keystone import _credentials
 
 
 LOG = log.getLogger(__name__)
 
-APPDIRS = appdirs.AppDirs('openstack', 'OpenStack', multipath='/etc')
-
-CONFIG_SEARCH_PATH = [os.getcwd(),
-                      APPDIRS.user_config_dir,
-                      os.path.expanduser('~/.config/openstack'),
-                      APPDIRS.site_config_dir,
-                      '/etc/openstack']
 YAML_SUFFIXES = ('.yaml', '.yml')
 JSON_SUFFIXES = ('.json',)
-DEFAULT_CLOUDS_FILES = [
-    os.path.join(d, 'clouds' + s)
-    for d in CONFIG_SEARCH_PATH
-    for s in YAML_SUFFIXES + JSON_SUFFIXES]
+CLOUDS_FILE_SUFFIXES = JSON_SUFFIXES + YAML_SUFFIXES
 
 
 try:
     FileNotFound = FileNotFoundError
 except NameError:
     FileNotFound = OSError
+
+
+class DefaultCloudsFileConfig(tobiko.SharedFixture):
+
+    cloud_name = None
+    clouds_file_dirs = None
+    clouds_file_names = None
+    clouds_files = None
+
+    def setup_fixture(self):
+        from tobiko import config
+        CONF = config.CONF
+        keystone_conf = CONF.tobiko.keystone
+        self.cloud_name = keystone_conf.cloud_name
+        self.clouds_file_dirs = [
+            os.path.realpath(os.path.expanduser(d))
+            for d in keystone_conf.clouds_file_dirs]
+        self.clouds_file_names = keystone_conf.clouds_file_names
+        self.clouds_files = self.list_cloud_files()
+
+    def list_cloud_files(self):
+        cloud_files = []
+        for directory in self.clouds_file_dirs:
+            directory = os.path.realpath(os.path.expanduser(directory))
+            for file_name in self.clouds_file_names:
+                file_name = os.path.join(directory, file_name)
+                cloud_files.append(file_name)
+        return cloud_files
 
 
 class CloudsFileKeystoneCredentialsFixture(
@@ -53,20 +71,27 @@ class CloudsFileKeystoneCredentialsFixture(
     clouds_content = None
     clouds_file = None
 
+    config = tobiko.required_setup_fixture(DefaultCloudsFileConfig)
+
     def __init__(self, credentials=None, cloud_name=None,
                  clouds_content=None, clouds_file=None, clouds_files=None):
         super(CloudsFileKeystoneCredentialsFixture, self).__init__(
             credentials=credentials)
-        if cloud_name is not None:
-            self.cloud_name = cloud_name
+
+        config = self.config
+        if cloud_name is None:
+            cloud_name = config.cloud_name
+        self.cloud_name = cloud_name
+
         if clouds_content is not None:
             self.clouds_content = dict(clouds_content)
+
         if clouds_file is not None:
             self.clouds_file = clouds_file
+
         if clouds_files is None:
-            self.clouds_files = tuple(DEFAULT_CLOUDS_FILES)
-        else:
-            self.clouds_files = tuple(clouds_files)
+            clouds_files = config.clouds_files
+        self.clouds_files = list(clouds_files)
 
     def get_credentials(self):
         cloud_name = self._get_cloud_name()
@@ -95,27 +120,42 @@ class CloudsFileKeystoneCredentialsFixture(
                        "{!r}").format(self.clouds_file, self.cloud_name)
             raise ValueError(message)
 
+        username = auth.get('username') or auth.get('user_id')
+        password = auth.get('password')
+        project_name = (auth.get('project_name') or
+                        auth.get('tenant_namer') or
+                        auth.get('project_id') or
+                        auth.get_env('tenant_id'))
+
         api_version = (int(clouds_config.get("identity_api_version", 0)) or
                        _credentials.api_version_from_url(auth_url))
         if api_version == 2:
             return _credentials.keystone_credentials(
                 api_version=api_version,
                 auth_url=auth_url,
-                username=auth.get("username"),
-                password=auth.get("password"),
-                project_name=auth.get("project_name"))
+                username=username,
+                password=password,
+                project_name=project_name)
+
         else:
+            domain_name = (auth.get("domain_name") or
+                           auth.get("domain_id"))
+            user_domain_name = (auth.get("user_domain_name") or
+                                auth.get("user_domain_id"))
+            project_domain_name = auth.get("project_domain_name")
+            project_domain_id = auth.get("project_domain_id")
+            trust_id = auth.get("trust_id")
             return _credentials.keystone_credentials(
                 api_version=api_version,
                 auth_url=auth_url,
-                username=auth.get("username"),
-                password=auth.get("password"),
-                project_name=auth.get("project_name"),
-                domain_name=auth.get("domain_name"),
-                user_domain_name=auth.get("user_domain_name"),
-                project_domain_name=auth.get("project_domain_name"),
-                project_domain_id=auth.get("project_domain_id"),
-                trust_id=auth.get("trust_id"))
+                username=username,
+                password=password,
+                project_name=project_name,
+                domain_name=domain_name,
+                user_domain_name=user_domain_name,
+                project_domain_name=project_domain_name,
+                project_domain_id=project_domain_id,
+                trust_id=trust_id)
 
     def _get_cloud_name(self):
         cloud_name = self.cloud_name
@@ -142,13 +182,9 @@ class CloudsFileKeystoneCredentialsFixture(
                 if suffix in JSON_SUFFIXES:
                     LOG.debug('Load JSON clouds file: %r', clouds_file)
                     clouds_content = json.load(f)
-                elif suffix in YAML_SUFFIXES:
+                else:
                     LOG.debug('Load YAML clouds file: %r', clouds_file)
                     clouds_content = yaml.safe_load(f)
-                else:
-                    message = 'Invalid clouds file suffix: {!r}'.format(
-                        suffix)
-                    raise ValueError(message)
             LOG.debug('Clouds file content loaded from %r:\n%r',
                       clouds_file, json.dumps(clouds_content,
                                               indent=4,

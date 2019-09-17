@@ -103,13 +103,15 @@ class V3CloudsFileFixture(CloudsFileFixture):
 
 class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
 
+    config = tobiko.required_setup_fixture(
+        _clouds_file.DefaultCloudsFileConfig)
+
     def test_init(self):
         fixture = keystone.CloudsFileKeystoneCredentialsFixture()
         self.assertIsNone(fixture.cloud_name)
         self.assertIsNone(fixture.clouds_content)
         self.assertIsNone(fixture.clouds_file)
-        self.assertEqual(tuple(_clouds_file.DEFAULT_CLOUDS_FILES),
-                         fixture.clouds_files)
+        self.assertEqual(self.config.clouds_files, fixture.clouds_files)
 
     def test_init_with_cloud_name(self):
         fixture = keystone.CloudsFileKeystoneCredentialsFixture(
@@ -129,11 +131,11 @@ class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
     def test_init_with_clouds_files(self):
         fixture = keystone.CloudsFileKeystoneCredentialsFixture(
             clouds_files=['a', 'b', 'd'])
-        self.assertEqual(('a', 'b', 'd'), fixture.clouds_files)
+        self.assertEqual(['a', 'b', 'd'], fixture.clouds_files)
 
     def test_setup_from_default_clouds_files(self):
         file_fixture = self.useFixture(V3CloudsFileFixture())
-        self.patch(_clouds_file, 'DEFAULT_CLOUDS_FILES',
+        self.patch(self.config, 'clouds_files',
                    ['/a', file_fixture.clouds_file, '/c'])
         credentials_fixture = self.useFixture(
             keystone.CloudsFileKeystoneCredentialsFixture(
@@ -175,15 +177,6 @@ class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
                          credentials_fixture.clouds_content)
         self.assertEqual(test_credentials.V3_PARAMS,
                          credentials_fixture.credentials.to_dict())
-
-    def test_setup_from_invalid_suffix(self):
-        file_fixture = self.useFixture(V3CloudsFileFixture(suffix='.txt'))
-        credentials_fixture = keystone.CloudsFileKeystoneCredentialsFixture(
-                cloud_name=file_fixture.cloud_name,
-                clouds_file=file_fixture.clouds_file)
-        ex = self.assertRaises(ValueError, tobiko.setup_fixture,
-                               credentials_fixture)
-        self.assertEqual("Invalid clouds file suffix: '.txt'", str(ex))
 
     def test_setup_v2_credentials(self):
         file_fixture = self.useFixture(V2CloudsFileFixture())
@@ -292,7 +285,7 @@ class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
             "'cloud-name'", str(ex))
 
     def test_setup_without_clouds_file(self):
-        self.patch(_clouds_file, 'DEFAULT_CLOUDS_FILES', ['/a', '/b', '/c'])
+        self.patch(self.config, 'clouds_files', ['/a', '/b', '/c'])
         fixture = keystone.CloudsFileKeystoneCredentialsFixture(
             cloud_name='cloud-name')
         ex = self.assertRaises(_clouds_file.FileNotFound, tobiko.setup_fixture,

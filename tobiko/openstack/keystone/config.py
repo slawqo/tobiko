@@ -17,6 +17,7 @@ import itertools
 
 from oslo_config import cfg
 
+
 GROUP_NAME = 'keystone'
 OPTIONS = [
     cfg.IntOpt('api_version',
@@ -48,11 +49,20 @@ OPTIONS = [
                help="Project domain ID"),
     cfg.StrOpt('trust_id',
                default=None,
-               help="Trust ID for trust scoping.")]
+               help="Trust ID for trust scoping."),
+    cfg.StrOpt('cloud_name',
+               default=None,
+               help=("Cloud name used pick authentication parameters from "
+                     "clouds.*")),
+    cfg.ListOpt('clouds_file_dirs',
+                default=['.', '~/.config/openstack', '/etc/openstack'],
+                help=("Directories where to look for clouds files")),
+    cfg.ListOpt('clouds_file_names',
+                default=['clouds.yaml', 'clouds.yml', 'clouds.json'],
+                help="Clouds file names")]
 
 
 def register_tobiko_options(conf):
-
     conf.register_opts(group=cfg.OptGroup(GROUP_NAME), opts=OPTIONS)
 
 

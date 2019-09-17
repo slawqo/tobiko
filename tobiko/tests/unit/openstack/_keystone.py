@@ -40,4 +40,7 @@ class DefaultKeystoneCredentialsPatch(unit.PatchFixture):
                                 keystone.KeystoneCredentials)
 
     def setup_fixture(self):
-        self.patch(config.CONF.tobiko, 'keystone', self.credentials)
+        CONF = config.CONF
+        keystone_conf = CONF.tobiko.keystone
+        for key, value in self.credentials.to_dict().items():
+            self.patch(keystone_conf, key, value)
