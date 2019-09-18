@@ -34,7 +34,7 @@ OPTIONS = [
                default=64,
                help="The mask bits for IPv6 subnets"),
     cfg.IntOpt('custom_mtu_size',
-               default=1400,
+               default=1350,
                help=("Customized maximum transfer unit size\n"
                      "Notes:\n"
                      " - MTU values as small as 1000 has been seen "
