@@ -59,5 +59,5 @@ def get_heat_client(session=None, shared=True, init_client=None,
                     manager=None):
     manager = manager or CLIENTS
     fixture = manager.get_client(session=session, shared=shared,
-                                init_client=init_client)
+                                 init_client=init_client)
     return tobiko.setup_fixture(fixture).client
