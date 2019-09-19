@@ -216,10 +216,11 @@ class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
             clouds_file=file_fixture.clouds_file,
             cloud_name='')
 
+        self.assertIsNone(credentials_fixture.credentials)
         self.assertEqual('', credentials_fixture.cloud_name)
-        ex = self.assertRaises(ValueError, tobiko.setup_fixture,
-                               credentials_fixture)
-        self.assertEqual("Invalid cloud name: ''", str(ex))
+        tobiko.setup_fixture(credentials_fixture)
+        self.assertIsNone(credentials_fixture.credentials)
+        self.assertEqual('', credentials_fixture.cloud_name)
 
     def test_setup_with_empty_cloud_name_from_env(self):
         file_fixture = self.useFixture(V2CloudsFileFixture())
@@ -227,20 +228,22 @@ class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
         credentials_fixture = keystone.CloudsFileKeystoneCredentialsFixture(
             clouds_file=file_fixture.clouds_file)
 
+        self.assertIsNone(credentials_fixture.credentials)
         self.assertIsNone(credentials_fixture.cloud_name)
-        ex = self.assertRaises(ValueError, tobiko.setup_fixture,
-                               credentials_fixture)
-        self.assertEqual("Undefined environment variable: 'OS_CLOUD'", str(ex))
+        tobiko.setup_fixture(credentials_fixture)
+        self.assertIsNone(credentials_fixture.credentials)
+        self.assertIsNone(credentials_fixture.cloud_name)
 
     def test_setup_with_no_cloud_name(self):
         file_fixture = self.useFixture(V2CloudsFileFixture())
         credentials_fixture = keystone.CloudsFileKeystoneCredentialsFixture(
             clouds_file=file_fixture.clouds_file)
 
+        self.assertIsNone(credentials_fixture.credentials)
         self.assertIsNone(credentials_fixture.cloud_name)
-        ex = self.assertRaises(ValueError, tobiko.setup_fixture,
-                               credentials_fixture)
-        self.assertEqual("Undefined environment variable: 'OS_CLOUD'", str(ex))
+        tobiko.setup_fixture(credentials_fixture)
+        self.assertIsNone(credentials_fixture.credentials)
+        self.assertIsNone(credentials_fixture.cloud_name)
 
     def test_setup_with_no_clouds_section(self):
         fixture = keystone.CloudsFileKeystoneCredentialsFixture(

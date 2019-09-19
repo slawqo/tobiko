@@ -95,6 +95,9 @@ class CloudsFileKeystoneCredentialsFixture(
 
     def get_credentials(self):
         cloud_name = self._get_cloud_name()
+        if cloud_name is None:
+            return None
+
         clouds_content = self._get_clouds_content()
         clouds_section = clouds_content.get("clouds")
         if clouds_section is None:
@@ -166,12 +169,8 @@ class CloudsFileKeystoneCredentialsFixture(
                           "variable: %r", cloud_name)
                 self.cloud_name = cloud_name
             else:
-                message = "Undefined environment variable: 'OS_CLOUD'"
-                raise ValueError(message)
-        if not cloud_name:
-            message = "Invalid cloud name: {!r}".format(cloud_name)
-            raise ValueError(message)
-        return cloud_name
+                LOG.debug("Undefined environment variable: 'OS_CLOUD'")
+        return cloud_name or None
 
     def _get_clouds_content(self):
         clouds_content = self.clouds_content
