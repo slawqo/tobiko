@@ -78,7 +78,7 @@ def execute(command, environment=None, timeout=None, shell=None,
 def execute_process(process, stdin, expect_exit_status):
     with process:
         if stdin and isinstance(stdin, DATA_TYPES):
-            process.send(data=stdin)
+            process.send_all(data=stdin)
     if expect_exit_status is not None:
         process.check_exit_status(expect_exit_status)
 
