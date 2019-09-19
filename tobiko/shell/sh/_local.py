@@ -88,7 +88,7 @@ class LocalShellProcessFixture(_process.ShellProcessFixture):
 
     def setup_stdin(self):
         self.stdin = _io.ShellStdin(delegate=self.process.stdin,
-                              buffer_size=self.parameters.buffer_size)
+                                    buffer_size=self.parameters.buffer_size)
 
     def setup_stdout(self):
         self.stdout = _io.ShellStdout(delegate=self.process.stdout,
