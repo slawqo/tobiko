@@ -75,9 +75,9 @@ def overcloud_host_config(hostname, ip_version=None, network_name=None):
     return tobiko.setup_fixture(host_config)
 
 
-def overcloud_node_ip_address(ip_version=None, network_name=None,
+def overcloud_node_ip_address(ip_version=None, network_name=None, server=None,
                               **params):
-    server = find_overcloud_node(**params)
+    server = server or find_overcloud_node(**params)
     ip_version = ip_version or CONF.tobiko.tripleo.overcloud_ip_version
     network_name = network_name or CONF.tobiko.tripleo.overcloud_network_name
     return nova.find_server_ip_address(server=server, ip_version=ip_version,
@@ -86,8 +86,10 @@ def overcloud_node_ip_address(ip_version=None, network_name=None,
 
 class OvercloudSshKeyFileFixture(tobiko.SharedFixture):
 
-    key_filename = os.path.expanduser(
-        CONF.tobiko.tripleo.overcloud_ssh_key_filename)
+    @property
+    def key_filename(self):
+        return os.path.expanduser(
+            CONF.tobiko.tripleo.overcloud_ssh_key_filename)
 
     def setup_fixture(self):
         key_filename = self.key_filename
