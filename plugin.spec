@@ -41,6 +41,12 @@ subparsers:
                       help: |
                           The set of tests to execute
                       default: neutron
+                  results_dir_suffix:
+                      type: Value
+                      help: |
+                          Suffix string to add to tobiko_results dir
+                          example : default will be tobiko_results_1st
+                      default: "1st"
                   refsec:
                       type: Value
                       help: |

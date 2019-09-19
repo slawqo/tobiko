@@ -1,0 +1,14 @@
+  - name: Create Tobiko report
+    shell: |
+        cd "{{ test.dir }}"
+        source "{{ test.venv }}/bin/activate"
+        tox -e report
+
+  - fetch:
+     src: "{{ test.dir }}/{{ item }}"
+     dest: "{{ inventory_dir }}/tobiko_results_{{ test.results_dir_suffix }}/"
+     flat: yes
+    loop:
+      - tobiko.conf
+      - tobiko.log
+      - tobiko_results.html

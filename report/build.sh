@@ -6,9 +6,9 @@ set -xeu
 
 
 TESTR_DIR=${TESTR_DIR:-$(pwd)}
-BUILD_DIR=${BUILD_DIR:-${TESTR_DIR}/report/build}
+BUILD_DIR=${BUILD_DIR:-${TESTR_DIR}}
 SUBUNIT_FILE=${SUBUNIT_FILE:-${BUILD_DIR}/last.subunit}
-TESTR_RESULTS_HTML=${TESTR_RESULTS_HTML:-${BUILD_DIR}/testr_results.html}
+TESTR_RESULTS_HTML=${TESTR_RESULTS_HTML:-${BUILD_DIR}/tobiko_results.html}
 
 make_testr_results_html() {
     mkdir -p "$(dirname ${SUBUNIT_FILE})"
