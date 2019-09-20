@@ -163,7 +163,7 @@
 - job:
     name: tobiko-devstack-scenario-centos-7
     parent: tobiko-devstack-scenario
-    nodeset: openstack-three-node-centos-7
+    nodeset: openstack-four-node-centos-7
     voting: false
     vars:
       devstack_localrc:
@@ -175,6 +175,7 @@
     name: tobiko-devstack-scenario-centos-7-queens
     parent: tobiko-devstack-scenario-centos-7
     override-checkout: stable/queens
+    nodeset: openstack-three-node-centos-7
     voting: false
 
 
@@ -182,6 +183,7 @@
     name: tobiko-devstack-scenario-centos-7-rocky
     parent: tobiko-devstack-scenario-centos-7
     override-checkout: stable/rocky
+    nodeset: openstack-three-node-centos-7
     voting: false
 
 
@@ -189,6 +191,7 @@
     name: tobiko-devstack-scenario-centos-7-stein
     parent: tobiko-devstack-scenario-centos-7
     override-checkout: stable/stein
+    nodeset: openstack-three-node-centos-7
     voting: false
 
 
