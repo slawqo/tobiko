@@ -173,25 +173,26 @@ class ServerStackFixture(heat.HeatStackFixture):
     def server_details(self):
         return nova.get_server(self.server_id)
 
-    max_console_output_length = 64 * 1024
-
     def getDetails(self):
+        # pylint: disable=W0212
         details = super(ServerStackFixture, self).getDetails()
-        details[self.fixture_name + '.server'] = self._get_server_content()
-        details[self.fixture_name + '.console_output'] = (
-            self._get_console_output_content())
+        stack = self.get_stack()
+        if stack:
+            details[self.fixture_name + '.stack'] = (
+                self.details_content(get_json=lambda: stack._info))
+            if stack.stack_status == 'CREATE_COMPLETE':
+                details[self.fixture_name + '.server_details'] = (
+                    self.details_content(
+                        get_json=lambda: self.server_details._info))
+                details[self.fixture_name + '.console_output'] = (
+                    self.details_content(
+                        get_text=lambda: self.console_output))
         return details
 
-    def _get_server_content(self):
-        # pylint: disable=protected-access
-        return tobiko.details_content(
-            content_id=self.fixture_name,
-            get_json=lambda: self.server_details._info)
+    def details_content(self, **kwargs):
+        return tobiko.details_content(content_id=self.fixture_name, **kwargs)
 
-    def _get_console_output_content(self):
-        return tobiko.details_content(
-            content_id=self.fixture_name,
-            get_text=lambda: self.console_output)
+    max_console_output_length = 64 * 1024
 
     @property
     def console_output(self):
