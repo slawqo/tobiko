@@ -19,6 +19,7 @@ import fcntl
 import os
 import subprocess
 import sys
+import time
 
 from oslo_log import log
 
@@ -30,6 +31,9 @@ from tobiko.shell.sh import _process
 
 
 LOG = log.getLogger(__name__)
+
+
+TimeoutExpired = getattr(subprocess, 'TimeoutExpired', None)
 
 
 def local_execute(command, environment=None, timeout=None, shell=None,
@@ -103,12 +107,22 @@ class LocalShellProcessFixture(_process.ShellProcessFixture):
         return self.process.poll()
 
     def get_exit_status(self, timeout=None):
-        exit_status = self.process.returncode
-        if exit_status is None:
+        exit_status = self.process.poll()
+        while exit_status is None:
             timeout = self.check_timeout(timeout=timeout)
             LOG.debug("Waiting for remote command termination: "
                       "timeout=%r, command=%r", timeout, self.command)
-            exit_status = timeout.wait(timeout=timeout)
+            if TimeoutExpired is None:
+                # Workaround for old Python versions that don't accept timeout
+                # as parameters for wait method
+                time.sleep(0.1)
+                exit_status = self.process.poll()
+            else:
+                try:
+                    exit_status = self.process.wait(timeout=min(5., timeout))
+                except TimeoutExpired:
+                    LOG.exception("Failed waiting for subprocess termination")
+
         return exit_status
 
     def kill(self):
