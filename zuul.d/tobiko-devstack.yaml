@@ -164,6 +164,7 @@
     name: tobiko-devstack-scenario-centos-7
     parent: tobiko-devstack-scenario
     nodeset: openstack-three-node-centos-7
+    voting: false
     vars:
       devstack_localrc:
         # CentOS has no support for Python3
