@@ -108,7 +108,7 @@
 #ipv4_prefixlen = 24
 
 # The CIDR block to allocate IPv6 subnets from (string value)
-#ipv6_cidr = 2003::/48
+#ipv6_cidr = 2001:db8::/48
 
 # The mask bits for IPv6 subnets (integer value)
 #ipv6_prefixlen = 64

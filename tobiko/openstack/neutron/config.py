@@ -28,7 +28,7 @@ OPTIONS = [
                default=24,
                help="The mask bits for IPv4 subnets"),
     cfg.StrOpt('ipv6_cidr',
-               default='2003::/48',
+               default='2001:db8::/48',
                help="The CIDR block to allocate IPv6 subnets from"),
     cfg.IntOpt('ipv6_prefixlen',
                default=64,
