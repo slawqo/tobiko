@@ -64,10 +64,6 @@
           $NOVA_CONF:
             quota:
               instances: 20
-        test-config:
-          $TEMPEST_CONFIG:
-            compute:
-              min_compute_nodes: "{{ groups['compute'] | default(['controller']) | length }}"
       test_results_stage_name: test_results
       zuul_copy_output:
         '{{ devstack_base_dir }}/tobiko/etc/tobiko.conf': logs
@@ -112,8 +108,27 @@
 
 
 - job:
-    name: tobiko-devstack-multinode
+    name: tobiko-devstack-scenario
     parent: tobiko-devstack
+    abstract: false
+    nodeset: openstack-single-node
+    description: |
+      Integration test that runs all tests against DevStack provided cloud
+    vars:
+      tox_envlist: scenario
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/
+      - ^infrared/
+      - ^releasenotes/
+      - ^report/
+      - ^tobiko/tests/functional/
+      - ^tobiko/tests/unit/
+
+
+- job:
+    name: tobiko-devstack-scenario-multinode
+    parent: tobiko-devstack-scenario
     abstract: true
     description: |
       Base Tobiko devstack job with multinode.
@@ -143,26 +158,8 @@
 
 
 - job:
-    name: tobiko-devstack-scenario
-    parent: tobiko-devstack-multinode
-    abstract: true
-    description: |
-      Integration test that runs all tests against DevStack provided cloud
-    vars:
-      tox_envlist: scenario
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/
-      - ^infrared/
-      - ^releasenotes/
-      - ^report/
-      - ^tobiko/tests/functional/
-      - ^tobiko/tests/unit/
-
-
-- job:
     name: tobiko-devstack-scenario-centos-7
-    parent: tobiko-devstack-scenario
+    parent: tobiko-devstack-scenario-multinode
     nodeset: openstack-four-node-centos-7
     voting: false
     vars:
@@ -197,7 +194,7 @@
 
 - job:
     name: tobiko-devstack-scenario-fedora-latest
-    parent: tobiko-devstack-scenario
+    parent: tobiko-devstack-scenario-multinode
     nodeset: openstack-three-node-fedora-latest
     voting: false
     vars:
@@ -212,7 +209,7 @@
 
 - job:
     name: tobiko-devstack-scenario-ubuntu-bionic
-    parent: tobiko-devstack-scenario
+    parent: tobiko-devstack-scenario-multinode
     nodeset: openstack-three-node-bionic
     vars:
       devstack_services:
