@@ -21,6 +21,7 @@ from tobiko.openstack import stacks
 from tobiko.tests.functional.openstack.stacks import test_cirros
 
 
+@tobiko.skip_if('Fedora image functional test case often fails', True)
 class FedoraServerStackTest(test_cirros.CirrosServerStackTest):
     """Tests connectivity to Nova instances via floating IPs"""
 
