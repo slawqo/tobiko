@@ -289,7 +289,7 @@ def handle_ping_command_error(error):
                     details = text[len(prefix):].strip()
                     raise _exception.SendToPingError(details=details)
 
-                prefix = 'unknown host '
+                prefix = 'unknown host'
                 if text.startswith(prefix):
                     details = text[len(prefix):].strip()
                     raise _exception.UnknowHostError(details=details)

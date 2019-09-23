@@ -51,7 +51,8 @@ class PingTest(testtools.TestCase):
     def test_ping_unreachable_hostname(self):
         ex = self.assertRaises(ping.UnknowHostError, ping.ping,
                                'unreachable-host', count=3)
-        self.assertEqual('unreachable-host', ex.details)
+        if ex.details:
+            self.assertEqual('unreachable-host', ex.details)
 
     def test_ping_until_received(self):
         result = ping.ping_until_received('127.0.0.1', count=3)
