@@ -116,21 +116,14 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
 
     def get_exit_status(self, timeout=None):
         process = self.process
-        exit_status = process.exit_status
-        if exit_status < 0:
-            while True:
-                timeout = self.check_timeout(timeout=timeout)
-                LOG.debug("Waiting for remote command termination: "
-                          "timeout=%r, command=%r", timeout, self.command)
-                process.status_event.wait(timeout=min(timeout, 5.))
-                if process.status_event.is_set():
-                    exit_status = process.exit_status
-                    break
+        while not process.exit_status_ready():
+            timeout = self.check_timeout(timeout=timeout)
+            LOG.debug("Waiting for remote command termination: "
+                      "timeout=%r, command=%r", timeout, self.command)
+            process.status_event.wait(timeout=min(timeout, 5.))
 
-        if exit_status < 0:
-            exit_status = None
-
-        return exit_status
+        assert process.status_event.is_set()
+        return process.exit_status
 
     def kill(self):
         process = self.process
