@@ -15,6 +15,7 @@
       jobs:
         - openstack-tox-pylint
         - tobiko-devstack-functional
+        - tobiko-devstack-scenario
         - tobiko-devstack-scenario-centos-7
         - tobiko-devstack-scenario-centos-7-queens
         - tobiko-devstack-scenario-centos-7-rocky

@@ -110,7 +110,6 @@
 - job:
     name: tobiko-devstack-scenario
     parent: tobiko-devstack
-    abstract: false
     nodeset: openstack-single-node
     description: |
       Integration test that runs all tests against DevStack provided cloud
