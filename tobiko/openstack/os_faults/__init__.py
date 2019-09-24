@@ -1,6 +1,4 @@
-# Copyright (c) 2019 Red Hat, Inc.
-#
-# All Rights Reserved.
+# Copyright 2019 Red Hat
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -15,19 +13,14 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.tests import unit
-from tobiko.fault import executor
 
+from tobiko.openstack.os_faults import _config_file
+from tobiko.openstack.os_faults import _cloud
+from tobiko.openstack.os_faults import _execute
 
-class FaultTest(unit.TobikoUnitTest):
+get_os_fault_cloud_managenemt = _cloud.get_os_fault_cloud_managenemt
+OsFaultsCloudManagementFixture = _cloud.OsFaultsCloudManagementFixture
 
-    conf_file = "/some/conf/file"
-    fault = "some_fault"
+get_os_fault_config_filename = _config_file.get_os_fault_config_filename
 
-    def setUp(self):
-        super(FaultTest, self).setUp()
-        self.fault_exec = executor.FaultExecutor(conf_file=self.conf_file)
-
-    def test_init(self):
-        self.assertEqual(self.fault_exec.config.conf_file, self.conf_file)
-        self.assertEqual(self.fault_exec.cloud, None)
+os_faults_execute = _execute.os_faults_execute

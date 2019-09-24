@@ -8,8 +8,14 @@ node_discover:
     - fqdn: {{ node['name'] }}
       ip: {{ node['address'] }}
       auth:
-        username: heat-admin
-        private_key_file: /home/stack/.ssh/id_rsa
+        username: {{ node['username'] }}
+        private_key_file: {{ node['private_key_file'] }}
+{% if proxy %}
+        jump:
+            host: {{ proxy['host'] }}
+            username: {{ proxy['username'] }}
+            private_key_file: {{ proxy['private_key_file'] }}
+{% endif %}
 {% endfor %}
 
 services:

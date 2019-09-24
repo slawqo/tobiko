@@ -1,4 +1,5 @@
-# Copyright 2019 Red Hat
+# Copyright (c) 2019 Red Hat
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,7 +14,13 @@
 #    under the License.
 from __future__ import absolute_import
 
-SERVICES = ['openvswitch', 'tripleo_cinder_api', 'tripleo_cinder_api_cron',
-            'tripleo_cinder_scheduler', 'tripleo_clustercheck',
-            'tripleo_glance_api', 'tripleo_horizon']
-CONTAINERS = ['neutron_ovs_agent', 'neutron_metadata_agent', 'neutron_api']
+
+import testtools
+from tobiko.openstack import os_faults
+
+
+class CloudManagementTest(testtools.TestCase):
+
+    def test_connect(self):
+        cloud_management = os_faults.get_os_fault_cloud_managenemt()
+        cloud_management.verify()

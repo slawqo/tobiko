@@ -17,7 +17,7 @@ import argparse
 import logging
 import sys
 
-from tobiko.fault import executor
+from tobiko.openstack import os_faults
 
 
 LOG = logging.getLogger(__name__)
@@ -38,16 +38,14 @@ class FaultCMD(object):
 
     def run(self):
         """Run faults."""
-        fault_exec = executor.FaultExecutor()
-        fault_exec.execute(self.args.fault)
+        os_faults.os_faults_execute(self.args.fault)
 
 
 def setup_logging(debug=None):
     """Sets the logging."""
     # pylint: disable=W0622
-    format = '%(message)s'
     level = logging.DEBUG if debug else logging.INFO
-    logging.basicConfig(level=level, format=format)
+    logging.basicConfig(level=level, format='%(message)s')
 
 
 def main():
