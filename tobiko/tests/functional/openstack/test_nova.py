@@ -77,7 +77,8 @@ class ClientTest(testtools.TestCase):
 
     def test_get_console_output(self):
         output = nova.get_console_output(server=self.stack.server_id,
-                                         length=50)
+                                         length=50,
+                                         timeout=60.)
         self.assertTrue(output)
 
     def test_list_servers(self):

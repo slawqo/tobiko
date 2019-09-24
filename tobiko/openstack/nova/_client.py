@@ -13,14 +13,18 @@
 #    under the License.
 from __future__ import absolute_import
 
+import time
+
 from novaclient import client as novaclient
 from novaclient.v2 import client as client_v2
+from oslo_log import log
 
 import tobiko
 from tobiko.openstack import _client
 
 
 CLIENT_CLASSES = (client_v2.Client,)
+LOG = log.getLogger(__name__)
 
 
 class NovaClientFixture(_client.OpenstackClientFixture):
@@ -94,6 +98,22 @@ def get_server(server, client=None):
     return nova_client(client).servers.get(server)
 
 
-def get_console_output(server, length=None, client=None):
-    return nova_client(client).servers.get_console_output(server=server,
-                                                          length=length)
+def get_console_output(server, timeout=None, interval=1., length=None,
+                       client=None):
+    client = nova_client(client)
+    start_time = time.time()
+    while True:
+        output = client.servers.get_console_output(server=server,
+                                                   length=length)
+        if timeout is None or output:
+            break
+
+        if time.time() - start_time > timeout:
+            LOG.warning("No console output produced by server (%r) after "
+                        "%r seconds", server, timeout)
+            break
+
+        LOG.debug('Waiting for server (%r) console output...', server)
+        time.sleep(interval)
+
+    return output
