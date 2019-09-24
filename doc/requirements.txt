@@ -9,7 +9,7 @@ sphinx!=1.6.6,!=1.6.7,>=1.6.2,<2.0.0;python_version=='2.7'  # BSD
 sphinx!=1.6.6,!=1.6.7,>=1.6.2;python_version>='3.4'         # BSD
 sphinx_rtd_theme>=0.4.2,< 1   # Apache-2.0
 
-# As openstack job build-reno-releasenotes supports only a single requirements
-# file for a project, we need to have one such file which will include all
-# our requirements
+# As openstack job build-reno-releasenotes and Read The Docs page support only
+# one single requirements file for a project, we need to have one such file
+# which will include all project requirements
 -r ../requirements.txt
