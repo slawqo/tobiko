@@ -181,10 +181,19 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
                                   check=check)
         except sh.ShellError as ex:
             LOG.exception("Error executing ping command")
-            output = str(ex.stdout)
-
+            stdout = ex.stdout
+            stderr = ex.stderr
         else:
-            output = str(result.stdout)
+            stdout = result.stdout
+            stderr = result.stderr
+
+        output = stdout and str(stdout) or None
+        if output:
+            LOG.debug('Received ping STDOUT:\n%s', output)
+
+        error = stderr and str(stderr) or None
+        if error:
+            LOG.debug('Received ping STDERR:\n%s', error)
 
         if output:
             statistics = _statistics.parse_ping_statistics(
