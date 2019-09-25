@@ -106,24 +106,27 @@ class LocalShellProcessFixture(_process.ShellProcessFixture):
     def poll_exit_status(self):
         return self.process.poll()
 
-    def get_exit_status(self, timeout=None):
-        exit_status = self.process.poll()
-        while exit_status is None:
-            timeout = self.check_timeout(timeout=timeout)
-            LOG.debug("Waiting for remote command termination: "
-                      "timeout=%r, command=%r", timeout, self.command)
-            if TimeoutExpired is None:
-                # Workaround for old Python versions that don't accept timeout
-                # as parameters for wait method
+    if TimeoutExpired is None:
+        # Workaround for old Python versions
+        def _get_exit_status(self, time_left):
+            start_time = now = time.time()
+            end_time = start_time + time_left
+            exit_status = self.poll_exit_status()
+            while exit_status is None and now < end_time:
                 time.sleep(0.1)
-                exit_status = self.process.poll()
+                exit_status = self.poll_exit_status()
+                now = time.time()
+            return exit_status
+    else:
+        def _get_exit_status(self, time_left):
+            try:
+                exit_status = self.process.wait(timeout=time_left)
+            except TimeoutExpired:
+                LOG.exception("Failed waiting for subprocess termination")
+                return None
             else:
-                try:
-                    exit_status = self.process.wait(timeout=min(5., timeout))
-                except TimeoutExpired:
-                    LOG.exception("Failed waiting for subprocess termination")
-
-        return exit_status
+                assert exit_status is not None
+                return exit_status
 
     def kill(self):
         process = self.process

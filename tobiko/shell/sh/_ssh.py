@@ -18,10 +18,10 @@ from __future__ import absolute_import
 from oslo_log import log
 import paramiko
 
+from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _io
 from tobiko.shell.sh import _local
 from tobiko.shell.sh import _process
-from tobiko.shell.sh import _execute
 from tobiko.shell import ssh
 
 
@@ -114,15 +114,18 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
             exit_status = None
         return exit_status
 
-    def get_exit_status(self, timeout=None):
+    def _get_exit_status(self, time_left=None):
         process = self.process
-        while not process.exit_status_ready():
-            timeout = self.check_timeout(timeout=timeout)
-            LOG.debug("Waiting for remote command termination: "
-                      "timeout=%r, command=%r", timeout, self.command)
-            process.status_event.wait(timeout=min(timeout, 5.))
+        if not process.exit_status_ready():
+            LOG.debug('Waiting for command (%s) exit status', self.command)
+            # recv_exit_status method doesn't accept timeout parameter
+            if process.status_event.wait(timeout=time_left):
+                assert process.exit_status_ready()
+            else:
+                assert not process.exit_status_ready()
+                return None
 
-        assert process.status_event.is_set()
+        assert process.exit_status is not None
         return process.exit_status
 
     def kill(self):

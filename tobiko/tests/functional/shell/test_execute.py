@@ -116,7 +116,7 @@ class ExecuteTest(testtools.TestCase):
                         stdin='some input\n',
                         stdout='some input\n')
 
-    def test_timeout_expires(self, command='sleep 5', timeout=0.1, stdin=None,
+    def test_timeout_expires(self, command='sleep 10', timeout=5., stdin=None,
                              stdout=None, stderr=None, **kwargs):
         ex = self.assertRaises(sh.ShellTimeoutExpired,
                                self.execute,
