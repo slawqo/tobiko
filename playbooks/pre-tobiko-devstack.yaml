@@ -27,3 +27,6 @@
         owner: stack
         group: stack
       become: yes
+
+  roles:
+    - setup_tobiko_logs_dir
