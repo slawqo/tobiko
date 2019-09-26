@@ -148,6 +148,8 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
     count = 0
 
     while deadline > 0 and count < parameters.count:
+        start_time = time.time()
+
         # splitting total timeout interval into smaller deadline intervals will
         # cause ping command to be executed more times allowing to handle
         # temporary packets routing problems
@@ -212,6 +214,15 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
                      RECEIVED: received,
                      UNRECEIVED: transmitted - received}[until]
 
+        enlapsed_time = time.time() - start_time
+        LOG.debug('Ping execution took %s seconds', enlapsed_time)
+        if enlapsed_time < deadline:
+            # Avoid busy waiting when errors happens
+            sleep_time = deadline - enlapsed_time
+            LOG.debug('Waiting %s seconds before next ping execution',
+                      sleep_time)
+            time.sleep(sleep_time)
+
         now = time.time()
         deadline = min(int(end_of_time - now), parameters.deadline)
 
@@ -224,9 +235,10 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
 
 def execute_ping(parameters, ssh_client=None, check=True):
     command = get_ping_command(parameters)
+
     result = sh.execute(command=command,
                         ssh_client=ssh_client,
-                        timeout=parameters.timeout,
+                        timeout=parameters.deadline + 2.,
                         expect_exit_status=None)
 
     if check and result.exit_status and result.stderr:
