@@ -33,8 +33,9 @@ class CaptureLogFixture(_fixture.SharedFixture):
     logger = logging.root
     handler = None
 
-    def __init__(self, logger=None, level=None):
+    def __init__(self, test_case_id, logger=None, level=None):
         super(CaptureLogFixture, self).__init__()
+        self.test_case_id = test_case_id
         if logger:
             self.logger = logger
         if level:
@@ -42,8 +43,10 @@ class CaptureLogFixture(_fixture.SharedFixture):
 
     def setup_fixture(self):
         self.handler = handler = CaptureLogHandler(level=self.level)
-        self.logger.addHandler(handler)
         self.addCleanup(self.logger.removeHandler, handler)
+        self.logger.addHandler(handler)
+        LOG.debug('--- BEGIN %s ---', self.test_case_id)
+        self.addCleanup(LOG.debug, '--- END %s ---', self.test_case_id)
 
     def getDetails(self):
         handler = self.handler
@@ -84,6 +87,7 @@ class CaptureLogTest(testtools.TestCase):
     capture_log_logger = logging.root
 
     def setUp(self):
-        self.useFixture(CaptureLogFixture(level=self.capture_log_level,
+        self.useFixture(CaptureLogFixture(test_case_id=self.id(),
+                                          level=self.capture_log_level,
                                           logger=self.capture_log_logger))
         super(CaptureLogTest, self).setUp()

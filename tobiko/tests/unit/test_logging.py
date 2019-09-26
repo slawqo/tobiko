@@ -26,7 +26,7 @@ LOG = log.getLogger(__name__)
 class CapureLogTest(unit.TobikoUnitTest):
 
     def test_capture_log_content(self):
-        with tobiko.CaptureLogFixture() as capture:
+        with tobiko.CaptureLogFixture(test_case_id=self.id()) as capture:
             LOG.warning('Some debug line')
-        content = capture.getDetails()['log']
-        self.assertEqual('Some debug line\n', content.as_text())
+        logged_lines = capture.getDetails()['log'].as_text().splitlines()
+        self.assertIn('Some debug line', logged_lines)
