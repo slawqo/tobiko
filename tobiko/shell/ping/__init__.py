@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 from tobiko.shell.ping import _exception
+from tobiko.shell.ping import _interface
 from tobiko.shell.ping import _parameters
 from tobiko.shell.ping import _ping
 from tobiko.shell.ping import _statistics
@@ -27,6 +28,10 @@ LocalPingError = _exception.LocalPingError
 BadAddressPingError = _exception.BadAddressPingError
 UnknowHostError = _exception.UnknowHostError
 PingFailed = _exception.PingFailed
+
+skip_if_missing_fragment_ping_option = (
+    _interface.skip_if_missing_fragment_ping_option)
+has_ping_fragment_option = _interface.has_fragment_ping_option
 
 ping_parameters = _parameters.ping_parameters
 get_ping_parameters = _parameters.get_ping_parameters

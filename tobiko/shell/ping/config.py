@@ -28,8 +28,8 @@ OPTIONS = [
                help="Max seconds waited from ping command before "
                     "self terminating himself"),
     cfg.StrOpt('fragmentation',
-               default=True,
-               help="If disable it will not allow ICMP messages to "
+               default=None,
+               help="If False it will not allow ICMP messages to "
                     "be delivered in smaller fragments"),
     cfg.StrOpt('interval',
                default=1,

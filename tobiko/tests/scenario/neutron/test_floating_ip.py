@@ -93,6 +93,7 @@ class FloatingIPTest(testtools.TestCase):
 
     # --- test net-mtu and net-mtu-writable extensions ------------------------
 
+    @ping.skip_if_missing_fragment_ping_option
     @neutron.skip_if_missing_networking_extensions('net-mtu')
     def test_ping_with_net_mtu(self):
         """Test connectivity to floating IP address with MTU sized packets"""
@@ -162,6 +163,7 @@ class FloatingIPWithPortSecurityTest(FloatingIPTest):
                   count=5,
                   check=False).assert_not_replied()
 
+    @ping.skip_if_missing_fragment_ping_option
     @neutron.skip_if_missing_networking_extensions('net-mtu')
     def test_ping_with_net_mtu(self):
         """Test connectivity to floating IP address"""

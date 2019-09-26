@@ -17,10 +17,11 @@ from __future__ import absolute_import
 
 import time
 
-from neutron_lib import constants
 from oslo_log import log
 
+
 from tobiko.shell import sh
+from tobiko.shell.ping import _interface
 from tobiko.shell.ping import _exception
 from tobiko.shell.ping import _parameters
 from tobiko.shell.ping import _statistics
@@ -234,8 +235,8 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
 
 
 def execute_ping(parameters, ssh_client=None, check=True):
-    command = get_ping_command(parameters)
-
+    command = _interface.get_ping_command(parameters=parameters,
+                                          ssh_client=ssh_client)
     result = sh.execute(command=command,
                         ssh_client=ssh_client,
                         timeout=parameters.deadline + 2.,
@@ -244,47 +245,6 @@ def execute_ping(parameters, ssh_client=None, check=True):
     if check and result.exit_status and result.stderr:
         handle_ping_command_error(error=str(result.stderr))
     return result
-
-
-def get_ping_command(parameters):
-    options = []
-
-    ip_version = _parameters.get_ping_ip_version(parameters)
-
-    ping_command = 'ping'
-    if ip_version == constants.IP_VERSION_6:
-        ping_command = 'ping6'
-
-    host = parameters.host
-    if not host:
-        raise ValueError("Ping host destination hasn't been specified")
-
-    source = parameters.source
-    if source:
-        options += ['-I', source]
-
-    deadline = parameters.deadline
-    if deadline > 0:
-        options += ['-w', deadline]
-        options += ['-W', deadline]
-
-    count = parameters.count
-    if count > 0:
-        options += ['-c', int(count)]
-
-    payload_size = _parameters.get_ping_payload_size(parameters)
-    if payload_size:
-        options += ['-s', int(payload_size)]
-
-    interval = parameters.interval
-    if interval > 1:
-        options += ['-i', int(interval)]
-
-    fragmentation = parameters.fragmentation
-    if fragmentation is False:
-        options += ['-M', 'do']
-
-    return [ping_command] + options + [host]
 
 
 def handle_ping_command_error(error):

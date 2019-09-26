@@ -51,3 +51,7 @@ class PingFailed(PingError, tobiko.FailureException):
     message = ("timeout of {timeout} seconds expired after counting only "
                "{count} out of expected {expected_count} ICMP messages of "
                "type {message_type!r}")
+
+
+class UnsupportedPingOption(PingError):
+    pass
