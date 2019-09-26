@@ -83,3 +83,10 @@ class PingTest(testtools.TestCase):
         self.assertEqual(netaddr.IPAddress('1.2.3.4'), result.destination)
         result.assert_transmitted()
         result.assert_not_replied()
+
+    def test_ping_reachable_with_timeout(self):
+        ex = self.assertRaises(ping.PingFailed, ping.ping, '127.0.0.1',
+                               count=20, timeout=1.)
+        self.assertEqual(1., ex.timeout)
+        self.assertEqual(20, ex.expected_count)
+        self.assertEqual('transmitted', ex.message_type)
