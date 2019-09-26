@@ -136,6 +136,9 @@ class LocalShellProcessFixture(_process.ShellProcessFixture):
         except Exception:
             LOG.exception('Failed killing local process: %r (PID=%r)',
                           self.command, self.pid)
+        else:
+            LOG.debug('Local process killed: %r (PID=%r)', self.command,
+                      self.pid)
 
     @property
     def pid(self):
