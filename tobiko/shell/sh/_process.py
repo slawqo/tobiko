@@ -30,6 +30,9 @@ from tobiko.shell.sh import _io
 LOG = log.getLogger(__name__)
 
 
+MAX_TIMEOUT = 3600.  # 1 hour
+
+
 def process(command=None, environment=None, timeout=None, shell=None,
             stdin=None, stdout=None, stderr=None, ssh_client=None, **kwargs):
     kwargs.update(command=command, environment=environment, timeout=timeout,
@@ -187,7 +190,7 @@ class ShellProcessFixture(tobiko.SharedFixture):
         self.close_stdout()
         self.close_stderr()
         try:
-            exit_status = self.get_exit_status()
+            exit_status = self.poll_exit_status()
         except Exception:
             LOG.exception('Error getting exit status')
             exit_status = None
@@ -210,6 +213,23 @@ class ShellProcessFixture(tobiko.SharedFixture):
         raise NotImplementedError
 
     def get_exit_status(self, timeout=None):
+        time_left, timeout = get_time_left([self.timeout, timeout])
+        if time_left > 0.:
+            exit_status = self._get_exit_status(time_left=time_left)
+            if exit_status is not None:
+                return exit_status
+
+        ex = _exception.ShellTimeoutExpired(
+            command=str(self.command),
+            timeout=timeout and timeout.timeout or None,
+            stdin=str_from_stream(self.stdin),
+            stdout=str_from_stream(self.stdout),
+            stderr=str_from_stream(self.stderr))
+        LOG.debug("Timed out while waiting for command termination:\n%s",
+                  self.command)
+        raise ex
+
+    def _get_exit_status(self, time_left):
         raise NotImplementedError
 
     @property
@@ -417,7 +437,7 @@ def shell_process_timeout(timeout):
 
 def get_time_left(timeouts, now=None):
     now = now or time.time()
-    min_time_left = float('inf')
+    min_time_left = float(MAX_TIMEOUT)
     min_timeout = None
     for timeout in timeouts:
         if timeout is not None:
@@ -431,14 +451,13 @@ def get_time_left(timeouts, now=None):
 
 class ShellProcessTimeout(object):
 
-    timeout = float('inf')
+    timeout = MAX_TIMEOUT
 
     def __init__(self, timeout=None, start_time=None):
         if timeout is None:
-            timeout = float('inf')
+            timeout = self.timeout
         else:
-            timeout = float(timeout)
-        self.timeout = timeout
+            self.timeout = float(timeout)
         start_time = start_time and float(start_time) or time.time()
         self.start_time = start_time
         self.end_time = start_time + timeout
