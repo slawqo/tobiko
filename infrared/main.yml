@@ -2,6 +2,8 @@
   hosts: undercloud
   gather_facts: yes
   any_errors_fatal: yes
+  vars:
+    python_ver: python{{ansible_python.version.major}}
   tasks:
 
         - name: Install Tobiko

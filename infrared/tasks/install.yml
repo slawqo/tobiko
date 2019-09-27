@@ -1,12 +1,13 @@
 - name: Install pip using get-pip.py
   become: yes
   shell: |
-      curl https://bootstrap.pypa.io/get-pip.py | python
+      "curl https://bootstrap.pypa.io/get-pip.py | {{ python_ver }}"
 
 - name: Install required packages
   become: yes
   vars:
-    required_packages: ['python-virtualenv', 'git', 'gcc', 'python-devel', 'wget']
+    required_packages: ["{{ python_ver }}-virtualenv", 'git', 'gcc', "{{
+    python_ver }}-devel", 'wget']
   yum:
       name: "{{ required_packages }}"
       state: present
@@ -41,13 +42,23 @@
 - debug: var=git_log.stdout_lines
   when: test.refsec != ''
 
-- name: Create Virtualenv
+- name: Create Virtualenv if python >= 3
   vars:
       packages: ['pip', 'setuptools', 'tox']
   pip:
       virtualenv: "{{ test.venv }}"
       name: "{{ packages }}"
       state: latest
+  when: ansible_python.version.major >=3
+
+- name: Create Virtualenv if python <= 2
+  vars:
+      packages: ['pip', 'setuptools', 'tox<=2.5.0']
+  pip:
+      virtualenv: "{{ test.venv }}"
+      name: "{{ packages }}"
+      state: present
+  when: ansible_python.version.major <=2
 
 - name: Install Tobiko
   pip:
