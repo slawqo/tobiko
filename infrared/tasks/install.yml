@@ -1,7 +1,7 @@
 - name: Install pip using get-pip.py
   become: yes
   shell: |
-      "curl https://bootstrap.pypa.io/get-pip.py | {{ python_ver }}"
+      curl https://bootstrap.pypa.io/get-pip.py | {{ python_ver }}
 
 - name: Install required packages
   become: yes
