@@ -28,6 +28,7 @@ import tobiko
 
 LOG = log.getLogger(__name__)
 
+
 CONFIG_MODULES = ['tobiko.openstack.glance.config',
                   'tobiko.openstack.keystone.config',
                   'tobiko.openstack.neutron.config',
@@ -38,18 +39,6 @@ CONFIG_MODULES = ['tobiko.openstack.glance.config',
                   'tobiko.shell.sh.config',
                   'tobiko.tripleo.config']
 
-
-def _iter_config_dirs():
-    home_dir = os.path.realpath(os.path.expanduser("~"))
-    current_dir = os.path.realpath(os.getcwd())
-    while home_dir in current_dir:
-        yield current_dir
-        current_dir = os.path.dirname(current_dir)
-    yield os.path.expanduser("~/.tobiko")
-    yield '/etc/tobiko'
-
-
-CONFIG_DIRS = list(_iter_config_dirs())
 
 LOGGING_CONF_GROUP_NAME = "logging"
 
@@ -68,6 +57,24 @@ HTTP_OPTIONS = [
                help="HTTPS proxy URL for Rest APIs"),
     cfg.StrOpt('no_proxy',
                help="Don't use proxy server to connect to listed hosts")]
+
+
+def workspace_config_files(project=None, prog=None):
+    project = project or 'tobiko'
+    filenames = []
+    if prog is not None:
+        filenames.append(prog + '.conf')
+    filenames.append(project + '.conf')
+    root_dir = os.path.realpath("/")
+    current_dir = os.path.realpath(os.getcwd())
+    config_files = []
+    while current_dir != root_dir:
+        for filename in filenames:
+            filename = os.path.join(current_dir, filename)
+            if os.path.isfile(filename):
+                config_files.append(filename)
+        current_dir = os.path.dirname(current_dir)
+    return config_files
 
 
 class GlobalConfig(object):
@@ -111,22 +118,55 @@ def init_config():
     tobiko.setup_fixture(InitConfigFixture)
 
 
-def init_tobiko_config(default_config_dirs=None, product_name='tobiko',
-                       version='unknown'):
-    default_config_dirs = default_config_dirs or CONFIG_DIRS
+def get_version():
+    from tobiko import version
+    return version.release
+
+
+def init_tobiko_config(default_config_dirs=None, default_config_files=None,
+                       project=None, prog=None, product_name=None,
+                       version=None):
+
+    if project is None:
+        project = 'tobiko'
+
+    if product_name is None:
+        product_name = 'tobiko'
+
+    if version is None:
+        version = get_version()
+
+    if default_config_dirs is None:
+        default_config_dirs = cfg.find_config_dirs(project=project, prog=prog)
+    if default_config_files is None:
+        default_config_files = (workspace_config_files(project=project,
+                                                       prog=prog) +
+                                cfg.find_config_files(project=project,
+                                                      prog=prog))
 
     # Register configuration options
     conf = cfg.ConfigOpts()
     log.register_options(conf)
     register_tobiko_options(conf=conf)
 
-    # Initialize tobiko configuration object
-    conf(args=[], default_config_dirs=default_config_dirs)
+    # Initialize Tobiko configuration object
+    conf(args=[],
+         validate_default_values=True,
+         default_config_dirs=default_config_dirs,
+         default_config_files=default_config_files)
     CONF.set_source('tobiko', conf)
 
     # setup final configuration
     log.setup(conf=conf, product_name=product_name, version=version)
     setup_tobiko_config(conf=conf)
+    LOG.debug("Configuration setup using parameters:\n"
+              " - product_name: %r\n"
+              " - version: %r\n"
+              " - default_config_dirs: %r\n"
+              " - default_config_files: %r\n",
+              product_name,
+              version,
+              default_config_dirs, default_config_files)
 
 
 def register_tobiko_options(conf):
