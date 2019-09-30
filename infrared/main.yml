@@ -16,3 +16,6 @@
           include_tasks: tasks/run.yml
           when:
               - test.tests is defined
+
+        - name: Collect Tobiko logs and reports
+          include_tasks: tasks/report.yml
