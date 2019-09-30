@@ -12,3 +12,4 @@
       - tobiko.conf
       - tobiko.log
       - tobiko_results.html
+      - tobiko_results.xml
