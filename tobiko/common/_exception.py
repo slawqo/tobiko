@@ -93,12 +93,14 @@ class ExceptionInfo(collections.namedtuple('ExceptionInfo',
 
     def __exit__(self, _type, _value, _traceback):
         if self.reraise_on_exit:
-            LOG.exception("Exception occurred while handling %s(%s) "
-                          "exception.", _type, _value)
+            if _type is not None:
+                LOG.exception("Exception occurred while handling %s(%s) "
+                              "exception.", self.type, self.value)
             self.reraise()
 
     def reraise(self):
-        six.reraise(*self)
+        if self.type is not None:
+            six.reraise(*self)
 
 
 def exc_info(reraise=True):

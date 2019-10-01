@@ -137,7 +137,7 @@ class OsFaultsConfigFileFixture(tobiko.SharedFixture):
             services=self.list_services(),
             containers=self.list_containers(),
             proxy=None)
-        with open(config_filename, "w") as f:
+        with tobiko.open_output_file(config_filename) as f:
             f.write(config_content)
         return config_filename
 

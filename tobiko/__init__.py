@@ -57,6 +57,7 @@ load_object = loader_manager.load_object
 load_module = loader_manager.load_module
 
 makedirs = _os.makedirs
+open_output_file = _os.open_output_file
 
 discover_testcases = testcase_manager.discover_testcases
 
