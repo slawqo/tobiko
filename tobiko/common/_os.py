@@ -13,10 +13,14 @@
 #    under the License.
 from __future__ import absolute_import
 
+import contextlib
 import os
+import tempfile
 
 from oslo_log import log
 
+
+from tobiko.common import _exception
 
 LOG = log.getLogger(__name__)
 
@@ -33,3 +37,22 @@ def makedirs(name, mode=0o777, exist_ok=True):
     except Exception:
         if not exist_ok or not os.path.isdir(name):
             raise
+
+
+@contextlib.contextmanager
+def open_output_file(filename, mode='w', temp_dir=None, text=False):
+    basename = os.path.basename(filename)
+    prefix, suffix = os.path.splitext(basename)
+    prefix += '-'
+    temp_fd, temp_filename = tempfile.mkstemp(prefix=prefix,
+                                              suffix=suffix,
+                                              dir=temp_dir,
+                                              text=text)
+    try:
+        with os.fdopen(temp_fd, mode) as temp_stream:
+            yield temp_stream
+        os.rename(temp_filename, filename)
+    finally:
+        with _exception.exc_info():
+            if os.path.isfile(temp_filename):
+                os.remove(temp_filename)
