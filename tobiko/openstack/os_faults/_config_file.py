@@ -21,6 +21,7 @@ from oslo_log import log
 
 import tobiko
 from tobiko.tripleo import overcloud
+from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
@@ -135,8 +136,7 @@ class OsFaultsConfigFileFixture(tobiko.SharedFixture):
         config_content = template.render(
             nodes=self.list_nodes(),
             services=self.list_services(),
-            containers=self.list_containers(),
-            proxy=None)
+            containers=self.list_containers())
         with tobiko.open_output_file(config_filename) as f:
             f.write(config_content)
         return config_filename
@@ -157,13 +157,23 @@ class OsFaultsConfigFileFixture(tobiko.SharedFixture):
             nodes = []
             overcloud_nodes = overcloud.list_overcloud_nodes()
             for overcloud_node in overcloud_nodes:
-                host_config = overcloud.overcloud_host_config(
+                overcloud_host_config = overcloud.overcloud_host_config(
                     overcloud_node.name)
+                address = str(overcloud_host_config.hostname)
                 os_faults_node = dict(
                     name=overcloud_node.name,
-                    username=host_config.username,
-                    address=host_config.hostname,
-                    private_key_file=host_config.key_filename)
+                    address=address,
+                    username=overcloud_host_config.username,
+                    private_key_file=overcloud_host_config.key_filename)
+                host_config = ssh.ssh_host_config(host=address)
+                if host_config.proxy_jump:
+                    proxy_config = ssh.ssh_host_config(
+                        host=host_config.proxy_jump)
+                    os_faults_node['jump'] = dict(
+                        username=proxy_config.username,
+                        host=proxy_config.hostname,
+                        private_key_file=os.path.expanduser(
+                            proxy_config.key_filename))
                 nodes.append(os_faults_node)
             return nodes
 

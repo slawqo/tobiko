@@ -10,11 +10,11 @@ node_discover:
       auth:
         username: {{ node['username'] }}
         private_key_file: {{ node['private_key_file'] }}
-{% if proxy %}
+{% if 'jump' in node %}
         jump:
-            host: {{ proxy['host'] }}
-            username: {{ proxy['username'] }}
-            private_key_file: {{ proxy['private_key_file'] }}
+            host: {{ node['jump']['host'] }}
+            username: {{ node['jump']['username'] }}
+            private_key_file: {{ node['jump']['private_key_file'] }}
 {% endif %}
 {% endfor %}
 

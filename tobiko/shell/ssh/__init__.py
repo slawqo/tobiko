@@ -20,6 +20,7 @@ from tobiko.shell.ssh import _client
 from tobiko.shell.ssh import _command
 
 SSHHostConfig = _config.SSHHostConfig
+ssh_host_config = _config.ssh_host_config
 
 SSHClientFixture = _client.SSHClientFixture
 ssh_client = _client.ssh_client

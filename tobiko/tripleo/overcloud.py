@@ -152,6 +152,8 @@ class OvercloudHostConfig(tobiko.SharedFixture):
 
     @property
     def connect_parameters(self):
-        parameters = ssh.gather_ssh_connect_parameters(self)
+        parameters = ssh.ssh_host_config(
+            host=str(self.hostname)).connect_parameters
+        parameters.update(ssh.gather_ssh_connect_parameters(self))
         parameters.update(self._connect_parameters)
         return parameters
