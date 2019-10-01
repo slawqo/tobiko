@@ -173,20 +173,28 @@ class PingStatistics(object):
 
     def assert_transmitted(self):
         if not self.transmitted:
-            tobiko.fail("Any package has been transmitted to %(destination)r",
+            tobiko.fail("{transmitted!r} package(s) has been transmitted "
+                        "to {destination!r}",
+                        transmitted=self.transmitted,
                         destination=self.destination)
 
     def assert_not_transmitted(self):
         if self.transmitted:
-            tobiko.fail("Some packages has been transmitted to "
-                        "%(destination)r", destination=self.destination)
+            tobiko.fail("{transmitted!r} package(s) has been transmitted to "
+                        "{destination!r}",
+                        transmitted=self.transmitted,
+                        destination=self.destination)
 
     def assert_replied(self):
         if not self.received:
-            tobiko.fail("Any reply package has been received from "
-                        "%(destination)r", destination=self.destination)
+            tobiko.fail("{received!r} reply package(s) has been received from "
+                        "{destination!r}",
+                        received=self.received,
+                        destination=self.destination)
 
     def assert_not_replied(self):
         if self.received:
-            tobiko.fail("Some reply packages has been received from "
-                        "%(destination)r", destination=self.destination)
+            tobiko.fail("{received!r} reply package(s) has been received from "
+                        "{destination!r}",
+                        received=self.received,
+                        destination=self.destination)
