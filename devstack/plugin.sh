@@ -72,7 +72,7 @@ function configure_tobiko_keystone {
   local tobiko_config=$1
 
   local api_version=${IDENTITY_API_VERSION}
-  if [ "${api_version}" == '2']; then
+  if [ "${api_version}" == '2' ]; then
     local auth_url=${KEYSTONE_AUTH_URI/v2.0}
   else
     local auth_url=${KEYSTONE_AUTH_URI_V3:-${KEYSTONE_AUTH_URI/v3}}
@@ -97,6 +97,7 @@ function configure_tobiko_keystone {
     "${user_id}" \
     "${TOBIKO_KEYSTONE_USER_DOMAIN_NAME}")
 
+  iniset "${tobiko_config}" keystone cloud_name "${TOBIKO_KEYSTONE_CLOUD_NAME}"
   iniset "${tobiko_config}" keystone api_version "${api_version}"
   iniset "${tobiko_config}" keystone auth_url "${auth_url}"
   iniset "${tobiko_config}" keystone username "${TOBIKO_KEYSTONE_USERNAME}"
