@@ -184,7 +184,7 @@ class CloudsFileKeystoneCredentialsFixture(
                 else:
                     LOG.debug('Load YAML clouds file: %r', clouds_file)
                     clouds_content = yaml.safe_load(f)
-            LOG.debug('Clouds file content loaded from %r:\n%r',
+            LOG.debug('Clouds file content loaded from %r:\n%s',
                       clouds_file, json.dumps(clouds_content,
                                               indent=4,
                                               sort_keys=True))
