@@ -16,7 +16,7 @@ make_testr_results_html() {
     mkdir -p "$(dirname ${SUBUNIT_FILE})"
     (cd "${TESTR_DIR}" && stestr last --subunit) > "${SUBUNIT_FILE}"
     (cd "${BUILD_DIR}" && subunit2html "${SUBUNIT_FILE}" "${TESTR_RESULTS_HTML}")
-    (cd "${BUILD_DIR}" && subunit2html "${SUBUNIT_FILE}" "${TESTR_RESULTS_XML}")
+    (cd "${BUILD_DIR}" && subunit2junitxml "${SUBUNIT_FILE}" -o "${TESTR_RESULTS_XML}")
 }
 
 make_testr_results_html
