@@ -35,6 +35,7 @@ get_network = _client.get_network
 get_router = _client.get_router
 get_port = _client.get_port
 get_subnet = _client.get_subnet
+list_agents_hosting_router = _client.list_agents_hosting_router
 
 new_ipv4_cidr = _cidr.new_ipv4_cidr
 new_ipv6_cidr = _cidr.new_ipv6_cidr
