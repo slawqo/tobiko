@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 from oslo_log import log
+import os_faults
 
 from tobiko.openstack.os_faults import _cloud
 
@@ -28,5 +29,5 @@ def os_faults_execute(command, cloud_management=None, config_filename=None,
         _cloud.get_os_fault_cloud_managenemt(
             config_filename=config_filename))
     if kwargs:
-        command = command.format(**command)
-    return cloud_management.execute(command)
+        command = command.format(**kwargs)
+    return os_faults.human_api(cloud_management, command)
