@@ -23,6 +23,8 @@ cover/
 doc/build/*
 dist/
 etc/*.sample
+last.subunit
+tobiko_results.html
 zuul/versioninfo
 
 # Files created by releasenotes build
