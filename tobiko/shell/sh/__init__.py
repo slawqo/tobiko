@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from tobiko.shell.sh import _command
 from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
+from tobiko.shell.sh import _hostname
 from tobiko.shell.sh import _local
 from tobiko.shell.sh import _io
 from tobiko.shell.sh import _process
@@ -38,6 +39,9 @@ execute_process = _execute.execute_process
 ShellExecuteResult = _execute.ShellExecuteResult
 
 join_chunks = _io.join_chunks
+
+HostNameError = _hostname.HostnameError
+get_hostname = _hostname.get_hostname
 
 local_execute = _local.local_execute
 local_process = _local.local_process
