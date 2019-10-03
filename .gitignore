@@ -11,6 +11,7 @@
 .stestr
 .test
 .testrepository
+.tobiko-env
 .tox
 .vagrant
 .venv
