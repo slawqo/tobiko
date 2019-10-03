@@ -13,10 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
-from oslo_log import log
-
 import os_faults
-
+from oslo_log import log
 
 import tobiko
 from tobiko.openstack.os_faults import _config_file
