@@ -38,15 +38,13 @@ class NetworkTest(testtools.TestCase):
 
     def test_ssh(self):
         """Test SSH connectivity to floating IP address"""
-        result = sh.execute("hostname", ssh_client=self.stack.ssh_client)
-        self.assertEqual(self.stack.server_name.lower(),
-                         result.stdout.rstrip())
+        hostname = sh.get_hostname(ssh_client=self.stack.ssh_client)
+        self.assertEqual(self.stack.server_name.lower(), hostname)
 
     def test_ssh_from_cli(self):
         """Test SSH connectivity to floating IP address from CLI"""
-        result = sh.execute("hostname", shell=self.stack.ssh_command)
-        self.assertEqual(self.stack.server_name.lower(),
-                         result.stdout.rstrip())
+        hostname = sh.get_hostname(shell=self.stack.ssh_command)
+        self.assertEqual(self.stack.server_name.lower(), hostname)
 
     def test_ping(self):
         """Test ICMP connectivity to floating IP address"""
