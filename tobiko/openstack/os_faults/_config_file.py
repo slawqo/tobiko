@@ -44,7 +44,7 @@ class OsFaultsConfigFileFixture(tobiko.SharedFixture):
         self.templates_dir = os.path.join(os.path.dirname(__file__),
                                           'templates')
         if config is not None:
-            config = config
+            self.config = config
         if config_filename is not None:
             self.config_filename = config_filename
         if template_filename is not None:
