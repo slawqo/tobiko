@@ -20,5 +20,5 @@ class NoSuchOpenStackTopologyNode(tobiko.TobikoException):
     message = "No such topology node: {name!r}"
 
 
-class NoSuchOpenStackTopologyGroup(tobiko.TobikoException):
-    message = "No such topology group: {name!r}"
+class NoSuchOpenStackTopologyNodeGroup(tobiko.TobikoException):
+    message = "No such topology node group: {name!r}"

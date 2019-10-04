@@ -17,7 +17,7 @@ from tobiko.openstack.topology import _exception
 from tobiko.openstack.topology import _topology
 
 
-NoSuchOpenStackTopologyGroup = _exception.NoSuchOpenStackTopologyGroup
+NoSuchOpenStackTopologyNodeGroup = _exception.NoSuchOpenStackTopologyNodeGroup
 NoSuchOpenStackTopologyNode = _exception.NoSuchOpenStackTopologyNode
 
 get_openstack_topology = _topology.get_openstack_topology

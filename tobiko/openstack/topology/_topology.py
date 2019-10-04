@@ -91,7 +91,9 @@ class OpenStackTopologyNode(OpenStackTopologyElement):
                              for name in sorted(self._groups))
 
     def add_address(self, address):
-        self._addresses.append(netaddr.IPAddress(address))
+        address = netaddr.IPAddress(address)
+        if address not in self._addresses:
+            self._addresses.append(address)
 
     @property
     def addresses(self):
@@ -222,7 +224,7 @@ class OpenStackTopology(tobiko.SharedFixture):
     def create_group(self, name):
         try:
             return self.get_group(name=name)
-        except _exception.NoSuchOpenStackTopologyGroup:
+        except _exception.NoSuchOpenStackTopologyNodeGroup:
             self._groups[name] = group = self.new_group(name=name)
             return group
 
@@ -230,7 +232,7 @@ class OpenStackTopology(tobiko.SharedFixture):
         try:
             return self._groups[name]
         except KeyError:
-            raise _exception.NoSuchOpenStackTopologyGroup(name=name)
+            raise _exception.NoSuchOpenStackTopologyNodeGroup(name=name)
 
     def new_group(self, name):
         return OpenStackTopologyNodeGroup(topology=self, name=name)
