@@ -21,6 +21,7 @@ import testtools
 import tobiko
 from tobiko import config
 from tobiko.openstack import neutron
+from tobiko.openstack import nova
 from tobiko.openstack import stacks
 
 
@@ -107,6 +108,53 @@ class NeutronApiTestCase(testtools.TestCase):
     def test_find_agents_with_binary_id(self):
         agents = neutron.list_agents(binary='neutron-l3-agent')
         self.assertTrue(agents)
+
+
+class PortTest(testtools.TestCase):
+
+    #: Stack of resources with a network with a gateway router
+    stack = tobiko.required_setup_fixture(stacks.CentosServerStackFixture)
+
+    def test_list_port_addresses(self, ip_version=None):
+        port = neutron.find_port(device_id=self.stack.server_id)
+        port_addresses = neutron.list_port_ip_addresses(
+            port=port,
+            ip_version=ip_version)
+        server_addresses = nova.list_server_ip_addresses(
+            server=self.stack.server_details,
+            ip_version=ip_version,
+            address_type='fixed')
+        self.assertEqual(set(server_addresses), set(port_addresses))
+        if ip_version:
+            self.assertEqual(
+                port_addresses.with_attributes(version=ip_version),
+                port_addresses)
+
+    def test_list_port_addresses_with_ipv4(self):
+        self.test_list_port_addresses(ip_version=4)
+
+    def test_list_port_addresses_with_ipv6(self):
+        self.test_list_port_addresses(ip_version=6)
+
+    def test_find_port_address_with_ip_version(self):
+        port = neutron.find_port(device_id=self.stack.server_id)
+        server_addresses = nova.list_server_ip_addresses(
+            server=self.stack.server_details,
+            address_type='fixed')
+        for server_address in server_addresses:
+            port_address = neutron.find_port_ip_address(
+                port=port,
+                ip_version=server_address.version,
+                unique=True)
+            self.assertEqual(server_address, port_address)
+
+    def test_find_port_address_with_subnet_id(self):
+        port = neutron.find_port(device_id=self.stack.server_id)
+        for subnet in neutron.list_subnets(network_id=port['network_id']):
+            port_address = neutron.find_port_ip_address(
+                port=port, subnet_id=subnet['id'], unique=True)
+            cidr = netaddr.IPNetwork(subnet['cidr'])
+            self.assertIn(port_address, cidr)
 
 
 class AgentTest(testtools.TestCase):
