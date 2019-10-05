@@ -157,3 +157,9 @@ class OvercloudHostConfig(tobiko.SharedFixture):
         parameters.update(ssh.gather_ssh_connect_parameters(self))
         parameters.update(self._connect_parameters)
         return parameters
+
+
+def setup_overcloud_keystone_crederntials():
+    if has_overcloud():
+        keystone.DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES.append(
+            OvercloudKeystoneCredentialsFixture)

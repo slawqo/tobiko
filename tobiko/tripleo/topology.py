@@ -13,10 +13,14 @@
 #    under the License.
 from __future__ import absolute_import
 
+from oslo_log import log
 
 from tobiko.openstack import topology
 from tobiko.tripleo import overcloud
 from tobiko.tripleo import undercloud
+
+
+LOG = log.getLogger(__name__)
 
 
 class TripleoTopology(topology.OpenStackTopology):
@@ -39,6 +43,20 @@ class TripleoTopology(topology.OpenStackTopology):
             for server in overcloud.list_overcloud_nodes():
                 config = overcloud.overcloud_host_config(server.name)
                 ssh_client = overcloud.overcloud_ssh_client(server.name)
+                node_name = server.name.split('.', 1)[0]
+                group_names = ['overcloud']
+                group_name = node_name.split('-', 1)[0]
+                if group_name == node_name:
+                    LOG.warning("Unable to get node group name node name: %r",
+                                node_name)
+                else:
+                    group_names.append(group_name)
                 self.add_node(address=config.hostname,
-                              group_names=['overcloud'],
+                              group_names=group_names,
                               ssh_client=ssh_client)
+
+
+def setup_tripleo_topology():
+    if undercloud.has_undercloud() or overcloud.has_overcloud():
+        topology.set_default_openstack_topology_class(
+            'tobiko.tripleo.topology.TripleoTopology')

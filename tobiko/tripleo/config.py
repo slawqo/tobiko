@@ -67,8 +67,7 @@ def list_options():
 
 def setup_tobiko_config(conf):
     # pylint: disable=unused-argument
-    from tobiko.openstack import keystone
     from tobiko.tripleo import overcloud
-    if overcloud.has_overcloud():
-        keystone.DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES.append(
-            overcloud.OvercloudKeystoneCredentialsFixture)
+    from tobiko.tripleo import topology
+    overcloud.setup_overcloud_keystone_crederntials()
+    topology.setup_tripleo_topology()

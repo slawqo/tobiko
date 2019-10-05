@@ -29,8 +29,12 @@ from tobiko.openstack.topology import _exception
 LOG = log.getLogger(__name__)
 
 
+DEFAULT_TOPOLOGY_CLASS = (
+    'tobiko.openstack.topology._topology.OpenStackTopology')
+
+
 def get_openstack_topology(topology_class=None):
-    topology_class = topology_class or DEFAULT_TOPOLOGY_CLASS
+    topology_class = topology_class or get_default_openstack_topology_class()
     return tobiko.setup_fixture(DEFAULT_TOPOLOGY_CLASS)
 
 
@@ -49,10 +53,6 @@ def get_default_openstack_topology_class():
 def set_default_openstack_topology_class(topology_class):
     # pylint: disable=global-statement
     global DEFAULT_TOPOLOGY_CLASS
-    if not issubclass(topology_class, OpenStackTopology):
-        message = "{!r} is not subclass of OpenStackTopology".format(
-            topology_class)
-        raise TypeError(message)
     DEFAULT_TOPOLOGY_CLASS = topology_class
 
 
@@ -253,9 +253,6 @@ class OpenStackTopology(tobiko.SharedFixture):
                    "address={!r}").format(
             hostname, address)
         raise ValueError(message)
-
-
-DEFAULT_TOPOLOGY_CLASS = OpenStackTopology
 
 
 def node_name_from_hostname(hostname):
