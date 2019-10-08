@@ -28,14 +28,13 @@ class TripleoTopology(topology.OpenStackTopology):
     def discover_nodes(self):
         self.discover_undercloud_nodes()
         self.discover_overcloud_nodes()
-        super(TripleoTopology, self).discover_nodes()
 
     def discover_undercloud_nodes(self):
         if undercloud.has_undercloud():
             config = undercloud.undercloud_host_config()
             ssh_client = undercloud.undercloud_ssh_client()
             self.add_node(address=config.hostname,
-                          group_names=['undercloud'],
+                          group='undercloud',
                           ssh_client=ssh_client)
 
     def discover_overcloud_nodes(self):
@@ -43,17 +42,18 @@ class TripleoTopology(topology.OpenStackTopology):
             for server in overcloud.list_overcloud_nodes():
                 config = overcloud.overcloud_host_config(server.name)
                 ssh_client = overcloud.overcloud_ssh_client(server.name)
-                node_name = server.name.split('.', 1)[0]
-                group_names = ['overcloud']
-                group_name = node_name.split('-', 1)[0]
-                if group_name == node_name:
+                node = self.add_node(address=config.hostname,
+                                     group='overcloud',
+                                     ssh_client=ssh_client)
+
+                group = node.name.split('-', 1)[0]
+                if group == node.name:
                     LOG.warning("Unable to get node group name node name: %r",
-                                node_name)
+                                node.name)
                 else:
-                    group_names.append(group_name)
-                self.add_node(address=config.hostname,
-                              group_names=group_names,
-                              ssh_client=ssh_client)
+                    self.add_node(hostname=node.name, group=group)
+        else:
+            super(TripleoTopology, self).discover_nodes()
 
 
 def setup_tripleo_topology():

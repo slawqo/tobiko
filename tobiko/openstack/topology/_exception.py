@@ -17,8 +17,8 @@ import tobiko
 
 
 class NoSuchOpenStackTopologyNode(tobiko.TobikoException):
-    message = "No such topology node: {name!r}"
+    message = "No such topology node: {details!r}"
 
 
 class NoSuchOpenStackTopologyNodeGroup(tobiko.TobikoException):
-    message = "No such topology node group: {name!r}"
+    message = "No such topology node group: {group!r}"

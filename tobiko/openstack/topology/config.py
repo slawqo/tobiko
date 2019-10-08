@@ -31,6 +31,10 @@ OPTIONS = [
     cfg.StrOpt('port',
                default=None,
                help="Default port for SSH login"),
+    cfg.StrOpt('ip_version',
+               default=None,
+               choices=['', '4', '6'],
+               help="Limit connectivity to cloud to IPv4 o IPv6"),
 ]
 
 

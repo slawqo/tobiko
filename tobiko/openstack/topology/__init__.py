@@ -21,8 +21,10 @@ NoSuchOpenStackTopologyNodeGroup = _exception.NoSuchOpenStackTopologyNodeGroup
 NoSuchOpenStackTopologyNode = _exception.NoSuchOpenStackTopologyNode
 
 get_openstack_topology = _topology.get_openstack_topology
+find_openstack_nodes = _topology.find_openstack_node
 get_default_openstack_topology_class = (
     _topology.get_default_openstack_topology_class)
+list_openstack_nodes = _topology.list_openstack_nodes
 OpenStackTopology = _topology.OpenStackTopology
 set_default_openstack_topology_class = (
     _topology.set_default_openstack_topology_class)

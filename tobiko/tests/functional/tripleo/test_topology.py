@@ -34,27 +34,27 @@ class TripleoTopologyTest(test_topology.OpenStackTopologyTest):
         node = self.topology.get_node(name)
         self.assertIs(node.ssh_client, ssh_client)
         self.assertEqual(name, node.name)
-        group = self.topology.get_group('undercloud')
-        self.assertEqual([node], group.nodes)
+        nodes = self.topology.get_group('undercloud')
+        self.assertEqual([node], nodes)
         host_config = undercloud.undercloud_host_config()
-        self.assertEqual(host_config.hostname, str(node.addresses.first))
+        self.assertEqual(host_config.hostname, str(node.public_ip))
 
     @overcloud.skip_if_missing_overcloud
     def test_overcloud_group(self):
         for server in overcloud.list_overcloud_nodes():
             ssh_client = overcloud.overcloud_ssh_client(server.name)
-            node_name = sh.get_hostname(ssh_client=ssh_client).split('.')[0]
-            node = self.topology.get_node(node_name)
+            name = sh.get_hostname(ssh_client=ssh_client).split('.')[0]
+            node = self.topology.get_node(name)
             self.assertIs(node.ssh_client, ssh_client)
-            self.assertEqual(node_name, node.name)
-            group_names = ['overcloud']
-            group_name = node_name.split('-', 1)[0]
-            if group_name != node_name:
-                group_names.append(group_name)
-            for group_name in group_names:
-                group = self.topology.get_group(group_name)
-                self.assertIn(node, group.nodes)
+            self.assertEqual(name, node.name)
+            groups = ['overcloud']
+            group = name.split('-', 1)[0]
+            if group != name:
+                groups.append(group)
+            for group in groups:
+                nodes = self.topology.get_group(group)
+                self.assertIn(node, nodes)
                 self.assertIn(group, node.groups)
-            host_config = overcloud.overcloud_host_config(node_name)
+            host_config = overcloud.overcloud_host_config(name)
             self.assertEqual(host_config.hostname,
-                             str(node.addresses.first))
+                             str(node.public_ip))
