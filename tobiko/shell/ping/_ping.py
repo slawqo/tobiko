@@ -147,8 +147,16 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
     received = 0
     undelivered = 0
     count = 0
+    enlapsed_time = None
 
-    while deadline > 0 and count < parameters.count:
+    while deadline > 0. and count < parameters.count:
+        if enlapsed_time is not None and enlapsed_time < deadline:
+            # Avoid busy waiting when errors happens
+            sleep_time = deadline - enlapsed_time
+            LOG.debug('Waiting %s seconds before next ping execution',
+                      sleep_time)
+            time.sleep(sleep_time)
+
         start_time = time.time()
 
         # splitting total timeout interval into smaller deadline intervals will
@@ -178,25 +186,9 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
         # in the same time adding an extra verification to forbid using more
         # time than expected considering the time required to make SSH
         # connection and running a remote shell
-        try:
-            result = execute_ping(parameters=execute_parameters,
-                                  ssh_client=ssh_client,
-                                  check=check)
-        except sh.ShellError as ex:
-            LOG.exception("Error executing ping command")
-            stdout = ex.stdout
-            stderr = ex.stderr
-        else:
-            stdout = result.stdout
-            stderr = result.stderr
-
-        output = stdout and str(stdout) or None
-        if output:
-            LOG.debug('Received ping STDOUT:\n%s', output)
-
-        error = stderr and str(stderr) or None
-        if error:
-            LOG.debug('Received ping STDERR:\n%s', error)
+        output = execute_ping(parameters=execute_parameters,
+                              ssh_client=ssh_client,
+                              check=check)
 
         if output:
             statistics = _statistics.parse_ping_statistics(
@@ -215,17 +207,11 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
                      RECEIVED: received,
                      UNRECEIVED: transmitted - received}[until]
 
-        enlapsed_time = time.time() - start_time
-        LOG.debug('Ping execution took %s seconds', enlapsed_time)
-        if enlapsed_time < deadline:
-            # Avoid busy waiting when errors happens
-            sleep_time = deadline - enlapsed_time
-            LOG.debug('Waiting %s seconds before next ping execution',
-                      sleep_time)
-            time.sleep(sleep_time)
-
         now = time.time()
         deadline = min(int(end_of_time - now), parameters.deadline)
+        enlapsed_time = now - start_time
+        if enlapsed_time > 0.:
+            LOG.debug('Ping execution took %s seconds', enlapsed_time)
 
     if until and count < parameters.count:
         raise _exception.PingFailed(count=count,
@@ -237,14 +223,33 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
 def execute_ping(parameters, ssh_client=None, check=True):
     command = _interface.get_ping_command(parameters=parameters,
                                           ssh_client=ssh_client)
-    result = sh.execute(command=command,
-                        ssh_client=ssh_client,
-                        timeout=parameters.deadline + 2.,
-                        expect_exit_status=None)
 
-    if check and result.exit_status and result.stderr:
-        handle_ping_command_error(error=str(result.stderr))
-    return result
+    try:
+        result = sh.execute(command=command,
+                            ssh_client=ssh_client,
+                            timeout=parameters.deadline + 2.,
+                            expect_exit_status=None)
+    except sh.ShellError as ex:
+        LOG.exception("Error executing ping command")
+        stdout = ex.stdout
+        stderr = ex.stderr
+    else:
+        stdout = result.stdout
+        stderr = result.stderr
+
+    if stdout:
+        output = str(stdout)
+        LOG.debug('Received ping STDOUT:\n%s', output)
+    else:
+        output = None
+
+    if stderr:
+        error = str(stderr)
+        LOG.info('Received ping STDERR:\n%s', error)
+        if check and result.exit_status:
+            handle_ping_command_error(error=error)
+
+    return output
 
 
 def handle_ping_command_error(error):
