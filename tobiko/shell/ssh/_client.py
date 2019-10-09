@@ -309,7 +309,8 @@ class SSHClientManager(object):
         self.clients = {}
 
     def get_client(self, host, username=None, port=None, proxy_jump=None,
-                   host_config=None, config_files=None, **connect_parameters):
+                   host_config=None, config_files=None, proxy_client=None,
+                   **connect_parameters):
         host_config = host_config or _config.ssh_host_config(
             host=host, config_files=config_files)
         hostname = host_config.hostname
@@ -320,9 +321,8 @@ class SSHClientManager(object):
         if client is UNDEFINED_CLIENT:
             # Put a placeholder client to avoid infinite recursive lookup
             self.clients[host_key] = None
-            proxy_client = self.get_proxy_client(host=host,
-                                                 proxy_jump=proxy_jump,
-                                                 config_files=config_files)
+            proxy_client = proxy_client or self.get_proxy_client(
+                host=host, proxy_jump=proxy_jump, config_files=config_files)
             self.clients[host_key] = client = SSHClientFixture(
                 host=host, hostname=hostname, port=port, username=username,
                 proxy_client=proxy_client, host_config=host_config,
