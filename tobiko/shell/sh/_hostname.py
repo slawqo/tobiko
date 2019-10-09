@@ -20,14 +20,14 @@ from tobiko.shell.sh import _execute
 
 
 class HostnameError(tobiko.TobikoException):
-    "Unable to get hostname from host"
+    message = "Unable to get hostname from host: {error}"
 
 
 def get_hostname(**execute_params):
     result = _execute.execute('hostname', stdin=False, stdout=True,
-                              stderr=True, expect_exit_status=0,
+                              stderr=True, expect_exit_status=None,
                               **execute_params)
-    hostname = result.stdout.splitlines()[0].strip()
-    if not hostname:
-        raise HostnameError()
-    return hostname
+    if result.exit_status or not result.stdout:
+        raise HostnameError(error=result.stderr)
+
+    return result.stdout.splitlines()[0].strip()
