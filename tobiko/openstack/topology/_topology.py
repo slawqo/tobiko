@@ -96,6 +96,10 @@ class OpenStackTopologyNode(object):
     def add_group(self, group):
         self.groups.add(group)
 
+    @property
+    def ssh_parameters(self):
+        return self.ssh_client.setup_connect_parameters()
+
     def __repr__(self):
         return "{cls!s}<name={name!r}>".format(cls=type(self).__name__,
                                                name=self.name)

@@ -230,7 +230,6 @@ class SSHClientFixture(tobiko.SharedFixture):
             schema=schema, **kwargs)
 
     def setup_fixture(self):
-        self.setup_host_config()
         self.setup_connect_parameters()
         self.setup_ssh_client()
 
@@ -238,6 +237,7 @@ class SSHClientFixture(tobiko.SharedFixture):
         if not self.host_config:
             self.host_config = _config.ssh_host_config(
                 host=self.host, config_files=self.config_files)
+        return self.host_config
 
     def setup_connect_parameters(self):
         """Fill connect parameters dict
@@ -247,7 +247,10 @@ class SSHClientFixture(tobiko.SharedFixture):
         - parameters got from ~/.ssh/config and tobiko.conf
         - parameters got from fixture object attributes
         """
-        self.connect_parameters = self.get_connect_parameters()
+        self.setup_host_config()
+        if not self.connect_parameters:
+            self.connect_parameters = self.get_connect_parameters()
+        return self.connect_parameters
 
     def get_connect_parameters(self, schema=None):
         schema = dict(schema or self.schema)
