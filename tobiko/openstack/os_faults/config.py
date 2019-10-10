@@ -67,9 +67,6 @@ OPTIONS = [
     cfg.ListOpt('containers',
                 default=OS_FAULTS_CONTAINERS,
                 help="List of containers to be handler with os-faults"),
-    cfg.ListOpt('nodes',
-                default=None,
-                help="List of cloud nodes to be handled with os-faults")
     ]
 
 

@@ -5,16 +5,16 @@ node_discover:
   driver: node_list
   args:
 {% for node in nodes %}
-    - fqdn: {{ node['name'] }}
-      ip: {{ node['address'] }}
+    - fqdn: {{ node['fqdn'] }}
+      ip: {{ node['ip'] }}
       auth:
-        username: {{ node['username'] }}
-        private_key_file: {{ node['private_key_file'] }}
-{% if 'jump' in node %}
+        username: {{ node['auth']['username'] }}
+        private_key_file: {{ node['auth']['private_key_file'] }}
+{% if 'jump' in node['auth'] %}
         jump:
-            host: {{ node['jump']['host'] }}
-            username: {{ node['jump']['username'] }}
-            private_key_file: {{ node['jump']['private_key_file'] }}
+            host: {{ node['auth']['jump']['host'] }}
+            username: {{ node['auth']['jump']['username'] }}
+            private_key_file: {{ node['auth']['jump']['private_key_file'] }}
 {% endif %}
 {% endfor %}
 

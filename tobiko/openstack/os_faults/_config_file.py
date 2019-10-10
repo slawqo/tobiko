@@ -20,7 +20,7 @@ import jinja2
 from oslo_log import log
 
 import tobiko
-from tobiko.tripleo import overcloud
+from tobiko.openstack import topology
 from tobiko.shell import ssh
 
 
@@ -149,35 +149,33 @@ class OsFaultsConfigFileFixture(tobiko.SharedFixture):
 
     def list_nodes(self):
         """Returns a list of dictionaries with nodes name and address."""
-        nodes = self.config.nodes
-        if nodes:
-            return [parse_config_node(node_string)
-                    for node_string in nodes]
-        elif overcloud.has_overcloud():
-            nodes = []
-            overcloud_nodes = overcloud.list_overcloud_nodes()
-            for overcloud_node in overcloud_nodes:
-                overcloud_host_config = overcloud.overcloud_host_config(
-                    overcloud_node.name)
-                address = str(overcloud_host_config.hostname)
-                os_faults_node = dict(
-                    name=overcloud_node.name,
-                    address=address,
-                    username=overcloud_host_config.username,
-                    private_key_file=overcloud_host_config.key_filename)
-                host_config = ssh.ssh_host_config(host=address)
-                if host_config.proxy_jump:
-                    proxy_config = ssh.ssh_host_config(
-                        host=host_config.proxy_jump)
-                    os_faults_node['jump'] = dict(
-                        username=proxy_config.username,
+        return [self._node_from_topology(node)
+                for node in topology.list_openstack_nodes()]
+
+    def _node_from_topology(self, node):
+        auth = self._node_auth_from_topology(node)
+        return dict(fqdn=node.name,
+                    ip=str(node.public_ip),
+                    auth=auth)
+
+    def _node_auth_from_topology(self, node):
+        jump = self._node_auth_jump_from_topology(node)
+        ssh_parameters = node.ssh_parameters
+        return dict(username=ssh_parameters['username'],
+                    private_key_file=os.path.expanduser(
+                        ssh_parameters['key_filename']),
+                    jump=jump)
+
+    def _node_auth_jump_from_topology(self, node):
+        host_config = ssh.ssh_host_config(str(node.public_ip))
+        if host_config.proxy_jump:
+            proxy_config = ssh.ssh_host_config(host_config.proxy_jump)
+            return dict(username=proxy_config.username,
                         host=proxy_config.hostname,
                         private_key_file=os.path.expanduser(
                             proxy_config.key_filename))
-                nodes.append(os_faults_node)
-            return nodes
-
-        raise NotImplementedError("Cloud node listing not configured.")
+        else:
+            return None
 
 
 def parse_config_node(node):
