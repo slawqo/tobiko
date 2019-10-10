@@ -349,8 +349,8 @@ class OpenStackTopology(tobiko.SharedFixture):
             except (netaddr.AddrFormatError, ValueError):
                 try:
                     addrinfo = socket.getaddrinfo(
-                        host=obj, port=22,
-                        flags=(socket.AI_CANONNAME | socket.IPPROTO_TCP))
+                        obj, 22, 0, 0,
+                        socket.AI_CANONNAME | socket.IPPROTO_TCP)
                 except socket.gaierror:
                     ips = tobiko.select([])
                 else:
