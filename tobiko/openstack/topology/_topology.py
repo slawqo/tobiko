@@ -23,6 +23,7 @@ import six
 from six.moves.urllib import parse
 
 import tobiko
+from tobiko import docker
 from tobiko.shell import ip
 from tobiko.shell import ping
 from tobiko.shell import sh
@@ -91,6 +92,8 @@ def set_default_openstack_topology_class(topology_class):
 
 class OpenStackTopologyNode(object):
 
+    _docker_client = None
+
     def __init__(self, topology, name, public_ip, ssh_client):
         self._topology = weakref.ref(topology)
         self.name = name
@@ -108,6 +111,14 @@ class OpenStackTopologyNode(object):
     @property
     def ssh_parameters(self):
         return self.ssh_client.setup_connect_parameters()
+
+    @property
+    def docker_client(self):
+        docker_client = self._docker_client
+        if not docker_client:
+            self._docker_client = docker_client = docker.get_docker_client(
+                ssh_client=self.ssh_client)
+        return docker_client
 
     def __repr__(self):
         return "{cls!s}<name={name!r}>".format(cls=type(self).__name__,
