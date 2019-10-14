@@ -54,11 +54,11 @@ def local_execute(command, environment=None, timeout=None, shell=None,
 
 
 def local_process(command, environment=None, current_dir=None, timeout=None,
-                  shell=None, stdin=None, stdout=None, stderr=True):
+                  shell=None, stdin=None, stdout=None, stderr=True, sudo=None):
     return LocalShellProcessFixture(
         command=command, environment=environment, current_dir=current_dir,
         timeout=timeout, shell=shell, stdin=stdin, stdout=stdout,
-        stderr=stderr)
+        stderr=stderr, sudo=sudo)
 
 
 class LocalExecutePathFixture(_path.ExecutePathFixture):

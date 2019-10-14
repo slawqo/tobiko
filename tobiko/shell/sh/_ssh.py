@@ -48,19 +48,19 @@ def ssh_execute(ssh_client, command, environment=None, timeout=None,
 
 def ssh_process(command, environment=None, current_dir=None, timeout=None,
                 shell=None, stdin=None, stdout=None, stderr=None,
-                ssh_client=None):
+                ssh_client=None, sudo=None):
     if ssh_client is None:
         ssh_client = ssh.ssh_proxy_client()
     if ssh_client:
         return SSHShellProcessFixture(
             command=command, environment=environment, current_dir=current_dir,
             timeout=timeout, shell=shell, stdin=stdin, stdout=stdout,
-            stderr=stderr, ssh_client=ssh_client)
+            stderr=stderr, ssh_client=ssh_client, sudo=sudo)
     else:
         return _local.local_process(
             command=command, environment=environment, current_dir=current_dir,
             timeout=timeout, shell=shell, stdin=stdin, stdout=stdout,
-            stderr=stderr)
+            stderr=stderr, sudo=sudo)
 
 
 class SSHShellProcessParameters(_process.ShellProcessParameters):

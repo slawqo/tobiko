@@ -34,9 +34,11 @@ MAX_TIMEOUT = 3600.  # 1 hour
 
 
 def process(command=None, environment=None, timeout=None, shell=None,
-            stdin=None, stdout=None, stderr=None, ssh_client=None, **kwargs):
+            stdin=None, stdout=None, stderr=None, ssh_client=None, sudo=None,
+            **kwargs):
     kwargs.update(command=command, environment=environment, timeout=timeout,
-                  shell=shell, stdin=stdin, stdout=stdout, stderr=stderr)
+                  shell=shell, stdin=stdin, stdout=stdout, stderr=stderr,
+                  sudo=sudo)
     try:
         from tobiko.shell.sh import _ssh
         from tobiko.shell import ssh
@@ -76,6 +78,7 @@ class ShellProcessParameters(Parameters):
     stderr = True
     buffer_size = io.DEFAULT_BUFFER_SIZE
     poll_interval = 1.
+    sudo = None
 
 
 class ShellProcessFixture(tobiko.SharedFixture):
@@ -127,6 +130,14 @@ class ShellProcessFixture(tobiko.SharedFixture):
             command = shell + [str(command)]
         else:
             command = _command.shell_command(command)
+        sudo = self.parameters.sudo
+        if sudo:
+            if sudo is True:
+                sudo = default_sudo_command()
+            else:
+                sudo = _command.shell_command(sudo)
+            command = sudo + command
+
         self.command = command
 
     def setup_timeout(self):
@@ -483,4 +494,10 @@ def str_from_stream(stream):
 def default_shell_command():
     from tobiko import config
     CONF = config.CONF
-    return _command.shell_command(CONF.tobiko.shell.command)
+    return _command.shell_command(CONF.tobiko.shell.sudo)
+
+
+def default_sudo_command():
+    from tobiko import config
+    CONF = config.CONF
+    return _command.shell_command(CONF.tobiko.shell.sudo)

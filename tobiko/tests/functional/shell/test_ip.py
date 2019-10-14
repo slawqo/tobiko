@@ -16,15 +16,19 @@
 from __future__ import absolute_import
 
 import netaddr
+import six
 import testtools
 
 import tobiko
-from tobiko.shell import ifconfig
+from tobiko.shell import ip
 from tobiko.shell import ssh
 from tobiko.openstack import stacks
 
 
-class IfconfigTest(testtools.TestCase):
+class IpTest(testtools.TestCase):
+
+    centos_stack = tobiko.required_setup_fixture(
+        stacks.CentosServerStackFixture)
 
     cirros_stack = tobiko.required_setup_fixture(
         stacks.CirrosServerStackFixture)
@@ -33,11 +37,10 @@ class IfconfigTest(testtools.TestCase):
         stacks.UbuntuServerStackFixture)
 
     def test_list_ip_addresses(self, ip_version=None, **execute_params):
-        ips = ifconfig.list_ip_addresses(ip_version=ip_version,
-                                         **execute_params)
+        ips = ip.list_ip_addresses(ip_version=ip_version, **execute_params)
         self.assertIsInstance(ips, tobiko.Selection)
-        for ip in ips:
-            self.assertIsInstance(ip, netaddr.IPAddress)
+        for ip_address in ips:
+            self.assertIsInstance(ip_address, netaddr.IPAddress)
         if ip_version:
             self.assertEqual(ips.with_attributes(version=ip_version), ips)
 
@@ -46,6 +49,9 @@ class IfconfigTest(testtools.TestCase):
 
     def test_list_ip_addresses_with_ipv6(self):
         self.test_list_ip_addresses(ip_version=6)
+
+    def test_list_ip_addresses_with_centos_server(self):
+        self.test_list_ip_addresses(ssh_client=self.centos_stack.ssh_client)
 
     def test_list_ip_addresses_with_cirros_server(self):
         self.test_list_ip_addresses(ssh_client=self.cirros_stack.ssh_client)
@@ -58,3 +64,22 @@ class IfconfigTest(testtools.TestCase):
         if ssh_client is None:
             self.skip('SSH proxy server not configured')
         self.test_list_ip_addresses(ssh_client=ssh_client)
+
+    def test_list_namespaces(self, **execute_params):
+        namespaces = ip.list_network_namespaces(**execute_params)
+        self.assertIsInstance(namespaces, list)
+        for namespace in namespaces:
+            self.assertIsInstance(namespace, six.string_types)
+            self.test_list_ip_addresses(network_namespace=namespace)
+
+    def test_list_namespaces_with_centos_server(self):
+        self.test_list_namespaces(ssh_client=self.centos_stack.ssh_client)
+
+    def test_list_namespaces_with_ubuntu_server(self):
+        self.test_list_namespaces(ssh_client=self.ubuntu_stack.ssh_client)
+
+    def test_list_namespaces_with_proxy_ssh_client(self):
+        ssh_client = ssh.ssh_proxy_client()
+        if ssh_client is None:
+            self.skip('SSH proxy server not configured')
+        self.test_list_namespaces(ssh_client=ssh_client)

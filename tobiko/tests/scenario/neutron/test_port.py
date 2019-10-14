@@ -19,7 +19,7 @@ import testtools
 
 import tobiko
 from tobiko.shell import ping
-from tobiko.shell import sh
+from tobiko.shell import ip
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 
@@ -32,9 +32,10 @@ class PortTest(testtools.TestCase):
 
     def test_port_ips(self):
         port = self.stack.port_details
-        server_ips = sh.list_ip_addresses(ssh_client=self.stack.ssh_client)
-        for port_ip in neutron.list_port_ip_addresses(port=port):
-            self.assertIn(port_ip, server_ips)
+        server_addresses = ip.list_ip_addresses(
+            ssh_client=self.stack.ssh_client)
+        for address in neutron.list_port_ip_addresses(port=port):
+            self.assertIn(address, server_addresses)
 
     def test_port_network(self):
         port = self.stack.port_details
@@ -55,8 +56,8 @@ class PortTest(testtools.TestCase):
         for port in ports:
             self.assertEqual(network_id, port['network_id'])
             self.assertEqual(device_id, port['device_id'])
-            for ip in neutron.list_port_ip_addresses(port=port):
-                ping.ping(host=ip,
+            for address in neutron.list_port_ip_addresses(port=port):
+                ping.ping(host=address,
                           ssh_client=self.stack.ssh_client).assert_replied()
 
     def test_ping_inner_gateway_ip(self):

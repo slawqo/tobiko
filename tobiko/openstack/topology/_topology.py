@@ -23,6 +23,7 @@ import six
 from six.moves.urllib import parse
 
 import tobiko
+from tobiko.shell import ip
 from tobiko.shell import ping
 from tobiko.shell import sh
 from tobiko.shell import ssh
@@ -185,7 +186,7 @@ class OpenStackTopology(tobiko.SharedFixture):
         public_ip = self._public_ip(ips, ssh_client=ssh_client)
         if public_ip is None:
             LOG.debug("Unable to SSH connect to any node IP address: %s"
-                      ','.join(str(ip) for ip in ips))
+                      ','.join(str(ip_address) for ip_address in ips))
             return None
 
         # I need to get a name for the new node
@@ -214,9 +215,9 @@ class OpenStackTopology(tobiko.SharedFixture):
                 pass
         if address:
             details['address'] = address
-            for ip in self._ips(address):
+            for ip_address in self._ips(address):
                 try:
-                    return self._nodes_by_ips[ip]
+                    return self._nodes_by_ips[ip_address]
                 except KeyError:
                     pass
         raise _exception.NoSuchOpenStackTopologyNode(details=details)
@@ -251,12 +252,12 @@ class OpenStackTopology(tobiko.SharedFixture):
     def groups(self):
         return list(self._nodes_by_group)
 
-    def _ssh_client(self, ip, username=None, port=None, key_filename=None,
-                    **ssh_parameters):
+    def _ssh_client(self, address, username=None, port=None,
+                    key_filename=None, **ssh_parameters):
         username = username or self.config.conf.username
         port = port or self.config.conf.port
         key_filename = key_filename or self.config.conf.key_file
-        return ssh.ssh_client(host=str(ip),
+        return ssh.ssh_client(host=str(address),
                               username=username,
                               key_filename=key_filename,
                               **ssh_parameters)
@@ -300,33 +301,33 @@ class OpenStackTopology(tobiko.SharedFixture):
         else:
             # Exclude unreachable addresses
             untested_ips = list()
-            for ip in ips:
-                if ip not in self._unreachable_ips:
-                    if ip in self._reachable_ips:
+            for address in ips:
+                if address not in self._unreachable_ips:
+                    if address in self._reachable_ips:
                         # Will take result from the first one of marked already
                         # marked as reachable
-                        reachable = reachable or ip
+                        reachable = reachable or address
                     else:
                         # Will later search for results between the other IPs
-                        untested_ips.append(ip)
+                        untested_ips.append(address)
 
-        for ip in untested_ips:
+        for address in untested_ips:
             if reachable is None:
                 try:
-                    received = ping.ping(ip, count=1, timeout=5.,
+                    received = ping.ping(address, count=1, timeout=5.,
                                          ssh_client=proxy_client,
                                          **kwargs).received
                 except ping.PingFailed:
                     pass
                 else:
                     if received:
-                        reachable = ip
+                        reachable = address
                         # Mark IP as reachable
-                        self._reachable_ips.add(ip)
+                        self._reachable_ips.add(address)
                         continue
 
             # Mark IP as unreachable
-            self._unreachable_ips.add(ip)
+            self._unreachable_ips.add(address)
 
         return reachable
 
@@ -336,7 +337,7 @@ class OpenStackTopology(tobiko.SharedFixture):
         return ip_version and int(ip_version) or None
 
     def _ips_from_host(self, **kwargs):
-        return sh.list_ip_addresses(ip_version=self.ip_version, **kwargs)
+        return ip.list_ip_addresses(ip_version=self.ip_version, **kwargs)
 
     def _ips(self, obj):
         if isinstance(obj, tobiko.Selection):

@@ -24,7 +24,11 @@ OPTIONS = [
     cfg.StrOpt('command',
                default='/bin/sh -c',
                help="Default shell command used for executing "
-                    "local commands")
+                    "local commands"),
+    cfg.StrOpt('sudo',
+               default='sudo',
+               help="Default sudo command used for executing "
+                    "commands as superuser or another user")
 ]
 
 

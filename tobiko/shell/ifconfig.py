@@ -18,7 +18,7 @@ from __future__ import absolute_import
 import netaddr
 
 import tobiko
-from tobiko.shell.sh import _execute
+from tobiko.shell import sh
 
 
 class IfconfigError(tobiko.TobikoException):
@@ -61,8 +61,8 @@ def list_ip_addresses(ip_version=None, **execute_params):
 
 def execute_ifconfig(*ifconfig_args, **execute_params):
     command = ('/sbin/ifconfig',) + ifconfig_args
-    result = _execute.execute(command, stdin=False, stdout=True, stderr=True,
-                              expect_exit_status=None, **execute_params)
+    result = sh.execute(command, stdin=False, stdout=True, stderr=True,
+                        expect_exit_status=None, **execute_params)
     if result.exit_status or not result.stdout:
         raise IfconfigError(error=result.stderr)
     return result.stdout
