@@ -30,12 +30,11 @@ class PortTest(testtools.TestCase):
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
-    def test_port_addresses(self):
+    def test_port_ips(self):
         port = self.stack.port_details
-        server_addresses = sh.list_ip_addresses(
-            ssh_client=self.stack.ssh_client)
-        for address in neutron.list_port_ip_addresses(port=port):
-            self.assertIn(address, server_addresses)
+        server_ips = sh.list_ip_addresses(ssh_client=self.stack.ssh_client)
+        for port_ip in neutron.list_port_ip_addresses(port=port):
+            self.assertIn(port_ip, server_ips)
 
     def test_port_network(self):
         port = self.stack.port_details
@@ -48,15 +47,29 @@ class PortTest(testtools.TestCase):
         subnets = set(self.stack.network_stack.network_details['subnets'])
         self.assertEqual(port_subnets, subnets)
 
-    def test_ping_gateway_ip(self):
+    def test_ping_port(self, network_id=None, device_id=None):
+        network_id = network_id or self.stack.network_stack.network_id
+        device_id = device_id or self.stack.server_id
+        ports = neutron.list_ports(network_id=network_id,
+                                   device_id=device_id)
+        for port in ports:
+            self.assertEqual(network_id, port['network_id'])
+            self.assertEqual(device_id, port['device_id'])
+            for ip in neutron.list_port_ip_addresses(port=port):
+                ping.ping(host=ip,
+                          ssh_client=self.stack.ssh_client).assert_replied()
+
+    def test_ping_inner_gateway_ip(self):
         if not self.stack.network_stack.has_gateway:
             self.skip('Server network has no gateway router')
+        self.test_ping_port(device_id=self.stack.network_stack.gateway_id)
 
-        subnets = neutron.list_subnets(
-            network_id=self.stack.network_stack.network_id)
-        for subnet in subnets:
-            ping.ping(host=subnet['gateway_ip'],
-                      ssh_client=self.stack.ssh_client).assert_replied()
+    def test_ping_outer_gateway_ip(self):
+        if not self.stack.network_stack.has_gateway:
+            self.skip('Server network has no gateway router')
+        self.test_ping_port(
+            device_id=self.stack.network_stack.gateway_id,
+            network_id=self.stack.network_stack.gateway_network_id)
 
 
 # --- Test la-h3 extension ----------------------------------------------------
