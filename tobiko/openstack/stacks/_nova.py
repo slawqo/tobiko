@@ -81,7 +81,7 @@ class FlavorStackFixture(heat.HeatStackFixture):
 class ServerStackFixture(heat.HeatStackFixture):
 
     #: Heat template file
-    template = _hot.heat_template_file('neutron/floating_ip_server.yaml')
+    template = _hot.heat_template_file('nova/server.yaml')
 
     #: stack with the key pair for the server instance
     key_pair_stack = tobiko.required_setup_fixture(KeyPairStackFixture)
@@ -172,6 +172,10 @@ class ServerStackFixture(heat.HeatStackFixture):
     @property
     def server_details(self):
         return nova.get_server(self.server_id)
+
+    @property
+    def port_details(self):
+        return neutron.get_port(self.port_id)
 
     def getDetails(self):
         # pylint: disable=W0212

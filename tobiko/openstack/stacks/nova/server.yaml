@@ -123,3 +123,6 @@ outputs:
 
   server_id:
     value: {get_resource: server}
+
+  port_id:
+    value: {get_resource: port}
