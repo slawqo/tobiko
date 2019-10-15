@@ -36,13 +36,36 @@ class IpTest(testtools.TestCase):
     ubuntu_stack = tobiko.required_setup_fixture(
         stacks.UbuntuServerStackFixture)
 
-    def test_list_ip_addresses(self, ip_version=None, **execute_params):
-        ips = ip.list_ip_addresses(ip_version=ip_version, **execute_params)
+    def test_list_ip_addresses(self, ip_version=None, scope=None,
+                               **execute_params):
+        ips = ip.list_ip_addresses(ip_version=ip_version, scope=scope,
+                                   **execute_params)
         self.assertIsInstance(ips, tobiko.Selection)
         for ip_address in ips:
             self.assertIsInstance(ip_address, netaddr.IPAddress)
         if ip_version:
             self.assertEqual(ips.with_attributes(version=ip_version), ips)
+        if scope:
+            if scope == 'link':
+                self.assertEqual(ips.with_attributes(version=4), [])
+                self.assertEqual(ips.with_attributes(version=6), ips)
+            elif scope == 'host':
+                self.assertEqual(ips.with_attributes(version=4),
+                                 [netaddr.IPAddress('127.0.0.1')])
+                self.assertEqual(ips.with_attributes(version=6),
+                                 [netaddr.IPAddress('::1')])
+            elif scope == 'global':
+                self.assertNotIn(netaddr.IPAddress('127.0.0.1'), ips)
+                self.assertNotIn(netaddr.IPAddress('::1'), ips)
+
+    def test_list_ip_addresses_with_host_scope(self, **execute_params):
+        self.test_list_ip_addresses(scope='host', **execute_params)
+
+    def test_list_ip_addresses_with_link_scope(self, **execute_params):
+        self.test_list_ip_addresses(scope='link', **execute_params)
+
+    def test_list_ip_addresses_with_global_scope(self, **execute_params):
+        self.test_list_ip_addresses(scope='global', **execute_params)
 
     def test_list_ip_addresses_with_ipv4(self):
         self.test_list_ip_addresses(ip_version=4)
@@ -64,6 +87,18 @@ class IpTest(testtools.TestCase):
         if ssh_client is None:
             self.skip('SSH proxy server not configured')
         self.test_list_ip_addresses(ssh_client=ssh_client)
+
+    def test_list_ip_addresses_with_proxy_ssh_client_and_host_scope(
+                self, **execute_params):
+        self.test_list_ip_addresses(scope='host', **execute_params)
+
+    def test_list_ip_addresses_with_proxy_ssh_client_and_link_scope(
+                self, **execute_params):
+        self.test_list_ip_addresses(scope='link', **execute_params)
+
+    def test_list_ip_addresses_with_proxy_ssh_client_and_global_scope(
+                self, **execute_params):
+        self.test_list_ip_addresses(scope='global', **execute_params)
 
     def test_list_namespaces(self, **execute_params):
         namespaces = ip.list_network_namespaces(**execute_params)

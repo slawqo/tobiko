@@ -39,10 +39,6 @@ DEFAULT_TOPOLOGY_CLASS = (
     'tobiko.openstack.topology._topology.OpenStackTopology')
 
 
-LOCAL_IPS = {netaddr.IPAddress('127.0.0.1'),
-             netaddr.IPAddress('::1')}
-
-
 def get_openstack_topology(topology_class=None):
     topology_class = topology_class or get_default_openstack_topology_class()
     return tobiko.setup_fixture(topology_class)
@@ -129,7 +125,6 @@ class OpenStackTopology(tobiko.SharedFixture):
         self._nodes_by_group = collections.OrderedDict()
 
     def setup_fixture(self):
-        self._unreachable_ips.update(LOCAL_IPS)
         self.discover_nodes()
 
     def cleanup_fixture(self):
@@ -337,7 +332,8 @@ class OpenStackTopology(tobiko.SharedFixture):
         return ip_version and int(ip_version) or None
 
     def _ips_from_host(self, **kwargs):
-        return ip.list_ip_addresses(ip_version=self.ip_version, **kwargs)
+        return ip.list_ip_addresses(ip_version=self.ip_version,
+                                    scope='global', **kwargs)
 
     def _ips(self, obj):
         if isinstance(obj, tobiko.Selection):
@@ -357,8 +353,7 @@ class OpenStackTopology(tobiko.SharedFixture):
                 else:
                     ips = tobiko.select([
                         netaddr.IPAddress(sockaddr[0])
-                        for _, _, _, _, sockaddr in addrinfo
-                        if netaddr.IPAddress(sockaddr[0]) not in LOCAL_IPS])
+                        for _, _, _, _, sockaddr in addrinfo])
         else:
             for item in iter(obj):
                 tobiko.check_valid_type(item, netaddr.IPAddress)

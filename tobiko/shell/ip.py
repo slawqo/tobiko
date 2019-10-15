@@ -33,7 +33,7 @@ INETS = {
 }
 
 
-def list_ip_addresses(ip_version=None, **execute_params):
+def list_ip_addresses(ip_version=None, scope=None, **execute_params):
     inets = INETS.get(ip_version)
     if inets is None:
         error = "invalid IP version: {!r}".format(ip_version)
@@ -46,11 +46,22 @@ def list_ip_addresses(ip_version=None, **execute_params):
         for line in output.splitlines():
             fields = line.strip().split()
             inet = fields[2]
-            if inet in inets:
-                address = fields[3]
-                if '/' in address:
-                    address, _ = address.split('/', 1)
-                ips.append(netaddr.IPAddress(address))
+            if inet not in inets:
+                continue  # List only address of selected IP version
+
+            if scope:
+                try:
+                    scope_index = fields.index('scope')
+                    if fields[scope_index + 1] != scope:
+                        continue
+                except (IndexError, ValueError):
+                    continue
+
+            address = fields[3]
+            if '/' in address:
+                # Remove netmask prefix length
+                address, _ = address.split('/', 1)
+            ips.append(netaddr.IPAddress(address))
     return ips
 
 
