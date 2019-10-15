@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import testtools
 
 import tobiko
+from tobiko.shell import ip
 from tobiko.shell import ping
 from tobiko.shell import sh
 from tobiko.openstack import topology
@@ -45,3 +46,16 @@ class OpenstackNodesTest(testtools.TestCase):
             if node is not other:
                 tobiko.fail("Nodes {!r} and {!r} have the same hostname: {!r}",
                             node.name, other.name, hostname)
+
+    def test_network_namespaces(self):
+        for node in self.topology.nodes:
+            namespaces_ips = {}
+            namespaces = ip.list_network_namespaces(ssh_client=node.ssh_client)
+            for namespace in namespaces:
+                ips = ip.list_ip_addresses(ssh_client=node.ssh_client,
+                                           network_namespace=namespace)
+                other_ips = namespaces_ips.setdefault(namespace, ips)
+                if ips is not other_ips:
+                    tobiko.fail("Duplicate network namespace {!r} in node "
+                                "{!r}: {!r}, {!r}", namespace, node.name,
+                                other_ips, ips)
