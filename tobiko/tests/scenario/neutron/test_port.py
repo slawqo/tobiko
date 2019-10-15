@@ -14,7 +14,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-
+import netaddr
 import testtools
 
 import tobiko
@@ -47,6 +47,18 @@ class PortTest(testtools.TestCase):
                         for fixed_ip in self.stack.port_details['fixed_ips']}
         subnets = set(self.stack.network_stack.network_details['subnets'])
         self.assertEqual(port_subnets, subnets)
+
+    def test_ping_subnet_gateways(self):
+        subnet_ids = self.stack.network_stack.network_details['subnets']
+        subnet_gateway_ips = [
+            netaddr.IPAddress(neutron.get_subnet(subnet_id)['gateway_ip'])
+            for subnet_id in subnet_ids]
+        reachable_gateway_ips = [
+            gateway_ip
+            for gateway_ip in subnet_gateway_ips
+            if ping.ping(gateway_ip,
+                         ssh_client=self.stack.ssh_client).received]
+        self.assertEqual(subnet_gateway_ips, reachable_gateway_ips)
 
     def test_ping_port(self, network_id=None, device_id=None):
         network_id = network_id or self.stack.network_stack.network_id
