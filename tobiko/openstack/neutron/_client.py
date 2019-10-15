@@ -144,3 +144,11 @@ def get_router(router, client=None, **params):
 
 def get_subnet(subnet, client=None, **params):
     return neutron_client(client).show_subnet(subnet, **params)['subnet']
+
+
+def list_agents_hosting_router(router, client=None, **params):
+    agents = neutron_client(client).list_l3_agent_hosting_routers(
+        router, **params)
+    if isinstance(agents, collections.Mapping):
+        agents = agents['agents']
+    return tobiko.select(agents)
