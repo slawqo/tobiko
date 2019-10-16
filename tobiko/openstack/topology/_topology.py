@@ -44,8 +44,8 @@ def get_openstack_topology(topology_class=None):
     return tobiko.setup_fixture(topology_class)
 
 
-def list_openstack_nodes(group=None, **kwargs):
-    topology = get_openstack_topology()
+def list_openstack_nodes(topology=None, group=None, **kwargs):
+    topology = topology or get_openstack_topology()
     if group:
         nodes = topology.get_group(group=group)
     else:
@@ -55,16 +55,22 @@ def list_openstack_nodes(group=None, **kwargs):
     return nodes
 
 
-def find_openstack_node(unique=False, **kwargs):
-    nodes = list_openstack_nodes(**kwargs)
+def find_openstack_node(topology=None, unique=False, **kwargs):
+    nodes = list_openstack_nodes(topology=topology, **kwargs)
     if unique:
         return nodes.unique
     else:
         return nodes.first
 
 
-def list_openstack_node_groups():
-    return get_openstack_topology().groups
+def get_openstack_node(hostname, address=None, topology=None):
+    topology = topology or get_openstack_topology()
+    return topology.get_node(hostname=hostname, address=address)
+
+
+def list_openstack_node_groups(topology=None):
+    topology = topology or get_openstack_topology()
+    return topology.groups
 
 
 def get_default_openstack_topology_class():
@@ -199,7 +205,8 @@ class OpenStackTopology(tobiko.SharedFixture):
                           public_ip, node.name, other.name)
         return node
 
-    def get_node(self, name=None, address=None):
+    def get_node(self, name=None, hostname=None, address=None):
+        name = name or (hostname and node_name_from_hostname(hostname))
         details = {}
         if name:
             tobiko.check_valid_type(name, six.string_types)
