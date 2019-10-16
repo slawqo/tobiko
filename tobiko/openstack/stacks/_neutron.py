@@ -137,18 +137,42 @@ class NetworkStackFixture(heat.HeatStackFixture):
                              for fixed_ip in fixed_ips)
 
     @property
-    def ipv4_gateway_port_details(self):
-        return neutron.find_port(
-            fixed_ips='subnet_id=' + self.ipv4_subnet_id,
-            device_id=self.gateway_id,
-            network_id=self.network_id)
+    def ipv4_gateway_ports(self):
+        return neutron.list_ports(fixed_ips='subnet_id=' + self.ipv4_subnet_id,
+                                  device_id=self.gateway_id,
+                                  network_id=self.network_id)
 
     @property
-    def ipv6_gateway_port_details(self):
-        return neutron.find_port(
-            fixed_ips='subnet_id=' + self.ipv6_subnet_id,
-            device_id=self.gateway_id,
-            network_id=self.network_id)
+    def ipv6_gateway_ports(self):
+        return neutron.list_ports(fixed_ips='subnet_id=' + self.ipv6_subnet_id,
+                                  device_id=self.gateway_id,
+                                  network_id=self.network_id)
+
+    @property
+    def external_geteway_ports(self):
+        return neutron.list_ports(device_id=self.gateway_id,
+                                  network_id=self.gateway_network_id)
+
+    @property
+    def ipv4_gateway_addresses(self):
+        ips = tobiko.Selection()
+        for port in self.ipv4_gateway_ports:
+            ips.extend(neutron.list_port_ip_addresses(port))
+        return ips
+
+    @property
+    def ipv6_gateway_addresses(self):
+        ips = tobiko.Selection()
+        for port in self.ipv6_gateway_ports:
+            ips.extend(neutron.list_port_ip_addresses(port))
+        return ips
+
+    @property
+    def external_gateway_addresses(self):
+        ips = tobiko.Selection()
+        for port in self.external_geteway_ports:
+            ips.extend(neutron.list_port_ip_addresses(port))
+        return ips
 
     @property
     def gateway_network_details(self):

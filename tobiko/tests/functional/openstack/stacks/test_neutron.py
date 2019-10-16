@@ -61,21 +61,21 @@ class NetworkTestCase(testtools.TestCase):
             self.stack.gateway_network_id,
             self.stack.gateway_details['external_gateway_info']['network_id'])
 
-    def test_ipv4_gateway_ip(self):
+    def test_ipv4_subnet_gateway_ip(self):
         if not self.stack.has_ipv4 or not self.stack.has_gateway:
             tobiko.skip('Stack {!s} has no IPv4 gateway',
                         self.stack.stack_name)
-        self.assertEqual(
-            self.stack.ipv4_gateway_port_details['fixed_ips'][0]['ip_address'],
-            self.stack.ipv4_subnet_details['gateway_ip'])
+        self.assertIn(
+            self.stack.ipv4_subnet_gateway_ip,
+            self.stack.ipv4_gateway_addresses)
 
-    def test_ipv6_gateway_ip(self):
+    def test_ipv6_subnet_gateway_ip(self):
         if not self.stack.has_ipv6 or not self.stack.has_gateway:
             tobiko.skip('Stack {!s} has no IPv6 gateway',
                         self.stack.stack_name)
-        self.assertEqual(
-            self.stack.ipv6_gateway_port_details['fixed_ips'][0]['ip_address'],
-            self.stack.ipv6_subnet_details['gateway_ip'])
+        self.assertIn(
+            self.stack.ipv6_subnet_gateway_ip,
+            self.stack.ipv6_gateway_addresses)
 
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-write')
@@ -87,3 +87,10 @@ class NetworkWithNetMtuWriteTestCase(NetworkTestCase):
 
     def test_net_mtu_write(self):
         self.assertEqual(self.stack.mtu, self.stack.outputs.mtu)
+
+
+@neutron.skip_if_missing_networking_extensions('l3-ha')
+class L3HaNetworkTestCase(NetworkTestCase):
+
+    #: Stack of resources with a network with a gateway router
+    stack = tobiko.required_setup_fixture(stacks.L3haNetworkStackFixture)

@@ -41,11 +41,11 @@ class LegacyRouterTest(testtools.TestCase):
             tobiko.skip('Stack {!s} has no gateway',
                         self.stack.network_stack.stack_name)
 
-        network_stack = self.stack.network_stack
-        self.router = network_stack.gateway_details
-        self.router_ipv4_address = network_stack.ipv4_subnet_gateway_ip
-        self.router_ipv6_address = network_stack.ipv6_subnet_gateway_ip
-        self.router_gateway_ip = network_stack.external_gateway_ips.first
+        self.network_stack = self.stack.network_stack
+        self.router = self.network_stack.gateway_details
+        self.router_ipv4_address = self.network_stack.ipv4_subnet_gateway_ip
+        self.router_ipv6_address = self.network_stack.ipv6_subnet_gateway_ip
+        self.router_gateway_ip = self.network_stack.external_gateway_ips.first
 
         tripleo_topology.setup_tripleo_topology()
         self.topology = topology.get_openstack_topology()
@@ -80,21 +80,13 @@ class LegacyRouterTest(testtools.TestCase):
 
     def test_router_ipv4_address(self):
         self.assertEqual(4, self.router_ipv4_address.version)
-        ips = neutron.list_port_ip_addresses(
-             port=self.stack.network_stack.ipv4_gateway_port_details,
-             ip_version=4)
-        self.assertIn(self.router_ipv4_address, ips)
+        self.assertIn(self.router_ipv4_address,
+                      self.network_stack.ipv4_gateway_addresses)
 
     def test_router_ipv6_address(self):
         self.assertEqual(6, self.router_ipv6_address.version)
-        ips = neutron.list_port_ip_addresses(
-             port=self.stack.network_stack.ipv6_gateway_port_details,
-             ip_version=6)
-        self.assertIn(self.router_ipv6_address, ips)
-
-        neutron.find_port_ip_address(
-             port=self.stack.network_stack.ipv6_gateway_port_details,
-             ip_version=6)
+        self.assertIn(self.router_ipv6_address,
+                      self.network_stack.ipv6_gateway_addresses)
 
     def _get_l3_agent_nodes(self, hostname):
         hostname = hostname.split(".")
