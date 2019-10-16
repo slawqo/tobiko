@@ -70,9 +70,9 @@ def find_network(client=None, unique=False, default=_RAISE_ERROR,
     networks = list_networks(client=client, **attributes)
     if default is _RAISE_ERROR or networks:
         if unique:
-            return networks.first
-        else:
             return networks.unique
+        else:
+            return networks.first
     else:
         return default
 
@@ -82,9 +82,9 @@ def find_port(client=None, unique=False, default=_RAISE_ERROR, **attributes):
     ports = list_ports(client=client, **attributes)
     if default is _RAISE_ERROR or ports:
         if unique:
-            return ports.first
-        else:
             return ports.unique
+        else:
+            return ports.first
     else:
         return default
 
@@ -94,9 +94,9 @@ def find_subnet(client=None, unique=False, default=_RAISE_ERROR, **attributes):
     subnets = list_subnets(client=client, **attributes)
     if default is _RAISE_ERROR or subnets:
         if unique:
-            return subnets.first
-        else:
             return subnets.unique
+        else:
+            return subnets.first
     else:
         return default
 
@@ -146,9 +146,22 @@ def get_subnet(subnet, client=None, **params):
     return neutron_client(client).show_subnet(subnet, **params)['subnet']
 
 
-def list_agents_hosting_router(router, client=None, **params):
+def list_l3_agent_hosting_routers(router, client=None, **params):
     agents = neutron_client(client).list_l3_agent_hosting_routers(
         router, **params)
     if isinstance(agents, collections.Mapping):
         agents = agents['agents']
     return tobiko.select(agents)
+
+
+def find_l3_agent_hosting_router(router, client=None, unique=False,
+                                 default=_RAISE_ERROR, **params):
+    agents = list_l3_agent_hosting_routers(router=router, client=client,
+                                           **params)
+    if default is _RAISE_ERROR or agents:
+        if unique:
+            return agents.unique
+        else:
+            return agents.first
+    else:
+        return default

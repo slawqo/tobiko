@@ -41,12 +41,10 @@ class LegacyRouterTest(testtools.TestCase):
             tobiko.skip('Stack {!s} has no gateway',
                         self.stack.network_stack.stack_name)
         self.router = self.stack.network_stack.gateway_details
-        self.router_ipv4_address = neutron.find_port_ip_address(
-             port=self.stack.network_stack.ipv4_gateway_port_details,
-             ip_version=4)
-        self.router_ipv6_address = neutron.find_port_ip_address(
-             port=self.stack.network_stack.ipv6_gateway_port_details,
-             ip_version=6)
+        self.router_ipv4_address = (
+            self.stack.network_stack.ipv4_subnet_details['gateway_ip'])
+        self.router_ipv6_address = (
+            self.stack.network_stack.ipv6_subnet_details['gateway_ip'])
         self.router_gw_ip = self.router['external_gateway_info'][
             'external_fixed_ips'][0]['ip_address']
         tripleo_topology.setup_tripleo_topology()
@@ -113,9 +111,9 @@ class LegacyRouterTest(testtools.TestCase):
                 str(self.router_gw_ip), ns_net_config.stdout)
 
     def _test_router_is_scheduled_on_l3_agents(self):
-        router_agents = neutron.list_agents_hosting_router(self.router['id'])
-        self.assertEqual(1, len(router_agents))
-        self._check_routers_namespace_on_host(router_agents[0]['host'])
+        router_agent = neutron.find_l3_agent_hosting_router(self.router['id'],
+                                                            unique=True)
+        self._check_routers_namespace_on_host(router_agent['host'])
 
 
 @neutron.skip_if_missing_networking_extensions('l3-ha')
@@ -135,14 +133,12 @@ class HaRouterTest(LegacyRouterTest):
         super(HaRouterTest, self).setUp()
 
     def _test_router_is_scheduled_on_l3_agents(self):
-        router_agents = neutron.list_agents_hosting_router(self.router['id'])
-        master_agents = [
-            agent for agent in router_agents if agent['ha_state'] == 'active']
-        backup_agents = [
-            agent for agent in router_agents if agent['ha_state'] == 'standby']
-        self.assertEqual(1, len(master_agents))
+        router_agents = neutron.list_l3_agent_hosting_routers(
+            self.router['id'])
+        master_agent = router_agents.with_items(ha_state='active').unique
+        backup_agents = router_agents.with_items(ha_state='standby')
         self.assertGreaterEqual(len(backup_agents), 1)
-        self._check_routers_namespace_on_host(master_agents[0]['host'])
+        self._check_routers_namespace_on_host(master_agent['host'])
         for backup_agent in backup_agents:
             self._check_routers_namespace_on_host(
                 backup_agent['host'], state="backup")
