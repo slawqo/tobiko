@@ -38,10 +38,6 @@ class CirrosServerStackTest(testtools.TestCase):
         """Test SSH connectivity via Paramiko SSHClient"""
         self.stack.ssh_client.connect()
 
-    def test_ssh_command(self):
-        """Test SSH connectivity via OpenSSH client"""
-        sh.execute('true', shell=self.stack.ssh_command)
-
     def test_hostname(self):
         """Test that hostname of instance server matches Nova server name"""
         self.stack.ssh_client.connect()
