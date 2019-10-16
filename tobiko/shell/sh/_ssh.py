@@ -117,16 +117,18 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
     def _get_exit_status(self, time_left=None):
         process = self.process
         if not process.exit_status_ready():
-            LOG.debug('Waiting for command (%s) exit status', self.command)
+            # workaround for paramiko timeout problem
+            time_left = min(time_left, 120.0)
             # recv_exit_status method doesn't accept timeout parameter
-            if process.status_event.wait(timeout=time_left):
-                assert process.exit_status_ready()
-            else:
-                assert not process.exit_status_ready()
-                return None
+            LOG.debug('Waiting for command (%s) exit status (time_left=%r)',
+                      self.command, time_left)
+            if not process.status_event.wait(timeout=time_left):
+                LOG.debug('Timed out before status event being set')
 
-        assert process.exit_status is not None
-        return process.exit_status
+        if process.exit_status >= 0:
+            return process.exit_status
+        else:
+            return None
 
     def kill(self):
         process = self.process

@@ -191,23 +191,20 @@ class ShellProcessFixture(tobiko.SharedFixture):
             # Drain all incoming data from STDOUT and STDERR
             self.wait(timeout=timeout)
         finally:
-            try:
-                self._terminate()
-            except Exception:
-                LOG.debug('Exception terminating process: %r',
-                          self.command, exc_info=1)
+            self._terminate()
 
     def _terminate(self):
         self.close_stdout()
         self.close_stderr()
+        exit_status = None
         try:
-            exit_status = self.poll_exit_status()
-        except Exception:
-            LOG.exception('Error getting exit status')
-            exit_status = None
+            exit_status = self.get_exit_status()
         finally:
             if exit_status is None:
-                self.kill()
+                try:
+                    self.kill()
+                except Exception:
+                    LOG.exception('Error killing process: %r', self.command)
 
     def __getattr__(self, name):
         try:
@@ -281,13 +278,10 @@ class ShellProcessFixture(tobiko.SharedFixture):
     def receive_all(self, **kwargs):
         self.communicate(receive_all=True, **kwargs)
 
-    def wait(self, timeout=None, receive_all=True, **kwargs):
-        timeout = shell_process_timeout(timeout=timeout)
-        try:
-            self.communicate(timeout=timeout, receive_all=receive_all,
-                             **kwargs)
-        finally:
-            self.get_exit_status(timeout=timeout)
+    def wait(self, timeout=None, receive_all=True,
+             **kwargs):
+        self.communicate(timeout=timeout, receive_all=receive_all,
+                         **kwargs)
 
     def communicate(self, stdin=None, stdout=True, stderr=True, timeout=None,
                     receive_all=False, buffer_size=None):

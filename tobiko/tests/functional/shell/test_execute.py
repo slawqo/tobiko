@@ -172,18 +172,3 @@ class SSHExecuteTest(ExecuteTest):
     def execute(self, **kwargs):
         kwargs.setdefault('shell', self.shell)
         return sh.ssh_execute(ssh_client=self.ssh_client, **kwargs)
-
-
-class ExecuteWithSSHCommandTest(ExecuteTest):
-
-    server_stack = tobiko.required_setup_fixture(
-        stacks.CirrosServerStackFixture)
-
-    @property
-    def shell(self):
-        return self.server_stack.ssh_command
-
-    @testtools.skip('This is producing strange failures :-(')
-    def test_timeout_expires(self, command='sleep 10', timeout=5., stdin=None,
-                             stdout=None, stderr=None, **kwargs):
-        pass

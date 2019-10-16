@@ -33,7 +33,7 @@ class ShellExecuteResult(object):
     def __init__(self, command=None, exit_status=None, stdin=None, stdout=None,
                  stderr=None):
         self.command = str(command)
-        self.exit_status = int(exit_status)
+        self.exit_status = exit_status
         self.stdin = stdin and str(stdin) or None
         self.stdout = stdout and str(stdout) or None
         self.stderr = stderr and str(stderr) or None
@@ -83,7 +83,7 @@ def execute_process(process, stdin, expect_exit_status):
         process.check_exit_status(expect_exit_status)
 
     return ShellExecuteResult(command=str(process.command),
-                              exit_status=int(process.exit_status),
+                              exit_status=process.exit_status,
                               stdin=_process.str_from_stream(process.stdin),
                               stdout=_process.str_from_stream(process.stdout),
                               stderr=_process.str_from_stream(process.stderr))
