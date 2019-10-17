@@ -40,13 +40,13 @@ class LegacyRouterTest(testtools.TestCase):
         if not self.stack.network_stack.has_gateway:
             tobiko.skip('Stack {!s} has no gateway',
                         self.stack.network_stack.stack_name)
-        self.router = self.stack.network_stack.gateway_details
-        self.router_ipv4_address = (
-            self.stack.network_stack.ipv4_subnet_details['gateway_ip'])
-        self.router_ipv6_address = (
-            self.stack.network_stack.ipv6_subnet_details['gateway_ip'])
-        self.router_gw_ip = self.router['external_gateway_info'][
-            'external_fixed_ips'][0]['ip_address']
+
+        network_stack = self.stack.network_stack
+        self.router = network_stack.gateway_details
+        self.router_ipv4_address = network_stack.ipv4_subnet_gateway_ip
+        self.router_ipv6_address = network_stack.ipv6_subnet_gateway_ip
+        self.router_gateway_ip = network_stack.external_gateway_ips.first
+
         tripleo_topology.setup_tripleo_topology()
         self.topology = topology.get_openstack_topology()
 
@@ -70,13 +70,31 @@ class LegacyRouterTest(testtools.TestCase):
 
     def test_router_gateway_is_reachable(self):
         ping.ping(
-            self.router_gw_ip,
+            self.router_gateway_ip,
             ssh_client=self.stack.ssh_client
         ).assert_replied()
 
     @neutron.skip_if_missing_networking_extensions('l3_agent_scheduler')
     def test_router_is_scheduled_on_l3_agents(self):
         self._test_router_is_scheduled_on_l3_agents()
+
+    def test_router_ipv4_address(self):
+        self.assertEqual(4, self.router_ipv4_address.version)
+        ips = neutron.list_port_ip_addresses(
+             port=self.stack.network_stack.ipv4_gateway_port_details,
+             ip_version=4)
+        self.assertIn(self.router_ipv4_address, ips)
+
+    def test_router_ipv6_address(self):
+        self.assertEqual(6, self.router_ipv6_address.version)
+        ips = neutron.list_port_ip_addresses(
+             port=self.stack.network_stack.ipv6_gateway_port_details,
+             ip_version=6)
+        self.assertIn(self.router_ipv6_address, ips)
+
+        neutron.find_port_ip_address(
+             port=self.stack.network_stack.ipv6_gateway_port_details,
+             ip_version=6)
 
     def _get_l3_agent_nodes(self, hostname):
         hostname = hostname.split(".")
@@ -101,14 +119,14 @@ class LegacyRouterTest(testtools.TestCase):
             self.assertIn(
                 str(self.router_ipv6_address), ns_net_config.stdout)
             self.assertIn(
-                str(self.router_gw_ip), ns_net_config.stdout)
+                str(self.router_gateway_ip), ns_net_config.stdout)
         else:
             self.assertNotIn(
                 str(self.router_ipv4_address), ns_net_config.stdout)
             self.assertNotIn(
                 str(self.router_ipv6_address), ns_net_config.stdout)
             self.assertNotIn(
-                str(self.router_gw_ip), ns_net_config.stdout)
+                str(self.router_gateway_ip), ns_net_config.stdout)
 
     def _test_router_is_scheduled_on_l3_agents(self):
         router_agent = neutron.find_l3_agent_hosting_router(self.router['id'],

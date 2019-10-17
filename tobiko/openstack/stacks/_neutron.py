@@ -18,6 +18,7 @@ from __future__ import absolute_import
 import netaddr
 from oslo_log import log
 
+import tobiko
 from tobiko import config
 from tobiko.openstack import heat
 from tobiko.openstack import neutron
@@ -109,6 +110,10 @@ class NetworkStackFixture(heat.HeatStackFixture):
         return netaddr.IPNetwork(self.ipv4_subnet_details['cidr'])
 
     @property
+    def ipv4_subnet_gateway_ip(self):
+        return netaddr.IPAddress(self.ipv4_subnet_details['gateway_ip'])
+
+    @property
     def ipv6_subnet_details(self):
         return neutron.get_subnet(self.ipv6_subnet_id)
 
@@ -117,8 +122,19 @@ class NetworkStackFixture(heat.HeatStackFixture):
         return netaddr.IPNetwork(self.ipv6_subnet_details['cidr'])
 
     @property
+    def ipv6_subnet_gateway_ip(self):
+        return netaddr.IPAddress(self.ipv6_subnet_details['gateway_ip'])
+
+    @property
     def gateway_details(self):
         return neutron.get_router(self.gateway_id)
+
+    @property
+    def external_gateway_ips(self):
+        fixed_ips = self.gateway_details['external_gateway_info'][
+            'external_fixed_ips']
+        return tobiko.select(netaddr.IPAddress(fixed_ip['ip_address'])
+                             for fixed_ip in fixed_ips)
 
     @property
     def ipv4_gateway_port_details(self):
