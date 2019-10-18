@@ -57,6 +57,10 @@ parameters:
     type: json
     description: Hints to create server
 
+  user_data:
+    type: string
+    default: ''
+    description: Optional user_data to be passed to the server
 
 conditions:
 
@@ -91,6 +95,8 @@ resources:
       networks:
         - port: {get_resource: port}
       scheduler_hints: {get_param: scheduler_hints}
+      user_data_format: RAW
+      user_data: {get_param: user_data}
 
   floating_ip:
     type: OS::Neutron::FloatingIP
