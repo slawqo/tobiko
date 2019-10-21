@@ -19,6 +19,7 @@ from __future__ import absolute_import
 from oslo_log import log
 import six
 
+from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _process
 
 
@@ -76,11 +77,16 @@ def execute(command, environment=None, timeout=None, shell=None,
 
 
 def execute_process(process, stdin, expect_exit_status):
-    with process:
-        if stdin and isinstance(stdin, DATA_TYPES):
-            process.send_all(data=stdin)
-    if expect_exit_status is not None:
-        process.check_exit_status(expect_exit_status)
+    try:
+        with process:
+            if stdin and isinstance(stdin, DATA_TYPES):
+                process.send_all(data=stdin)
+    except _exception.ShellTimeoutExpired:
+        if expect_exit_status is not None:
+            raise
+    else:
+        if expect_exit_status is not None:
+            process.check_exit_status(expect_exit_status)
 
     return ShellExecuteResult(command=str(process.command),
                               exit_status=process.exit_status,
