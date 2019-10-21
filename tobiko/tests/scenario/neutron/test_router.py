@@ -19,7 +19,7 @@ import testtools
 import tobiko
 from tobiko import config
 from tobiko.shell import ping
-from tobiko.shell import sh
+from tobiko.shell import ip
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.openstack import topology
@@ -99,26 +99,20 @@ class LegacyRouterTest(testtools.TestCase):
     def _check_routers_namespace_on_host(self, hostname, state="master"):
         router_namespace = "qrouter-%s" % self.router['id']
         agent_host = self._get_l3_agent_nodes(hostname)
-        ns_list = sh.execute(
-            "sudo ip netns list", ssh_client=agent_host.ssh_client)
-        self.assertIn(router_namespace, ns_list.stdout)
-        ns_net_config = sh.execute(
-            "sudo ip netns exec %s ip -o addr" % router_namespace,
+        namespaces = ip.list_network_namespaces(
+            ssh_client=agent_host.ssh_client)
+        self.assertIn(router_namespace, namespaces)
+        namespace_ips = ip.list_ip_addresses(
+            scope='global', network_namespace=router_namespace,
             ssh_client=agent_host.ssh_client)
         if state == "master":
-            self.assertIn(
-                str(self.router_ipv4_address), ns_net_config.stdout)
-            self.assertIn(
-                str(self.router_ipv6_address), ns_net_config.stdout)
-            self.assertIn(
-                str(self.router_gateway_ip), ns_net_config.stdout)
+            self.assertIn(self.router_ipv4_address, namespace_ips)
+            self.assertIn(self.router_ipv6_address, namespace_ips)
+            self.assertIn(self.router_gateway_ip, namespace_ips)
         else:
-            self.assertNotIn(
-                str(self.router_ipv4_address), ns_net_config.stdout)
-            self.assertNotIn(
-                str(self.router_ipv6_address), ns_net_config.stdout)
-            self.assertNotIn(
-                str(self.router_gateway_ip), ns_net_config.stdout)
+            self.assertNotIn(self.router_ipv4_address, namespace_ips)
+            self.assertNotIn(self.router_ipv6_address, namespace_ips)
+            self.assertNotIn(self.router_gateway_ip, namespace_ips)
 
     def _test_router_is_scheduled_on_l3_agents(self):
         router_agent = neutron.find_l3_agent_hosting_router(self.router['id'],
