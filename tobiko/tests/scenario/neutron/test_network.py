@@ -41,11 +41,6 @@ class NetworkTest(testtools.TestCase):
         hostname = sh.get_hostname(ssh_client=self.stack.ssh_client)
         self.assertEqual(self.stack.server_name.lower(), hostname)
 
-    def test_ssh_from_cli(self):
-        """Test SSH connectivity to floating IP address from CLI"""
-        hostname = sh.get_hostname(shell=self.stack.ssh_command)
-        self.assertEqual(self.stack.server_name.lower(), hostname)
-
     def test_ping(self):
         """Test ICMP connectivity to floating IP address"""
         ping.ping_until_received(
