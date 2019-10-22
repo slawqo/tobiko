@@ -63,3 +63,29 @@ class OpenStackTopologyTest(testtools.TestCase):
             node = self.topology.get_node(name)
             self.assertEqual(name, node.name)
             self.assertIn(node, nodes)
+
+    def test_list_openstack_topology(self, group=None, hostnames=None):
+        nodes = topology.list_openstack_nodes(
+            topology=self.topology, group=group, hostnames=hostnames)
+        self.assertTrue(set(nodes).issubset(set(self.topology.nodes)))
+        for node in nodes:
+            if group:
+                self.assertIn(group, node.groups)
+            if hostnames:
+                hostnames = [node_name_from_hostname(h)
+                             for h in hostnames]
+                self.assertIn(node.name, hostnames)
+        return nodes
+
+    def test_list_openstack_topology_with_group(self):
+        self.test_list_openstack_topology(group='compute')
+
+    def test_list_openstack_topology_with_hostnames(self):
+        expected_nodes = self.topology.nodes[0::2]
+        actual_nodes = self.test_list_openstack_topology(
+            hostnames=[node.name for node in expected_nodes])
+        self.assertEqual(expected_nodes, actual_nodes)
+
+
+def node_name_from_hostname(hostname):
+    return hostname.split('.', 1)[0].lower()
