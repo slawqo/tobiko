@@ -15,12 +15,17 @@
 #    under the License.
 from __future__ import absolute_import
 
+from tobiko.shell.ping import _assert
 from tobiko.shell.ping import _exception
 from tobiko.shell.ping import _interface
 from tobiko.shell.ping import _parameters
 from tobiko.shell.ping import _ping
 from tobiko.shell.ping import _statistics
 
+
+assert_reachable_ips = _assert.assert_reachable_ips
+get_reachable_ips = _assert.get_reachable_ips
+get_unreachable_ips = _assert.get_unreachable_ips
 
 PingException = _exception.PingException
 PingError = _exception.PingError

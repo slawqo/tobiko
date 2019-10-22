@@ -31,58 +31,53 @@ class PortTest(testtools.TestCase):
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
     def test_port_ips(self):
-        port = self.stack.port_details
-        server_addresses = ip.list_ip_addresses(
-            ssh_client=self.stack.ssh_client)
-        for address in neutron.list_port_ip_addresses(port=port):
-            self.assertIn(address, server_addresses)
+        server_ips = ip.list_ip_addresses(scope='global',
+                                          ssh_client=self.stack.ssh_client)
+        port_ips = neutron.list_port_ip_addresses(port=self.stack.port_details)
+        self.assertFalse(set(port_ips) - set(server_ips))
 
     def test_port_network(self):
-        port = self.stack.port_details
         self.assertEqual(self.stack.network_stack.network_id,
-                         port['network_id'])
+                         self.stack.port_details['network_id'])
 
     def test_port_subnets(self):
-        port_subnets = {fixed_ip['subnet_id']
-                        for fixed_ip in self.stack.port_details['fixed_ips']}
-        subnets = set(self.stack.network_stack.network_details['subnets'])
-        self.assertEqual(port_subnets, subnets)
+        port_subnets = [fixed_ip['subnet_id']
+                        for fixed_ip in self.stack.port_details['fixed_ips']]
+        network_subnets = self.stack.network_stack.network_details['subnets']
+        self.assertEqual(set(network_subnets), set(port_subnets))
 
     def test_ping_subnet_gateways(self):
-        subnet_ids = self.stack.network_stack.network_details['subnets']
-        subnet_gateway_ips = [
-            netaddr.IPAddress(neutron.get_subnet(subnet_id)['gateway_ip'])
-            for subnet_id in subnet_ids]
-        reachable_gateway_ips = [
-            gateway_ip
-            for gateway_ip in subnet_gateway_ips
-            if ping.ping(gateway_ip,
-                         ssh_client=self.stack.ssh_client).received]
-        self.assertEqual(subnet_gateway_ips, reachable_gateway_ips)
+        network_id = self.stack.network_stack.network_id
+        subnets = neutron.list_subnets(network_id=network_id)
+        gateway_ips = [netaddr.IPAddress(subnet['gateway_ip'])
+                       for subnet in subnets]
+        ping.assert_reachable_ips(gateway_ips,
+                                  ssh_client=self.stack.ssh_client)
 
     def test_ping_port(self, network_id=None, device_id=None):
         network_id = network_id or self.stack.network_stack.network_id
         device_id = device_id or self.stack.server_id
         ports = neutron.list_ports(network_id=network_id,
                                    device_id=device_id)
+        port_ips = set()
         for port in ports:
             self.assertEqual(network_id, port['network_id'])
             self.assertEqual(device_id, port['device_id'])
-            for address in neutron.list_port_ip_addresses(port=port):
-                ping.ping(host=address,
-                          ssh_client=self.stack.ssh_client).assert_replied()
+            port_ips.update(neutron.list_port_ip_addresses(port=port))
+        ping.assert_reachable_ips(port_ips,
+                                  ssh_client=self.stack.ssh_client)
 
     def test_ping_inner_gateway_ip(self):
         if not self.stack.network_stack.has_gateway:
             self.skip('Server network has no gateway router')
         self.test_ping_port(device_id=self.stack.network_stack.gateway_id)
 
-    def test_ping_outer_gateway_ip(self):
+    def test_ping_outer_gateway_ips(self):
         if not self.stack.network_stack.has_gateway:
             self.skip('Server network has no gateway router')
-        self.test_ping_port(
-            device_id=self.stack.network_stack.gateway_id,
-            network_id=self.stack.network_stack.gateway_network_id)
+        ping.assert_reachable_ips(
+            self.stack.network_stack.external_gateway_ips,
+            ssh_client=self.stack.ssh_client)
 
 
 # --- Test la-h3 extension ----------------------------------------------------
