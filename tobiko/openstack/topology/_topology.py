@@ -44,12 +44,18 @@ def get_openstack_topology(topology_class=None):
     return tobiko.setup_fixture(topology_class)
 
 
-def list_openstack_nodes(topology=None, group=None, **kwargs):
+def list_openstack_nodes(topology=None, group=None, hostnames=None, **kwargs):
     topology = topology or get_openstack_topology()
     if group:
         nodes = topology.get_group(group=group)
     else:
         nodes = topology.nodes
+    if hostnames:
+        names = {node_name_from_hostname(hostname)
+                 for hostname in hostnames}
+        nodes = [node
+                 for node in nodes
+                 if node.name in names]
     if kwargs:
         nodes = nodes.with_attributes(**kwargs)
     return nodes
