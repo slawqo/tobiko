@@ -17,10 +17,10 @@ from __future__ import absolute_import
 
 import os
 
+import netaddr
 import testtools
 
 import tobiko
-
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
 
@@ -41,24 +41,24 @@ class ClientTest(testtools.TestCase):
 
     @nova.skip_if_missing_hypervisors(count=1)
     def test_list_hypervisors(self):
-        hypervisors = nova.list_hypervisors()
-        self.assertTrue(hypervisors)
-        self.assertEqual(1, hypervisors[0].id)
-        self.assertTrue(hasattr(hypervisors[0], 'cpu_info'))
+        hypervisor = nova.list_hypervisors().first
+        self.assertIsInstance(hypervisor.id, int)
+        self.assertTrue(hypervisor.hypervisor_hostname)
+        netaddr.IPAddress(hypervisor.host_ip)
 
     @nova.skip_if_missing_hypervisors(count=1)
     def test_list_hypervisors_without_details(self):
-        hypervisors = nova.list_hypervisors(detailed=False)
-        self.assertTrue(hypervisors)
-        self.assertEqual(1, hypervisors[0].id)
-        self.assertFalse(hasattr(hypervisors[0], 'cpu_info'))
+        hypervisor = nova.list_hypervisors(detailed=False).first
+        self.assertIsInstance(hypervisor.id, int)
+        self.assertTrue(hypervisor.hypervisor_hostname)
+        self.assertFalse(hasattr(hypervisor, 'host_ip'))
 
     @nova.skip_if_missing_hypervisors(count=1)
     def test_list_hypervisors_with_hypervisor_hostname(self):
-        hypervisor = nova.list_hypervisors()[0]
-        hypervisors = nova.list_hypervisors(
-            hypervisor_hostname=hypervisor.hypervisor_hostname)
-        self.assertEqual([hypervisor], hypervisors)
+        hypervisor1 = nova.list_hypervisors().first
+        hypervisor2 = nova.list_hypervisors(
+            hypervisor_hostname=hypervisor1.hypervisor_hostname).unique
+        self.assertEqual(hypervisor1, hypervisor2)
 
     @nova.skip_if_missing_hypervisors(count=1)
     def test_find_hypervisor(self):
