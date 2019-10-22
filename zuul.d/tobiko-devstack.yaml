@@ -197,6 +197,14 @@
 
 
 - job:
+    name: tobiko-devstack-scenario-centos-7-train
+    parent: tobiko-devstack-scenario-centos-7
+    override-checkout: stable/train
+    nodeset: openstack-three-node-centos-7
+    voting: false
+
+
+- job:
     name: tobiko-devstack-scenario-fedora-latest
     parent: tobiko-devstack-scenario-multinode
     nodeset: openstack-three-node-fedora-latest
