@@ -24,6 +24,7 @@ import time
 
 import paramiko
 from oslo_log import log
+import six
 
 import tobiko
 from tobiko.shell.ssh import _config
@@ -69,6 +70,12 @@ def positive_int(value):
     return value
 
 
+def key_filename(value):
+    if isinstance(value, six.string_types):
+        value = [value]
+    return [os.path.realpath(os.path.expanduser(v)) for v in value]
+
+
 SSH_CONNECT_PARAMETERS = {
     #: The server to connect to
     'hostname': valid_hostname,
@@ -88,7 +95,7 @@ SSH_CONNECT_PARAMETERS = {
 
     #: The filename, or list of filenames, of optional private key(s) and/or
     #: certs to try for authentication
-    'key_filename': os.path.expanduser,
+    'key_filename': key_filename,
 
     #: An optional timeout (in seconds) for the TCP connect
     'timeout': positive_float,
