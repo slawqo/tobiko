@@ -8,11 +8,11 @@ VAGRANTFILE_API_VERSION = "2"
 CPUS = 2
 
 # Customize the amount of memory on the VM
-MEMORY = 12288
+MEMORY = 8192
 
 # Every Vagrant development environment requires a box. You can search for
 # boxes at https://vagrantcloud.com/search.
-BOX = "generic/ubuntu1804"
+BOX = "generic/centos7"
 
 HOSTNAME = "tobiko"
 
@@ -98,7 +98,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.synced_folder ".", "/vagrant", type: "rsync",
-    rsync__exclude: ".tox/"
+    rsync__exclude: [".tox/", "tobiko.conf", ".tobiko"]
 
   # View the documentation for the provider you are using for more
   # information on available options.
@@ -117,6 +117,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     if ! sudo su - stack; then
       # setup stack user
       sudo useradd -s /bin/bash -d '#{DEVSTACK_DEST_DIR}' -m stack
+      sudo chmod 755 '#{DEVSTACK_DEST_DIR}'
       echo "stack ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/stack
     fi
 
@@ -139,5 +140,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     # Execute provision script as stack user
     sudo su -l stack -c '#{TOBIKO_SRC_DIR}/devstack/vagrant/provision.bash'
+
+    # Tobiko requires to write tobiko.log to devstack log directory
+    sudo chmod 777 '#{DEVSTACK_DEST_DIR}/logs'
+
+    # Tobiko requires to ssh as vagrant@localhost a vagrant user
+    if ! [ -f ~/.ssh/id_rsa ]; then
+        ssh-keygen -N '' -t rsa -f ~/.ssh/id_rsa
+        cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+        chmod -fR go-rwx ~/.ssh
+    fi
+
   SHELL
 end
