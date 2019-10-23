@@ -108,7 +108,7 @@ class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
 
     def test_init(self):
         fixture = keystone.CloudsFileKeystoneCredentialsFixture()
-        self.assertIsNone(fixture.cloud_name)
+        self.assertEqual(self.config.cloud_name, fixture.cloud_name)
         self.assertIsNone(fixture.clouds_content)
         self.assertIsNone(fixture.clouds_file)
         self.assertEqual(self.config.clouds_files, fixture.clouds_files)
@@ -200,7 +200,10 @@ class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
                          repr(file_fixture.clouds_file), str(ex))
 
     def test_setup_with_cloud_name_from_env(self):
+        self.patch(self.config, 'cloud_name', None)
+
         file_fixture = self.useFixture(V2CloudsFileFixture())
+
         self.patch(os, 'environ', {'OS_CLOUD': file_fixture.cloud_name})
         credentials_fixture = keystone.CloudsFileKeystoneCredentialsFixture(
             clouds_file=file_fixture.clouds_file)
@@ -223,6 +226,8 @@ class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
         self.assertEqual('', credentials_fixture.cloud_name)
 
     def test_setup_with_empty_cloud_name_from_env(self):
+        self.patch(self.config, 'cloud_name', None)
+
         file_fixture = self.useFixture(V2CloudsFileFixture())
         self.patch(os, 'environ', {'OS_CLOUD': ''})
         credentials_fixture = keystone.CloudsFileKeystoneCredentialsFixture(
@@ -235,6 +240,8 @@ class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
         self.assertIsNone(credentials_fixture.cloud_name)
 
     def test_setup_with_no_cloud_name(self):
+        self.patch(self.config, 'cloud_name', None)
+
         file_fixture = self.useFixture(V2CloudsFileFixture())
         credentials_fixture = keystone.CloudsFileKeystoneCredentialsFixture(
             clouds_file=file_fixture.clouds_file)
