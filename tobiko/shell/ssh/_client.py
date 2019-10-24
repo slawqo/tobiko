@@ -21,6 +21,7 @@ import getpass
 import os
 import socket
 import time
+import subprocess
 
 import paramiko
 from oslo_log import log
@@ -403,15 +404,22 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
             return client, proxy_sock
 
 
-def ssh_proxy_sock(hostname, port=None, command=None, client=None):
-    if client:
-        # I need a command to execute with proxy client
-        command = command or 'nc {hostname!r} {port!r}'
-    elif not command:
-        # Proxy sock is not required
-        return None
+def ssh_proxy_sock(hostname, port=None, command=None, client=None,
+                   source_address=None):
+    if not command:
+        if client:
+            # I need a command to execute with proxy client
+            options = []
+            if source_address:
+                options += ['-s', str(source_address)]
+            command = ['nc'] + options + ['{hostname!s}', '{port!s}']
+        elif not command:
+            # Proxy sock is not required
+            return None
 
     # Apply connect parameters to proxy command
+    if not isinstance(command, six.string_types):
+        command = subprocess.list2cmdline(command)
     command = command.format(hostname=hostname, port=(port or 22))
     if client:
         if isinstance(client, SSHClientFixture):

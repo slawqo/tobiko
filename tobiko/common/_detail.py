@@ -17,6 +17,7 @@ import json
 import itertools
 
 from oslo_log import log
+import six
 import testtools
 from testtools import content
 import yaml
@@ -35,13 +36,16 @@ def gather_details(source_dict, target_dict):
     :param target_dict: A dictionary into which details will be gathered.
     """
     for name, content_object in source_dict.items():
-        content_id = get_details_content_id(content_object)
-        new_name = get_unique_detail_name(name=name,
-                                          content_id=content_id,
-                                          target_dict=target_dict)
-        if new_name not in target_dict:
-            target_dict[new_name] = copy_details_content(
-                content_object=content_object, content_id=content_id)
+        try:
+            content_id = get_details_content_id(content_object)
+            new_name = get_unique_detail_name(name=name,
+                                              content_id=content_id,
+                                              target_dict=target_dict)
+            if new_name not in target_dict:
+                target_dict[new_name] = copy_details_content(
+                    content_object=content_object, content_id=content_id)
+        except Exception:
+            LOG.exception('Error gathering details')
 
 
 def get_unique_detail_name(name, content_id, target_dict):
@@ -88,8 +92,13 @@ def get_text_to_get_bytes(get_text):
     assert callable(get_text)
 
     def get_bytes():
-        for t in get_text():
-            yield t.encode(errors='ignore')
+        text = get_text()
+        if text:
+            if isinstance(text, six.string_types):
+                yield text.encode(errors='ignore')
+            else:
+                for t in text:
+                    yield t.encode(errors='ignore')
 
     return get_bytes
 

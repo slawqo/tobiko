@@ -19,6 +19,7 @@ from oslo_log import log
 
 import tobiko
 from tobiko.openstack.keystone import _credentials
+from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
@@ -71,7 +72,9 @@ class KeystoneSessionFixture(tobiko.SharedFixture):
             # api version parameter is not accepted
             params.pop('api_version', None)
             auth = loader.load_from_options(**params)
-            self.session = session = _session.Session(auth=auth, verify=False)
+            http_session = ssh.ssh_tunnel_http_session()
+            self.session = session = _session.Session(
+                auth=auth, verify=False, session=http_session)
             self.credentials = credentials
 
 

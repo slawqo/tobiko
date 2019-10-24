@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
+
 import tobiko
 
 from tobiko.openstack.neutron import _client
@@ -31,7 +33,9 @@ class NetworkingExtensionsFixture(tobiko.SharedFixture):
         self.client = _client.get_neutron_client()
 
     def get_networking_extensions(self):
-        extensions = self.client.list_extensions()['extensions']
+        extensions = self.client.list_extensions()
+        if isinstance(extensions, collections.Mapping):
+            extensions = extensions['extensions']
         self.extensions = frozenset(e['alias'] for e in extensions)
 
 

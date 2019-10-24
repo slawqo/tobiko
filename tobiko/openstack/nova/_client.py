@@ -103,8 +103,15 @@ def get_console_output(server, timeout=None, interval=1., length=None,
     client = nova_client(client)
     start_time = time.time()
     while True:
-        output = client.servers.get_console_output(server=server,
-                                                   length=length)
+        try:
+            output = client.servers.get_console_output(server=server,
+                                                       length=length)
+        except TypeError:
+            # For some reason it could happen resulting body cannot be
+            # translated to json object and it is converted to None
+            # on such case get_console_output would raise a TypeError
+            return None
+
         if timeout is None or output:
             break
 
