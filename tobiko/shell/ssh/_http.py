@@ -23,54 +23,21 @@ from urllib3 import connection
 from urllib3 import connectionpool
 from urllib3 import poolmanager
 
+import tobiko
 from tobiko.shell.ssh import _client
+from tobiko.shell.ssh import _forward
 
 
-def ssh_tunnel_http_session(ssh_client=None):
+def setup_http_session_ssh_tunneling(session=None, ssh_client=None):
+    session = session or requests.Session()
     ssh_client = ssh_client or _client.ssh_proxy_client()
-    if ssh_client is None:
-        return None
-
-    session = requests.Session()
-    mount_ssh_tunnel_http_adapter(session=session, ssh_client=ssh_client)
+    if ssh_client is not None:
+        for adapter in session.adapters.values():
+            manager = adapter.poolmanager
+            manager.pool_classes_by_scheme = pool_classes_by_scheme.copy()
+            manager.key_fn_by_scheme = key_fn_by_scheme.copy()
+            manager.connection_pool_kw['ssh_client'] = ssh_client
     return session
-
-
-def mount_ssh_tunnel_http_adapter(session, ssh_client):
-    adapter = SSHTunnelHttpAdapter(ssh_client=ssh_client)
-    for scheme in list(session.adapters):
-        session.mount(scheme, adapter)
-
-
-class SSHTunnelHttpAdapter(requests.adapters.HTTPAdapter):
-    """The custom adapter used to set tunnel HTTP connections over SSH tunnel
-
-    """
-
-    def __init__(self, ssh_client, *args, **kwargs):
-        self.ssh_client = ssh_client
-        super(SSHTunnelHttpAdapter, self).__init__(*args, **kwargs)
-
-    def init_poolmanager(self, connections, maxsize,
-                         block=requests.adapters.DEFAULT_POOLBLOCK,
-                         **pool_kwargs):
-        # save these values for pickling
-        self._pool_connections = connections
-        self._pool_maxsize = maxsize
-        self._pool_block = block
-        self.poolmanager = SSHTunnelPoolManager(
-            num_pools=connections, maxsize=maxsize, block=block, strict=True,
-            ssh_client=self.ssh_client, **pool_kwargs)
-
-
-class SSHTunnelPoolManager(poolmanager.PoolManager):
-
-    def __init__(self, *args, **kwargs):
-        super(SSHTunnelPoolManager, self).__init__(*args, **kwargs)
-        # Locally set the pool classes and keys so other PoolManagers can
-        # override them.
-        self.pool_classes_by_scheme = pool_classes_by_scheme
-        self.key_fn_by_scheme = key_fn_by_scheme.copy()
 
 
 # pylint: disable=protected-access
@@ -79,9 +46,14 @@ class SSHTunnelPoolManager(poolmanager.PoolManager):
 # pools, or the underlying connections. This is used to construct a pool key.
 _key_fields = poolmanager._key_fields + ('key_ssh_client',)
 
-#: The namedtuple class used to construct keys for the connection pool.
-#: All custom key schemes should include the fields in this key at a minimum.
-SSHTunnelPoolKey = collections.namedtuple("SSHTunnelPoolKey", _key_fields)
+
+class SSHTunnelPoolKey(
+        collections.namedtuple("SSHTunnelPoolKey", _key_fields)):
+    """The namedtuple class used to construct keys for the connection pool.
+
+    All custom key schemes should include the fields in this key at a minimum.
+    """
+
 
 #: A dictionary that maps a scheme to a callable that creates a pool key.
 #: This can be used to alter the way pool keys are constructed, if desired.
@@ -99,20 +71,39 @@ key_fn_by_scheme = {
 
 class SSHTunnelHTTPConnection(connection.HTTPConnection):
 
-    def __init__(self, *args, **kw):
-        self.ssh_client = kw.pop('ssh_client')
-        assert self.ssh_client is not None
-        super(SSHTunnelHTTPConnection, self).__init__(*args, **kw)
+    def __init__(self, local_address, *args, **kwargs):
+        super(SSHTunnelHTTPConnection, self).__init__(*args, **kwargs)
+        self.local_address = local_address
 
     def _new_conn(self):
         """ Establish a socket connection and set nodelay settings on it.
 
         :return: New socket connection.
         """
-        return _client.ssh_proxy_sock(hostname=self._dns_host,
-                                      port=self.port,
-                                      source_address=self.source_address,
-                                      client=self.ssh_client)
+        extra_kw = {}
+        if self.source_address:
+            extra_kw["source_address"] = self.source_address
+
+        if self.socket_options:
+            extra_kw["socket_options"] = self.socket_options
+
+        try:
+            conn = connection.connection.create_connection(
+                self.local_address, self.timeout, **extra_kw)
+
+        except connection.SocketTimeout:
+            raise connection.ConnectTimeoutError(
+                self,
+                "Connection to %s timed out. (connect timeout=%s)"
+                % (self.host, self.timeout),
+            )
+
+        except connection.SocketError as e:
+            raise connection.NewConnectionError(
+                self, "Failed to establish a new connection: %s" % e
+            )
+
+        return conn
 
 
 class SSHTunnelHTTPSConnection(SSHTunnelHTTPConnection,
@@ -124,8 +115,17 @@ class SSHTunnelHTTPConnectionPool(connectionpool.HTTPConnectionPool):
 
     ConnectionCls = SSHTunnelHTTPConnection
 
+    def __init__(self, host, port, ssh_client, **kwargs):
+        self.forwarder = forwarder = _forward.SSHTunnelForwarderFixture(
+            ssh_client=ssh_client)
+        local_address = forwarder.put_forwarding(host, port)
+        tobiko.setup_fixture(forwarder)
+        super(SSHTunnelHTTPConnectionPool, self).__init__(
+            host=host, port=port, local_address=local_address, **kwargs)
 
-class SSHTunnelHTTPSConnectionPool(connectionpool.HTTPSConnectionPool):
+
+class SSHTunnelHTTPSConnectionPool(SSHTunnelHTTPConnectionPool,
+                                   connectionpool.HTTPSConnectionPool):
 
     ConnectionCls = SSHTunnelHTTPSConnection
 

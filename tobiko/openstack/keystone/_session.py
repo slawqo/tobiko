@@ -72,9 +72,9 @@ class KeystoneSessionFixture(tobiko.SharedFixture):
             # api version parameter is not accepted
             params.pop('api_version', None)
             auth = loader.load_from_options(**params)
-            http_session = ssh.ssh_tunnel_http_session()
             self.session = session = _session.Session(
-                auth=auth, verify=False, session=http_session)
+                auth=auth, verify=False)
+            ssh.setup_http_session_ssh_tunneling(session=session)
             self.credentials = credentials
 
 

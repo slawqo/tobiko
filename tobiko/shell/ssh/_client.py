@@ -236,6 +236,7 @@ class SSHClientFixture(tobiko.SharedFixture):
         self.schema = schema = dict(schema or self.schema)
         self._connect_parameters = gather_ssh_connect_parameters(
             schema=schema, **kwargs)
+        self._forwarders = []
 
     def setup_fixture(self):
         self.setup_connect_parameters()
@@ -301,9 +302,29 @@ class SSHClientFixture(tobiko.SharedFixture):
         self.client, self.proxy_sock = ssh_connect(
             proxy_client=self.proxy_client,
             **self.connect_parameters)
-        self.addCleanup(self.client.close)
+        self.addCleanup(self.cleanup_ssh_client)
         if self.proxy_sock:
-            self.addCleanup(self.proxy_sock.close)
+            self.addCleanup(self.cleanup_proxy_sock)
+        for forwarder in self._forwarders:
+            self.useFixture(forwarder)
+
+    def cleanup_ssh_client(self):
+        client = self.client
+        self.client = None
+        if client:
+            try:
+                client.close()
+            except Exception:
+                LOG.exception('Error closing client (%r)', self)
+
+    def cleanup_proxy_sock(self):
+        proxy_sock = self.proxy_sock
+        self.proxy_sock = None
+        if proxy_sock:
+            try:
+                proxy_sock.close()
+            except Exception:
+                LOG.exception('Error closing proxy socket (%r)', self)
 
     def connect(self):
         return tobiko.setup_fixture(self).client

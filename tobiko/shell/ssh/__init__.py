@@ -31,4 +31,4 @@ ssh_proxy_client = _client.ssh_proxy_client
 SSHConnectFailure = _client.SSHConnectFailure
 gather_ssh_connect_parameters = _client.gather_ssh_connect_parameters
 
-ssh_tunnel_http_session = _http.ssh_tunnel_http_session
+setup_http_session_ssh_tunneling = _http.setup_http_session_ssh_tunneling
