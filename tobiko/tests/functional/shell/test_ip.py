@@ -50,10 +50,8 @@ class IpTest(testtools.TestCase):
                 self.assertEqual(ips.with_attributes(version=4), [])
                 self.assertEqual(ips.with_attributes(version=6), ips)
             elif scope == 'host':
-                self.assertEqual(ips.with_attributes(version=4),
-                                 [netaddr.IPAddress('127.0.0.1')])
-                self.assertEqual(ips.with_attributes(version=6),
-                                 [netaddr.IPAddress('::1')])
+                for a in ips:
+                    self.assertTrue(a.is_loopback())
             elif scope == 'global':
                 self.assertNotIn(netaddr.IPAddress('127.0.0.1'), ips)
                 self.assertNotIn(netaddr.IPAddress('::1'), ips)
