@@ -90,6 +90,8 @@ class NetworkWithNetMtuWriteTestCase(NetworkTestCase):
 
 
 @neutron.skip_if_missing_networking_extensions('l3-ha')
+@neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent',
+                                           count=2)
 class L3HaNetworkTestCase(NetworkTestCase):
 
     #: Stack of resources with a network with a gateway router
