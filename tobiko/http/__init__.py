@@ -15,20 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.shell.ssh import _config
-from tobiko.shell.ssh import _client
-from tobiko.shell.ssh import _command
-from tobiko.shell.ssh import _forward
+from tobiko.http import _session
 
-
-SSHHostConfig = _config.SSHHostConfig
-ssh_host_config = _config.ssh_host_config
-
-SSHClientFixture = _client.SSHClientFixture
-ssh_client = _client.ssh_client
-ssh_command = _command.ssh_command
-ssh_proxy_client = _client.ssh_proxy_client
-SSHConnectFailure = _client.SSHConnectFailure
-gather_ssh_connect_parameters = _client.gather_ssh_connect_parameters
-
-SSHTunnelForwarderFixture = _forward.SSHTunnelForwarderFixture
+get_http_session = _session.get_http_session
+setup_http_session = _session.setup_http_session

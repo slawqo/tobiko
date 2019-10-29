@@ -19,7 +19,7 @@ from oslo_log import log
 
 import tobiko
 from tobiko.openstack.keystone import _credentials
-from tobiko.shell import ssh
+from tobiko import http
 
 
 LOG = log.getLogger(__name__)
@@ -74,7 +74,7 @@ class KeystoneSessionFixture(tobiko.SharedFixture):
             auth = loader.load_from_options(**params)
             self.session = session = _session.Session(
                 auth=auth, verify=False)
-            ssh.setup_http_session_ssh_tunneling(session=session)
+            http.setup_http_session(session)
             self.credentials = credentials
 
 
