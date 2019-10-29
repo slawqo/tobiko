@@ -33,7 +33,7 @@ def ssh_login(hostname, username=None, port=None):
 
 def ssh_command(host, username=None, port=None, command=None,
                 config_files=None, host_config=None, proxy_command=None,
-                **options):
+                key_filename=None, **options):
     host_config = host_config or _config.ssh_host_config(
         host=host, config_files=config_files)
 
@@ -50,11 +50,15 @@ def ssh_command(host, username=None, port=None, command=None,
 
     port = port or host_config.port
     if port:
-        command += ['-p', port]
+        command += ['-p', str(port)]
+
+    if key_filename:
+        command += ['-i', key_filename]
 
     if proxy_command:
         if not isinstance(proxy_command, six.string_types):
-            proxy_command = subprocess.list2cmdline(proxy_command)
+            proxy_command = subprocess.list2cmdline([str(a)
+                                                     for a in proxy_command])
         options['ProxyCommand'] = proxy_command
 
     for name, value in host_config.host_config.items():

@@ -18,7 +18,6 @@ from __future__ import absolute_import
 from urllib3 import connection
 from urllib3 import connectionpool
 
-import tobiko
 from tobiko.shell import ssh
 
 
@@ -69,23 +68,11 @@ class HTTPConnectionPool(connectionpool.HTTPConnectionPool):
 
     ConnectionCls = HTTPConnection
 
-    forwarder = None
-    ssh_client = None
-
     def __init__(self, host, port, ssh_client=None, **kwargs):
-        if ssh_client is None:
-            ssh_client = ssh.ssh_proxy_client() or False
-        self.ssh_client = ssh_client
-        if ssh_client:
-            self.forwarder = forwarder = ssh.SSHTunnelForwarderFixture(
-                ssh_client=ssh_client)
-            forward_address = forwarder.put_forwarding(host, port)
-            tobiko.setup_fixture(forwarder)
-            kwargs['forward_address'] = forward_address
-
-        super(HTTPConnectionPool, self).__init__(host=host,
-                                                 port=port,
-                                                 **kwargs)
+        forward_address = ssh.get_forward_port_address(address=(host, port),
+                                                       ssh_client=ssh_client)
+        super(HTTPConnectionPool, self).__init__(
+            host=host, port=port, forward_address=forward_address, **kwargs)
 
 
 class HTTPSConnectionPool(HTTPConnectionPool,

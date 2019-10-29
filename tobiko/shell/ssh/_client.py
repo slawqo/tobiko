@@ -71,7 +71,7 @@ def positive_int(value):
     return value
 
 
-def key_filename(value):
+def get_key_filename(value):
     if isinstance(value, six.string_types):
         value = [value]
     return [os.path.realpath(os.path.expanduser(v)) for v in value]
@@ -96,7 +96,7 @@ SSH_CONNECT_PARAMETERS = {
 
     #: The filename, or list of filenames, of optional private key(s) and/or
     #: certs to try for authentication
-    'key_filename': key_filename,
+    'key_filename': get_key_filename,
 
     #: An optional timeout (in seconds) for the TCP connect
     'timeout': positive_float,
@@ -329,6 +329,34 @@ class SSHClientFixture(tobiko.SharedFixture):
     def connect(self):
         return tobiko.setup_fixture(self).client
 
+    def get_ssh_command(self, host=None, username=None, port=None,
+                        command=None, config_files=None, host_config=None,
+                        proxy_command=None, key_filename=None, **options):
+        connect_parameters = self.setup_connect_parameters()
+        host = host or connect_parameters.get('hostname')
+        username = username or connect_parameters.get('username')
+        port = port or connect_parameters.get('port')
+        config_files = config_files or connect_parameters.get('config_files')
+        if not host_config:
+            _host_config = self.setup_host_config()
+            if hasattr(_host_config, 'host_config'):
+                _host_config = host_config
+        key_filename = key_filename or connect_parameters.get('key_filename')
+        proxy_command = (proxy_command or
+                         connect_parameters.get('proxy_command'))
+        if not proxy_command and self.proxy_client:
+            proxy_command = self.proxy_client.get_ssh_command()
+
+        return _command.ssh_command(host=host,
+                                    username=username,
+                                    port=port,
+                                    command=command,
+                                    config_files=config_files,
+                                    host_config=host_config,
+                                    proxy_command=proxy_command,
+                                    key_filename=key_filename,
+                                    **options)
+
 
 UNDEFINED_CLIENT = 'UNDEFINED_CLIENT'
 
@@ -425,7 +453,7 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
             return client, proxy_sock
 
 
-def ssh_proxy_sock(hostname, port=None, command=None, client=None,
+def ssh_proxy_sock(hostname=None, port=None, command=None, client=None,
                    source_address=None):
     if not command:
         if client:
@@ -441,7 +469,8 @@ def ssh_proxy_sock(hostname, port=None, command=None, client=None,
     # Apply connect parameters to proxy command
     if not isinstance(command, six.string_types):
         command = subprocess.list2cmdline(command)
-    command = command.format(hostname=hostname, port=(port or 22))
+    if hostname:
+        command = command.format(hostname=hostname, port=(port or 22))
     if client:
         if isinstance(client, SSHClientFixture):
             # Connect to proxy server
