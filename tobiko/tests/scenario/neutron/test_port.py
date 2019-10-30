@@ -88,3 +88,19 @@ class PortTest(testtools.TestCase):
 class L3HAPortTest(PortTest):
     #: Resources stack with floating IP and Nova server
     stack = tobiko.required_setup_fixture(stacks.L3haServerStackFixture)
+
+
+@neutron.skip_if_missing_networking_extensions('l3-ha')
+@neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent',
+                                           count=2)
+class CentosServerL3HAPortTestWith(PortTest):
+    #: Resources stack with floating IP and Nova server
+    stack = tobiko.required_setup_fixture(stacks.L3haCentosServerStackFixture)
+
+
+@neutron.skip_if_missing_networking_extensions('l3-ha')
+@neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent',
+                                           count=2)
+class UbuntuServerL3HAPortTestWith(PortTest):
+    #: Resources stack with floating IP and Nova server
+    stack = tobiko.required_setup_fixture(stacks.L3haUbuntuServerStackFixture)
