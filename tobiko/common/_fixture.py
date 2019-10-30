@@ -23,6 +23,7 @@ import testtools
 
 import tobiko
 from tobiko.common import _detail
+from tobiko.common import _exception
 
 
 LOG = log.getLogger(__name__)
@@ -98,33 +99,24 @@ def remove_fixture(obj, manager=None):
 def setup_fixture(obj, manager=None):
     '''Get registered fixture and setup it up'''
     fixture = get_fixture(obj, manager=manager)
-    try:
+    with _exception.handle_multiple_exceptions():
         fixture.setUp()
-    except testtools.MultipleExceptions as ex:
-        for exc_info in ex.args[1:]:
-            LOG.exception("Error setting up fixture %r",
-                          fixture.fixture_name, exc_info=exc_info)
-        six.reraise(*ex.args[0])
     return fixture
 
 
 def reset_fixture(obj, manager=None):
-    '''Get registered fixture and setup it up'''
+    '''Get registered fixture and reset it'''
     fixture = get_fixture(obj, manager=manager)
-    try:
+    with _exception.handle_multiple_exceptions():
         fixture.reset()
-    except testtools.MultipleExceptions as ex:
-        for exc_info in ex.args[1:]:
-            LOG.exception("Error reseting fixture %r",
-                          fixture.fixture_name, exc_info=exc_info)
-        six.reraise(*ex.args[0])
     return fixture
 
 
 def cleanup_fixture(obj, manager=None):
     '''Get registered fixture and clean it up'''
     fixture = get_fixture(obj, manager=manager)
-    fixture.cleanUp()
+    with _exception.handle_multiple_exceptions():
+        fixture.cleanUp()
     return fixture
 
 
