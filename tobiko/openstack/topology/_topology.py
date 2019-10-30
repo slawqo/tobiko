@@ -357,16 +357,7 @@ class OpenStackTopology(tobiko.SharedFixture):
             try:
                 ips = tobiko.select([netaddr.IPAddress(obj)])
             except (netaddr.AddrFormatError, ValueError):
-                try:
-                    addrinfo = socket.getaddrinfo(
-                        obj, 22, 0, 0,
-                        socket.AI_CANONNAME | socket.IPPROTO_TCP)
-                except socket.gaierror:
-                    ips = tobiko.select([])
-                else:
-                    ips = tobiko.select([
-                        netaddr.IPAddress(sockaddr[0])
-                        for _, _, _, _, sockaddr in addrinfo])
+                ips = resolve_host_ips(obj)
         else:
             for item in iter(obj):
                 tobiko.check_valid_type(item, netaddr.IPAddress)
@@ -375,6 +366,28 @@ class OpenStackTopology(tobiko.SharedFixture):
         if ips and self.ip_version:
             ips = ips.with_attributes(version=self.ip_version)
         return ips
+
+
+def resolve_host_ips(host, port=0):
+    tobiko.check_valid_type(host, six.string_types)
+    LOG.debug('Calling getaddrinfo with host %r', host)
+    ips = tobiko.Selection()
+    try:
+        addrinfo = socket.getaddrinfo(host, port, 0, 0,
+                                      socket.AI_CANONNAME | socket.IPPROTO_TCP)
+    except socket.gaierror:
+        LOG.exception('Error calling getaddrinfo for host %r', host)
+    else:
+        for _, _, _, canonical_name, sockaddr in addrinfo:
+            try:
+                ips.append(netaddr.IPAddress(sockaddr[0]))
+            except netaddr.AddrFormatError as ex:
+                LOG.error("Invalid sockaddr for host %r: %r -> %r (%s)",
+                          host, canonical_name, sockaddr, ex)
+            else:
+                LOG.debug("IP address for host %r: %r -> %r",
+                          host, canonical_name, sockaddr)
+    return ips
 
 
 def node_name_from_hostname(hostname):
