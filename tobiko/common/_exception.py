@@ -13,11 +13,13 @@
 #    under the License.
 from __future__ import absolute_import
 
+import contextlib
 import collections
 import sys
 
 from oslo_log import log
 import six
+import testtools
 
 
 LOG = log.getLogger(__name__)
@@ -107,3 +109,36 @@ def exc_info(reraise=True):
     info = ExceptionInfo(*sys.exc_info())
     info.reraise_on_exit = reraise
     return info
+
+
+@contextlib.contextmanager
+def handle_multiple_exceptions():
+    try:
+        yield
+    except testtools.MultipleExceptions as exc:
+        exc_infos = list_exc_infos()
+        if exc_infos:
+            for info in exc_infos[1:]:
+                LOG.exception("Unhandled exception:", exc_info=info)
+            six.reraise(*exc_infos[0])
+        else:
+            LOG.debug('empty MultipleExceptions: %s', str(exc))
+
+
+def list_exc_infos(exc_info=None):
+    # pylint: disable=redefined-outer-name
+    exc_info = exc_info or sys.exc_info()
+    result = []
+    if exc_info[0]:
+        visited = set()
+        visiting = [exc_info]
+        while visiting:
+            exc_info = visiting.pop()
+            _, exc, _ = exc_info
+            if exc not in visited:
+                visited.add(exc)
+                if isinstance(exc, testtools.MultipleExceptions):
+                    visiting.extend(reversed(exc.args))
+                else:
+                    result.append(exc_info)
+    return result

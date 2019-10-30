@@ -17,6 +17,7 @@ import sys
 
 import tobiko
 from tobiko.tests import unit
+import testtools
 
 
 class SomeException(tobiko.TobikoException):
@@ -122,3 +123,95 @@ class TestExcInfo(unit.TobikoUnitTest):
 
         reraised = self.assertRaises(RuntimeError, exc_info.reraise)
         self.assertIs(exc_value, reraised)
+
+
+class TestListExcInfo(unit.TobikoUnitTest):
+
+    def test_list_exc_info(self):
+        result = tobiko.list_exc_infos()
+        self.assertEqual([], result)
+
+    def test_list_exc_info_with_info(self):
+        error = make_exception(RuntimeError, 'error')
+        result = tobiko.list_exc_infos(exc_info=error)
+        self.assertEqual([error], result)
+
+    def test_list_exc_info_handling_exception(self):
+        try:
+            raise RuntimeError('error')
+        except RuntimeError:
+            result = tobiko.list_exc_infos()
+            self.assertEqual([sys.exc_info()], result)
+
+    def test_list_exc_info_handling_empty_multiple_exceptions(self):
+        error = make_exception(testtools.MultipleExceptions)
+        result = tobiko.list_exc_infos(exc_info=error)
+        self.assertEqual([], result)
+
+    def test_list_exc_info_handling_multiple_exceptions(self):
+        a = make_exception(RuntimeError, 'a')
+        b = make_exception(ValueError, 'b')
+        c = make_exception(TypeError, 'c')
+        multi = make_exception(testtools.MultipleExceptions, a, b, c)
+        result = tobiko.list_exc_infos(exc_info=multi)
+        self.assertEqual([a, b, c], result)
+
+    def test_list_exc_info_handling_nested_multiple_exceptions(self):
+        a = make_exception(RuntimeError, 'a')
+        b = make_exception(ValueError, 'b')
+        c = make_exception(TypeError, 'c')
+        d = make_exception(IndexError, 'd')
+        inner = make_exception(testtools.MultipleExceptions, b, c)
+        multi = make_exception(testtools.MultipleExceptions, a, inner, d)
+        result = tobiko.list_exc_infos(exc_info=multi)
+        self.assertEqual([a, b, c, d], result)
+
+
+class TestHandleMultipleExceptions(unit.TobikoUnitTest):
+
+    def test_handle_multiple_exceptions(self):
+        with tobiko.handle_multiple_exceptions():
+            pass
+
+    def test_handle_multiple_exceptions_with_exception(self):
+        def run():
+            with tobiko.handle_multiple_exceptions():
+                raise RuntimeError('error')
+        self.assertRaises(RuntimeError, run)
+
+    def test_handle_multiple_exceptions_with_empty_multiple_exception(self):
+        with tobiko.handle_multiple_exceptions():
+            raise testtools.MultipleExceptions()
+
+    def test_handle_multiple_exceptions_with_multiple_exceptions(self):
+        a = make_exception(TypeError, 'a')
+        b = make_exception(ValueError, 'b')
+        c = make_exception(RuntimeError, 'c')
+
+        def run():
+            with tobiko.handle_multiple_exceptions():
+                raise testtools.MultipleExceptions(a, b, c)
+
+        ex = self.assertRaises(TypeError, run)
+        self.assertEqual(a[1], ex)
+
+    def test_handle_multiple_exceptions_with_nested_multiple_exceptions(self):
+        a = make_exception(RuntimeError, 'a')
+        b = make_exception(ValueError, 'b')
+        c = make_exception(TypeError, 'c')
+        d = make_exception(IndexError, 'd')
+        inner = make_exception(testtools.MultipleExceptions, b, c)
+
+        def run():
+            with tobiko.handle_multiple_exceptions():
+                raise testtools.MultipleExceptions(a, inner, d)
+
+        ex = self.assertRaises(RuntimeError, run)
+        self.assertEqual(a[1], ex)
+
+
+def make_exception(cls, *args, **kwargs):
+    try:
+        raise cls(*args, **kwargs)
+    except cls:
+        return sys.exc_info()
