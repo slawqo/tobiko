@@ -79,6 +79,7 @@ class ShellProcessParameters(Parameters):
     buffer_size = io.DEFAULT_BUFFER_SIZE
     poll_interval = 1.
     sudo = None
+    network_namespace = None
 
 
 class ShellProcessFixture(tobiko.SharedFixture):
@@ -121,6 +122,9 @@ class ShellProcessFixture(tobiko.SharedFixture):
 
     def setup_command(self):
         command = _command.shell_command(self.parameters.command)
+        network_namespace = self.parameters.network_namespace
+        sudo = self.parameters.sudo
+
         shell = self.parameters.shell
         if shell:
             if shell is True:
@@ -130,7 +134,12 @@ class ShellProcessFixture(tobiko.SharedFixture):
             command = shell + [str(command)]
         else:
             command = _command.shell_command(command)
-        sudo = self.parameters.sudo
+
+        if network_namespace:
+            if sudo is None:
+                sudo = True
+            command = network_namespace_command(network_namespace, command)
+
         if sudo:
             if sudo is True:
                 sudo = default_sudo_command()
@@ -495,3 +504,8 @@ def default_sudo_command():
     from tobiko import config
     CONF = config.CONF
     return _command.shell_command(CONF.tobiko.shell.sudo)
+
+
+def network_namespace_command(network_namespace, command):
+    return _command.shell_command(['/sbin/ip', 'netns', 'exec',
+                                   network_namespace]) + command

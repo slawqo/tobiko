@@ -67,7 +67,7 @@ def list_ip_addresses(ip_version=None, scope=None, **execute_params):
 
 def list_network_namespaces(**execute_params):
     output = execute_ip(['-o', 'netns', 'list'], **execute_params)
-    namespaces = list()
+    namespaces = tobiko.Selection()
     if output:
         for line in output.splitlines():
             fields = line.strip().split()
@@ -76,15 +76,10 @@ def list_network_namespaces(**execute_params):
     return namespaces
 
 
-def execute_ip(ifconfig_args, network_namespace=None, sudo=None,
-               **execute_params):
+def execute_ip(ifconfig_args, **execute_params):
     command = ['/sbin/ip'] + ifconfig_args
-    if network_namespace:
-        if sudo is None:
-            sudo = True
-        command = ['/sbin/ip', 'netns', 'exec', network_namespace] + command
     result = sh.execute(command, stdin=False, stdout=True, stderr=True,
-                        expect_exit_status=None, sudo=sudo, **execute_params)
+                        expect_exit_status=None, **execute_params)
     if result.exit_status:
         raise IpError(error=result.stderr, exit_status=result.exit_status)
     return result.stdout

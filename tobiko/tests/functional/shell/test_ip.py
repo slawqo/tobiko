@@ -20,9 +20,10 @@ import six
 import testtools
 
 import tobiko
+from tobiko.openstack import stacks
+from tobiko.openstack import topology
 from tobiko.shell import ip
 from tobiko.shell import ssh
-from tobiko.openstack import stacks
 
 
 class IpTest(testtools.TestCase):
@@ -55,6 +56,7 @@ class IpTest(testtools.TestCase):
             elif scope == 'global':
                 self.assertNotIn(netaddr.IPAddress('127.0.0.1'), ips)
                 self.assertNotIn(netaddr.IPAddress('::1'), ips)
+        return ips
 
     def test_list_ip_addresses_with_host_scope(self, **execute_params):
         self.test_list_ip_addresses(scope='host', **execute_params)
@@ -97,6 +99,23 @@ class IpTest(testtools.TestCase):
     def test_list_ip_addresses_with_proxy_ssh_client_and_global_scope(
                 self, **execute_params):
         self.test_list_ip_addresses(scope='global', **execute_params)
+
+    def test_list_ip_addresses_with_namespace(self):
+        for node in topology.list_openstack_nodes():
+            network_namespaces = ip.list_network_namespaces(
+                ssh_client=node.ssh_client)
+            if network_namespaces:
+                network_namespace = network_namespaces.first
+                ssh_client = node.ssh_client
+                break
+
+        namespace_ips = ip.list_ip_addresses(
+            ssh_client=ssh_client, scope='global',
+            network_namespace=network_namespace)
+        self.assertNotEqual([], namespace_ips)
+
+        host_ips = ip.list_ip_addresses(ssh_client=ssh_client, scope='global')
+        self.assertNotEqual(host_ips, namespace_ips)
 
     def test_list_namespaces(self, **execute_params):
         namespaces = ip.list_network_namespaces(**execute_params)
