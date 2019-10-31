@@ -112,7 +112,6 @@ def ping_interface(interface_class):
 
 class PingInterface(object):
 
-    ping_command = 'ping'
     ping_interface_name = 'default'
     ping_usage = None
 
@@ -124,9 +123,13 @@ class PingInterface(object):
         destination = parameters.host
         if not destination:
             raise ValueError("Ping host destination hasn't been specified")
-        return ([self.ping_command] +
+        return ([self.get_ping_executable(parameters)] +
                 self.get_ping_options(parameters) +
                 [destination])
+
+    def get_ping_executable(self, parameters):
+        # pylint: disable=unused-argument
+        return 'ping'
 
     def get_ping_options(self, parameters):
         options = []
@@ -146,7 +149,7 @@ class PingInterface(object):
 
         deadline = parameters.deadline
         if deadline > 0:
-            options += self.get_deadline_option(deadline)
+            options += self.get_deadline_option(parameters)
 
         count = parameters.count
         if count > 0:
@@ -175,8 +178,9 @@ class PingInterface(object):
     def get_interface_option(self, interface):
         return ['-I', interface]
 
-    def get_deadline_option(self, deadline):
-        return ['-w', deadline, '-W', deadline]
+    def get_deadline_option(self, parameters):
+        return ['-w', parameters.deadline,
+                '-W', parameters.deadline]
 
     def get_count_option(self, count):
         return ['-c', int(count)]
@@ -334,3 +338,18 @@ class InetToolsPingInterface(PingInterface):
 
     def match_ping_usage(self, usage):
         return usage.startswith(INET_TOOLS_PING_USAGE)
+
+    def get_ping_executable(self, parameters):
+        ip_version = _parameters.get_ping_ip_version(parameters)
+        if ip_version == constants.IP_VERSION_6:
+            return 'ping6'
+        else:
+            return 'ping'
+
+    def get_deadline_option(self, parameters):
+        ip_version = _parameters.get_ping_ip_version(parameters)
+        if ip_version == constants.IP_VERSION_6:
+            return ['-w', parameters.deadline]
+        else:
+            return ['-w', parameters.deadline,
+                    '-W', parameters.deadline]
