@@ -51,8 +51,8 @@ class PortTest(testtools.TestCase):
         subnets = neutron.list_subnets(network_id=network_id)
         gateway_ips = [netaddr.IPAddress(subnet['gateway_ip'])
                        for subnet in subnets]
-        ping.assert_reachable_ips(gateway_ips,
-                                  ssh_client=self.stack.ssh_client)
+        ping.assert_reachable_hosts(gateway_ips,
+                                    ssh_client=self.stack.ssh_client)
 
     def test_ping_port(self, network_id=None, device_id=None):
         network_id = network_id or self.stack.network_stack.network_id
@@ -64,8 +64,8 @@ class PortTest(testtools.TestCase):
             self.assertEqual(network_id, port['network_id'])
             self.assertEqual(device_id, port['device_id'])
             port_ips.update(neutron.list_port_ip_addresses(port=port))
-        ping.assert_reachable_ips(port_ips,
-                                  ssh_client=self.stack.ssh_client)
+        ping.assert_reachable_hosts(port_ips,
+                                    ssh_client=self.stack.ssh_client)
 
     def test_ping_inner_gateway_ip(self):
         if not self.stack.network_stack.has_gateway:

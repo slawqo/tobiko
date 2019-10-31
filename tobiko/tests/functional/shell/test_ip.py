@@ -21,9 +21,9 @@ import testtools
 
 import tobiko
 from tobiko.openstack import stacks
-from tobiko.openstack import topology
 from tobiko.shell import ip
 from tobiko.shell import ssh
+from tobiko.tests.functional.shell import fixtures
 
 
 class IpTest(testtools.TestCase):
@@ -36,6 +36,8 @@ class IpTest(testtools.TestCase):
 
     ubuntu_stack = tobiko.required_setup_fixture(
         stacks.UbuntuServerStackFixture)
+
+    namespace = tobiko.required_setup_fixture(fixtures.NetworkNamespaceFixture)
 
     def test_list_ip_addresses(self, ip_version=None, scope=None,
                                **execute_params):
@@ -100,22 +102,18 @@ class IpTest(testtools.TestCase):
                 self, **execute_params):
         self.test_list_ip_addresses(scope='global', **execute_params)
 
-    def test_list_ip_addresses_with_namespace(self):
-        for node in topology.list_openstack_nodes():
-            network_namespaces = ip.list_network_namespaces(
-                ssh_client=node.ssh_client)
-            if network_namespaces:
-                network_namespace = network_namespaces.first
-                ssh_client = node.ssh_client
-                break
-
+    def test_list_ip_addresses_with_namespace(self, **params):
         namespace_ips = ip.list_ip_addresses(
-            ssh_client=ssh_client, scope='global',
-            network_namespace=network_namespace)
+            ssh_client=self.namespace.ssh_client, **params,
+            network_namespace=self.namespace.network_namespace)
         self.assertNotEqual([], namespace_ips)
 
-        host_ips = ip.list_ip_addresses(ssh_client=ssh_client, scope='global')
+        host_ips = ip.list_ip_addresses(ssh_client=self.namespace.ssh_client,
+                                        **params)
         self.assertNotEqual(host_ips, namespace_ips)
+
+    def test_list_ip_addresses_with_namespace_and_scope(self):
+        self.test_list_ip_addresses_with_namespace(scope='global')
 
     def test_list_namespaces(self, **execute_params):
         namespaces = ip.list_network_namespaces(**execute_params)

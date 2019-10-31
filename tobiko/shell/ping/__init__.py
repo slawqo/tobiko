@@ -23,9 +23,8 @@ from tobiko.shell.ping import _ping
 from tobiko.shell.ping import _statistics
 
 
-assert_reachable_ips = _assert.assert_reachable_ips
-get_reachable_ips = _assert.get_reachable_ips
-get_unreachable_ips = _assert.get_unreachable_ips
+assert_reachable_hosts = _assert.assert_reachable_hosts
+assert_unreachable_hosts = _assert.assert_unreachable_hosts
 
 PingException = _exception.PingException
 PingError = _exception.PingError
@@ -42,11 +41,15 @@ ping_parameters = _parameters.ping_parameters
 get_ping_parameters = _parameters.get_ping_parameters
 default_ping_parameters = _parameters.default_ping_parameters
 
+list_reachable_hosts = _ping.list_reachable_hosts
+list_unreachable_hosts = _ping.list_unreachable_hosts
 ping = _ping.ping
+ping_hosts = _ping.ping_hosts
 ping_until_delivered = _ping.ping_until_delivered
 ping_until_undelivered = _ping.ping_until_undelivered
 ping_until_received = _ping.ping_until_received
 ping_until_unreceived = _ping.ping_until_unreceived
+
 TRANSMITTED = _ping.TRANSMITTED
 UNDELIVERED = _ping.UNDELIVERED
 DELIVERED = _ping.DELIVERED

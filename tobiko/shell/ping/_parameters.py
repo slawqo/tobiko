@@ -26,7 +26,7 @@ LOG = log.getLogger(__name__)
 
 PING_PARAMETER_NAMES = ['host', 'count', 'deadline', 'fragmentation',
                         'interval', 'ip_version', 'packet_size', 'source',
-                        'timeout']
+                        'timeout', 'network_namespace']
 
 
 def get_ping_parameters(default=None, **ping_params):
@@ -45,7 +45,7 @@ def get_ping_parameters(default=None, **ping_params):
 def ping_parameters(default=None, count=None, deadline=None,
                     fragmentation=None, host=None, interval=None,
                     ip_version=None, packet_size=None, source=None,
-                    timeout=None):
+                    timeout=None, network_namespace=None):
     """Validate parameters and initialize a new PingParameters instance
 
     :param default: (PingParameters or None) instance from where to take
@@ -105,7 +105,9 @@ def ping_parameters(default=None, count=None, deadline=None,
         ip_version=get_positive_integer('ip_version', ip_version, default),
         packet_size=get_positive_integer('packet_size', packet_size, default),
         source=get_address('source', source, default),
-        timeout=get_positive_integer('timeout', timeout, default))
+        timeout=get_positive_integer('timeout', timeout, default),
+        network_namespace=get_string('network_namespace', network_namespace,
+                                     default))
 
 
 def default_ping_parameters():
@@ -193,6 +195,14 @@ def get_address(name, value, default=None):
         except netaddr.core.AddrFormatError:
             # NOTE: value may be an host name so this is fine
             value = str(value)
+    return value
+
+
+def get_string(name, value, default=None):
+    if value is None and default:
+        return get_string(name, getattr(default, name))
+    if value is not None:
+        value = str(value)
     return value
 
 

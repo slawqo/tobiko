@@ -74,7 +74,7 @@ class PingInterfaceManager(tobiko.SharedFixture):
                                         interfaces=self.interfaces)
         interface = interface or self.default_interface
         LOG.debug('Assign Ping interface %r to SSH client %r',
-                  interface.ping_interface_name, ssh_client)
+                  interface, ssh_client)
         self.client_interfaces[ssh_client] = interface
         return interface
 
@@ -112,7 +112,6 @@ def ping_interface(interface_class):
 
 class PingInterface(object):
 
-    ping_interface_name = 'default'
     ping_usage = None
 
     def match_ping_usage(self, usage):
@@ -120,16 +119,23 @@ class PingInterface(object):
         return False
 
     def get_ping_command(self, parameters):
-        destination = parameters.host
-        if not destination:
+        host = parameters.host
+        if not host:
             raise ValueError("Ping host destination hasn't been specified")
-        return ([self.get_ping_executable(parameters)] +
-                self.get_ping_options(parameters) +
-                [destination])
+
+        command = sh.shell_command([self.get_ping_executable(parameters)] +
+                                   self.get_ping_options(parameters) +
+                                   [host])
+        LOG.debug('Got ping command from interface %r for host %r: %r',
+                  self, host, command)
+        return command
 
     def get_ping_executable(self, parameters):
-        # pylint: disable=unused-argument
-        return 'ping'
+        ip_version = _parameters.get_ping_ip_version(parameters)
+        if ip_version == constants.IP_VERSION_6:
+            return 'ping6'
+        else:
+            return 'ping'
 
     def get_ping_options(self, parameters):
         options = []
@@ -195,12 +201,15 @@ class PingInterface(object):
 
     def get_fragment_option(self, fragment):
         details = ("{!r} ping implementation doesn't support "
-                   "'fragment={!r}' option").format(self.ping_interface_name,
-                                                    fragment)
+                   "'fragment={!r}' option").format(self, fragment)
         raise _exception.UnsupportedPingOption(details=details)
 
 
 class IpVersionPingInterface(PingInterface):
+
+    def get_ping_executable(self, parameters):
+        # pylint: disable=unused-argument
+        return 'ping'
 
     def get_ipv4_option(self):
         return ['-4']
@@ -220,8 +229,6 @@ Usage: ping [-aAbBdDfhLnOqrRUvV] [-c count] [-i interval] [-I interface]
 
 @ping_interface
 class IpUtilsPingInterface(PingInterface):
-
-    ping_interface_name = 'iputils'
 
     def match_ping_usage(self, usage):
         return usage.startswith(IPUTILS_PING_USAGE)
@@ -253,8 +260,6 @@ Usage: ping -6 [-aAbBdDfhLnOqrRUvV] [-c count] [-i interval] [-I interface]
 class IpUtilsIpVersionPingInterface(IpUtilsPingInterface,
                                     IpVersionPingInterface):
 
-    ping_interface_name = 'ip_version_iputils'
-
     def match_ping_usage(self, usage):
         return usage.startswith(IP_VERSION_IPUTILS_PING_USAGE)
 
@@ -284,8 +289,6 @@ Send ICMP ECHO_REQUEST packets to network hosts
 
 @ping_interface
 class BusyBoxPingInterface(IpVersionPingInterface):
-
-    ping_interface_name = 'BusyBox'
 
     def match_ping_usage(self, usage):
         return usage.startswith("BusyBox")
@@ -338,13 +341,6 @@ class InetToolsPingInterface(PingInterface):
 
     def match_ping_usage(self, usage):
         return usage.startswith(INET_TOOLS_PING_USAGE)
-
-    def get_ping_executable(self, parameters):
-        ip_version = _parameters.get_ping_ip_version(parameters)
-        if ip_version == constants.IP_VERSION_6:
-            return 'ping6'
-        else:
-            return 'ping'
 
     def get_deadline_option(self, parameters):
         ip_version = _parameters.get_ping_ip_version(parameters)

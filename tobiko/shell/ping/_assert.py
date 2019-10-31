@@ -15,24 +15,22 @@
 #    under the License.
 from __future__ import absolute_import
 
+from oslo_log import log
+
 import tobiko
 from tobiko.shell.ping import _ping
 
 
-def assert_reachable_ips(target_ips, **params):
-    unreachable_ips = get_unreachable_ips(target_ips, **params)
-    if unreachable_ips:
-        tobiko.fail("Unable to reach IP address(es): {!r}", unreachable_ips)
+LOG = log.getLogger(__name__)
 
 
-def get_reachable_ips(target_ips, **params):
-    return tobiko.select(address
-                         for address in target_ips
-                         if _ping.ping(address, **params).received)
+def assert_reachable_hosts(hosts, **params):
+    unreachable_hosts = _ping.list_unreachable_hosts(hosts, **params)
+    if unreachable_hosts:
+        tobiko.fail("Unable to reach host(s): {!r}", unreachable_hosts)
 
 
-def get_unreachable_ips(target_ips, **params):
-    reachable_ips = get_reachable_ips(target_ips, **params)
-    return tobiko.select(address
-                         for address in target_ips
-                         if address not in reachable_ips)
+def assert_unreachable_hosts(hosts, **params):
+    reachable_hosts = _ping.list_reachable_hosts(hosts, **params)
+    if reachable_hosts:
+        tobiko.fail("Reached host(s): {!r}", reachable_hosts)

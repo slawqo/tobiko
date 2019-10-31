@@ -18,14 +18,19 @@ from __future__ import absolute_import
 import netaddr
 import testtools
 
+import tobiko
 from tobiko import config
+from tobiko.shell import ip
 from tobiko.shell import ping
+from tobiko.tests.functional.shell import fixtures
 
 
 CONF = config.CONF
 
 
 class PingTest(testtools.TestCase):
+
+    namespace = tobiko.required_setup_fixture(fixtures.NetworkNamespaceFixture)
 
     def test_ping_recheable_address(self):
         result = ping.ping('127.0.0.1', count=3)
@@ -90,3 +95,21 @@ class PingTest(testtools.TestCase):
         self.assertEqual(1., ex.timeout)
         self.assertEqual(20, ex.expected_count)
         self.assertEqual('transmitted', ex.message_type)
+
+    def test_ping_hosts(self, ssh_client=None, network_namespace=None,
+                        **params):
+        ips = ip.list_ip_addresses(ssh_client=ssh_client,
+                                   network_namespace=network_namespace)
+        reachable_ips, unrecheable_ips = ping.ping_hosts(
+            ips, ssh_client=ssh_client, network_namespace=network_namespace,
+            **params)
+
+        expected_reachable = [i for i in ips if i in reachable_ips]
+        self.assertEqual(expected_reachable, reachable_ips)
+        expected_unreachable = [i for i in ips if i not in reachable_ips]
+        self.assertEqual(expected_unreachable, unrecheable_ips)
+
+    def test_ping_hosts_from_network_namespace(self):
+        self.test_ping_hosts(
+            ssh_client=self.namespace.ssh_client,
+            network_namespace=self.namespace.network_namespace)

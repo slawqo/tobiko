@@ -20,6 +20,7 @@ import time
 from oslo_log import log
 
 
+import tobiko
 from tobiko.shell import sh
 from tobiko.shell.ping import _interface
 from tobiko.shell.ping import _exception
@@ -35,6 +36,33 @@ DELIVERED = 'delivered'
 UNDELIVERED = 'undelivered'
 RECEIVED = 'received'
 UNRECEIVED = 'unreceived'
+
+
+def list_reachable_hosts(hosts, **params):
+    reachable_host, _ = ping_hosts(hosts, **params)
+    return reachable_host
+
+
+def list_unreachable_hosts(hosts, **params):
+    _, unreachable_host = ping_hosts(hosts, **params)
+    return unreachable_host
+
+
+def ping_hosts(hosts, **params):
+    reachable = tobiko.Selection()
+    unreachable = tobiko.Selection()
+    for host in hosts:
+        try:
+            result = ping(host, count=1, **params)
+        except _exception.PingError:
+            LOG.exception('Error pinging host: %r', host)
+            unreachable.append(host)
+        else:
+            if result.received:
+                reachable.append(host)
+            else:
+                unreachable.append(host)
+    return reachable, unreachable
 
 
 def ping(host, until=TRANSMITTED, check=True, **ping_params):
@@ -200,12 +228,18 @@ def iter_statistics(parameters=None, ssh_client=None, until=None, check=True,
             transmitted += statistics.transmitted
             received += statistics.received
             undelivered += statistics.undelivered
-            count = {None: 0,
-                     TRANSMITTED: transmitted,
-                     DELIVERED: transmitted - undelivered,
-                     UNDELIVERED: undelivered,
-                     RECEIVED: received,
-                     UNRECEIVED: transmitted - received}[until]
+        else:
+            # Assume 1 transmitted undelivered package when unable to get
+            # ping output
+            transmitted += 1
+            undelivered += 1
+
+        count = {None: 0,
+                 TRANSMITTED: transmitted,
+                 DELIVERED: transmitted - undelivered,
+                 UNDELIVERED: undelivered,
+                 RECEIVED: received,
+                 UNRECEIVED: transmitted - received}[until]
 
         now = time.time()
         deadline = min(int(end_of_time - now), parameters.deadline)
@@ -228,7 +262,8 @@ def execute_ping(parameters, ssh_client=None, check=True):
         result = sh.execute(command=command,
                             ssh_client=ssh_client,
                             timeout=parameters.deadline + 2.,
-                            expect_exit_status=None)
+                            expect_exit_status=None,
+                            network_namespace=parameters.network_namespace)
     except sh.ShellError as ex:
         LOG.exception("Error executing ping command")
         stdout = ex.stdout
