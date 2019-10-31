@@ -16,7 +16,8 @@ from __future__ import absolute_import
 from tobiko.openstack.octavia import _client
 
 
-octavia_client = _client.octavia_client
 OCTAVIA_CLIENT_CLASSSES = _client.OCTAVIA_CLIENT_CLASSSES
+get_loadbalancer = _client.get_loadbalancer
 get_octavia_client = _client.get_octavia_client
+octavia_client = _client.octavia_client
 OctaviaClientFixture = _client.OctaviaClientFixture

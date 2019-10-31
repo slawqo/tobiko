@@ -67,3 +67,7 @@ def get_octavia_client(session=None, shared=True, init_client=None,
                                 init_client=init_client)
     tobiko.setup_fixture(client)
     return client.client
+
+
+def get_loadbalancer(loadbalancer_id, client=None):
+    return octavia_client(client).load_balancer_show(lb_id=loadbalancer_id)
