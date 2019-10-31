@@ -72,13 +72,6 @@ class PortTest(testtools.TestCase):
             self.skip('Server network has no gateway router')
         self.test_ping_port(device_id=self.stack.network_stack.gateway_id)
 
-    def test_ping_outer_gateway_ips(self):
-        if not self.stack.network_stack.has_gateway:
-            self.skip('Server network has no gateway router')
-        ping.assert_reachable_ips(
-            self.stack.network_stack.external_gateway_ips,
-            ssh_client=self.stack.ssh_client)
-
 
 # --- Test la-h3 extension ----------------------------------------------------
 

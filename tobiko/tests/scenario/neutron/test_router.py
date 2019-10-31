@@ -76,10 +76,6 @@ class RouterTest(testtools.TestCase):
         ping.assert_reachable_ips([self.ipv6_subnet_gateway_ip],
                                   ssh_client=self.stack.ssh_client)
 
-    def test_router_gateway_is_reachable(self):
-        ping.assert_reachable_ips(self.external_gateway_ips,
-                                  ssh_client=self.stack.ssh_client)
-
     def test_ipv4_subnet_gateway_ip(self):
         self.assertEqual(4, self.ipv4_subnet_gateway_ip.version)
         self.assertIn(self.ipv4_subnet_gateway_ip,
