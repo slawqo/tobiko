@@ -163,8 +163,9 @@ class GlanceImageFixture(tobiko.SharedFixture):
     def check_image_status(self, image, expected_status):
         image_status = image and image.status or GlanceImageStatus.DELETED
         if image_status not in expected_status:
+            image_id = image and image.id or None
             raise InvalidGlanceImageStatus(image_name=self.image_name,
-                                           image_id=image.id,
+                                           image_id=image_id,
                                            actual_status=image_status,
                                            expected_status=expected_status)
 
