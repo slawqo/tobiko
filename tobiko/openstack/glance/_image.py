@@ -74,7 +74,7 @@ class GlanceImageFixture(tobiko.SharedFixture):
     username = None
     password = None
     image = None
-    wait_interval = 1.
+    wait_interval = 5.
 
     def __init__(self, image_name=None, username=None, password=None,
                  client=None):
