@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import json
 import itertools
 
+import fixtures
 from oslo_log import log
 import six
 import testtools
@@ -59,6 +60,7 @@ def get_unique_detail_name(name, content_id, target_dict):
 
 
 testtools.testcase.gather_details = gather_details
+fixtures.fixture.gather_details = gather_details
 
 
 def copy_details_content(content_object, content_id):
