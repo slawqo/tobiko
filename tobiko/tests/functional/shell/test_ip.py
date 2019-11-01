@@ -104,8 +104,8 @@ class IpTest(testtools.TestCase):
 
     def test_list_ip_addresses_with_namespace(self, **params):
         namespace_ips = ip.list_ip_addresses(
-            ssh_client=self.namespace.ssh_client, **params,
-            network_namespace=self.namespace.network_namespace)
+            ssh_client=self.namespace.ssh_client,
+            network_namespace=self.namespace.network_namespace, **params)
         self.assertNotEqual([], namespace_ips)
 
         host_ips = ip.list_ip_addresses(ssh_client=self.namespace.ssh_client,
