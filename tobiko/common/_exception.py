@@ -52,11 +52,11 @@ class TobikoException(Exception):
     :attribute message: the message to be printed out.
     """
 
-    message = None
+    message = "unknown reason"
 
     def __init__(self, message=None, **properties):
         # pylint: disable=exception-message-attribute
-        message = message or self.message or "unknown reason"
+        message = message or self.message
         if properties:
             message = message.format(**properties)
         self.message = message

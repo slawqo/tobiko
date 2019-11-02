@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import json
 import os
 import tempfile
+import typing  # noqa
 
 import yaml
 
@@ -38,9 +39,9 @@ def make_clouds_content(cloud_name, api_version=None, auth=None):
 
 class CloudsFileFixture(tobiko.SharedFixture):
 
-    cloud_name = None
-    api_version = None
-    auth = None
+    cloud_name = None  # type: str
+    api_version = None  # type: str
+    auth = None  # type: typing.Dict[str, typing.Any]
     clouds_content = None
     clouds_file = None
     suffix = '.yaml'
@@ -298,15 +299,15 @@ class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
         self.patch(self.config, 'clouds_files', ['/a', '/b', '/c'])
         fixture = keystone.CloudsFileKeystoneCredentialsFixture(
             cloud_name='cloud-name')
-        ex = self.assertRaises(_clouds_file.FileNotFound, tobiko.setup_fixture,
-                               fixture)
+        ex = self.assertRaises(_clouds_file.CloudsFileNotFoundError,
+                               tobiko.setup_fixture, fixture)
         self.assertEqual('cloud-name', fixture.cloud_name)
-        self.assertEqual("No such clouds file: '/a', '/b', '/c'", str(ex))
+        self.assertEqual("No such clouds file(s): /a, /b, /c", str(ex))
 
     def test_setup_with_non_existing_clouds_file(self):
         fixture = keystone.CloudsFileKeystoneCredentialsFixture(
             clouds_file='/a.yaml',
             cloud_name='cloud-name')
-        ex = self.assertRaises(_clouds_file.FileNotFound, tobiko.setup_fixture,
-                               fixture)
-        self.assertEqual("Cloud file not found: '/a.yaml'", str(ex))
+        ex = self.assertRaises(_clouds_file.CloudsFileNotFoundError,
+                               tobiko.setup_fixture, fixture)
+        self.assertEqual("No such clouds file(s): /a.yaml", str(ex))

@@ -30,10 +30,8 @@ JSON_SUFFIXES = ('.json',)
 CLOUDS_FILE_SUFFIXES = JSON_SUFFIXES + YAML_SUFFIXES
 
 
-try:
-    FileNotFound = FileNotFoundError
-except NameError:
-    FileNotFound = OSError
+class CloudsFileNotFoundError(tobiko.TobikoException):
+    message = "No such clouds file(s): {clouds_files!s}"
 
 
 class DefaultCloudsFileConfig(tobiko.SharedFixture):
@@ -198,22 +196,18 @@ class CloudsFileKeystoneCredentialsFixture(
 
     def _get_clouds_file(self):
         clouds_file = self.clouds_file
-        if not clouds_file:
-            clouds_files = self.clouds_files
-            for filename in clouds_files:
-                if os.path.exists(filename):
-                    LOG.debug('Found clouds file at %r', filename)
-                    self.clouds_file = clouds_file = filename
-                    break
-            else:
-                message = 'No such clouds file: {!s}'.format(
-                    ', '.join(repr(f) for f in clouds_files))
-                raise FileNotFound(message)
+        if clouds_file:
+            clouds_files = [self.clouds_file]
+        else:
+            clouds_files = list(self.clouds_files)
 
-        if not os.path.exists(clouds_file):
-            message = 'Cloud file not found: {!r}'.format(clouds_file)
-            raise FileNotFound(message)
-
+        for filename in clouds_files:
+            if os.path.exists(filename):
+                LOG.debug('Found clouds file at %r', filename)
+                self.clouds_file = clouds_file = filename
+                break
+        else:
+            raise CloudsFileNotFoundError(clouds_files=', '.join(clouds_files))
         return clouds_file
 
 

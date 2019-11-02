@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 import collections
 import time
+import typing  # noqa
 
 from heatclient import exc
 from oslo_log import log
@@ -42,15 +43,17 @@ DELETE_FAILED = 'DELETE_FAILED'
 TEMPLATE_FILE_SUFFIX = '.yaml'
 
 
-def _stack_parameters(obj, stack=None):
-    if obj is None or isinstance(obj, collections.Mapping):
+def heat_stack_parameters(obj, stack=None):
+    if isinstance(obj, HeatStackParametersFixture):
+        parameters = obj
+    elif obj is None or isinstance(obj, collections.Mapping):
         parameters = HeatStackParametersFixture(stack, obj)
     else:
         parameters = tobiko.get_fixture(obj)
-    if not isinstance(parameters, HeatStackParametersFixture):
-        msg = "Object {!r} is not an HeatStackParametersFixture".format(
-            parameters)
-        raise TypeError(msg)
+    tobiko.check_valid_type(parameters, HeatStackParametersFixture)
+    if stack:
+        parameters.stack = parameters.stack or stack
+    tobiko.check_valid_type(parameters.stack, type(None), HeatStackFixture)
     return parameters
 
 
@@ -60,10 +63,10 @@ class HeatStackFixture(tobiko.SharedFixture):
     client = None
     retry_create_stack = 1
     wait_interval = 5
-    stack_name = None
-    template = None
+    stack_name = None  # type: str
+    template = None  # type: _template.HeatTemplateFixture
     stack = None
-    parameters = None
+    parameters = None  # type: HeatStackParametersFixture
 
     def __init__(self, stack_name=None, template=None, parameters=None,
                  wait_interval=None, client=None):
@@ -73,7 +76,7 @@ class HeatStackFixture(tobiko.SharedFixture):
                                         self.fixture_name)
 
         self.template = _template.heat_template(template or self.template)
-        self.parameters = _stack_parameters(
+        self.parameters = heat_stack_parameters(
             stack=self, obj=(parameters or self.parameters))
         self.client = client or self.client
         if config.get_bool_env('TOBIKO_PREVENT_CREATE'):
@@ -282,7 +285,7 @@ class HeatStackNamespaceFixture(tobiko.SharedFixture):
 
     def __init__(self, stack):
         super(HeatStackNamespaceFixture, self).__init__()
-        if not isinstance(stack, HeatStackFixture):
+        if stack and not isinstance(stack, HeatStackFixture):
             message = "Object {!r} is not an HeatStackFixture".format(stack)
             raise TypeError(message)
         self.stack = stack

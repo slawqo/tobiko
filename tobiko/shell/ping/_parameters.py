@@ -24,9 +24,27 @@ from oslo_log import log
 LOG = log.getLogger(__name__)
 
 
-PING_PARAMETER_NAMES = ['host', 'count', 'deadline', 'fragmentation',
-                        'interval', 'ip_version', 'packet_size', 'source',
-                        'timeout', 'network_namespace']
+class PingParameters(collections.namedtuple('PingParameters',
+                                            ['host',
+                                             'count',
+                                             'deadline',
+                                             'fragmentation',
+                                             'interval',
+                                             'ip_version',
+                                             'packet_size',
+                                             'source',
+                                             'timeout',
+                                             'network_namespace'])):
+    """Recollect parameters to be used to format ping command line
+
+    PingParameters class is a data model recollecting parameters used to
+    create a ping command line. It provides the feature of copying default
+    values from another instance of PingParameters passed using constructor
+    parameter 'default'.
+    """
+
+
+PING_PARAMETERS_NAMES = PingParameters._fields
 
 
 def get_ping_parameters(default=None, **ping_params):
@@ -120,17 +138,6 @@ def default_ping_parameters():
                            interval=CONF.tobiko.ping.interval,
                            packet_size=CONF.tobiko.ping.packet_size,
                            timeout=CONF.tobiko.ping.timeout)
-
-
-class PingParameters(collections.namedtuple('PingParameters',
-                                            PING_PARAMETER_NAMES)):
-    """Recollect parameters to be used to format ping command line
-
-    PingParameters class is a data model recollecting parameters used to
-    create a ping command line. It provides the feature of copying default
-    values from another instance of PingParameters passed using constructor
-    parameter 'default'.
-    """
 
 
 def get_ping_ip_version(parameters):

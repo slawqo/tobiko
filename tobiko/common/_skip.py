@@ -16,13 +16,14 @@ from __future__ import absolute_import
 import functools
 import inspect
 import unittest
+import typing  # noqa
 
 import testtools
 
 from tobiko.common import _fixture
 
 
-SkipException = testtools.TestCase.skipException
+SkipException = testtools.TestCase.skipException  # type: typing.Type
 
 
 def skip(reason, *args, **kwargs):

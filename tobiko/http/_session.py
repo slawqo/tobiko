@@ -42,10 +42,10 @@ def setup_http_session(session, ssh_client=None):
 
 # All known keyword arguments that could be provided to the pool manager, its
 # pools, or the underlying connections. This is used to construct a pool key.
-_key_fields = poolmanager._key_fields + ('key_ssh_client',)
+_key_fields = tuple(poolmanager._key_fields) + ('key_ssh_client',)
 
 
-class PoolKey(collections.namedtuple("PoolKey", _key_fields)):
+class PoolKey(collections.namedtuple("PoolKey", _key_fields)):  # type: ignore
     """The namedtuple class used to construct keys for the connection pool.
 
     All custom key schemes should include the fields in this key at a minimum.

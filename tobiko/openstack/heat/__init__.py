@@ -30,3 +30,4 @@ HeatTemplateFixture = _template.HeatTemplateFixture
 HeatTemplateFileFixture = _template.HeatTemplateFileFixture
 
 HeatStackFixture = _stack.HeatStackFixture
+heat_stack_parameters = _stack.heat_stack_parameters

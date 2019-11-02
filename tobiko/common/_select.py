@@ -54,7 +54,8 @@ class Selection(list):
         return '{!s}({!r})'.format(type(self).__name__, list(self))
 
 
-select = Selection.create
+def select(objects):
+    return Selection.create(objects)
 
 
 def filter_by_attributes(objects, exclude=False, **attributes):

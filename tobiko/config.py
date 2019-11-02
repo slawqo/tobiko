@@ -17,6 +17,7 @@ import importlib
 import itertools
 import logging
 import os
+import typing  # noqa
 
 from oslo_config import cfg
 from oslo_log import log
@@ -82,7 +83,7 @@ class GlobalConfig(object):
 
     # this is a singletone
     _instance = None
-    _sources = {}
+    _sources = {}  # type: typing.Dict[str, typing.Any]
 
     def __new__(cls):
         if cls._instance is None:

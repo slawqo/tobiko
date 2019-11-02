@@ -29,7 +29,7 @@ from tobiko.tests.unit import openstack
 
 
 class MyStack(heat.HeatStackFixture):
-    template = {'template': 'from-class'}
+    template = heat.heat_template({'template': 'from-class'})
 
 
 class MyStackWithStackName(MyStack):
@@ -37,7 +37,7 @@ class MyStackWithStackName(MyStack):
 
 
 class MyStackWithParameters(MyStack):
-    parameters = {'param': 'from-class'}
+    parameters = heat.heat_stack_parameters({'param': 'from-class'})
 
 
 class MyStackWithWaitInterval(MyStack):
@@ -73,7 +73,8 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
 
         self.assertIsInstance(stack.parameters,
                               _stack.HeatStackParametersFixture)
-        self.assertEqual(parameters or fixture_class.parameters or {},
+        self.assertEqual(parameters or getattr(fixture_class.parameters,
+                                               'parameters', {}),
                          stack.parameters.parameters)
         self.assertEqual(wait_interval or fixture_class.wait_interval,
                          stack.wait_interval)
@@ -95,7 +96,7 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
         self.test_init(parameters={'my': 'value'})
 
     def test_init_with_parameters_from_class(self):
-        self.test_init(fixture_class=MyStackWithParameters, )
+        self.test_init(fixture_class=MyStackWithParameters)
 
     def test_init_with_wait_interval(self):
         self.test_init(wait_interval=20)
@@ -144,7 +145,10 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
         else:
             client.stacks.delete.assert_not_called()
 
-        parameters = parameters or fixture_class.parameters or {}
+        parameters = (parameters or
+                      (fixture_class.parameters and
+                       fixture_class.parameters.values) or
+                      {})
         self.assertEqual(parameters, stack.parameters.values)
         if call_create:
             client.stacks.create.assert_called_once_with(

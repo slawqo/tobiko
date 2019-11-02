@@ -70,9 +70,9 @@ class GlanceImageStatus(object):
 class GlanceImageFixture(tobiko.SharedFixture):
 
     client = None
-    image_name = None
-    username = None
-    password = None
+    image_name = None  # type: str
+    username = None  # type: str
+    password = None  # type: str
     image = None
     wait_interval = 5.
 
@@ -319,7 +319,7 @@ class FileGlanceImageFixture(UploadGranceImageFixture):
 
 class URLGlanceImageFixture(FileGlanceImageFixture):
 
-    image_url = None
+    image_url = None  # type: str
 
     def __init__(self, image_url=None, **kwargs):
         super(URLGlanceImageFixture, self).__init__(**kwargs)

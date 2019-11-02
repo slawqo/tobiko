@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import os
+import typing  # noqa
 
 import six
 
@@ -118,7 +119,7 @@ class ServerStackFixture(heat.HeatStackFixture):
     port_security_enabled = False
 
     #: Security groups to be associated to network ports
-    security_groups = []
+    security_groups = []  # type: typing.List[str]
 
     @property
     def key_name(self):

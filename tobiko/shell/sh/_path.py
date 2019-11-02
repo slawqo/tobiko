@@ -15,8 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
-
 from oslo_log import log
 
 import tobiko
@@ -27,18 +25,11 @@ LOG = log.getLogger(__name__)
 
 class ExecutePathFixture(tobiko.SharedFixture):
 
-    executable_dirs = None
-    environ = None
-
     def __init__(self, executable_dirs=None, environ=None):
         super(ExecutePathFixture, self).__init__()
-        if executable_dirs:
-            self.executable_dirs = tuple(executable_dirs)
-        tobiko.check_valid_type(self.executable_dirs, collections.Iterable)
-
-        if environ is not None:
-            self.environ = environ
-        tobiko.check_valid_type(self.environ, collections.Mapping)
+        self.executable_dirs = list(executable_dirs or
+                                    [])  # type: typing.List[str]
+        self.environ = dict(environ or {})  # type: typing.Dict[str, str]
 
     def setup_fixture(self):
         missing_dirs = []

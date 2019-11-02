@@ -1,7 +1,6 @@
 - job:
     name: tobiko-tox-mypy
     parent: openstack-tox
-    voting: False
     description: |
       Run static mypy type checker for Tobiko project.
     vars:

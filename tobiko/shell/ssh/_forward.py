@@ -138,11 +138,7 @@ class SSHTunnelForwarderFixture(tobiko.SharedFixture):
 
 
 # pylint: disable=protected-access
-SSHForwardHandler = sshtunnel._ForwardHandler
-# pylint: enable=protected-access
-
-
-class SSHUnixForwardHandler(SSHForwardHandler):
+class SSHUnixForwardHandler(sshtunnel._ForwardHandler):
 
     transport = None
 
@@ -177,6 +173,8 @@ class SSHUnixForwardHandler(SSHForwardHandler):
             self.request.close()
             self.logger.log(sshtunnel.TRACE_LEVEL,
                             '{0} connection closed.'.format(self.info))
+
+# pylint: enable=protected-access
 
 
 class SSHTunnelForwarder(sshtunnel.SSHTunnelForwarder):

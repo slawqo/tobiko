@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import collections
 import os
 import sys
+import typing  # noqa
 
 from heatclient.common import template_utils
 import yaml
@@ -30,7 +31,7 @@ TEMPLATE_DIRS = list(sys.path)
 
 class HeatTemplateFixture(tobiko.SharedFixture):
 
-    template = None
+    template = None  # type: typing.Dict[str, typing.Any]
     template_files = None
     template_yaml = None
 
@@ -68,8 +69,6 @@ class HeatTemplateFileFixture(HeatTemplateFixture):
     template_file = None
     template_dirs = None
     template_files = None
-    template = None
-    template_yaml = None
 
     def __init__(self, template_file=None, template_dirs=None):
         super(HeatTemplateFileFixture, self).__init__()
