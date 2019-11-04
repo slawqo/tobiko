@@ -8,6 +8,7 @@
 .coverage
 .coverage.*
 .eggs
+.mypy_cache
 .stestr
 .test
 .testrepository

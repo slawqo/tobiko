@@ -2,4 +2,5 @@
 
 flake8==2.5.5              # MIT
 flake8-import-order==0.12  # LGPLv3
+mypy>=0.740                # MIT
 pylint>=1.9                # GPLv2

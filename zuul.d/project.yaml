@@ -14,6 +14,7 @@
     check:
       jobs:
         - openstack-tox-pylint
+        - tobiko-tox-mypy
         - tobiko-devstack-scenario-centos-7
         - tobiko-devstack-scenario-centos-7-queens
         - tobiko-devstack-scenario-centos-7-rocky
@@ -25,3 +26,4 @@
     gate:
       jobs:
         - openstack-tox-pylint
+        - tobiko-tox-mypy
