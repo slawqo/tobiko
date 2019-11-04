@@ -11,7 +11,6 @@
       - openstack/diskimage-builder
       - openstack/heat
       - openstack/neutron
-      - performa/os-faults
       - openstack/octavia
       - openstack/octavia-lib
       - openstack/python-barbicanclient
@@ -32,7 +31,6 @@
         heat: https://opendev.org/openstack/heat.git
         neutron: https://opendev.org/openstack/neutron.git
         octavia: https://opendev.org/openstack/octavia
-        os-faults: https://opendev.org/performa/os-faults.git
         tobiko: https://opendev.org/x/tobiko.git
       devstack_services:
         heat: true
@@ -171,6 +169,18 @@
           q-l3: true
           q-meta: true
           tls-proxy: false
+
+
+- job:
+    name: tobiko-devstack-octavia-scenario-centos-7
+    parent: tobiko-devstack-octavia-scenario-multinode
+    nodeset: openstack-three-node-centos-7
+    voting: false
+    vars:
+      devstack_localrc:
+        # CentOS has no support for Python3
+        USE_PYTHON3: false
+
 
 
 - job:

@@ -22,6 +22,7 @@
         - tobiko-devstack-scenario-centos-7-train
         - tobiko-devstack-octavia-functional
         - tobiko-devstack-octavia-scenario
+        - tobiko-devstack-octavia-scenario-centos-7
         - tobiko-devstack-octavia-scenario-ubuntu-bionic
     gate:
       jobs:
