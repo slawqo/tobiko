@@ -15,15 +15,14 @@
       jobs:
         - openstack-tox-pylint
         - tobiko-tox-mypy
+        - tobiko-devstack-functional
+        - tobiko-devstack-scenario
         - tobiko-devstack-scenario-centos-7
         - tobiko-devstack-scenario-centos-7-queens
         - tobiko-devstack-scenario-centos-7-rocky
         - tobiko-devstack-scenario-centos-7-stein
         - tobiko-devstack-scenario-centos-7-train
-        - tobiko-devstack-octavia-functional
-        - tobiko-devstack-octavia-scenario
-        - tobiko-devstack-octavia-scenario-centos-7
-        - tobiko-devstack-octavia-scenario-ubuntu-bionic
+        - tobiko-devstack-scenario-ubuntu-bionic
     gate:
       jobs:
         - openstack-tox-pylint
