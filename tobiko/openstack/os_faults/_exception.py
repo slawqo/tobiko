@@ -13,13 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.openstack.os_faults import _config_file
-from tobiko.openstack.os_faults import _cloud
-from tobiko.openstack.os_faults import _execute
+import tobiko
 
-get_os_fault_cloud_managenemt = _cloud.get_os_fault_cloud_managenemt
-OsFaultsCloudManagementFixture = _cloud.OsFaultsCloudManagementFixture
 
-get_os_fault_config_filename = _config_file.get_os_fault_config_filename
-
-os_faults_execute = _execute.os_faults_execute
+class NoSuchPrivateKeyFilename(tobiko.TobikoException):
+    message = "No such private key filename(s): {key_filename}'"

@@ -14,8 +14,10 @@
 from __future__ import absolute_import
 
 import collections
-import weakref
 import socket
+import typing  # noqa
+import weakref
+
 
 import netaddr
 from oslo_log import log
@@ -41,6 +43,7 @@ DEFAULT_TOPOLOGY_CLASS = (
 
 
 def get_openstack_topology(topology_class=None):
+    # type: (typing.Any) -> OpenStackTopology
     topology_class = topology_class or get_default_openstack_topology_class()
     return tobiko.setup_fixture(topology_class)
 
@@ -81,6 +84,7 @@ def list_openstack_node_groups(topology=None):
 
 
 def get_default_openstack_topology_class():
+    # type: () -> typing.Any
     return DEFAULT_TOPOLOGY_CLASS
 
 

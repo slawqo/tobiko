@@ -14,12 +14,15 @@
 from __future__ import absolute_import
 
 import os
+import typing  # noqa
 
 import jinja2
+import six
 
 from oslo_log import log
 
 import tobiko
+from tobiko.openstack.os_faults import _exception
 from tobiko.openstack import topology
 from tobiko.shell import ssh
 
@@ -37,9 +40,10 @@ class OsFaultsConfigFileFixture(tobiko.SharedFixture):
     config = None
     config_filename = None
     template_filename = None
+    topo = None
 
     def __init__(self, config=None, config_filename=None,
-                 template_filename=None):
+                 template_filename=None, topo=None):
         super(OsFaultsConfigFileFixture, self).__init__()
         self.templates_dir = os.path.join(os.path.dirname(__file__),
                                           'templates')
@@ -49,6 +53,8 @@ class OsFaultsConfigFileFixture(tobiko.SharedFixture):
             self.config_filename = config_filename
         if template_filename is not None:
             self.template_filename = template_filename
+        if topo:
+            self.topo = topo
 
     def setup_fixture(self):
         _config = self.config
@@ -128,61 +134,104 @@ class OsFaultsConfigFileFixture(tobiko.SharedFixture):
                  template_filename, config_filename)
         tobiko.makedirs(config_dirname)
 
-        template_dirname = os.path.dirname(template_filename)
-        j2_env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_dirname),
-            trim_blocks=True)
-        template = j2_env.get_template(template_basename)
-        config_content = template.render(
-            nodes=self.list_nodes(),
-            services=self.list_services(),
-            containers=self.list_containers())
-        with tobiko.open_output_file(config_filename) as f:
-            f.write(config_content)
+        make_os_faults_config_file(config_filename=config_filename,
+                                   template_filename=template_filename,
+                                   topo=self.topo)
         return config_filename
 
-    def list_services(self):
-        return self.config.services
 
-    def list_containers(self):
-        return self.config.containers
+def make_os_faults_config_file(config_filename, template_filename, topo=None):
+    # type: (str, str, topology.OpenStackTopology) -> int
+    template = get_os_faults_config_template(template_filename)
+    config_content = get_os_faults_config_content(template=template, topo=topo)
+    with tobiko.open_output_file(config_filename) as stream:
+        LOG.debug('Write os-foults config file to %r:\n%s', config_filename,
+                  config_content)
+        return stream.write(config_content)
 
-    def list_nodes(self):
-        """Returns a list of dictionaries with nodes name and address."""
-        return [self._node_from_topology(node)
-                for node in topology.list_openstack_nodes()]
 
-    def _node_from_topology(self, node):
-        auth = self._node_auth_from_topology(node)
-        return dict(fqdn=node.name,
-                    ip=str(node.public_ip),
-                    auth=auth)
+def get_os_faults_config_template(filename):
+    # type: (str) -> jinja2.Template
+    basename = os.path.basename(filename)
+    dirname = os.path.dirname(filename)
+    loader = jinja2.FileSystemLoader(dirname)
+    environment = jinja2.Environment(loader=loader, trim_blocks=True)
+    return environment.get_template(basename)
 
-    def _node_auth_from_topology(self, node):
-        jump = self._node_auth_jump_from_topology(node)
-        ssh_parameters = node.ssh_parameters
-        return dict(username=ssh_parameters['username'],
-                    private_key_file=os.path.expanduser(
-                        ssh_parameters['key_filename']),
-                    jump=jump)
 
-    def _node_auth_jump_from_topology(self, node):
-        host_config = ssh.ssh_host_config(str(node.public_ip))
-        if host_config.proxy_jump:
-            proxy_config = ssh.ssh_host_config(host_config.proxy_jump)
-            return dict(username=proxy_config.username,
-                        host=proxy_config.hostname,
-                        private_key_file=os.path.expanduser(
-                            proxy_config.key_filename))
+def get_os_faults_config_content(template, topo=None):
+    # type: (jinja2.Template, topology.OpenStackTopology) -> typing.Text
+    topo = topo or topology.get_openstack_topology()
+    nodes = [get_os_faults_node_from_topology(node) for node in topo.nodes]
+    # TODO: get services and containers from OpenStack topology
+    services = []  # type: typing.List[str]
+    containers = []  # type: typing.List[str]
+    return template.render(nodes=nodes,
+                           services=services,
+                           containers=containers)
+
+
+def get_os_faults_node_from_topology(node):
+    # type: (topology.OpenStackTopologyNode) -> typing.Dict
+    return {'fqdn': node.name,
+            'ip': str(node.public_ip),
+            'auth': get_os_faults_node_auth_from_topology(node)}
+
+
+def get_os_faults_node_auth_from_topology(node):
+    # type: (topology.OpenStackTopologyNode) -> typing.Dict
+    private_key_file = get_os_faults_private_key_file(
+        key_filename=node.ssh_parameters['key_filename'])
+    port = int(node.ssh_parameters.get('port') or 22)
+    if port != 22:
+        raise ValueError('Invalid port value: ' + repr(port))
+    auth = {'username': node.ssh_parameters['username'],
+            'private_key_file': private_key_file}
+    jump = get_os_faults_node_auth_jump_from_topology(node)
+    if jump:
+        auth['jump'] = jump
+    return auth
+
+
+def get_os_faults_node_auth_jump_from_topology(node):
+    # type: (topology.OpenStackTopologyNode) -> typing.Optional[typing.Dict]
+    host_config = ssh.ssh_host_config(str(node.public_ip))
+    if host_config.proxy_jump:
+        config = ssh.ssh_host_config(host_config.proxy_jump)
+        port = int(config.port or 22)
+        if port != 22:
+            raise ValueError('Invalid port value: ' + repr(port))
+        private_key_file = get_os_faults_private_key_file(
+            key_filename=config.key_filename)
+        return {'host': config.hostname,
+                'username': config.username,
+                'private_key_file': private_key_file}
+    else:
+        return None
+
+
+def get_os_faults_private_key_file(key_filename):
+    # type: (typing.Union[str, typing.Sequence]) -> str
+
+    if isinstance(key_filename, six.string_types):
+        key_filename = [key_filename]
+    else:
+        key_filename = list(key_filename)
+    for filename in key_filename:
+        filename = os.path.expanduser(filename)
+        if os.path.exists(filename):
+            return os.path.expanduser(filename)
         else:
-            return None
+            LOG.warning('Private key file not found: %r', filename)
+    raise _exception.NoSuchPrivateKeyFilename(
+        key_filename=', '.join(key_filename))
 
 
 def parse_config_node(node):
+    # type: (str) -> typing.Dict
     fields = node.split('.')
     if len(fields) != 2:
         message = ("Invalid cloud node format: {!r} "
                    "(expected '<name>:<address>')").format(node)
         raise ValueError(message)
-    return {'name': fields[0],
-            'address': fields[1]}
+    return {'name': fields[0], 'address': fields[1]}

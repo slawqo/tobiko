@@ -1,4 +1,5 @@
-# Copyright 2019 Red Hat
+# Copyright (c) 2019 Red Hat
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,13 +14,13 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.openstack.os_faults import _config_file
-from tobiko.openstack.os_faults import _cloud
-from tobiko.openstack.os_faults import _execute
 
-get_os_fault_cloud_managenemt = _cloud.get_os_fault_cloud_managenemt
-OsFaultsCloudManagementFixture = _cloud.OsFaultsCloudManagementFixture
+import testtools
+from tobiko.openstack import os_faults
 
-get_os_fault_config_filename = _config_file.get_os_fault_config_filename
 
-os_faults_execute = _execute.os_faults_execute
+class OsFaultsTest(testtools.TestCase):
+
+    def test_nodes_connection(self):
+        cloud_management = os_faults.get_os_fault_cloud_managenemt()
+        cloud_management.verify()
