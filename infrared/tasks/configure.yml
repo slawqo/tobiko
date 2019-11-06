@@ -13,3 +13,9 @@
       src: "templates/tobiko.conf.j2"
       dest: "{{ test.dir }}/tobiko.conf"
       mode: 0755
+
+- name: Set permissive quotas for instances and cores
+  shell: |
+   source "{{ test.overcloudrc }}"
+   openstack quota set --instances -1 admin
+   openstack quota set --cores -1 admin
