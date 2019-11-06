@@ -9,6 +9,7 @@
       This job provides the base for both the single and multi-node
       test setup. To run a multi-node test inherit from tobiko-devstack and
       set the nodeset to a multi-node one.
+    override-checkout: stable/train
     required-projects:
       - openstack/devstack-gate
       - openstack/heat
