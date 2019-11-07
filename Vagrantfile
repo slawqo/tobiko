@@ -24,7 +24,7 @@ OPENSTACK_GIT_BASE = "https://git.openstack.org"
 
 # DevStack Git repo URL and branch
 DEVSTACK_GIT_REPO = "#{OPENSTACK_GIT_BASE}/openstack-dev/devstack"
-DEVSTACK_GIT_BRANCH = "master"
+DEVSTACK_GIT_BRANCH = "stable/train"
 
 # DevStack destination directory
 DEVSTACK_DEST_DIR = "/opt/stack"
