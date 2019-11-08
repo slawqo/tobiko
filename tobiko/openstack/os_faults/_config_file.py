@@ -174,7 +174,7 @@ def get_os_faults_config_content(template, topo=None):
 def get_os_faults_node_from_topology(node):
     # type: (topology.OpenStackTopologyNode) -> typing.Dict
     return {'fqdn': node.name,
-            'ip': str(node.public_ip),
+            'ip': str(node.ssh_parameters['hostname']),
             'auth': get_os_faults_node_auth_from_topology(node)}
 
 
@@ -184,7 +184,8 @@ def get_os_faults_node_auth_from_topology(node):
         key_filename=node.ssh_parameters['key_filename'])
     port = int(node.ssh_parameters.get('port') or 22)
     if port != 22:
-        raise ValueError('Invalid port value: ' + repr(port))
+        LOG.warning('os-faults only support SSH port 22, but requiring %d for '
+                    'node %r (%s)', port, node.name, node.public_ip)
     auth = {'username': node.ssh_parameters['username'],
             'private_key_file': private_key_file}
     jump = get_os_faults_node_auth_jump_from_topology(node)
@@ -197,14 +198,16 @@ def get_os_faults_node_auth_jump_from_topology(node):
     # type: (topology.OpenStackTopologyNode) -> typing.Optional[typing.Dict]
     host_config = ssh.ssh_host_config(str(node.public_ip))
     if host_config.proxy_jump:
-        config = ssh.ssh_host_config(host_config.proxy_jump)
-        port = int(config.port or 22)
+        proxy_config = ssh.ssh_host_config(host_config.proxy_jump)
+        port = int(proxy_config.port or 22)
         if port != 22:
-            raise ValueError('Invalid port value: ' + repr(port))
+            LOG.warning('os-faults only support SSH port 22, but requiring %d '
+                        'for proxy %r (%s)', port, host_config.proxy_jump,
+                        proxy_config.hostname)
         private_key_file = get_os_faults_private_key_file(
-            key_filename=config.key_filename)
-        return {'host': config.hostname,
-                'username': config.username,
+            key_filename=proxy_config.key_filename)
+        return {'host': proxy_config.hostname,
+                'username': proxy_config.username,
                 'private_key_file': private_key_file}
     else:
         return None
