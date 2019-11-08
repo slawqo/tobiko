@@ -36,7 +36,6 @@ DEVSTACK_SRC_DIR = "#{DEVSTACK_DEST_DIR}/devstack"
 DEVSTACK_HOST_IP = "172.18.161.6"
 
 
-
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
 # backwards compatibility). Please don't change it unless you know what
@@ -99,6 +98,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.synced_folder ".", "/vagrant", type: "rsync",
     rsync__exclude: [".tox/", "tobiko.conf", ".tobiko"]
+
+  # OS faults doesn't support other ports for SSH connection used by ansible
+  config.vm.network "forwarded_port", guest: 22, host: 22
 
   # View the documentation for the provider you are using for more
   # information on available options.
