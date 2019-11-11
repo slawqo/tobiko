@@ -24,6 +24,7 @@ from tobiko import config
 from tobiko.openstack import nova
 from tobiko.tripleo import overcloud
 from tobiko.tripleo import pacemaker
+from tobiko.tripleo import services
 import tobiko
 
 
@@ -102,3 +103,20 @@ class OvercloudPacemakerTest(testtools.TestCase):
     def test_pacemaker_resources_health(self):
         pcs_health = pacemaker.PacemakerResourcesStatus()
         self.assertTrue(pcs_health.all_healthy)
+
+
+@overcloud.skip_if_missing_overcloud
+class OvercloudServicesTest(testtools.TestCase):
+
+    """
+    Assert that a subset of overcloud services are in running state
+    across the overcloud nodes
+    """
+    def test_get_services_resource_table(self):
+        oss = services.OvercloudServicesStatus()
+        self.assertIsInstance(oss.oc_services_df,
+                              pd.DataFrame)
+
+    def test_overcloud_services(self):
+        oss = services.OvercloudServicesStatus()
+        self.assertTrue(oss.basic_overcloud_services_running)
