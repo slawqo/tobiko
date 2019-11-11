@@ -120,3 +120,9 @@ class OvercloudServicesTest(testtools.TestCase):
     def test_overcloud_services(self):
         oss = services.OvercloudServicesStatus()
         self.assertTrue(oss.basic_overcloud_services_running)
+
+    def test_get_overcloud_nodes_running_pcs_resource(self):
+        nodes_list = pacemaker.get_overcloud_nodes_running_pcs_resource(
+           resource_type='(ocf::heartbeat:rabbitmq-cluster):',
+           resource_state='Started')
+        self.assertIsInstance(nodes_list, list)

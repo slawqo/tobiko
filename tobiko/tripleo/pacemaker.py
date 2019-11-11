@@ -57,7 +57,7 @@ def get_pcs_resources_table(hostname='controller-0'):
     stream = six.StringIO(output)
     table = pandas.read_csv(stream, delim_whitespace=True, header=None)
     table.columns = ['resource', 'resource_type', 'resource_state',
-                     'resource location']
+                     'overcloud_node']
     LOG.debug("Got pcs status :\n%s", table)
     return table
 
@@ -191,3 +191,29 @@ class PacemakerResourcesStatus(object):
             LOG.info("pcs status check: not all resources are in healthy "
                      "state")
             raise PcsResourceException()
+
+
+def get_overcloud_nodes_running_pcs_resource(resource=None, resource_type=None,
+                                             resource_state=None):
+    """
+    Check what nodes are running the specified resource/type/state
+    resource/type/state: exact str of a process name as seen in pcs status
+    :return: list of overcloud nodes
+    """
+    pcs_df = get_pcs_resources_table()
+    if resource:
+        pcs_df_query_resource = pcs_df.query('resource=="{}"'.format(
+                                        resource))
+        return pcs_df_query_resource['overcloud_node'].unique().tolist()
+
+    if resource_type and resource_state:
+        pcs_df_query_resource_type_state = pcs_df.query(
+            'resource_type=="{}" and resource_state=="{}"'.format(
+                resource_type, resource_state))
+        return pcs_df_query_resource_type_state[
+            'overcloud_node'].unique().tolist()
+
+    if resource_type and not resource_state:
+        pcs_df_query_resource_type = pcs_df.query(
+            'resource_type=="{}"'.format(resource_type))
+        return pcs_df_query_resource_type['overcloud_node'].unique().tolist()
