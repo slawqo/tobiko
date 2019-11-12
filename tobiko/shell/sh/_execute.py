@@ -39,6 +39,24 @@ class ShellExecuteResult(object):
         self.stdout = stdout and str(stdout) or None
         self.stderr = stderr and str(stderr) or None
 
+    def format(self):
+        text = ''
+        if self.stdin:
+            text += '- stdin: >\n' + _indent(self.stdin) + '\n'
+        if self.stdout:
+            text += '- stdout: >\n' + _indent(self.stdout) + '\n'
+        if self.stderr:
+            text += '- stderr: >\n' + _indent(self.stderr) + '\n'
+        return ("Shell command result:\n"
+                "- command: {command}"
+                "- exit_status: {exit_status}\n"
+                ).format(command=self.command,
+                         exit_status=self.exit_status) + text
+
+
+def _indent(text, space='    ', newline='\n'):
+    return space + (newline + space).join(text.split(newline))
+
 
 def execute(command, environment=None, timeout=None, shell=None,
             stdin=None, stdout=None, stderr=None, ssh_client=None,
