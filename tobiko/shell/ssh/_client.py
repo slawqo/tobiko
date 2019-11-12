@@ -23,8 +23,9 @@ import socket
 import time
 import subprocess
 
-import paramiko
+import netaddr
 from oslo_log import log
+import paramiko
 import six
 
 import tobiko
@@ -371,6 +372,8 @@ class SSHClientManager(object):
     def get_client(self, host, username=None, port=None, proxy_jump=None,
                    host_config=None, config_files=None, proxy_client=None,
                    **connect_parameters):
+        if isinstance(host, netaddr.IPAddress):
+            host = str(host)
         host_config = host_config or _config.ssh_host_config(
             host=host, config_files=config_files)
         hostname = host_config.hostname
@@ -440,8 +443,7 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
             if attempt >= attempts:
                 raise
 
-            LOG.debug("Error logging in to %r: \n(%s)", login, ex,
-                      exc_info=1)
+            LOG.debug("Error logging in to %r: %s", login, ex)
             sleep_time = start_time + interval - time.time()
             if sleep_time > 0.:
                 LOG.debug("Retrying connecting to %r in %d seconds...", login,
