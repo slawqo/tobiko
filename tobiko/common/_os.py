@@ -42,11 +42,12 @@ def makedirs(name, mode=0o777, exist_ok=True):
 @contextlib.contextmanager
 def open_output_file(filename, mode='w', temp_dir=None, text=False):
     basename = os.path.basename(filename)
+    dirname = os.path.dirname(filename)
     prefix, suffix = os.path.splitext(basename)
     prefix += '-'
     temp_fd, temp_filename = tempfile.mkstemp(prefix=prefix,
                                               suffix=suffix,
-                                              dir=temp_dir,
+                                              dir=temp_dir or dirname,
                                               text=text)
     try:
         with os.fdopen(temp_fd, mode) as temp_stream:
