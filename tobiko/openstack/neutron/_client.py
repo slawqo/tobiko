@@ -130,6 +130,11 @@ def list_subnet_cidrs(client=None, **params):
                          for subnet in list_subnets(client=client, **params))
 
 
+def get_floating_ip(floating_ip, client=None, **params):
+    floating_ip = neutron_client(client).show_floatingip(floating_ip, **params)
+    return floating_ip['floatingip']
+
+
 def get_network(network, client=None, **params):
     return neutron_client(client).show_network(network, **params)['network']
 
