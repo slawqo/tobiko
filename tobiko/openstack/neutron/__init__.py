@@ -31,6 +31,7 @@ list_ports = _client.list_ports
 list_subnets = _client.list_subnets
 list_subnet_cidrs = _client.list_subnet_cidrs
 list_agents = _client.list_agents
+get_floating_ip = _client.get_floating_ip
 get_network = _client.get_network
 get_router = _client.get_router
 get_port = _client.get_port
