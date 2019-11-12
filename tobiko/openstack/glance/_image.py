@@ -31,6 +31,17 @@ from tobiko.openstack.glance import _io
 LOG = log.getLogger(__name__)
 
 
+class HasImageMixin(_client.HasGlanceClientMixin):
+
+    @property
+    def image_id(self):
+        raise NotImplementedError
+
+    @property
+    def image(self):
+        return self.get_image(image_id=self.image_id)
+
+
 class GlanceImageStatus(object):
 
     #: The Image service reserved an image ID for the image in the catalog but
@@ -67,21 +78,16 @@ class GlanceImageStatus(object):
     IMPORTING = u'importing'
 
 
-class GlanceImageFixture(tobiko.SharedFixture):
+class GlanceImageFixture(_client.HasGlanceClientMixin, tobiko.SharedFixture):
 
-    client = None
     image_name = None  # type: str
     username = None  # type: str
     password = None  # type: str
     image = None
     wait_interval = 5.
 
-    def __init__(self, image_name=None, username=None, password=None,
-                 client=None):
+    def __init__(self, image_name=None, username=None, password=None):
         super(GlanceImageFixture, self).__init__()
-
-        if client:
-            self.client = client
 
         if image_name:
             self.image_name = image_name
@@ -96,22 +102,21 @@ class GlanceImageFixture(tobiko.SharedFixture):
             self.password = password
 
     def setup_fixture(self):
-        self.setup_client()
         self.setup_image()
 
     def cleanup_fixture(self):
         self.delete_image()
 
-    def setup_client(self):
-        self.client = _client.glance_client(self.client)
-
     def setup_image(self):
         return self.wait_for_image_active()
 
-    def get_image(self):
-        self.image = image = _client.find_image(client=self.client,
-                                                default=None,
-                                                name=self.image_name)
+    def get_image(self, image_id=None, **params):
+        if image_id or params:
+            image = super(GlanceImageFixture, self).get_image(
+                image_id=image_id, **params)
+        else:
+            image = self.find_image(name=self.image_name, default=None)
+        self.image = image
         return image
 
     def delete_image(self, image_id=None):
@@ -120,17 +125,19 @@ class GlanceImageFixture(tobiko.SharedFixture):
             self.image = None
         LOG.debug('Deleting Glance image %r (%r)...', self.image_name,
                   image_id)
-        if _client.delete_image(image_id=image_id, client=self.client):
+        if _client.delete_image(image_id=image_id, client=self.glance_client):
             LOG.debug('Deleted Glance image %r (%r).', self.image_name,
                       image_id)
 
     @property
     def image_id(self):
-        return (self.image or self.get_image()).id
+        image = self.image or self.get_image()
+        return image and image.id or None
 
     @property
     def image_status(self):
-        return (self.image or self.get_image()).status
+        image = self.image or self.get_image()
+        return image and image.status or GlanceImageStatus.DELETED
 
     def wait_for_image_active(self, check=True):
         return self.wait_for_image_status(
@@ -212,22 +219,18 @@ class UploadGranceImageFixture(GlanceImageFixture):
                     # Cleanup cached objects
                     self.image = image = None
 
-                    try:
-                        LOG.debug('Creating Glance image %r '
-                                  '(re-tries left %d)...',
-                                  self.image_name, retries)
-                        image_id = _client.create_image(
-                            client=self.client,
-                            name=self.image_name,
-                            disk_format=self.disk_format,
-                            container_format=self.container_format)['id']
-                    except Exception:
-                        LOG.exception('Image creation failed %r.',
-                                      self.image_name)
-                    else:
-                        cleanup_image_ids.add(image_id)
-                        LOG.debug('Created image %r (id=%r)...',
-                                  self.image_name, image_id)
+                    LOG.debug('Creating Glance image %r '
+                              '(re-tries left %d)...',
+                              self.image_name, retries)
+                    image_id = _client.create_image(
+                        client=self.glance_client,
+                        name=self.image_name,
+                        disk_format=self.disk_format,
+                        container_format=self.container_format)['id']
+
+                    cleanup_image_ids.add(image_id)
+                    LOG.debug('Created image %r (id=%r)...',
+                              self.image_name, image_id)
 
             if image:
                 if image.id in cleanup_image_ids:

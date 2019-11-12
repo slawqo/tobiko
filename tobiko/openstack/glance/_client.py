@@ -15,9 +15,12 @@ from __future__ import absolute_import
 
 from glanceclient.v2 import client as glanceclient
 from glanceclient import exc
+from oslo_log import log
 
 import tobiko
 from tobiko.openstack import _client
+
+LOG = log.getLogger(__name__)
 
 
 class GlanceClientFixture(_client.OpenstackClientFixture):
@@ -81,9 +84,18 @@ def get_image(image_id, client=None, default=_RAISE_ERROR):
             return default
 
 
-def find_image(client=None, unique=False, default=_RAISE_ERROR, **filters):
+def find_image(image=None, client=None, unique=False, default=_RAISE_ERROR,
+               **params):
     """Look for an image matching some property values"""
-    images = list_images(client=client, limit=2, **filters)
+    client = glance_client(client)
+    if image:
+        try:
+            return get_image(image_id=image, default=_RAISE_ERROR)
+        except exc.HTTPNotFound:
+            params.setdefault('name', image)
+
+    limit = unique and 2 or 1
+    images = list_images(client=client, limit=limit, **params)
     if default is _RAISE_ERROR or images:
         if unique:
             return images.unique
@@ -102,3 +114,16 @@ def upload_image(image_id, image_data, client=None, **params):
     """Look for the unique network matching some property values"""
     return glance_client(client).images.upload(
         image_id=image_id, image_data=image_data, **params)
+
+
+class HasGlanceClientMixin(object):
+
+    glance_client = None
+
+    def get_image(self, image_id, **params):
+        return get_image(image_id=image_id,
+                         client=self.glance_client,
+                         **params)
+
+    def find_image(self, **params):
+        return find_image(client=self.glance_client, **params)

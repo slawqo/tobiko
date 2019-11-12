@@ -28,8 +28,9 @@ find_image = _client.find_image
 list_images = _client.list_images
 delete_image = _client.delete_image
 
-GlanceImageFixture = _image.GlanceImageFixture
 FileGlanceImageFixture = _image.FileGlanceImageFixture
+GlanceImageFixture = _image.GlanceImageFixture
+HasImageMixin = _image.HasImageMixin
 URLGlanceImageFixture = _image.URLGlanceImageFixture
 
 open_image_file = _io.open_image_file
