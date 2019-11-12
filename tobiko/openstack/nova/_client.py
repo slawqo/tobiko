@@ -94,14 +94,18 @@ def find_server(client=None, unique=False, **params):
         return servers.first
 
 
-def get_server(server, client=None):
-    return nova_client(client).servers.get(server)
+def get_server(server, client=None, **params):
+    return nova_client(client).servers.get(server, **params)
+
+
+MAX_SERVER_CONSOLE_OUTPUT_LENGTH = 1024 * 256
 
 
 def get_console_output(server, timeout=None, interval=1., length=None,
                        client=None):
     client = nova_client(client)
     start_time = time.time()
+    length = length or MAX_SERVER_CONSOLE_OUTPUT_LENGTH
     while True:
         try:
             output = client.servers.get_console_output(server=server,
@@ -124,3 +128,15 @@ def get_console_output(server, timeout=None, interval=1., length=None,
         time.sleep(interval)
 
     return output
+
+
+class HasNovaClientMixin(object):
+
+    nova_client = None
+
+    def get_server(self, server, **params):
+        return get_server(server=server, client=self.nova_client, **params)
+
+    def get_server_console_output(self, server, **params):
+        return get_console_output(server=server, client=self.nova_client,
+                                  **params)

@@ -17,6 +17,8 @@ from oslo_log import log
 import netaddr
 
 import tobiko
+from tobiko.openstack.nova import _client
+from tobiko.shell import ssh
 from tobiko.shell import ping
 
 
@@ -25,43 +27,106 @@ LOG = log.getLogger(__name__)
 
 def list_server_ip_addresses(server, network_name=None, ip_version=None,
                              address_type=None, check_connectivity=False,
-                             ssh_client=None):
-    selected_addresses = []
+                             ssh_client=None, count=None):
+    ips = tobiko.Selection()
     for _network_name, addresses in server.addresses.items():
+        if count and len(ips) == count:
+            break
+
         # check network name
         if network_name and network_name != _network_name:
             continue
 
         for address in addresses:
-            # check IP address version
-            _ip_version = address['version']
-            if ip_version and ip_version != _ip_version:
-                continue
+            if check_server_ip_address(address,
+                                       ip_version=ip_version,
+                                       address_type=address_type):
+                ips.append(netaddr.IPAddress(address['addr'],
+                                             version=address['version']))
 
-            # check IP address type
-            _address_type = address.get('OS-EXT-IPS:type')
-            if address_type and address_type != _address_type:
-                if _address_type is None:
-                    LOG.warning('Unable to get address type of address %r',
-                                address)
-                continue
+    # check ICMP connectivity
+    if check_connectivity:
+        ips = ping.list_reachable_hosts(ips, ssh_client=ssh_client)
 
-            ip_address = netaddr.IPAddress(address['addr'],
-                                           version=_ip_version)
+    return ips
 
-            # check ICMP connectivity
-            if check_connectivity and not ping.ping(
-                    host=ip_address, ssh_client=ssh_client).received:
-                continue
 
-            selected_addresses.append(ip_address)
+def check_server_ip_address(address, ip_version=None, address_type=None):
+    if ip_version and ip_version != address['version']:
+        return False
 
-    return tobiko.Selection(selected_addresses)
+    # check IP address type
+    if address_type:
+        try:
+            if address_type != address['OS-EXT-IPS:type']:
+                return False
+        except KeyError:
+            message = ("Unable to get IP type from server address {!r}"
+                       ).format(address)
+            raise ValueError(message)
+
+    return True
 
 
 def find_server_ip_address(server, unique=False, **kwargs):
-    addresses = list_server_ip_addresses(server=server, **kwargs)
-    if unique:
-        return addresses.unique
-    else:
-        return addresses.first
+    count = unique and 2 or 1
+    addresses = list_server_ip_addresses(server=server, count=count, **kwargs)
+    return unique and addresses.unique or addresses.first
+
+
+class HasServerMixin(_client.HasNovaClientMixin):
+
+    @property
+    def server_id(self):
+        raise NotImplementedError
+
+    @property
+    def server(self):
+        return _client.get_server(self.server_id)
+
+    @property
+    def server_name(self):
+        return self.server.name
+
+    @property
+    def server_ips(self):
+        return self.list_server_ips()
+
+    def list_server_ips(self, **kwargs):
+        return list_server_ip_addresses(server=self.server, **kwargs)
+
+    @property
+    def server_fixed_ips(self):
+        return self.list_server_ips(address_type='fixed', check=True)
+
+    @property
+    def server_floating_ip(self):
+        floating_ips = self.list_server_ips(address_type='floating', count=1)
+        if floating_ips:
+            return floating_ips.first
+        else:
+            return None
+
+    @property
+    def has_floating_ip(self):
+        return bool(self.server_floating_ip)
+
+    @property
+    def server_console_output(self):
+        return super(HasServerMixin, self).get_server_console_output(
+            server=self.server_id)
+
+    @property
+    def server_public_ip(self):
+        return self.server_floating_ip or self.server_fixed_ips.first
+
+    @property
+    def ssh_client(self):
+        return ssh.ssh_client(host=self.server_public_ip,
+                              username=self.ssh_username,
+                              password=self.ssh_password,
+                              proxy_client=self.ssh_proxy_client)
+
+    ssh_proxy_client = None
+    ssh_username = None
+    ssh_password = None
