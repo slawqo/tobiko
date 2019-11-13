@@ -1,6 +1,7 @@
 - job:
-    name: tobiko-tripleo-update-standalone
-    description: Tobiko TripleO job testing update
+    name: tobiko-tripleo
+    abstract: true
+    description: Base Tobiko TripleO job
     parent: tripleo-ci-base-standalone
     nodeset: single-centos-7-node
     required-projects:
@@ -9,7 +10,6 @@
     branches: ^(?!stable/(newton|ocata|pike|queens)).*$
     vars:
       featureset: '052'
-      tox_envlist: neutron
       featureset_override:
         run_tempest: false
         # Tempest variable to provide cloud name is also used by
@@ -22,5 +22,43 @@
         - quickstart.yml
         - multinode-standalone.yml
         - tobiko.yml
+
+- job:
+    name: tobiko-tripleo-functional
+    description: Functional testing Tobiko TripleO job
+    parent: tobiko-tripleo
+    voting: false
+    vars:
+      tox_envlist: functional
+
+
+- job:
+    name: tobiko-tripleo-scenario
+    description: Scenario testing Tobiko TripleO job
+    parent: tobiko-tripleo
+    voting: false
+    vars:
+      tox_envlist: scenario
+
+
+- job:
+    name: tobiko-tripleo-upgrade-scenario
+    description: Scenario testing Tobiko TripleO upgrade job
+    parent: tobiko-tripleo-scenario
+    voting: false
+    vars:
+      playbooks:
+        - quickstart.yml
+        - multinode-standalone.yml
+        - tobiko.yml
         - multinode-standalone-upgrade.yml
         - tobiko.yml
+
+
+- job:
+    name: tobiko-tripleo-faults-scenario
+    description: OS faults and scenario testing Tobiko TripleO job
+    parent: tobiko-tripleo
+    voting: false
+    vars:
+      tox_envlist: os-faults,scenario

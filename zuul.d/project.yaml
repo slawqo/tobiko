@@ -15,6 +15,7 @@
       jobs:
         - openstack-tox-pylint
         - tobiko-tox-mypy
+
         - tobiko-devstack-functional
         - tobiko-devstack-scenario
         - tobiko-devstack-scenario-centos-7
@@ -23,7 +24,11 @@
         - tobiko-devstack-scenario-centos-7-stein
         - tobiko-devstack-scenario-centos-7-train
         - tobiko-devstack-scenario-ubuntu-bionic
-        - tobiko-tripleo-update-standalone
+
+        - tobiko-tripleo-functional
+        - tobiko-tripleo-scenario
+        - tobiko-tripleo-upgrade-scenario
+        - tobiko-tripleo-faults-scenario
 
     gate:
       jobs:
