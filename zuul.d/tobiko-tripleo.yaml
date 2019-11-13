@@ -23,6 +23,7 @@
         - multinode-standalone.yml
         - tobiko.yml
 
+
 - job:
     name: tobiko-tripleo-functional
     description: Functional testing Tobiko TripleO job
@@ -36,13 +37,13 @@
     name: tobiko-tripleo-scenario
     description: Scenario testing Tobiko TripleO job
     parent: tobiko-tripleo
-    voting: false
+    voting: true
     vars:
       tox_envlist: scenario
 
 
 - job:
-    name: tobiko-tripleo-upgrade-scenario
+    name: tobiko-tripleo-upgrade
     description: Scenario testing Tobiko TripleO upgrade job
     parent: tobiko-tripleo-scenario
     voting: false
@@ -56,9 +57,9 @@
 
 
 - job:
-    name: tobiko-tripleo-faults-scenario
+    name: tobiko-tripleo-faults
     description: OS faults and scenario testing Tobiko TripleO job
     parent: tobiko-tripleo
     voting: false
     vars:
-      tox_envlist: os-faults,scenario
+      tox_envlist: scenario,faults
