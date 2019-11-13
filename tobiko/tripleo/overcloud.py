@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import io
 import os
 
+import pandas
 import six
 
 import tobiko
@@ -163,3 +164,22 @@ def setup_overcloud_keystone_crederntials():
     if has_overcloud():
         keystone.DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES.append(
             OvercloudKeystoneCredentialsFixture)
+
+
+def get_overcloud_nodes_dataframe(oc_node_df_function):
+    """
+     :param oc_node_df_function : a function that queries a oc node
+     using a cli command and returns a datraframe with an added
+     hostname field.
+
+     This function concats oc nodes dataframes into a unified overcloud
+     dataframe, seperated by hostname field
+
+    :return: dataframe of all overcloud nodes processes
+    """
+    oc_nodes_selection = list_overcloud_nodes()
+    oc_nodes_names = [node.name for node in oc_nodes_selection]
+    oc_nodes_dfs = [oc_node_df_function(node_name) for
+                    node_name in oc_nodes_names]
+    oc_procs_df = pandas.concat(oc_nodes_dfs, ignore_index=True)
+    return oc_procs_df
