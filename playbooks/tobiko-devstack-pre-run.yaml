@@ -40,3 +40,13 @@
   roles:
     - role: copy-build-sshkey
       copy_sshkey_target_user: stack
+
+
+- hosts: all
+  roles:
+    - multi-node-setup
+
+
+- hosts: all
+  roles:
+    - orchestrate-devstack

@@ -76,10 +76,9 @@
         log: true
         yaml: true
         yml: true
-
-    pre-run: playbooks/pre-tobiko-devstack.yaml
-    run: playbooks/tobiko-devstack.yaml
-    post-run: playbooks/post-tobiko-devstack.yaml
+    pre-run: playbooks/tobiko-devstack-pre-run.yaml
+    run: playbooks/tobiko-devstack-run.yaml
+    post-run: playbooks/tobiko-devstack-post-run.yaml
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/
@@ -152,7 +151,6 @@
 - job:
     name: tobiko-devstack-scenario
     parent: tobiko-devstack-octavia
-    nodeset: openstack-single-node
     description: |
       Integration test that runs all tests against DevStack provided cloud
     vars:
@@ -169,14 +167,10 @@
 
 
 - job:
-    name: tobiko-devstack-scenario-multinode
-    parent: tobiko-devstack-scenario
+    name: tobiko-devstack-multinode
+    parent: tobiko-devstack-octavia
     abstract: true
-    description: |
-      Base Tobiko devstack job with multinode.
-    roles:
-      - zuul: openstack/neutron-tempest-plugin
-    pre-run: playbooks/multinode-devstack-pre-run.yaml
+    description: Base Tobiko devstack job with multinode.
     vars:
       topology: multinode
       devstack_localrc:
@@ -206,8 +200,8 @@
 
 - job:
     name: tobiko-devstack-faults
-    voting: false
-    parent: tobiko-devstack-scenario-multinode
+    parent: tobiko-devstack-multinode
+    abstract: true
     description: |
       Base Tobiko devstack job to execute scenario+faults+scenario test cases.
     vars:
@@ -244,7 +238,7 @@
     name: tobiko-devstack-faults-ubuntu-bionic
     parent: tobiko-devstack-faults
     nodeset: openstack-three-node-bionic
-    voting: false
+    voting: true
     vars:
       devstack_services:
         tls-proxy: true
