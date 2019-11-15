@@ -17,6 +17,7 @@
       - x/tobiko
     timeout: 7200
     vars:
+      tox_python_version: 3
       devstack_localrc:
         MULTI_HOST: 0
         USE_PYTHON3: true
@@ -225,6 +226,7 @@
       devstack_localrc:
         # CentOS has no support for Python3
         USE_PYTHON3: false
+      tox_python_version: 2
 
 
 - job:

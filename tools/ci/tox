@@ -6,7 +6,8 @@ source $(dirname "$0")/activate
 
 
 # Prefer python 3 over python 2
-TOX_BASE_PYTHON=${PYTHON:-$(which python3 || which python)}
+export PYTHON_VERSION=${PYTHON_VERSION:-3}
+TOX_BASE_PYTHON=${PYTHON:-${CI_TOOLS_DIR}/python}
 TOX_VIRTUAL_ENV=$(realpath "${TOX_VIRTUAL_ENV:-.tox/tox}")
 
 
@@ -47,7 +48,7 @@ function tox_setup {
 
 function tox_install_deps {
     if ! "${TOX_BASE_PYTHON}" -m pip --version; then
-        curl https://bootstrap.pypa.io/get-pip.py --user | "${TOX_BASE_PYTHON}"
+        curl https://bootstrap.pypa.io/get-pip.py | "${TOX_BASE_PYTHON}" - --user
     fi
     if ! "${TOX_BASE_PYTHON}" -m virtualenv --version; then
         "${TOX_BASE_PYTHON}" -m pip install --user virtualenv

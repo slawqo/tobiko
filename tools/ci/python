@@ -1,0 +1,56 @@
+#!/bin/bash
+
+source $(dirname "$0")/activate
+
+PYTHON_VERSION=${PYTHON_VERSION:-}
+
+
+function python() {
+    # call get_python_exe only the first time it is required
+    export PYTHON_EXECUTABLE=${PYTHON_EXECUTABLE:-$(python_executable)}
+    "${PYTHON_EXECUTABLE}" "$@"
+}
+
+
+function python_executable() {
+    local version=${PYTHON_VERSION}
+
+    select_python_executables "${version}" \
+        $(list_python_executables "${version}") | head -1
+}
+
+
+function list_python_executables() {
+    PATH=${CI_TOOLS_ORIGINAL_PATH} which $(list_python_names "${version}")
+}
+
+
+function list_python_names() {
+    local version=${1:-}
+    if [ "${version}" != "" ]; then
+        echo "python${version}"
+    fi
+    echo python3
+    echo python
+}
+
+
+function select_python_executables() {
+    local version=${1:-}
+    local executable
+    shift
+    for executable in "$@"; do
+        "${executable}" -c "${SELECT_PYTHON_EXECUTABLE_SCRIPT}" "${version}"
+    done
+}
+
+
+read -r -d '' SELECT_PYTHON_EXECUTABLE_SCRIPT << END_OF_SCRIPT
+import sys
+version = ".".join(str(i) for i in sys.version_info[:3])
+if version.startswith(sys.argv[1]):
+    print(sys.executable)
+END_OF_SCRIPT
+
+
+python "$@"

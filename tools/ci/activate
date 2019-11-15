@@ -1,3 +1,8 @@
-CI_TOOLS_DIR=$(dirname "${BASH_SOURCE[0]}")
-CI_TOOLS_DIR=$("${CI_TOOLS_DIR}/realpath" "${CI_TOOLS_DIR}")
-PATH=${CI_TOOLS_DIR}:${PATH}
+function tools_dir {
+    local tools_dir=$(dirname "${BASH_SOURCE[0]}")
+    PATH=${CI_TOOLS_ORIGINAL_PATH:-${PATH}} "${tools_dir}/realpath" "${tools_dir}"
+}
+
+export CI_TOOLS_DIR=${CI_TOOLS_DIR:-$(tools_dir)}
+export CI_TOOLS_ORIGINAL_PATH=${CI_TOOLS_ORIGINAL_PATH:-${PATH}}
+export PATH=${CI_TOOLS_DIR}:${PATH}
