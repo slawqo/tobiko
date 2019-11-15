@@ -23,11 +23,6 @@
         - tobiko-devstack-faults-centos-7-queens
         - tobiko-devstack-faults-ubuntu-bionic
 
-        - tobiko-tripleo-functional
-        - tobiko-tripleo-scenario
-        - tobiko-tripleo-faults
-        - tobiko-tripleo-upgrade
-
     gate:
       jobs:
         - openstack-tox-pylint
