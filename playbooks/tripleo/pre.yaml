@@ -1,0 +1,21 @@
+---
+
+- hosts:
+    - primary
+
+  roles:
+    - name: install python3-devel and other requirements
+      role: bindep
+
+    - name: import tripleo-ci common role
+      role: common
+
+    - name: install tripleo
+      role: run-test
+
+    - name: prepare environment to run Tobiko test cases
+      role: tobiko
+      vars:
+        tobiko_pre_run: true
+        tobiko_run: false
+        tobiko_post_run: false

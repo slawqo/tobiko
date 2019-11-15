@@ -1,0 +1,10 @@
+---
+
+- hosts: all
+  roles:
+    - name: collect tobiko test case results
+      role: tobiko
+      vars:
+        tobiko_pre_run: false
+        tobiko_run: false
+        tobiko_post_run: true

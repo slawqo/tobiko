@@ -21,9 +21,13 @@
         - tobiko-devstack-faults-centos-7
         - tobiko-devstack-faults-ubuntu-bionic
         - tobiko-tox-infrared-centos-7
+        - tobiko-tripleo-functional
+        - tobiko-tripleo-faults
+
     gate:
       jobs:
         - tobiko-devstack-functional
+        - tobiko-tripleo-functional
 
     experimental:
       jobs:

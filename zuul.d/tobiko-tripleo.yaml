@@ -2,27 +2,51 @@
     name: tobiko-tripleo
     abstract: true
     description: Base Tobiko TripleO job
-    parent: tripleo-ci-base-standalone
-    nodeset: single-centos-7-node
+    parent: tripleo-ci-centos-7-standalone
     required-projects:
-      - opendev.org/x/tobiko
-    voting: false
-    branches: ^(?!stable/(newton|ocata|pike|queens)).*$
+      - openstack/tripleo-ci
+      - x/tobiko
+
+    pre-run: playbooks/tripleo/pre.yaml
+    run: playbooks/tripleo/run.yaml
+    post-run: playbooks/tripleo/post.yaml
     vars:
+      tobiko_conf:
+        keystone:
+          cloud_name: standalone
       featureset: '052'
       featureset_override:
         run_tempest: false
-        # Tempest variable to provide cloud name is also used by
-        # Tobiko's playbook
-        tempest_cloud_name: "standalone"
+        use_os_tempest: false
         standalone_environment_files:
           - 'environments/low-memory-usage.yaml'
           - 'ci/environments/scenario002-standalone.yaml'
       playbooks:
         - quickstart.yml
         - multinode-standalone.yml
-        - tobiko.yml
-
+      run_test_role_vars:
+        build_test_packages: false
+        artg_skipped_projects:
+          - openstack/puppet-openstack-integration
+          - openstack/puppet-watcher
+          - openstack/tripleo-quickstart
+          - openstack/tripleo-quickstart-extras
+          - openstack/tripleo-upgrade
+          - x/browbeat
+          - openstack/tripleo-ha-utils
+          - openstack/grenade
+          - openstack/project-config
+          - openstack/tripleo-ci
+          - zuul/zuul-jobs
+          - openstack/openstack-virtual-baremetal
+          - openstack/openstack-ansible-os_tempest
+          - openstack/ansible-role-python_venv_build
+          - openstack/ansible-config_template
+          - openstack/ansible-role-collect-logs
+          - openstack/tripleo-ci-internal-jobs
+          - openstack/tripleo-ci-internal-config
+          - tripleo-environments
+          - x/tobiko
 
 - job:
     name: tobiko-tripleo-functional
@@ -37,29 +61,15 @@
     name: tobiko-tripleo-scenario
     description: Scenario testing Tobiko TripleO job
     parent: tobiko-tripleo
-    voting: true
+    abstract: true
     vars:
       tox_envlist: scenario
 
 
 - job:
-    name: tobiko-tripleo-upgrade
-    description: Scenario testing Tobiko TripleO upgrade job
+    name: tobiko-tripleo-faults
+    description: OS faults and scenario testing Tobiko TripleO job
     parent: tobiko-tripleo-scenario
     voting: false
     vars:
-      playbooks:
-        - quickstart.yml
-        - multinode-standalone.yml
-        - tobiko.yml
-        - multinode-standalone-upgrade.yml
-        - tobiko.yml
-
-
-- job:
-    name: tobiko-tripleo-faults
-    description: OS faults and scenario testing Tobiko TripleO job
-    parent: tobiko-tripleo
-    voting: false
-    vars:
-      tox_envlist: scenario,faults
+      tobiko_run_faults: true
