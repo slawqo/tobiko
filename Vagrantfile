@@ -35,6 +35,15 @@ DEVSTACK_SRC_DIR = "#{DEVSTACK_DEST_DIR}/devstack"
 # Host IP address to be assigned to OpenStack in DevStack
 DEVSTACK_HOST_IP = "172.18.161.6"
 
+# local.conf file to be used for DevStack provisioning (es local.conf)
+DEVSTACK_CONF_FILENAME = 'local.conf' # 'ovn-local.conf'
+
+# Local directory with local projects subdirs
+LOCAL_PROJECT_DIR = '..'
+
+# Local projects to be copied from LOCAL_PROJECT_DIR to DEVSTACK_DEST_DIR
+LOCAL_PROJECT_NAMES = [] # ['devstack', 'networking-ovn']
+
 
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
@@ -111,6 +120,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", privileged: false,
     inline: "sudo mv ~/resolv.conf /etc/resolv.conf"
 
+  # Copy local project directories to DevStack DEST directory
+  for project_name in LOCAL_PROJECT_NAMES do
+    local_dir = "#{LOCAL_PROJECT_DIR}/#{project_name}"
+    if Dir.exist?(local_dir) then
+      target_dir = "#{DEVSTACK_DEST_DIR}/#{project_name}"
+      config.vm.synced_folder local_dir, target_dir, type: "rsync",
+        rsync__exclude: [".tox/"]
+    end
+  end
+
   # Enable provisioning with a shell script. Additional provisioners such as
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
@@ -137,6 +156,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       export DEVSTACK_SRC_DIR=#{DEVSTACK_SRC_DIR}
       export DEVSTACK_DEST_DIR=#{DEVSTACK_DEST_DIR}
       export DEVSTACK_HOST_IP=#{DEVSTACK_HOST_IP}
+      export DEVSTACK_CONF_FILENAME=#{DEVSTACK_CONF_FILENAME}
     ' > ./provisionrc
     sudo mv ./provisionrc '#{DEVSTACK_DEST_DIR}/provisionrc'
 
