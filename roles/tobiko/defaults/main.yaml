@@ -1,0 +1,20 @@
+---
+
+# Tobiko workflow parameters
+tobiko_check_tools: true
+tobiko_run_tests: true
+tobiko_run_faults: false
+
+# Remote tobiko directory
+tobiko_dir: "~/src/tobiko"
+
+# Python parameteres
+python_version: ''
+python_command: "{{ tobiko_dir }}/tools/ci/python"
+
+# Tobiko tox parameters
+tox_dir: "{{ tobiko_dir }}"
+tox_command: "{{ tobiko_dir }}/tools/ci/tox"
+tox_envlist: scenario
+tox_extra_args: ''
+tox_posargs: ''

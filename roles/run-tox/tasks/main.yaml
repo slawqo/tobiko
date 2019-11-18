@@ -1,8 +1,0 @@
-- name: Run Tobiko test cases
-  shell:
-    chdir: "{{ tox_dir }}"
-    cmd: |
-      export PYTHON_VERSION={{ tox_python_version }}
-      tools/ci/tox -e "{{ tox_envlist }}" {{ tox_extra_args }}
-  become: true
-  become_user: stack

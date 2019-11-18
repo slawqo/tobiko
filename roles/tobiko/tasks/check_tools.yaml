@@ -1,0 +1,16 @@
+---
+
+- name: "Check Python command '{{ python_command }}'"
+  shell: "{{ python_command }} --version"
+
+
+- name: "Check Python command version is '{{ python_version }}'"
+  shell: |
+      {{ python_command }} '{{ tobiko_dir }}/tools/ci/python_version' \
+        --check-prefix
+
+
+- name: "Check Tox command: '{{ tox_command }}'"
+  shell:
+    chdir: "{{ tox_dir }}"
+    cmd: "{{ tox_command }} --version"

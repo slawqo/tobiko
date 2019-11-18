@@ -17,7 +17,6 @@
       - x/tobiko
     timeout: 7200
     vars:
-      tox_python_version: 3
       devstack_localrc:
         MULTI_HOST: 0
         USE_PYTHON3: true
@@ -168,8 +167,8 @@
 
 
 - job:
-    name: tobiko-devstack-multinode
-    parent: tobiko-devstack
+    name: tobiko-devstack-scenario-multinode
+    parent: tobiko-devstack-scenario
     abstract: true
     description: Base Tobiko devstack job with multinode.
     vars:
@@ -201,12 +200,12 @@
 
 - job:
     name: tobiko-devstack-faults
-    parent: tobiko-devstack-multinode
+    parent: tobiko-devstack-scenario-multinode
     abstract: true
     description: |
       Base Tobiko devstack job to execute scenario+faults+scenario test cases.
     vars:
-      tox_envlist: scenario,faults
+      tobiko_run_faults: true
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/
@@ -226,7 +225,7 @@
       devstack_localrc:
         # CentOS has no support for Python3
         USE_PYTHON3: false
-      tox_python_version: 2
+      python_version: 2
 
 
 - job:

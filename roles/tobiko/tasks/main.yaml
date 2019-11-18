@@ -1,0 +1,29 @@
+---
+
+- environment:
+    PYTHON_VERSION: "{{ python_version }}"
+  block:
+
+    - name: "Check CLI tools"
+      when: tobiko_check_tools | bool
+      include: check_tools.yaml
+
+    - when: tobiko_run_tests
+      block:
+
+      - name: "Run tests"
+        when: tobiko_run_tests | bool
+        include: tasks/run_tests.yaml
+
+      - when: tobiko_run_faults | bool
+        block:
+
+          - name: "Run faults"
+            include: run_tests.yaml
+            vars:
+              tox_envlist: faults
+
+          - name: "Run tests after faults"
+            include: run_tests.yaml
+            vars:
+              tox_posargs: "--combine"

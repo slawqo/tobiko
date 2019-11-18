@@ -1,4 +1,0 @@
-tox_dir: /opt/stack/tobiko
-tox_envlist: scenario
-tox_extra_args: ''
-tox_python_version: ''

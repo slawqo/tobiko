@@ -1,6 +1,6 @@
 - job:
     name: tobiko-devstack-ovn
-    parent: tobiko-devstack-multinode
+    parent: tobiko-devstack-scenario-multinode
     abstract: true
     nodeset: openstack-three-node-bionic
     description: |
