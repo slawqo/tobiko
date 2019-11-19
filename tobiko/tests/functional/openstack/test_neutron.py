@@ -105,9 +105,10 @@ class NeutronApiTestCase(testtools.TestCase):
         self.assertEqual(self.stack.ipv6_subnet_id, subnet['id'])
         self.assertEqual(self.stack.ipv6_subnet_details, subnet)
 
-    def test_find_agents_with_binary_id(self):
-        agents = neutron.list_agents(binary='neutron-l3-agent')
-        self.assertTrue(agents)
+    def test_find_agents_with_binary(self):
+        agent = neutron.list_agents().first
+        agents = neutron.list_agents(binary=agent['binary'])
+        self.assertIn(agent['id'], {a['id'] for a in agents})
 
 
 class PortTest(testtools.TestCase):

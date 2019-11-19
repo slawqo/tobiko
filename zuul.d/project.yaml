@@ -11,6 +11,7 @@
       - build-release-notes-jobs-python3
     vars:
         rtd_webhook_id: '84947'
+
     check:
       jobs:
         - openstack-tox-pylint
@@ -21,6 +22,14 @@
         - tobiko-devstack-faults-centos-7
         - tobiko-devstack-faults-centos-7-queens
         - tobiko-devstack-faults-ubuntu-bionic
+
+        - tobiko-devstack-ovn-functional
+
+    experimental:
+      jobs:
+        - tobiko-devstack-ovn-faults-centos-7
+        - tobiko-devstack-ovn-faults-centos-7-queens
+        - tobiko-devstack-ovn-faults-ubuntu-bionic
 
     gate:
       jobs:
