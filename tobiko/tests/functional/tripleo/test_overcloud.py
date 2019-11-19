@@ -25,6 +25,7 @@ from tobiko.openstack import nova
 from tobiko.tripleo import overcloud
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import services
+from tobiko.tripleo import processes
 import tobiko
 
 
@@ -126,3 +127,20 @@ class OvercloudServicesTest(testtools.TestCase):
            resource_type='(ocf::heartbeat:rabbitmq-cluster):',
            resource_state='Started')
         self.assertIsInstance(nodes_list, list)
+
+
+@overcloud.skip_if_missing_overcloud
+class OvercloudProcessesTest(testtools.TestCase):
+
+    """
+    Assert that a subset of overcloud processes are in running state
+    across the overcloud nodes
+    """
+    def test_get_processes_resource_table(self):
+        ops = processes.OvercloudProcessesStatus()
+        self.assertIsInstance(ops.oc_procs_df,
+                              pd.DataFrame)
+
+    def test_overcloud_processes(self):
+        ops = processes.OvercloudProcessesStatus()
+        self.assertTrue(ops.basic_overcloud_processes_running)
