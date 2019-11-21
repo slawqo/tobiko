@@ -7,16 +7,7 @@
       Base job for devstack/tobiko based networking-ovn jobs.
 
     required-projects:
-      - openstack/barbican
-      - openstack/devstack-gate
-      - openstack/diskimage-builder
-      - openstack/octavia
-      - openstack/octavia-lib
-      - openstack/python-barbicanclient
-      - openstack/python-octaviaclient
       - openstack/networking-ovn
-      - openstack/neutron
-      - openstack/tripleo-image-elements
     timeout: 10800
     vars:
       devstack_localrc:
