@@ -133,7 +133,7 @@
 
 - job:
     name: tobiko-devstack-functional
-    parent: tobiko-devstack-octavia
+    parent: tobiko-devstack
     description: |
       Base Tobiko devstack job to execute functional tests.
     vars:
@@ -151,7 +151,7 @@
 
 - job:
     name: tobiko-devstack-scenario
-    parent: tobiko-devstack-octavia
+    parent: tobiko-devstack
     description: |
       Integration test that runs all tests against DevStack provided cloud
     vars:
@@ -169,7 +169,7 @@
 
 - job:
     name: tobiko-devstack-multinode
-    parent: tobiko-devstack-octavia
+    parent: tobiko-devstack
     abstract: true
     description: Base Tobiko devstack job with multinode.
     vars:
