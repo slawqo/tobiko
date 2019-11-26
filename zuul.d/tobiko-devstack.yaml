@@ -228,6 +228,13 @@
 
 
 - job:
+    name: tobiko-devstack-faults-centos-7-train
+    parent: tobiko-devstack-faults-centos-7
+    override-checkout: stable/train
+    voting: false
+
+
+- job:
     name: tobiko-devstack-faults-centos-7-queens
     parent: tobiko-devstack-faults-centos-7
     override-checkout: stable/queens
