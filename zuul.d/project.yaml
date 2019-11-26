@@ -21,6 +21,7 @@
         - tobiko-devstack-scenario
         - tobiko-devstack-faults-centos-7
         - tobiko-devstack-faults-centos-7-queens
+        - tobiko-devstack-faults-centos-7-train
         - tobiko-devstack-faults-ubuntu-bionic
 
         - tobiko-devstack-ovn-functional
