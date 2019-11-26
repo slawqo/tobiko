@@ -1,5 +1,5 @@
 - job:
-    name: tobiko-devstack
+    name: tobiko-devstack-base
     parent: devstack
     abstract: true
     nodeset: openstack-single-node
@@ -89,7 +89,7 @@
 
 - job:
     name: tobiko-devstack-octavia
-    parent: tobiko-devstack
+    parent: tobiko-devstack-base
     abstract: true
     nodeset: openstack-single-node
     description: |
@@ -127,6 +127,12 @@
         log: true
         yaml: true
         yml: true
+
+
+- job:
+    name: tobiko-devstack
+    parent: tobiko-devstack-octavia
+    abstract: true
 
 
 - job:
