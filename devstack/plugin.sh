@@ -11,65 +11,65 @@ function install_tobiko {
 
 function configure_tobiko {
   # Write configuration to a new temporary file
-  local tobiko_config=$(mktemp)
-  if [ -f "${TOBIKO_CONFIG}" ]; then
+  local tobiko_conf_file=$(mktemp)
+  if [ -f "${TOBIKO_CONF_FILE}" ]; then
     # Start from existing tobiko.conf file
-    cp "${TOBIKO_CONFIG}" "${tobiko_config}"
+    cp "${TOBIKO_CONF_FILE}" "${tobiko_conf}"
   fi
 
-  configure_tobiko_default "${tobiko_config}"
-  configure_tobiko_cirros "${tobiko_config}"
-  configure_tobiko_glance "${tobiko_config}"
-  configure_tobiko_keystone "${tobiko_config}"
-  configure_tobiko_nova "${tobiko_config}"
-  configure_tobiko_neutron "${tobiko_config}"
+  configure_tobiko_default "${tobiko_conf_file}"
+  configure_tobiko_cirros "${tobiko_conf_file}"
+  configure_tobiko_glance "${tobiko_conf_file}"
+  configure_tobiko_keystone "${tobiko_conf_file}"
+  configure_tobiko_nova "${tobiko_conf_file}"
+  configure_tobiko_neutron "${tobiko_conf_file}"
 
-  echo_summary "Apply changes to actual ${TOBIKO_CONFIG} file."
-  sudo mkdir -p $(dirname "${TOBIKO_CONFIG}")
-  sudo mv "${tobiko_config}" "${TOBIKO_CONFIG}"
-  sudo chmod ugo+r "${TOBIKO_CONFIG}"
+  echo_summary "Apply changes to actual ${TOBIKO_CONF_FILE} file."
+  sudo mkdir -p $(dirname "${TOBIKO_CONF_FILE}")
+  sudo mv "${tobiko_conf_file}" "${TOBIKO_CONF_FILE}"
+  sudo chmod ugo+r "${TOBIKO_CONF_FILE}"
 
-  echo "${TOBIKO_CONFIG} file content:"
+  echo "${TOBIKO_CONF_FILE} file content:"
   echo --------------------------------
-  cat "${TOBIKO_CONFIG}"
+  cat "${TOBIKO_CONF_FILE}"
   echo --------------------------------
 }
 
 
 function configure_tobiko_cirros {
-  echo_summary "Write [cirros] section to ${TOBIKO_CONFIG}"
-  local tobiko_config=$1
+  echo_summary "Write [cirros] section to ${TOBIKO_CONF_FILE}"
+  local tobiko_conf_file=$1
 
-  iniset_nonempty "${tobiko_config}" cirros name "${TOBIKO_CIRROS_IMAGE_NAME}"
-  iniset_nonempty "${tobiko_config}" cirros url "${TOBIKO_CIRROS_IMAGE_URL}"
-  iniset_nonempty "${tobiko_config}" cirros file "${TOBIKO_CIRROS_IMAGE_FILE}"
-  iniset_nonempty "${tobiko_config}" cirros username "${TOBIKO_CIRROS_USERNAME}"
-  iniset_nonempty "${tobiko_config}" cirros password "${TOBIKO_CIRROS_PASSWORD}"
+  iniset_nonempty "${tobiko_conf_file}" cirros name "${TOBIKO_CIRROS_IMAGE_NAME}"
+  iniset_nonempty "${tobiko_conf_file}" cirros url "${TOBIKO_CIRROS_IMAGE_URL}"
+  iniset_nonempty "${tobiko_conf_file}" cirros file "${TOBIKO_CIRROS_IMAGE_FILE}"
+  iniset_nonempty "${tobiko_conf_file}" cirros username "${TOBIKO_CIRROS_USERNAME}"
+  iniset_nonempty "${tobiko_conf_file}" cirros password "${TOBIKO_CIRROS_PASSWORD}"
 }
 
 
 function configure_tobiko_default {
-  echo_summary "Write [DEFAULT] section to ${TOBIKO_CONFIG}"
-  local tobiko_config=$1
+  echo_summary "Write [DEFAULT] section to ${TOBIKO_CONF_FILE}"
+  local tobiko_conf_file=$1
 
-  setup_logging "${tobiko_config}"
-  iniset ${tobiko_config} DEFAULT log_dir "${TOBIKO_LOG_DIR}"
-  iniset ${tobiko_config} DEFAULT log_file "${TOBIKO_LOG_FILE}"
-  iniset ${tobiko_config} DEFAULT debug "${TOBIKO_DEBUG}"
+  setup_logging "${tobiko_conf_file}"
+  iniset ${tobiko_conf_file} DEFAULT debug "${TOBIKO_DEBUG}"
+  iniset ${tobiko_conf_file} DEFAULT log_dir $(dirname "${TOBIKO_LOG_FILE}")
+  iniset ${tobiko_conf_file} DEFAULT log_file $(basename "${TOBIKO_LOG_FILE}")
 }
 
 
 function configure_tobiko_glance {
-  echo_summary "Write [glance] section to ${TOBIKO_CONFIG}"
-  local tobiko_config=$1
+  echo_summary "Write [glance] section to ${TOBIKO_CONF_FILE}"
+  local tobiko_conf_file=$1
 
-  iniset_nonempty "${tobiko_config}" glance image_dir "${TOBIKO_GLANCE_IMAGE_DIR}"
+  iniset_nonempty "${tobiko_conf_file}" glance image_dir "${TOBIKO_GLANCE_IMAGE_DIR}"
 }
 
 
 function configure_tobiko_keystone {
-  echo_summary "Write [keystone] section to ${TOBIKO_CONFIG}"
-  local tobiko_config=$1
+  echo_summary "Write [keystone] section to ${TOBIKO_CONF_FILE}"
+  local tobiko_conf_file=$1
 
   local api_version=${IDENTITY_API_VERSION}
   if [ "${api_version}" == '2' ]; then
@@ -97,37 +97,37 @@ function configure_tobiko_keystone {
     "${user_id}" \
     "${TOBIKO_KEYSTONE_USER_DOMAIN_NAME}")
 
-  iniset "${tobiko_config}" keystone cloud_name "${TOBIKO_KEYSTONE_CLOUD_NAME}"
-  iniset "${tobiko_config}" keystone api_version "${api_version}"
-  iniset "${tobiko_config}" keystone auth_url "${auth_url}"
-  iniset "${tobiko_config}" keystone username "${TOBIKO_KEYSTONE_USERNAME}"
-  iniset "${tobiko_config}" keystone password "${TOBIKO_KEYSTONE_PASSWORD}"
-  iniset "${tobiko_config}" keystone project_name "${TOBIKO_KEYSTONE_PROJECT_NAME}"
+  iniset "${tobiko_conf_file}" keystone cloud_name "${TOBIKO_KEYSTONE_CLOUD_NAME}"
+  iniset "${tobiko_conf_file}" keystone api_version "${api_version}"
+  iniset "${tobiko_conf_file}" keystone auth_url "${auth_url}"
+  iniset "${tobiko_conf_file}" keystone username "${TOBIKO_KEYSTONE_USERNAME}"
+  iniset "${tobiko_conf_file}" keystone password "${TOBIKO_KEYSTONE_PASSWORD}"
+  iniset "${tobiko_conf_file}" keystone project_name "${TOBIKO_KEYSTONE_PROJECT_NAME}"
 
   if [ "${api_version}" != '2' ]; then
-    iniset "${tobiko_config}" keystone domain_name "${TOBIKO_KEYSTONE_DOMAIN_NAME}"
-    iniset "${tobiko_config}" keystone user_domain_name \
+    iniset "${tobiko_conf_file}" keystone domain_name "${TOBIKO_KEYSTONE_DOMAIN_NAME}"
+    iniset "${tobiko_conf_file}" keystone user_domain_name \
       "${TOBIKO_KEYSTONE_USER_DOMAIN_NAME}"
-    iniset "${tobiko_config}" keystone project_domain_name \
+    iniset "${tobiko_conf_file}" keystone project_domain_name \
        "${TOBIKO_KEYSTONE_PROJECT_DOMAIN_NAME}"
-    iniset "${tobiko_config}" keystone trust_id "${TOBIKO_KEYSTONE_TRUST_ID}"
+    iniset "${tobiko_conf_file}" keystone trust_id "${TOBIKO_KEYSTONE_TRUST_ID}"
   fi
 }
 
 
 function configure_tobiko_nova {
-  echo_summary "Write [nova] section to ${TOBIKO_CONFIG}"
-  local tobiko_config=$1
+  echo_summary "Write [nova] section to ${TOBIKO_CONF_FILE}"
+  local tobiko_conf_file=$1
 
   # Write key_file
   local key_file=${TOBIKO_NOVA_KEY_FILE:-}
-  iniset "${tobiko_config}" nova key_file "${key_file}"
+  iniset "${tobiko_conf_file}" nova key_file "${key_file}"
 }
 
 
 function configure_tobiko_neutron {
-  echo_summary "Write [neutron] section to ${TOBIKO_CONFIG}"
-  local tobiko_config=$1
+  echo_summary "Write [neutron] section to ${TOBIKO_CONF_FILE}"
+  local tobiko_conf_file=$1
 
   # Write floating network
   local floating_network=${TOBIKO_NEUTRON_FLOATING_NETWORK}
@@ -137,7 +137,7 @@ function configure_tobiko_neutron {
     local networks=( $( openstack network list -f value -c Name --enable --external) )
     local floating_network=${networks[0]}
   fi
-  iniset "${tobiko_config}" neutron floating_network "${floating_network}"
+  iniset "${tobiko_conf_file}" neutron floating_network "${floating_network}"
 }
 
 
