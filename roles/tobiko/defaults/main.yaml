@@ -1,20 +1,17 @@
 ---
 
-# Tobiko workflow parameters
-tobiko_configure: true
-tobiko_check_tools: true
+# Tobiko workflow flags
+tobiko_pre_run: true
+tobiko_run: "{{ tobiko_run_tests or tobiko_run_faults }}"
 tobiko_run_tests: true
 tobiko_run_faults: false
+tobiko_post_run: true
 
 
 # Tobiko sources tobiko directory
 tobiko_source_dir: "{{ role_path | dirname | dirname }}"
 tobiko_dir: "{{ ansible_env.HOME }}/src/tobiko"
 tobiko_user: "{{ ansible_user }}"
-
-# Logging options
-tobiko_debug: True
-tobiko_log_file: "{{ tobiko_dir }}/tobiko.log"
 
 
 # Configuration options
@@ -34,10 +31,16 @@ tobiko_conf_options:
     value: "{{ tobiko_log_file | basename }}"
 
 
+# Logging options
+tobiko_debug: True
+tobiko_log_file: "{{ tobiko_dir }}/tobiko.log"
+
+
 # Output directories where tobiko should write to
 tobiko_output_dirs:
   - "{{ tox_dir }}"
   - "{{ tobiko_log_file | dirname }}"
+  - "{{ test_report_dir }}"
 
 
 tobiko_become_user: ''
@@ -54,3 +57,10 @@ tox_command: "{{ tobiko_dir }}/tools/ci/tox"
 tox_envlist: scenario
 tox_extra_args: ''
 tox_posargs: ''
+
+
+# Tobiko test report parameters
+test_report_dir: "{{ tobiko_log_file | dirname }}"
+test_report_prefix: tobiko_results_
+test_report_name: "01_{{ tox_envlist }}"
+collect_files_dir: "{{ zuul.executor.log_root }}"

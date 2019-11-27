@@ -29,18 +29,20 @@
       become: yes
 
 
-- name: Copy the build ssh key to authorized_keys on all hosts for stack
-  hosts: all
+- hosts: all
   roles:
     - role: copy-build-sshkey
       copy_sshkey_target_user: stack
-
-
-- hosts: all
-  roles:
     - multi-node-setup
-
-
-- hosts: all
-  roles:
     - orchestrate-devstack
+
+
+- hosts: tempest
+  roles:
+    - role: tobiko
+      tags:
+        - tobiko-pre-run
+      vars:
+        tobiko_pre_run: true
+        tobiko_run: false
+        tobiko_post_run: false

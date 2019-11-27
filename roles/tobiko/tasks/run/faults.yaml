@@ -1,0 +1,13 @@
+---
+
+- include: tests.yaml
+  vars:
+    tox_envlist: faults
+    test_report_name: "02_faults"
+
+
+- include: tests.yaml
+  environment:
+    TOBIKO_PREVENT_CREATE=true
+  vars:
+    test_report_name: "03_{{ tox_envlist }}_after_faults"

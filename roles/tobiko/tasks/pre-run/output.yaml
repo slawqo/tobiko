@@ -1,0 +1,13 @@
+---
+
+- become: yes
+  become_user: root
+  block:
+
+    - name: "Ensure Tobiko output directories are writable by {{ tobiko_user }} user"
+      file:
+        path: "{{ item | realpath }}"
+        state: directory
+        owner: '{{ tobiko_user }}'
+        mode: '755'
+      loop: "{{ tobiko_output_dirs | unique }}"

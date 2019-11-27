@@ -62,9 +62,7 @@
               instances: 20
       test_results_stage_name: test_results
       zuul_copy_output:
-        '{{ devstack_log_dir }}/tobiko.log': logs
-        '{{ stage_dir }}/{{ test_results_stage_name }}.subunit': logs
-        '{{ stage_dir }}/{{ test_results_stage_name }}.html': logs
+        '{{ devstack_log_dir }}/tobiko*.log': logs
         '{{ stage_dir }}/stackviz': logs
       extensions_to_txt:
         conf: true
@@ -74,6 +72,7 @@
       tobiko_user: stack
       tobiko_dir: /opt/stack/tobiko
       tobiko_log_file: /opt/stack/logs/tobiko.log
+      test_report_dir: /opt/stack/logs
 
     pre-run: playbooks/tobiko-devstack-pre-run.yaml
     run: playbooks/tobiko-devstack-run.yaml

@@ -1,0 +1,15 @@
+---
+
+- become: yes
+  become_user: root
+  block:
+
+    - name: "Provide {{ tobiko_conf_file }} file"
+      ini_file:
+        path: "{{ tobiko_conf_file }}"
+        section: '{{ item.section }}'
+        option: '{{ item.option }}'
+        value: '{{ item.value }}'
+        owner: root
+        mode: '644'
+      loop: "{{ tobiko_conf_options }}"

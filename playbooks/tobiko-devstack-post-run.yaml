@@ -15,8 +15,17 @@
 ---
 
 - hosts: tempest
+  roles:
+    - role: tobiko
+      tags:
+        - tobiko-post-run
+      vars:
+        tobiko_pre_run: false
+        tobiko_run: false
+        tobiko_post_run: true
+
+
+- hosts: tempest
   become: true
   roles:
-    - role: fetch-subunit-output
-      zuul_work_dir: '{{ devstack_base_dir }}/tobiko'
     - role: process-stackviz

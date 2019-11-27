@@ -14,7 +14,10 @@
 
 ---
 
-- name: Run Tobiko
-  hosts: tempest
+- hosts: tempest
   roles:
     - role: tobiko
+      vars:
+        tobiko_pre_run: false
+        tobiko_run: true
+        tobiko_post_run: false

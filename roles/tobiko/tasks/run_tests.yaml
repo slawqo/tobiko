@@ -1,8 +1,0 @@
----
-
-- name: "Run test '{{ tox_envlist }}' cases from '{{ tox_dir }}'"
-  shell:
-    chdir: "{{ tox_dir }}"
-    cmd: |
-        {{ tox_command }} -e '{{ tox_envlist }}' {{ tox_extra_args }} -- \
-            {{ tox_posargs }}

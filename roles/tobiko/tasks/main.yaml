@@ -6,30 +6,21 @@
     PYTHON_VERSION: "{{ python_version }}"
   block:
 
-    - name: "Configure Tobiko"
-      when: tobiko_configure | bool
-      include: configure.yaml
-
-    - name: "Check CLI tools"
-      when: tobiko_check_tools | bool
-      include: check_tools.yaml
-
-    - when: tobiko_run_tests
+    - when: tobiko_pre_run | bool
       block:
+        - include: pre-run/source.yaml
+        - include: pre-run/config.yaml
+        - include: pre-run/output.yaml
+        - include: pre-run/tools.yaml
 
-        - name: "Run tests"
+    - when: tobiko_run | bool
+      block:
+        - include: run/tests.yaml
           when: tobiko_run_tests | bool
-          include: tasks/run_tests.yaml
 
-        - when: tobiko_run_faults | bool
-          block:
+        - include: run/faults.yaml
+          when: tobiko_run_faults | bool
 
-            - name: "Run faults"
-              include: run_tests.yaml
-              vars:
-                tox_envlist: faults
-
-            - name: "Run tests after faults"
-              include: run_tests.yaml
-              vars:
-                tox_posargs: "--combine"
+    - when: tobiko_post_run | bool
+      block:
+        - include: post-run/report.yaml

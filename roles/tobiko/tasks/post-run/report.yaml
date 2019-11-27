@@ -1,0 +1,25 @@
+---
+
+- name: "Look for test result files in {{ test_report_dir }}"
+  find:
+    paths:
+      - "{{ test_report_dir }}"
+    patterns:
+      - "{{ test_report_prefix }}*.subunit"
+      - "{{ test_report_prefix }}*.html"
+  register: test_result_files
+
+
+- name: "Compress test result files"
+  archive:
+    path: "{{ item.path }}"
+  with_items: "{{ test_result_files.files }}"
+
+
+- name: "Collect test result files"
+  synchronize:
+    dest: "{{ collect_files_dir }}"
+    mode: pull
+    src: "{{ item.path }}.gz"
+    verify_host: true
+  with_items: "{{ test_result_files.files }}"
