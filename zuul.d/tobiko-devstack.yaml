@@ -66,7 +66,7 @@
               instances: 20
       test_results_stage_name: test_results
       zuul_copy_output:
-        '{{ devstack_base_dir }}/tobiko_logs': logs
+        '{{ devstack_log_dir }}/tobiko.log': logs
         '{{ stage_dir }}/{{ test_results_stage_name }}.subunit': logs
         '{{ stage_dir }}/{{ test_results_stage_name }}.html': logs
         '{{ stage_dir }}/stackviz': logs
@@ -115,10 +115,6 @@
         o-hm: true
         o-api: true
       zuul_copy_output:
-        '{{ devstack_base_dir }}/tobiko_logs': logs
-        '{{ stage_dir }}/{{ test_results_stage_name }}.subunit': logs
-        '{{ stage_dir }}/{{ test_results_stage_name }}.html': logs
-        '{{ stage_dir }}/stackviz': logs
         '/var/log/dib-build/': logs
         '/var/log/octavia-tenant-traffic.log': logs
         '/var/log/octavia-amphora.log': logs
