@@ -29,12 +29,6 @@
       become: yes
 
 
-- name: Setup Tobiko log directories
-  hosts: all
-  roles:
-    - setup_tobiko_logs_dir
-
-
 - name: Copy the build ssh key to authorized_keys on all hosts for stack
   hosts: all
   roles:

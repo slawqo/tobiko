@@ -21,10 +21,6 @@
         USE_PYTHON3: true
         LOG_COLOR: false
         NETWORK_API_EXTENSIONS: address-scope,agent,allowed-address-pairs,auto-allocated-topology,availability_zone,binding,default-subnetpools,dhcp_agent_scheduler,dns-domain-ports,dns-integration,dvr,empty-string-filtering,ext-gw-mode,external-net,extra_dhcp_opt,extraroute,filter-validation,fip-port-details,flavors,ip-substring-filtering,l3-flavors,l3-ha,l3_agent_scheduler,logging,metering,multi-provider,net-mtu,net-mtu-writable,network-ip-availability,network_availability_zone,pagination,port-security,project-id,provider,qos,qos-bw-minimum-ingress,qos-fip,quotas,quota_details,rbac-policies,router,router_availability_zone,security-group,port-mac-address-regenerate,port-security-groups-filtering,segment,service-type,sorting,standard-attr-description,standard-attr-revisions,standard-attr-segment,standard-attr-timestamp,standard-attr-tag,subnet_allocation,trunk,trunk-details,uplink-status-propagation
-        # TOBIKO_KEYSTONE_USERNAME: tobiko
-        # TOBIKO_KEYSTONE_PASSWORD: secret_tobiko
-        # TOBIKO_KEYSTONE_PROJECT_NAME: tobiko
-        TOBIKO_LOG_DIR: '{{ devstack_base_dir }}/tobiko_logs'
       devstack_plugins:
         heat: https://opendev.org/openstack/heat.git
         neutron: https://opendev.org/openstack/neutron.git
@@ -75,6 +71,10 @@
         log: true
         yaml: true
         yml: true
+      tobiko_user: stack
+      tobiko_dir: /opt/stack/tobiko
+      tobiko_log_file: /opt/stack/logs/tobiko.log
+
     pre-run: playbooks/tobiko-devstack-pre-run.yaml
     run: playbooks/tobiko-devstack-run.yaml
     post-run: playbooks/tobiko-devstack-post-run.yaml

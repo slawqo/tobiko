@@ -1,8 +1,14 @@
 ---
 
-- environment:
+- become: yes
+  become_user: "{{ tobiko_user }}"
+  environment:
     PYTHON_VERSION: "{{ python_version }}"
   block:
+
+    - name: "Configure Tobiko"
+      when: tobiko_configure | bool
+      include: configure.yaml
 
     - name: "Check CLI tools"
       when: tobiko_check_tools | bool
@@ -11,19 +17,19 @@
     - when: tobiko_run_tests
       block:
 
-      - name: "Run tests"
-        when: tobiko_run_tests | bool
-        include: tasks/run_tests.yaml
+        - name: "Run tests"
+          when: tobiko_run_tests | bool
+          include: tasks/run_tests.yaml
 
-      - when: tobiko_run_faults | bool
-        block:
+        - when: tobiko_run_faults | bool
+          block:
 
-          - name: "Run faults"
-            include: run_tests.yaml
-            vars:
-              tox_envlist: faults
+            - name: "Run faults"
+              include: run_tests.yaml
+              vars:
+                tox_envlist: faults
 
-          - name: "Run tests after faults"
-            include: run_tests.yaml
-            vars:
-              tox_posargs: "--combine"
+            - name: "Run tests after faults"
+              include: run_tests.yaml
+              vars:
+                tox_posargs: "--combine"

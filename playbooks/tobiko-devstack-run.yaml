@@ -18,7 +18,3 @@
   hosts: tempest
   roles:
     - role: tobiko
-      become: true
-      become_user: stack
-      vars:
-        tobiko_dir: /opt/stack/tobiko

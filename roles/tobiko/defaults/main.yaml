@@ -1,16 +1,52 @@
 ---
 
 # Tobiko workflow parameters
+tobiko_configure: true
 tobiko_check_tools: true
 tobiko_run_tests: true
 tobiko_run_faults: false
 
-# Remote tobiko directory
-tobiko_dir: "~/src/tobiko"
+
+# Tobiko sources tobiko directory
+tobiko_source_dir: "{{ role_path | dirname | dirname }}"
+tobiko_dir: "{{ ansible_env.HOME }}/src/tobiko"
+tobiko_user: "{{ ansible_user }}"
+
+# Logging options
+tobiko_debug: True
+tobiko_log_file: "{{ tobiko_dir }}/tobiko.log"
+
+
+# Configuration options
+tobiko_conf_file: /etc/tobiko/tobiko.conf
+tobiko_conf_options:
+
+  - section: DEFAULT
+    option: debug
+    value: "{{ tobiko_debug }}"
+
+  - section: DEFAULT
+    option: log_dir
+    value: "{{ tobiko_log_file | dirname }}"
+
+  - section: DEFAULT
+    option: log_file
+    value: "{{ tobiko_log_file | basename }}"
+
+
+# Output directories where tobiko should write to
+tobiko_output_dirs:
+  - "{{ tox_dir }}"
+  - "{{ tobiko_log_file | dirname }}"
+
+
+tobiko_become_user: ''
+
 
 # Python parameteres
 python_version: ''
 python_command: "{{ tobiko_dir }}/tools/ci/python"
+
 
 # Tobiko tox parameters
 tox_dir: "{{ tobiko_dir }}"

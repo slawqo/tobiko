@@ -1,0 +1,31 @@
+---
+
+- name: "Copy tobiko source code to node: {{ tobiko_source_dir }}/* -> {{ tobiko_dir }}"
+  synchronize:
+    src: "{{ tobiko_source_dir | realpath }}/."
+    dest: "{{ tobiko_dir | realpath }}"
+    use_ssh_args: true
+    recursive: true
+
+
+- become: yes
+  become_user: root
+  block:
+
+    - name: "Provide {{ tobiko_conf_file }} file"
+      ini_file:
+        path: "{{ tobiko_conf_file }}"
+        section: '{{ item.section }}'
+        option: '{{ item.option }}'
+        value: '{{ item.value }}'
+        owner: root
+        mode: '644'
+      loop: "{{ tobiko_conf_options }}"
+
+    - name: "Ensure Tobiko output directories are writable by {{ tobiko_user }} user"
+      file:
+        path: "{{ item | realpath }}"
+        state: directory
+        owner: '{{ tobiko_user }}'
+        mode: '755'
+      loop: "{{ tobiko_output_dirs | unique }}"
