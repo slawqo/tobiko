@@ -10,6 +10,16 @@ function install_tobiko {
 
 
 function configure_tobiko {
+  # Ensure any user can write to log file
+  local log_dir=$(dirname ${TOBIKO_LOG_FILE})
+  if ! [ -d "${log_dir}" ]; then
+    sudo mkdir -p "${log_dir}"
+  fi
+  if ! [ -w "${TOBIKO_LOG_FILE}" ]; then
+    sudo touch "${TOBIKO_LOG_FILE}"
+    sudo chmod ugo+rw "${TOBIKO_LOG_FILE}"
+  fi
+
   # Write configuration to a new temporary file
   local tobiko_conf_file=$(mktemp)
   if [ -f "${TOBIKO_CONF_FILE}" ]; then
