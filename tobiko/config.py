@@ -159,6 +159,14 @@ def init_tobiko_config(default_config_dirs=None, default_config_files=None,
          default_config_files=default_config_files)
     CONF.set_source('tobiko', conf)
 
+    # expand and normalize log_file and log_dir names
+    log_file = conf.log_file or 'tobiko.log'
+    log_dir = conf.log_dir or conf.find_file('.')
+    log_path = os.path.realpath(os.path.expanduser(
+        os.path.join(log_dir, log_file)))
+    conf.log_dir = os.path.dirname(log_path)
+    conf.log_file = os.path.basename(log_path)
+
     # setup final configuration
     log.setup(conf=conf, product_name=product_name, version=version)
     setup_tobiko_config(conf=conf)
