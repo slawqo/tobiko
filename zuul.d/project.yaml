@@ -24,10 +24,9 @@
         - tobiko-devstack-faults-centos-7-train
         - tobiko-devstack-faults-ubuntu-bionic
 
-        - tobiko-devstack-ovn-functional
-
     experimental:
       jobs:
+        - tobiko-devstack-ovn-functional
         - tobiko-devstack-ovn-faults-centos-7
         - tobiko-devstack-ovn-faults-centos-7-queens
         - tobiko-devstack-ovn-faults-ubuntu-bionic
