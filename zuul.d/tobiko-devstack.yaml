@@ -100,7 +100,6 @@
       - openstack/octavia
       - openstack/octavia-lib
       - openstack/python-barbicanclient
-      - openstack/python-octaviaclient
       - openstack/tripleo-image-elements
     timeout: 7800
     vars:
