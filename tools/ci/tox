@@ -5,8 +5,7 @@ set -eu
 source $(dirname "$0")/activate
 
 
-# Prefer python 3 over python 2
-export PYTHON_VERSION=${PYTHON_VERSION:-3}
+export PYTHON_VERSION=${PYTHON_VERSION:-}
 TOX_BASE_PYTHON=${PYTHON:-${CI_TOOLS_DIR}/python}
 TOX_VIRTUAL_ENV=$(realpath "${TOX_VIRTUAL_ENV:-.tox/tox}")
 
