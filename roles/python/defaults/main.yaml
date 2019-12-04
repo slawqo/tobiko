@@ -1,0 +1,31 @@
+python_release: "3.8.0"
+python_version: "3.8"
+python_command: "python{{ python_version }}"
+python_name: "Python-{{ python_release }}"
+python_prefix: "/opt/{{ python_name }}"
+python_executable: "{{ python_prefix }}/bin/{{ python_command }}"
+python_url: "https://www.python.org/ftp/python/{{ python_release }}/{{ python_name }}.tgz"
+python_tar: "{{ ansible_env.HOME }}/{{ python_url | basename }}"
+python_src_dir: "{{ ansible_env.HOME }}/{{ python_name }}"
+
+pip_command: "pip{{ python_version }}"
+pip_executable: "{{ python_prefix }}/bin/{{ pip_command }}"
+pip_url: "https://bootstrap.pypa.io/get-pip.py"
+pip_installer: "{{ ansible_env.HOME }}/{{ pip_url | basename }}"
+
+profile_file: "/etc/profile.d/{{ python_name }}.sh"
+make_jobs: "{{ ansible_processor_vcpus }}"
+
+yum_install_packages:
+  - "@Development tools"
+  - zlib-devel
+  - openssl-devel
+  - bzip2-devel
+  - libffi-devel
+
+pip_install_base_packages:
+  - setuptools
+  - pip
+  - wheel
+
+pip_install_packages: []

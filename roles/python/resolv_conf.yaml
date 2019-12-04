@@ -1,0 +1,13 @@
+---
+
+- hosts: all
+  tasks:
+    - name: Copy /etc/resolv.conf
+      become: yes
+      become_user: root
+      copy:
+        src: /etc/resolv.conf
+        dest: /etc/resolv.conf
+        owner: root
+        group: root
+        mode: '0644'
