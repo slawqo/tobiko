@@ -31,6 +31,8 @@ nova_client = _client.nova_client
 NovaClientFixture = _client.NovaClientFixture
 
 skip_if_missing_hypervisors = _hypervisor.skip_if_missing_hypervisors
+get_same_host_hypervisors = _hypervisor.get_same_host_hypervisors
+get_different_host_hypervisors = _hypervisor.get_different_host_hypervisors
 
 find_server_ip_address = _server.find_server_ip_address
 HasServerMixin = _server.HasServerMixin

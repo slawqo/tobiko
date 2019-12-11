@@ -31,3 +31,12 @@ HeatTemplateFileFixture = _template.HeatTemplateFileFixture
 
 HeatStackFixture = _stack.HeatStackFixture
 heat_stack_parameters = _stack.heat_stack_parameters
+INIT_IN_PROGRESS = _stack.INIT_IN_PROGRESS
+INIT_COMPLETE = _stack.INIT_COMPLETE
+INIT_IN_PROGRESS = _stack.INIT_IN_PROGRESS
+CREATE_IN_PROGRESS = _stack.CREATE_IN_PROGRESS
+CREATE_COMPLETE = _stack.CREATE_COMPLETE
+CREATE_FAILED = _stack.CREATE_FAILED
+DELETE_IN_PROGRESS = _stack.DELETE_IN_PROGRESS
+DELETE_COMPLETE = _stack.DELETE_COMPLETE
+DELETE_FAILED = _stack.DELETE_FAILED
