@@ -1,4 +1,6 @@
-# Copyright 2019 Red Hat
+# Copyright (c) 2019 Red Hat, Inc.
+#
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,17 +15,18 @@
 #    under the License.
 from __future__ import absolute_import
 
-import six
+from tobiko.podman import _client
+from tobiko.podman import _shell
+from tobiko.podman import _exception
 
-from tobiko.tests.unit import _case
-from tobiko.tests.unit import _patch
 
+PodmanClientFixture = _client.PodmanClientFixture
+get_podman_client = _client.get_podman_client
+list_podman_containers = _client.list_podman_containers
+podman_client = _client.podman_client
 
-TobikoUnitTest = _case.TobikoUnitTest
+discover_podman_socket = _shell.discover_podman_socket
+is_podman_running = _shell.is_podman_running
 
-if six.PY3:
-    from tobiko.tests.unit.podman import _mocked_service
-    mocked_service = _mocked_service
-
-PatchFixture = _patch.PatchFixture
-PatchMixin = _patch.PatchMixin
+PodmanError = _exception.PodmanError
+PodmanSocketNotFoundError = _exception.PodmanSocketNotFoundError
