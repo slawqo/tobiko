@@ -9,5 +9,5 @@
         path: "{{ item | realpath }}"
         state: directory
         owner: '{{ tobiko_user }}'
-        mode: '755'
+        mode: '0755'
       loop: "{{ tobiko_output_dirs | unique }}"

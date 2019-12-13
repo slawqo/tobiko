@@ -15,7 +15,11 @@
       register: found_repos
 
     - name: Copy Zuul repos into devstack working directory
-      command: rsync -a {{ item.path }} /opt/stack
+      synchronize:
+        src: "{{ item.path }}"
+        dest: /opt/stack
+        use_ssh_args: true
+        recursive: true
       with_items: '{{ found_repos.files }}'
       become: yes
 

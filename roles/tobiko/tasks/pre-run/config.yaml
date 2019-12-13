@@ -11,5 +11,5 @@
         option: '{{ item.option }}'
         value: '{{ item.value }}'
         owner: root
-        mode: '644'
+        mode: '0644'
       loop: "{{ tobiko_conf_options }}"

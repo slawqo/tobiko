@@ -1,5 +1,6 @@
 - project:
     templates:
+      - ansible-role-jobs
       - build-openstack-docs-pti
       - docs-on-readthedocs
       - openstack-cover-jobs
@@ -7,6 +8,7 @@
       - openstack-python35-jobs
       - openstack-python36-jobs
       - openstack-python37-jobs
+      - openstack-python-jobs
       - publish-to-pypi
       - build-release-notes-jobs-python3
     vars:
@@ -14,9 +16,6 @@
 
     check:
       jobs:
-        - openstack-tox-pylint
-        - tobiko-tox-mypy
-
         - tobiko-devstack-functional
         - tobiko-devstack-scenario
         - tobiko-devstack-faults-centos-7
@@ -30,8 +29,3 @@
         - tobiko-devstack-ovn-faults-centos-7
         - tobiko-devstack-ovn-faults-centos-7-queens
         - tobiko-devstack-ovn-faults-ubuntu-bionic
-
-    gate:
-      jobs:
-        - openstack-tox-pylint
-        - tobiko-tox-mypy
