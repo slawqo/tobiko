@@ -2,7 +2,7 @@
     name: tobiko-devstack-base
     parent: devstack
     abstract: true
-    nodeset: openstack-single-node
+    nodeset: openstack-single-node-bionic
     description: |
       Base Tobiko devstack job.
 
@@ -89,7 +89,6 @@
     name: tobiko-devstack-octavia
     parent: tobiko-devstack-base
     abstract: true
-    nodeset: openstack-single-node
     description: |
       Base Tobiko devstack job to be used with Octavia.
 
