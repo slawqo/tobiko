@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
+
 import tobiko
 from tobiko.openstack.nova import _client
 
@@ -43,10 +45,6 @@ def missing_hypervisors(count=1, **params):
     return max(0, count - len(agents))
 
 
-def has_networking_agents(count=1, **params):
-    return not missing_hypervisors(count=count, **params)
-
-
 def skip_if_missing_hypervisors(count=1, **params):
     message = "missing {return_value!r} hypervisor(s)"
     if params:
@@ -54,3 +52,28 @@ def skip_if_missing_hypervisors(count=1, **params):
             ', '.join("{!s}={!r}".format(k, v) for k, v in params.items()))
     return tobiko.skip_if(message, missing_hypervisors, count=count,
                           **params)
+
+
+def get_same_host_hypervisors(server_ids, hypervisor):
+    host_hypervisors = get_servers_hypervisors(server_ids)
+    same_host_server_ids = host_hypervisors.pop(hypervisor, None)
+    if same_host_server_ids:
+        return {hypervisor: same_host_server_ids}
+    else:
+        return {}
+
+
+def get_different_host_hypervisors(server_ids, hypervisor):
+    host_hypervisors = get_servers_hypervisors(server_ids)
+    host_hypervisors.pop(hypervisor, None)
+    return host_hypervisors
+
+
+def get_servers_hypervisors(server_ids):
+    hypervisors = collections.defaultdict(list)
+    if server_ids:
+        for server_id in (server_ids or list()):
+            server = _client.get_server(server_id)
+            hypervisor = getattr(server, 'OS-EXT-SRV-ATTR:host')
+            hypervisors[hypervisor].append(server_id)
+    return hypervisors

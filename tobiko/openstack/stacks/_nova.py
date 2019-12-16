@@ -165,10 +165,49 @@ class ServerStackFixture(heat.HeatStackFixture):
     def scheduler_hints(self):
         scheduler_hints = {}
         if self.different_host:
-            scheduler_hints.update(different_host=self.different_host)
+            scheduler_hints.update(different_host=list(self.different_host))
         if self.same_host:
-            scheduler_hints.update(same_host=self.same_host)
+            scheduler_hints.update(same_host=list(self.same_host))
         return scheduler_hints
+
+    #: allow to retry creating server in case scheduler hits are not respected
+    retry_create = 3
+    expected_creted_status = {heat.CREATE_COMPLETE}
+
+    def validate_created_stack(self):
+        stack = super(ServerStackFixture, self).validate_created_stack()
+        self.validate_scheduler_hints()
+        return stack
+
+    @property
+    def hypervisor_host(self):
+        return getattr(self.server_details, 'OS-EXT-SRV-ATTR:host')
+
+    def validate_scheduler_hints(self):
+        if self.scheduler_hints:
+            hypervisor = self.hypervisor_host
+            self.validate_same_host_scheduler_hints(hypervisor=hypervisor)
+            self.validate_different_host_scheduler_hints(hypervisor=hypervisor)
+
+    def validate_same_host_scheduler_hints(self, hypervisor):
+        if self.same_host:
+            different_host_hypervisors = nova.get_different_host_hypervisors(
+                self.same_host, hypervisor)
+            if different_host_hypervisors:
+                tobiko.skip("server {!r} of stack {!r} created on "
+                            "different hypervisor host from servers:\n{!r}",
+                            self.server_id, self.stack_name,
+                            different_host_hypervisors)
+
+    def validate_different_host_scheduler_hints(self, hypervisor):
+        if self.different_host:
+            same_host_hypervisors = nova.get_same_host_hypervisors(
+                self.different_host, hypervisor)
+            if same_host_hypervisors:
+                tobiko.skip("server {!r} of stack {!r} created on the same "
+                            "hypervisor host as servers:\n{!r}",
+                            self.server_id, self.stack_name,
+                            same_host_hypervisors)
 
     @property
     def server_details(self):

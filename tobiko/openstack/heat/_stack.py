@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import collections
+import random
 import time
 import typing  # noqa
 
@@ -109,62 +110,87 @@ class HeatStackFixture(tobiko.SharedFixture):
     def get_stack_parameters(self):
         return tobiko.reset_fixture(self.parameters).values
 
+    retry_create_min_sleep = 0.1
+    retry_create_max_sleep = 3.
+
     def create_stack(self, retry=None):
-        """Creates stack based on passed parameters."""
-        created_stack_ids = set()
-        retry = self._get_retry_value(retry)
-        while True:
+        attempts_count = self._get_retry_value(retry)
+        if attempts_count:
+            for attempt_number in range(1, attempts_count):
+                try:
+                    LOG.debug('Creating stack %r: attempt %d of %d',
+                              self.stack_name, attempt_number, attempts_count)
+                    self.try_create_stack()
+                    return self.validate_created_stack()
+                except tobiko.TobikoException:
+                    # I use random time sleep to make conflicting concurrent
+                    # creations less probable to occur
+                    sleep_time = random_sleep_time(
+                        min_time=self.retry_create_min_sleep,
+                        max_time=self.retry_create_max_sleep)
+                    LOG.debug('Failed creating stack %r (attempt %d of %d). '
+                              'Will retry in %s seconds',
+                              self.stack_name, attempt_number, attempts_count,
+                              sleep_time, exc_info=1)
+                    time.sleep(sleep_time)
+
+            LOG.debug('Creating stack %r: attempt %d of %d',
+                      self.stack_name, attempts_count, attempts_count)
+            self.try_create_stack()
+
+        return self.validate_created_stack()
+
+    #: valid status expected to be the stack after exiting from create_stack
+    # method
+    expected_creted_status = {CREATE_IN_PROGRESS, CREATE_COMPLETE}
+
+    def validate_created_stack(self):
+        return self.wait_for_stack_status(
+            expected_status=self.expected_creted_status, check=True)
+
+    def try_create_stack(self):
+        stack = self.wait_for_stack_status(
+            expected_status={CREATE_COMPLETE, CREATE_FAILED,
+                             CREATE_IN_PROGRESS, DELETE_COMPLETE,
+                             DELETE_FAILED})
+
+        stack_status = getattr(stack, 'stack_status', DELETE_COMPLETE)
+        if stack_status in {CREATE_IN_PROGRESS, CREATE_COMPLETE}:
+            LOG.debug('Stack created: %r (id=%r)', self.stack_name, stack.id)
+            return stack
+
+        if stack_status.endswith('_FAILED'):
+            LOG.debug('Delete existing failed stack: %r (id=%r)',
+                      self.stack_name, stack.id)
+            self.delete_stack(stack_id=stack.id)
             stack = self.wait_for_stack_status(
-                expected_status={CREATE_COMPLETE, CREATE_FAILED,
-                                 CREATE_IN_PROGRESS, DELETE_COMPLETE,
-                                 DELETE_FAILED})
-            stack_status = getattr(stack, 'stack_status', DELETE_COMPLETE)
-            expected_status = {CREATE_COMPLETE, CREATE_IN_PROGRESS}
-            if stack_status in expected_status:
-                LOG.debug('Stack created: %r (id=%r)', self.stack_name,
-                          stack.id)
-                for stack_id in created_stack_ids:
-                    if self.stack.id != stack_id:
-                        LOG.warning("Concurrent stack creation: delete "
-                                    "duplicated stack is %r (id=%r).",
-                                    self.stack_name, stack_id)
-                        self.delete_stack(stack_id)
+                expected_status={DELETE_COMPLETE})
 
-                return stack
+        # Cleanup cached objects
+        self.stack = self._outputs = self._resources = None
 
-            if not retry:
-                status_reason = getattr(stack, 'stack_status_reason', None)
-                raise HeatStackCreationFailed(name=self.stack_name,
-                                              observed=stack_status,
-                                              expected=expected_status,
-                                              status_reason=status_reason)
+        # Compile template parameters
+        parameters = self.get_stack_parameters()
+        LOG.debug('Begin creating stack %r...', self.stack_name)
+        try:
+            created_stack_id = self.client.stacks.create(
+                stack_name=self.stack_name,
+                template=self.template.template_yaml,
+                parameters=parameters)['stack']['id']
+        except exc.HTTPConflict:
+            LOG.debug('Stack %r already exists.', self.stack_name)
+            created_stack_id = None
 
-            retry -= 1
-            if stack_status.endswith('_FAILED'):
-                LOG.debug('Delete existing failed stack: %r (id=%r)',
-                          self.stack_name, stack.id)
-                self.delete_stack()
-                stack = self.wait_for_stack_status(
-                    expected_status={DELETE_COMPLETE})
+        stack = self.wait_for_stack_status(
+            expected_status={CREATE_IN_PROGRESS, CREATE_COMPLETE})
+        if created_stack_id and stack.id != created_stack_id:
+            LOG.debug('Concurrent stack creation: delete duplicate stack %r '
+                      '(id=%r)', self.stack_name, created_stack_id)
+            self.delete_stack(stack_id=created_stack_id)
+        return stack
 
-            # Cleanup cached objects
-            self.stack = self._outputs = self._resources = None
-
-            # Compile template parameters
-            parameters = self.get_stack_parameters()
-            try:
-                LOG.debug('Creating stack %r (re-tries left %d)...',
-                          self.stack_name, retry)
-                stack_id = self.client.stacks.create(
-                    stack_name=self.stack_name,
-                    template=self.template.template_yaml,
-                    parameters=parameters)['stack']['id']
-            except exc.HTTPConflict:
-                LOG.debug('Stack %r already exists.', self.stack_name)
-            else:
-                created_stack_ids.add(stack_id)
-                LOG.debug('Creating stack %r (id=%r)...', self.stack_name,
-                          stack_id)
+    def validate_stack(self):
+        return self.stack
 
     _resources = None
 
@@ -184,9 +210,9 @@ class HeatStackFixture(tobiko.SharedFixture):
 
     def delete_stack(self, stack_id=None):
         """Deletes stack."""
+        self.stack = self._outputs = self._resources = None
         if not stack_id:
             stack_id = self.stack_id
-            self.stack = self._outputs = self._resources = None
         try:
             self.client.stacks.delete(stack_id)
         except exc.NotFound:
@@ -212,7 +238,7 @@ class HeatStackFixture(tobiko.SharedFixture):
         except exc.HTTPNotFound:
             self.stack = stack = None
         finally:
-            self._outputs = None
+            self._outputs = self._resources = None
         return stack
 
     def wait_for_create_complete(self, check=True):
@@ -442,3 +468,8 @@ class HeatStackResourceFixture(HeatStackNamespaceFixture):
     @property
     def fixture_name(self):
         return self.stack_name + '.resources'
+
+
+def random_sleep_time(min_time, max_time):
+    assert min_time <= min_time
+    return (max_time - min_time) * random.random() + min_time
