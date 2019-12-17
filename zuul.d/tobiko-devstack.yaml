@@ -218,16 +218,6 @@
     parent: tobiko-devstack-faults
     nodeset: openstack-three-node-centos-7
     voting: false
-    vars:
-      devstack_localrc:
-        # CentOS has no support for Python3
-        USE_PYTHON3: False
-      python_version: 2
-    group-vars:
-      subnode:
-        devstack_localrc:
-          USE_PYTHON3: False
-        python_version: 2
 
 
 - job:
