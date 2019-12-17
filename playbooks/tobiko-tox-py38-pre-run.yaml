@@ -1,0 +1,11 @@
+---
+
+- hosts: all
+  roles:
+    - role: ../roles/python
+      vars:
+        python_version: "3.8"
+        python_release: "3.8.0"
+        pip_install_packages:
+          - virtualenv
+          - tox
