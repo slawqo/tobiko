@@ -1,0 +1,57 @@
+---
+
+- block:
+    - name: check '{{ python_executable }}' is installed
+      shell: |
+        '{{ python_executable }}' --version 2>&1 | \
+            grep 'Python {{ python_version}}'
+      changed_when: false
+
+  rescue:
+
+    - name: install '{{ python_name }}' build requeirements
+      become: yes
+      become_user: root
+      yum:
+        state: present
+        name: '{{ yum_install_packages }}'
+      when: "(yum_install_packages | length) > 0"
+
+    - name: download '{{ python_name }}' from '{{ python_url }}'
+      get_url:
+        url: "{{ python_url }}"
+        dest: "{{ python_tar }}"
+
+    - name: ensure '{{ python_src_dir | dirname }}' directory exists
+      file:
+        path: '{{ python_src_dir }}'
+        state: directory
+
+    - name: extract '{{ python_tar | basename }}' into '{{ python_src_dir }}'
+      unarchive:
+        src: '{{ python_tar }}'
+        dest: '{{ python_src_dir | dirname }}'
+        remote_src: yes
+
+    - name: configure '{{ python_name }}'
+      command:
+        cmd: './configure "--prefix={{ python_prefix }}"'
+        chdir: '{{ python_src_dir }}'
+
+    - name: compile '{{ python_name }}'
+      command:
+        cmd: 'make -j {{ make_jobs }}'
+        chdir: '{{ python_src_dir }}'
+
+    - name: install '{{ python_name }}'
+      become: yes
+      become_user: root
+      command:
+        cmd: 'make install'
+        chdir: '{{ python_src_dir }}'
+
+    - name: check '{{ python_executable }}' is installed
+      shell: |
+        '{{ python_executable }}' --version 2>&1 | \
+            grep 'Python {{ python_version}}'
+      changed_when: false

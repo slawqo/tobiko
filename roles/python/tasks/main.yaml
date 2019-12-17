@@ -1,81 +1,65 @@
 ---
 
 - block:
-    - name: check '{{ python_executable }}' is installed
-      shell: |
-        '{{ python_executable }}' --version 2>&1 | \
-            grep 'Python {{ python_version}}'
+
+    - name: check '{{ python_command }}' command
+      command: "'{{ python_command }}' --version"
       changed_when: false
 
+    - name: Discover '{{ python_command }}' executable path
+      command: "which '{{ python_command }}'"
+      register: discover_python_executable
+      changed_when: false
+
+    - name: register '{{ python_command }}' executable as '{{ discover_python_executable.stdout }}'
+      set_fact:
+        python_executable: '{{ discover_python_executable.stdout }}'
+
   rescue:
-    - name: install '{{ python_name }}' build requeirements
+
+    - name: setup '{{ python_executable }}'
+      include: setup_python.yaml
+
+    - name: add '{{ profile_file }}'
       become: yes
       become_user: root
-      yum:
-        state: present
-        name: '{{ yum_install_packages }}'
-      when: "(yum_install_packages | length) > 0"
+      template:
+        src: profile.sh.j2
+        dest: '{{ profile_file }}'
+        owner: root
+        group: root
+        mode: '0644'
 
-    - name: download '{{ python_name }}' from '{{ python_url }}'
-      get_url:
-        url: "{{ python_url }}"
-        dest: "{{ python_tar }}"
+    - name: reset ssh connection to allow user changes to affect 'current login user'
+      meta: reset_connection
 
-    - name: ensure '{{ python_src_dir | dirname }}' directory exists
-      file:
-        path: '{{ python_src_dir }}'
-        state: directory
-
-    - name: extract '{{ python_tar | basename }}' into '{{ python_src_dir }}'
-      unarchive:
-        src: '{{ python_tar }}'
-        dest: '{{ python_src_dir | dirname }}'
-        remote_src: yes
-
-    - name: configure '{{ python_name }}'
-      command:
-        cmd: './configure "--prefix={{ python_prefix }}"'
-        chdir: '{{ python_src_dir }}'
-
-    - name: compile '{{ python_name }}'
-      command:
-        cmd: 'make -j {{ make_jobs }}'
-        chdir: '{{ python_src_dir }}'
-
-    - name: install '{{ python_name }}'
-      become: yes
-      become_user: root
-      command:
-        cmd: 'make install'
-        chdir: '{{ python_src_dir }}'
-
-    - name: check '{{ python_executable }}' is installed
-      shell: |
-        '{{ python_executable }}' --version 2>&1 | \
-            grep 'Python {{ python_version}}'
+    - name: check '{{ python_command }}' command
+      command: "'{{ python_command }}' --version"
       changed_when: false
 
 
 - block:
-    - name: check '{{ pip_executable }}' is installed
-      command: "'{{ pip_executable }}' --version"
+
+    - name: check '{{ pip_command }}' command
+      command: "'{{ pip_command }}' --version"
       changed_when: false
+
+    - name: discover '{{ pip_command }}' executable path
+      command: "which '{{ pip_command }}'"
+      register: discover_pip_executable
+      changed_when: false
+
+    - name: register '{{ pip_command }}' as '{{ discover_pip_executable.stdout }}'
+      set_fact:
+        pip_executable: '{{ discover_pip_executable.stdout }}'
 
   rescue:
 
+    - name: setup '{{ pip_executable }}'
+      include: setup_pip.yaml
 
-    - name: download Pip installer from '{{ pip_url }}'
-      get_url:
-        url: "{{ pip_url }}"
-        dest: "{{ pip_installer }}"
-
-    - name: "Install '{{ pip_executable }}'"
-      become: yes
-      become_user: root
-      command: "'{{ python_executable }}' '{{ pip_installer }}'"
-
-    - name: check Pip is installed for '{{ pip_executable }}'
-      command: "'{{ pip_executable }}' --version"
+    - name: check '{{ pip_command }}' command
+      command: "'{{ pip_command }}' --version"
       changed_when: false
 
 
@@ -92,14 +76,3 @@
   loop:
     - "{{ pip_install_base_packages }}"
     - "{{ pip_install_packages }}"
-
-
-- name: add '{{ profile_file }}'
-  become: yes
-  become_user: root
-  template:
-    src: profile.sh.j2
-    dest: '{{ profile_file }}'
-    owner: root
-    group: root
-    mode: '0644'

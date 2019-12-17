@@ -2,6 +2,7 @@
 
 - hosts: all
   roles:
+
     - role: .
       vars:
         python_version: "3.8"
@@ -11,12 +12,18 @@
           - tox
 
   tasks:
+
     - name: run test cases
       shell:
         cmd: tox -e py38
         chdir: /vagrant
       register: run_test_cases
       ignore_errors: true
+
+    - name: Install Python devel package required to compile tox reports
+      yum:
+        name: python-devel
+        state: latest
 
     - name: produce test reports
       shell:

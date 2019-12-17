@@ -1,0 +1,23 @@
+---
+
+- block:
+
+    - name: check '{{ pip_executable }}' is installed
+      command: "'{{ pip_executable }}' --version"
+      changed_when: false
+
+  rescue:
+
+    - name: download Pip installer from '{{ pip_url }}'
+      get_url:
+        url: "{{ pip_url }}"
+        dest: "{{ pip_installer }}"
+
+    - name: "Install '{{ pip_executable }}'"
+      become: yes
+      become_user: root
+      command: "'{{ python_executable }}' '{{ pip_installer }}'"
+
+    - name: check Pip is installed for '{{ pip_executable }}'
+      command: "'{{ pip_executable }}' --version"
+      changed_when: false
