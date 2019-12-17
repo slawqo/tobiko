@@ -38,6 +38,35 @@
       changed_when: false
 
 
+- become: yes
+  become_user: root
+  block:
+
+  - name: check sudo '{{ python_command }}' command
+    command: "'{{ python_command }}' --version"
+    changed_when: false
+
+  rescue:
+
+    - name: get sudo 'secure_path'
+      shell: |
+        cat /etc/sudoers |
+            awk '($1 == "Defaults" && $2 == "secure_path"){print $NF}'
+      changed_when: false
+      register: get_sudo_secure_path
+
+    - name: add '{{ python_executable | dirname }}' to sudo 'secure_path'
+      lineinfile:
+        regex: '{{ get_sudo_secure_path.stdout }}'
+        path: /etc/sudoers
+        line: 'Defaults    secure_path = {{ python_executable | dirname }}:{{ get_sudo_secure_path.stdout }}'
+        validate: '/usr/sbin/visudo -cf %s'
+
+    - name: check '{{ python_command }}' command
+      command: "'{{ python_command }}' --version"
+      changed_when: false
+
+
 - block:
 
     - name: check '{{ pip_command }}' command
