@@ -1,0 +1,15 @@
+---
+
+- name: "ensure required Python packages are installed and up-to-date"
+  become: true
+  become_user: root
+  pip:
+    name: "{{ item }}"
+    executable: '{{ pip_executable }}'
+    state: latest
+  vars:
+    ansible_python_interpreter: '{{ python_executable }}'
+  when: (item | length ) > 0
+  loop:
+    - "{{ pip_install_base_packages }}"
+    - "{{ pip_install_packages }}"

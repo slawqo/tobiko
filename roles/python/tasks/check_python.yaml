@@ -1,0 +1,14 @@
+---
+
+- name: check '{{ python_command }}' command
+  command: "'{{ python_command }}' --version"
+  changed_when: false
+
+- name: discover '{{ python_command }}' executable path
+  command: "which '{{ python_command }}'"
+  register: discover_python_executable
+  changed_when: false
+
+- name: register '{{ python_command }}' executable as '{{ discover_python_executable.stdout }}'
+  set_fact:
+    python_executable: '{{ discover_python_executable.stdout }}'

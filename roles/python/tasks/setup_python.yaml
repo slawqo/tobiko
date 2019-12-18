@@ -1,6 +1,7 @@
 ---
 
 - block:
+
     - name: check '{{ python_executable }}' is installed
       shell: |
         '{{ python_executable }}' --version 2>&1 | \
@@ -35,8 +36,9 @@
 
     - name: configure '{{ python_name }}'
       command:
-        cmd: './configure "--prefix={{ python_prefix }}"'
         chdir: '{{ python_src_dir }}'
+        cmd: |
+          ./configure '--prefix={{ python_prefix }}' {{ python_configure_flags }}
 
     - name: compile '{{ python_name }}'
       command:
@@ -55,3 +57,21 @@
         '{{ python_executable }}' --version 2>&1 | \
             grep 'Python {{ python_version}}'
       changed_when: false
+
+
+- name: add '{{ python_profile_file }}'
+  become: yes
+  become_user: root
+  template:
+    src: profile.sh.j2
+    dest: '{{ python_profile_file }}'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: reset ssh connection to allow environment variable changes
+  meta: reset_connection
+
+- name: check '{{ python_command }}' command
+  command: "'{{ python_command }}' --version"
+  changed_when: false

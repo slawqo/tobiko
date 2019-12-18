@@ -1,107 +1,30 @@
 ---
 
 - block:
-
-    - name: check '{{ python_command }}' command
-      command: "'{{ python_command }}' --version"
-      changed_when: false
-
-    - name: Discover '{{ python_command }}' executable path
-      command: "which '{{ python_command }}'"
-      register: discover_python_executable
-      changed_when: false
-
-    - name: register '{{ python_command }}' executable as '{{ discover_python_executable.stdout }}'
-      set_fact:
-        python_executable: '{{ discover_python_executable.stdout }}'
+    - include: check_python.yaml
 
   rescue:
+    - include: setup_python.yaml
+    - include: check_python.yaml
 
-    - name: setup '{{ python_executable }}'
-      include: setup_python.yaml
 
-    - name: add '{{ profile_file }}'
-      become: yes
-      become_user: root
-      template:
-        src: profile.sh.j2
-        dest: '{{ profile_file }}'
-        owner: root
-        group: root
-        mode: '0644'
-
-    - name: reset ssh connection to allow user changes to affect 'current login user'
-      meta: reset_connection
-
-    - name: check '{{ python_command }}' command
-      command: "'{{ python_command }}' --version"
-      changed_when: false
+- block:
+    - include: check_pip.yaml
+  rescue:
+    - include: setup_pip.yaml
+    - include: check_pip.yaml
 
 
 - become: yes
   become_user: root
   block:
-
-  - name: check sudo '{{ python_command }}' command
-    command: "'{{ python_command }}' --version"
-    changed_when: false
+    - include: check_python.yaml
+    - include: check_pip.yaml
 
   rescue:
-
-    - name: get sudo 'secure_path'
-      shell: |
-        cat /etc/sudoers |
-            awk '($1 == "Defaults" && $2 == "secure_path"){print $NF}'
-      changed_when: false
-      register: get_sudo_secure_path
-
-    - name: add '{{ python_executable | dirname }}' to sudo 'secure_path'
-      lineinfile:
-        regex: '{{ get_sudo_secure_path.stdout }}'
-        path: /etc/sudoers
-        line: 'Defaults    secure_path = {{ python_executable | dirname }}:{{ get_sudo_secure_path.stdout }}'
-        validate: '/usr/sbin/visudo -cf %s'
-
-    - name: check '{{ python_command }}' command
-      command: "'{{ python_command }}' --version"
-      changed_when: false
+    - include: setup_sudo.yaml
+    - include: check_python.yaml
+    - include: check_pip.yaml
 
 
-- block:
-
-    - name: check '{{ pip_command }}' command
-      command: "'{{ pip_command }}' --version"
-      changed_when: false
-
-    - name: discover '{{ pip_command }}' executable path
-      command: "which '{{ pip_command }}'"
-      register: discover_pip_executable
-      changed_when: false
-
-    - name: register '{{ pip_command }}' as '{{ discover_pip_executable.stdout }}'
-      set_fact:
-        pip_executable: '{{ discover_pip_executable.stdout }}'
-
-  rescue:
-
-    - name: setup '{{ pip_executable }}'
-      include: setup_pip.yaml
-
-    - name: check '{{ pip_command }}' command
-      command: "'{{ pip_command }}' --version"
-      changed_when: false
-
-
-- name: "ensure base Python packages are installed and up-to-date"
-  become: true
-  become_user: root
-  pip:
-    executable: '{{ pip_executable }}'
-    state: latest
-    name: "{{ item }}"
-  vars:
-    ansible_python_interpreter: '{{ python_executable }}'
-  when: (item | length ) > 0
-  loop:
-    - "{{ pip_install_base_packages }}"
-    - "{{ pip_install_packages }}"
+- include: update_packages.yaml

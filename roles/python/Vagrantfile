@@ -5,7 +5,7 @@
 VAGRANTFILE_API_VERSION = "2"
 
 # Customize the count of CPU cores on the VM
-CPUS = 1
+CPUS = 4
 
 # Customize the amount of memory on the VM
 MEMORY = 512
