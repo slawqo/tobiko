@@ -105,7 +105,10 @@ def get_console_output(server, timeout=None, interval=1., length=None,
                        client=None):
     client = nova_client(client)
     start_time = time.time()
-    length = length or MAX_SERVER_CONSOLE_OUTPUT_LENGTH
+    if length is not None:
+        length = min(length, MAX_SERVER_CONSOLE_OUTPUT_LENGTH)
+    else:
+        length = MAX_SERVER_CONSOLE_OUTPUT_LENGTH
     while True:
         try:
             output = client.servers.get_console_output(server=server,
