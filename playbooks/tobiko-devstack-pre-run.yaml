@@ -36,14 +36,6 @@
 - hosts: all
   roles:
 
-    - name: ensures has 'python3' and 'pip3' commands
-      role: python
-      vars:
-        python_command: python3
-        python_version: 3.7
-        python_release: 3.7.5
-        pip_command: pip3
-
     - role: copy-build-sshkey
       copy_sshkey_target_user: stack
 

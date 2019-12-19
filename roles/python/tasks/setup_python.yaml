@@ -1,15 +1,20 @@
 ---
 
 - block:
-
-    - name: check '{{ python_executable }}' is installed
-      shell: |
-        '{{ python_executable }}' --version 2>&1 | \
-            grep 'Python {{ python_version}}'
+    - name: check '{{ python_command }}' command
+      command: "'{{ python_command }}' --version"
       changed_when: false
 
-  rescue:
+    - name: discover '{{ python_command }}' executable path
+      command: "which '{{ python_command }}'"
+      register: discover_python_executable
+      changed_when: false
 
+    - name: register '{{ python_command }}' executable as '{{ discover_python_executable.stdout }}'
+      set_fact:
+        python_executable: '{{ discover_python_executable.stdout }}'
+
+  rescue:
     - name: install '{{ python_name }}' build requeirements
       become: yes
       become_user: root
@@ -42,14 +47,14 @@
 
     - name: compile '{{ python_name }}'
       command:
-        cmd: 'make -j {{ make_jobs }}'
+        cmd: "make -j '{{ make_jobs }}'"
         chdir: '{{ python_src_dir }}'
 
     - name: install '{{ python_name }}'
       become: yes
       become_user: root
       command:
-        cmd: 'make install'
+        cmd: "make '{{ make_install_goal }}'"
         chdir: '{{ python_src_dir }}'
 
     - name: check '{{ python_executable }}' is installed
@@ -58,20 +63,45 @@
             grep 'Python {{ python_version}}'
       changed_when: false
 
+    - name: add '{{ python_prefix }}/lib' to '{{ ldconfig_file }}'
+      become: yes
+      become_user: root
+      lineinfile:
+        path: '{{ ldconfig_file }}'
+        line: '{{ python_prefix }}/lib'
+        create: yes
+        owner: root
+        group: root
+        mode: '0644'
+      register: add_ldconfig_file
 
-- name: add '{{ python_profile_file }}'
-  become: yes
-  become_user: root
-  template:
-    src: profile.sh.j2
-    dest: '{{ python_profile_file }}'
-    owner: root
-    group: root
-    mode: '0644'
+    - name: run ldconfig after changing '{{ ldconfig_file }}'
+      become: yes
+      become_user: root
+      command: ldconfig
+      when: add_ldconfig_file.changed
 
-- name: reset ssh connection to allow environment variable changes
-  meta: reset_connection
+    - name: add '{{ python_executable | dirname }}' to '{{ bash_profile_file }}'
+      become: yes
+      become_user: root
+      lineinfile:
+        path: '{{ bash_profile_file }}'
+        line: 'PATH={{ python_executable | dirname }}:$PATH'
+        create: yes
+        owner: root
+        group: root
+        mode: '0644'
+      when: (python_executable | dirname) not in ansible_env.PATH.split(':')
+      register: add_python_dir
 
-- name: check '{{ python_command }}' command
-  command: "'{{ python_command }}' --version"
-  changed_when: false
+    - name: reset ssh connection after changing '{{ python_profile_file }}'
+      meta: reset_connection
+
+    - name: check '{{ python_command }}' command
+      command: "'{{ python_command }}' --version"
+      changed_when: false
+
+    - name: discover '{{ python_command }}' executable path
+      command: "which '{{ python_command }}'"
+      register: discover_python_executable
+      changed_when: false

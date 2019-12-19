@@ -1,29 +1,45 @@
-python_release: "3.8.0"
-python_version: "3.8"
-python_command: "python{{ python_version }}"
+
+setup_python: true
+setup_pip: true
+
+python_release: "3.7.5"
+python_version: "3.7"
+python_command: "python3"
 python_name: "Python-{{ python_release }}"
 python_prefix: "/usr/local"
-python_executable: "{{ python_prefix }}/bin/{{ python_command }}"
+python_executable: "{{ python_prefix }}/bin/python{{ python_version }}"
+python_command_link: "{{ python_executable | dirname }}/{{ python_command }}"
 python_url: "https://www.python.org/ftp/python/{{ python_release }}/{{ python_name }}.tgz"
 python_tar: "{{ ansible_env.HOME }}/{{ python_url | basename }}"
 python_src_dir: "{{ ansible_env.HOME }}/{{ python_name }}"
-python_configure_flags: "" # ""--enable-optimizations"
-python_profile_file: "/etc/profile.d/{{ python_name }}.sh"
-python_sudoers_file: "/etc/sudoers.d/60_{{python_name}}"
+python_configure_flags: '--enable-shared LDFLAGS="-Wl,-rpath /usr/local/lib"'
 
-pip_command: "pip{{ python_version }}"
+pip_command: "pip3"
 pip_executable: "{{ python_prefix }}/bin/{{ pip_command }}"
 pip_url: "https://bootstrap.pypa.io/get-pip.py"
 pip_installer: "{{ ansible_env.HOME }}/{{ pip_url | basename }}"
 
 make_jobs: "{{ ansible_processor_vcpus }}"
+make_install_goal: "install"
+
+bash_profile_file: "/etc/profile.d/{{ python_name }}.sh"
+ldconfig_file: "/etc/ld.so.conf.d/{{ python_name }}.conf"
+
 
 yum_install_packages:
   - "@Development tools"
-  - zlib-devel
-  - openssl-devel
   - bzip2-devel
+  - expat-devel
+  - gdbm-devel
   - libffi-devel
+  - libpcap-devel
+  - ncurses-devel
+  - openssl-devel
+  - readline-devel
+  - sqlite-devel
+  - tk-devel
+  - xz-devel
+  - zlib-devel
 
 pip_install_base_packages:
   - setuptools

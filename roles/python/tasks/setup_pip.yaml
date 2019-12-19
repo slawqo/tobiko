@@ -2,9 +2,18 @@
 
 - block:
 
-    - name: check '{{ pip_executable }}' is installed
-      command: "'{{ pip_executable }}' --version"
+    - name: check '{{ pip_command }}' command
+      command: "'{{ pip_command }}' --version"
       changed_when: false
+
+    - name: discover '{{ pip_command }}' executable path
+      command: "which '{{ pip_command }}'"
+      register: discover_pip_executable
+      changed_when: false
+
+    - name: register '{{ pip_command }}' executable as '{{ discover_pip_executable.stdout }}'
+      set_fact:
+        pip_executable: '{{ discover_pip_executable.stdout }}'
 
   rescue:
 
@@ -21,3 +30,31 @@
     - name: check Pip is installed for '{{ pip_executable }}'
       command: "'{{ pip_executable }}' --version"
       changed_when: false
+
+    - name: check '{{ pip_command }}' command
+      command: "'{{ pip_command }}' --version"
+      changed_when: false
+
+
+- name: "ensure required Python packages are installed and up-to-date"
+  become: true
+  become_user: root
+  pip:
+    name: "{{ item }}"
+    executable: '{{ pip_executable }}'
+    state: latest
+  vars:
+    ansible_python_interpreter: '{{ python_executable }}'
+  when: (item | length ) > 0
+  loop:
+    - "{{ pip_install_base_packages }}"
+    - "{{ pip_install_packages }}"
+
+
+- name: "remove '{{ pip_executable | dirname }}/pip'"
+  become: yes
+  become_user: root
+  file:
+    path: '{{ pip_executable | dirname }}/pip'
+    state: absent
+  when: pip_command != "pip"

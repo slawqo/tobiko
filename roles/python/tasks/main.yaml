@@ -1,30 +1,7 @@
 ---
 
-- block:
-    - include: check_python.yaml
+- include: setup_python.yaml
+  when: setup_python | bool
 
-  rescue:
-    - include: setup_python.yaml
-    - include: check_python.yaml
-
-
-- block:
-    - include: check_pip.yaml
-  rescue:
-    - include: setup_pip.yaml
-    - include: check_pip.yaml
-
-
-- become: yes
-  become_user: root
-  block:
-    - include: check_python.yaml
-    - include: check_pip.yaml
-
-  rescue:
-    - include: setup_sudo.yaml
-    - include: check_python.yaml
-    - include: check_pip.yaml
-
-
-- include: update_packages.yaml
+- include: setup_pip.yaml
+  when: setup_pip | bool

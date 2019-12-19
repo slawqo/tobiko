@@ -1,0 +1,83 @@
+---
+
+- hosts: all
+  tasks:
+
+    - name: install default system python and pip packages
+      become: yes
+      yum:
+        state: present
+        name:
+          - python
+          - python-pip
+
+    - name: check default command paths
+      command: "which '{{ item.command }}'"
+      register: which_command
+      changed_when: false
+      failed_when: 'which_command.stdout != item.path'
+      loop:
+        - command: python
+          path: /usr/bin/python
+        - command: pip
+          path: /usr/bin/pip
+
+
+- hosts: all
+  roles:
+    - role: "{{ playbook_dir }}/../../python"
+      vars:
+        python_version: "3.8"
+        python_release: "3.8.0"
+        pip_install_packages:
+          - virtualenv
+          - tox
+
+
+- hosts: all
+  tasks:
+    - name: check command paths
+      command: "which '{{ item.command }}'"
+      register: which_command
+      changed_when: false
+      failed_when: 'which_command.stdout != item.path'
+      loop:
+        - command: python
+          path: /usr/bin/python
+        - command: pip
+          path: /usr/bin/pip
+        - command: python3
+          path: /usr/local/bin/python3
+        - command: python3.8
+          path: /usr/local/bin/python3.8
+        - command: pip3
+          path: /usr/local/bin/pip3
+        - command: pip3.8
+          path: /usr/local/bin/pip3.8
+
+    - name: run Tobiko test cases
+      shell:
+        cmd: tox -e py38 2>&1
+        chdir: /vagrant
+      register: run_test_cases
+      ignore_errors: true
+
+    - name: produce test reports
+      shell:
+        cmd: tox -e report 2>&1
+        chdir: /vagrant
+
+    - name: get test reports
+      fetch:
+        src: "/vagrant/tobiko_results.html"
+        dest: "{{ playbook_dir }}/test_py38/test_results.html"
+        flat: yes
+
+    - name: check test cases result
+      assert:
+        that: run_test_cases.rc == 0
+        fail_msg: |
+          Test cases failed:
+          {{ run_test_cases.stdout }}
+        success_msg: |
+          Test cases passed

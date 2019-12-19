@@ -14,9 +14,9 @@ MEMORY = 512
 # boxes at https://vagrantcloud.com/search.
 BOX = "generic/centos7"
 
-HOSTNAME = "tobiko"
-
 TOX_INI_DIR = '../..'
+
+TEST_DIR = File.join(File.dirname(__FILE__), 'tests')
 
 
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
@@ -29,7 +29,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # https://docs.vagrantup.com.
 
   config.vm.box = BOX
-  config.vm.hostname = HOSTNAME
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -87,8 +86,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     ansible.playbook = "resolv_conf.yaml"
   end
 
-  config.vm.provision "ansible" do |ansible|
-    ansible.playbook = "tox-py38.yaml"
+  # Spawn a VM for each playbook in TEST_DIR
+  for playbook_file in Dir[File.join(TEST_DIR, 'test_*.yaml')] do
+    test_name = File.basename(playbook_file, '.yaml')
+    config.vm.define test_name do |node|
+      node.vm.hostname = test_name.gsub('_', '-')
+      node.vm.provision "ansible" do |ansible|
+        ansible.playbook = playbook_file
+      end
+    end
   end
 
 end
