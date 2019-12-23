@@ -36,6 +36,8 @@
 - hosts: all
   roles:
 
+    - role: bindep
+
     - role: copy-build-sshkey
       copy_sshkey_target_user: stack
 
@@ -46,6 +48,7 @@
 
 - hosts: tempest
   roles:
+
     - role: tobiko
       tags:
         - tobiko-pre-run
