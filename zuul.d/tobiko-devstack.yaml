@@ -148,6 +148,7 @@
 - job:
     name: tobiko-devstack-scenario
     parent: tobiko-devstack
+    abstract: true
     description: |
       Integration test that runs all tests against DevStack provided cloud
     vars:
@@ -238,7 +239,7 @@
     name: tobiko-devstack-faults-ubuntu-bionic
     parent: tobiko-devstack-faults
     nodeset: openstack-three-node-bionic
-    voting: true
+    voting: false
     vars:
       devstack_services:
         tls-proxy: true

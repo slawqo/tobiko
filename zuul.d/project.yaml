@@ -18,13 +18,13 @@
       jobs:
         - tobiko-tox-py38
         - tobiko-devstack-functional
-        - tobiko-devstack-scenario
         - tobiko-devstack-faults-centos-7
         - tobiko-devstack-faults-ubuntu-bionic
 
     gate:
       jobs:
         - tobiko-tox-py38
+        - tobiko-devstack-functional
 
     experimental:
       jobs:
