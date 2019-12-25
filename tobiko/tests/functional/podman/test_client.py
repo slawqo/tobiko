@@ -66,6 +66,8 @@ if six.PY3:
             client.ping()
 
         def test_list_podman_containers(self):
-            for container in podman.list_podman_containers(
-                    ssh_client=self.ssh_client):
+            podman_containers_list = podman.list_podman_containers(
+                    ssh_client=self.ssh_client)
+            self.assertTrue(podman_containers_list)
+            for container in podman_containers_list:
                 self.assertIsInstance(container, containers.Container)

@@ -19,10 +19,11 @@ from tobiko.podman import _exception
 from tobiko.shell import sh
 
 
-def discover_podman_socket(**execute_params):
+def discover_podman_socket(ssh_client=None, **execute_params):
     cmd = "systemctl list-sockets | grep podman | awk '{print $1}'"
     result = sh.execute(cmd, stdin=False, stdout=True, stderr=True,
-                        expect_exit_status=None, **execute_params)
+                        expect_exit_status=None, ssh_client=ssh_client,
+                        **execute_params)
     if result.exit_status or not result.stdout:
         raise _exception.PodmanSocketNotFoundError(details=result.stderr)
     try:

@@ -80,10 +80,14 @@ class PodmanClientFixture(tobiko.SharedFixture):
         return client
 
     def create_client(self):
-        uri = self.discover_podman_socket()
-        if self.ssh_client:
-            uri = ssh.get_port_forward_url(ssh_client=self.ssh_client, url=uri)
-        client = podman.Client(uri=uri)
+        podman_remote_socket = self.discover_podman_socket()
+        remote_uri = 'ssh://{username}@{host}{socket}'.format(
+            username=self.ssh_client.connect_parameters['username'],
+            host=self.ssh_client.host,
+            socket=podman_remote_socket)
+        client = podman.Client(uri=podman_remote_socket,
+                               remote_uri=remote_uri,
+                               identity_file='~/.ssh/id_rsa')
         client.system.ping()
         return client
 
