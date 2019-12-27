@@ -37,11 +37,12 @@ cloud-init.service|loaded|active|exited|Initialcloud-initjob(metadataservicecr)
 
     ssh_client = overcloud.overcloud_ssh_client(hostname)
     output = sh.execute(
-        "systemctl -a --no-pager --plain --no-legend|"
-        "sed \'s/\\s\\s/|/g\'|sed \'s/||*/|/g\'|sed \'s@ @@g\'",
+        "systemctl -a --no-pager --plain --no-legend|grep -v not-found|"
+        "sed \'s/\\s\\s/|/g\'|sed \'s/||*/DELIM/g\'|sed \'s@ @@g\'|"
+        "sed \'s/DELIM$//g\'",
         ssh_client=ssh_client).stdout
     stream = six.StringIO(output)
-    table = pandas.read_csv(stream, sep='|', header=None, skiprows=0)
+    table = pandas.read_csv(stream, sep='DELIM', header=None, skiprows=0)
     table.replace(to_replace=' ', value="", regex=True, inplace=True)
     table.columns = ['UNIT', 'loaded_state', 'active_state',
                      'low_level_state', 'UNIT_DESCRIPTION']
