@@ -4,7 +4,7 @@
   become_user: root
   block:
 
-    - name: "Provide {{ tobiko_conf_file }} file"
+    - name: "provide {{ tobiko_conf_file }} file"
       ini_file:
         path: "{{ tobiko_conf_file }}"
         section: '{{ item.section }}'
@@ -13,3 +13,13 @@
         owner: root
         mode: '0644'
       loop: "{{ tobiko_conf_options }}"
+      when: item.value
+
+    - name: "read {{ tobiko_conf_file }} file"
+      slurp:
+        src: "{{ tobiko_conf_file }}"
+      register: read_tobiko_conf_file
+
+    - name: "show {{ tobiko_conf_file }} file"
+      debug:
+        msg: "{{ read_tobiko_conf_file['content'] | b64decode }}"

@@ -30,10 +30,18 @@ tobiko_conf_options:
     option: log_file
     value: "{{ tobiko_log_file | basename }}"
 
+  - section: keystone
+    option: cloud_name
+    value: "{{ tobiko_cloud_name }}"
+
 
 # Logging options
 tobiko_debug: True
 tobiko_log_file: "{{ tobiko_dir }}/tobiko.log"
+
+
+# Keystone options:
+tobiko_cloud_name: ""
 
 
 # Output directories where tobiko should write to
