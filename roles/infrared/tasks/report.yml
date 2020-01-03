@@ -1,0 +1,19 @@
+---
+
+- name: Create Tobiko report
+  shell:
+    chdir: "{{ test.dir }}"
+    cmd: |
+      source "{{ test.overcloudrc }}"
+      tools/ci/tox -e report
+
+
+- fetch:
+   src: "{{ test.dir }}/{{ item }}"
+   dest: "{{ inventory_dir }}/tobiko_results_{{ test.results_dir_suffix }}/"
+   flat: yes
+  loop:
+    - tobiko.conf
+    - tobiko.log
+    - tobiko_results.html
+    - tobiko_results.xml

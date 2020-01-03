@@ -1,7 +1,7 @@
 ---
 config:
     plugin_type: test
-    entry_point: ./infrared/main.yml
+    entry_point: ./roles/infrared/main.yml
 
 subparsers:
     tobiko:
@@ -26,11 +26,6 @@ subparsers:
                       default: "{{ ansible_env.HOME }}/overcloudrc"
                       help: |
                           The path to the overcloudrc file
-                  venv:
-                      type: Value
-                      default: "{{ ansible_env.HOME }}/tobiko_venv"
-                      help: |
-                          path of existing virtual environment
                   floating_network:
                       type: Value
                       default: "public"
@@ -40,7 +35,7 @@ subparsers:
                       type: Value
                       help: |
                           The set of tests to execute
-                      default: neutron
+                      default: scenario
                   results_dir_suffix:
                       type: Value
                       help: |

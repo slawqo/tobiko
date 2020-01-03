@@ -1,0 +1,8 @@
+---
+
+- name: Run Tobiko Tests
+  shell:
+    chdir: "{{ test.dir }}"
+    cmd: |
+      source "{{ test.overcloudrc }}"
+      tools/ci/tox -e "{{ test.tests }}"

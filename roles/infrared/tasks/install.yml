@@ -41,29 +41,3 @@
 
 - debug: var=git_log.stdout_lines
   when: test.refsec != ''
-
-- name: Create Virtualenv if python >= 3
-  vars:
-      packages: ['pip', 'setuptools', 'tox']
-  pip:
-      virtualenv: "{{ test.venv }}"
-      name: "{{ packages }}"
-      state: latest
-  when: ansible_python.version.major >=3
-
-- name: Create Virtualenv if python <= 2
-  vars:
-      packages: ['pip', 'setuptools', 'tox<=2.5.0']
-  pip:
-      virtualenv: "{{ test.venv }}"
-      name: "{{ packages }}"
-      state: present
-  when: ansible_python.version.major <=2
-
-- name: Install Tobiko
-  pip:
-      chdir: "{{ test.dir }}"
-      name: "."
-      virtualenv: "{{ test.venv }}"
-      editable: true
-      extra_args: "-c https://opendev.org/openstack/requirements/raw/branch/master/upper-constraints.txt -r {{ test.dir }}/requirements.txt"
