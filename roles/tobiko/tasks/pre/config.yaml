@@ -4,16 +4,32 @@
   become_user: root
   block:
 
+    - name: "flattern tobiko configuration"
+      set_fact:
+        tobiko_conf_yaml: |
+            {% for section, options in (sections.items() | sort)  %}
+            {% for option, value in (options.items() | sort)  %}
+            - section: "{{ section }}"
+              option: "{{ option }}"
+              value: "{{ value }}"
+            {% endfor %}
+            {% endfor %}
+      vars:
+        sections: "{{ tobiko_default_conf | combine(tobiko_conf) }}"
+
     - name: "provide {{ tobiko_conf_file }} file"
       ini_file:
         path: "{{ tobiko_conf_file }}"
-        section: '{{ item.section }}'
-        option: '{{ item.option }}'
-        value: '{{ item.value }}'
+        section: "{{ item.section }}"
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
         owner: root
         mode: '0644'
-      loop: "{{ tobiko_conf_options }}"
-      when: item.value
+      when:
+        - item.section
+        - item.option
+        - item.value
+      loop: "{{ tobiko_conf_yaml | from_yaml | list }}"
 
     - name: "read {{ tobiko_conf_file }} file"
       slurp:
