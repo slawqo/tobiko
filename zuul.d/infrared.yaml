@@ -1,0 +1,16 @@
+---
+
+- job:
+    name: tobiko-tox-infrared-centos-7
+    parent: openstack-tox
+    voting: false
+    nodeset: centos-7
+    timeout: 2400
+    description: |
+      Run tobiko infrared plugin
+    vars:
+      tox_envlist: infrared
+      bindep_profile: test
+      python_version: 3.6
+    # compile and install python3.8 from source code
+    pre-run: playbooks/infrared/pre.yaml
