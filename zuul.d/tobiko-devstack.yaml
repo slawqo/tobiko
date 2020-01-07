@@ -73,9 +73,9 @@
       tobiko_log_file: /opt/stack/logs/tobiko.log
       test_report_dir: /opt/stack/logs
 
-    pre-run: playbooks/tobiko-devstack-pre-run.yaml
-    run: playbooks/tobiko-devstack-run.yaml
-    post-run: playbooks/tobiko-devstack-post-run.yaml
+    pre-run: playbooks/devstack/pre.yaml
+    run: playbooks/devstack/run.yaml
+    post-run: playbooks/devstack/post.yaml
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/

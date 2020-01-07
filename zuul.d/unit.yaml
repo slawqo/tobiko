@@ -13,4 +13,4 @@
       tox_envlist: py38
       bindep_profile: test py38
       python_version: 3.8
-    pre-run: playbooks/tobiko-tox-py38-pre-run.yaml
+    pre-run: playbooks/tox-py38/pre.yaml
