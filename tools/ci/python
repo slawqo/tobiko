@@ -2,7 +2,7 @@
 
 source $(dirname "$0")/activate
 
-PYTHON_VERSION=${PYTHON_VERSION:-3}
+PYTHON_VERSION=${PYTHON_VERSION:-}
 
 
 function python() {
