@@ -9,6 +9,10 @@ export PYTHON_VERSION=${PYTHON_VERSION:-}
 TOX_BASE_PYTHON=${PYTHON:-${CI_TOOLS_DIR}/python}
 TOX_VIRTUAL_ENV=$(realpath "${TOX_VIRTUAL_ENV:-.tox/tox}")
 
+BINDEP=${BINDEP:-}
+BINDEP_FILE=${BINDEP_FILE:-$(pwd)/bindep.txt}
+INSTALL_BINDEPS=${INSTALL_BINDEPS:-sudo yum install -y}
+
 
 function tox {
     tox_setup
@@ -41,6 +45,8 @@ function tox_setup {
             curl https://bootstrap.pypa.io/get-pip.py | tox_python
             tox_pip install --upgrade setuptools wheel virtualenv tox
         fi
+
+        tox_install_bindeps
     fi
 }
 
@@ -73,6 +79,29 @@ function tox_activate {
 
 function tox_is_active {
     [ "$(python_prefix)" == "${TOX_VIRTUAL_ENV}" ]
+}
+
+
+function tox_install_bindeps {
+    local bindep_file=${BINDEP_FILE:-$1}
+    if ! [ -r "${bindep_file}" ]; then
+        exit 0
+    fi
+
+    local bindep=${BINDEP:-$(which bindep)}
+    if ! [ -x "${bindep}" ]; then
+        tox_pip install bindep
+        bindep=$(which bindep)
+    fi
+
+    # process ${BINDEP_FILE}
+    local missing_packages=( $("${bindep}" -b -f "${bindep_file}") )
+    if [ "${#missing_packages[@]}" != "0" ]; then
+        ${INSTALL_BINDEPS} "${missing_packages[@]}"
+        if ! "${bindep}" -f "${bindep_file}"; then
+            exit 1
+        fi
+    fi
 }
 
 
