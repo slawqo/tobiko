@@ -8,10 +8,10 @@
 
     - when: tobiko_pre_run | bool
       block:
-        - include: pre-run/source.yaml
-        - include: pre-run/config.yaml
-        - include: pre-run/output.yaml
-        - include: pre-run/tools.yaml
+        - include: pre/source.yaml
+        - include: pre/config.yaml
+        - include: pre/output.yaml
+        - include: pre/tools.yaml
 
     - when: tobiko_run | bool
       block:
@@ -23,4 +23,4 @@
 
     - when: tobiko_post_run | bool
       block:
-        - include: post-run/report.yaml
+        - include: post/report.yaml
