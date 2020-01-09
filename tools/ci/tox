@@ -51,11 +51,22 @@ function tox_setup {
 
 
 function tox_install_deps {
-    if ! "${TOX_BASE_PYTHON}" -m pip --version; then
-        curl https://bootstrap.pypa.io/get-pip.py | "${TOX_BASE_PYTHON}" - --user
-    fi
+    tox_install_pip
     if ! "${TOX_BASE_PYTHON}" -m virtualenv --version; then
         "${TOX_BASE_PYTHON}" -m pip install --user virtualenv
+    fi
+}
+
+
+function tox_install_pip {
+    if ! "${TOX_BASE_PYTHON}" -m pip --version; then
+        if which apt-get && ! "${TOX_BASE_PYTHON}" -c 'import distutils.util'; then
+            # Workaround known get-pip issue #43:
+            # https://github.com/pypa/get-pip/issues/43
+            sudo apt-get update
+            sudo apt-get install -y python3-distutils
+        fi
+        curl https://bootstrap.pypa.io/get-pip.py | "${TOX_BASE_PYTHON}" - --user
     fi
 }
 
@@ -107,7 +118,7 @@ function tox_install_bindeps {
 function tox_install_packages {
     local packages=( "$@" )
 
-    if [ -r /etc/redhat-release ]; then
+    if which yum; then
         if grep -e '^Red Hat Enterprise Linux' /etc/redhat-release; then
             # Ensure *-server-opt repos are enabled
             tox_enable_yum_repos '.*-server-opt\/'
@@ -115,6 +126,12 @@ function tox_install_packages {
 
         # install missing packages
         sudo yum install -y "${packages[@]}"
+
+    elif which apt-get; then
+        sudo apt-get update
+
+        # install missing packages
+        sudo apt-get install -y "${packages[@]}"
 
     else
         echo "Unsupported Linux distribution" 1>&2
