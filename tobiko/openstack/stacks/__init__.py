@@ -56,6 +56,9 @@ SecurityGroupsFixture = _neutron.SecurityGroupsFixture
 ServerStackFixture = _nova.ServerStackFixture
 KeyPairStackFixture = _nova.KeyPairStackFixture
 FlavorStackFixture = _nova.FlavorStackFixture
+ServerGroupStackFixture = _nova.ServerGroupStackFixture
+AffinityServerGroupStackFixture = _nova.AffinityServerGroupStackFixture
+AntiAffinityServerGroupStackFixture = _nova.AntiAffinityServerGroupStackFixture
 
 UbuntuFlavorStackFixture = _ubuntu.UbuntuFlavorStackFixture
 UbuntuImageFixture = _ubuntu.UbuntuImageFixture

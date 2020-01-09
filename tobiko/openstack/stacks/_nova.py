@@ -161,6 +161,11 @@ class ServerStackFixture(heat.HeatStackFixture):
     #: Schedule on same host as this Nova server instance ID
     same_host = None
 
+    #: Scheduler group in which this Nova server is attached
+    @property
+    def scheduler_group(self):
+        return None
+
     @property
     def scheduler_hints(self):
         scheduler_hints = {}
@@ -168,6 +173,8 @@ class ServerStackFixture(heat.HeatStackFixture):
             scheduler_hints.update(different_host=list(self.different_host))
         if self.same_host:
             scheduler_hints.update(same_host=list(self.same_host))
+        if self.scheduler_group:
+            scheduler_hints.update(group=self.scheduler_group)
         return scheduler_hints
 
     #: allow to retry creating server in case scheduler hits are not respected
@@ -293,3 +300,25 @@ def as_str(text):
         return text
     else:
         return text.decode()
+
+
+class ServerGroupStackFixture(heat.HeatStackFixture):
+    template = _hot.heat_template_file('nova/server_group.yaml')
+
+
+class AffinityServerGroupStackFixture(tobiko.SharedFixture):
+    server_group_stack = tobiko.required_setup_fixture(
+        ServerGroupStackFixture)
+
+    @property
+    def scheduler_group(self):
+        return self.server_group_stack.affinity_server_group_id
+
+
+class AntiAffinityServerGroupStackFixture(tobiko.SharedFixture):
+    server_group_stack = tobiko.required_setup_fixture(
+        ServerGroupStackFixture)
+
+    @property
+    def scheduler_group(self):
+        return self.server_group_stack.anti_affinity_server_group_id

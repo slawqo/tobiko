@@ -1,0 +1,27 @@
+heat_template_version: 2014-10-16
+
+description: |
+    Creates server groups for Nova, the first one with anti-affinity scheduling
+    policy, and the second with affinity scheduling policy.
+
+resources:
+    anti_affinity_server_group:
+        type: OS::Nova::ServerGroup
+        properties:
+            name: anti_affinity_server_group
+            policies:
+                - anti-affinity
+
+    affinity_server_group:
+        type: OS::Nova::ServerGroup
+        properties:
+            name: affinity_server_group
+            policies:
+                - affinity
+
+outputs:
+    affinity_server_group_id:
+        value: {get_resource: affinity_server_group}
+
+    anti_affinity_server_group_id:
+        value: {get_resource: anti_affinity_server_group}
