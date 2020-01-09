@@ -11,7 +11,6 @@ TOX_VIRTUAL_ENV=$(realpath "${TOX_VIRTUAL_ENV:-.tox/tox}")
 
 BINDEP=${BINDEP:-}
 BINDEP_FILE=${BINDEP_FILE:-$(pwd)/bindep.txt}
-INSTALL_BINDEPS=${INSTALL_BINDEPS:-sudo yum install -y}
 
 
 function tox {
@@ -97,10 +96,40 @@ function tox_install_bindeps {
     # process ${BINDEP_FILE}
     local missing_packages=( $("${bindep}" -b -f "${bindep_file}") )
     if [ "${#missing_packages[@]}" != "0" ]; then
-        ${INSTALL_BINDEPS} "${missing_packages[@]}"
+        tox_install_packages "${missing_packages[@]}"
         if ! "${bindep}" -f "${bindep_file}"; then
             exit 1
         fi
+    fi
+}
+
+
+function tox_install_packages {
+    local packages=( "$@" )
+
+    if [ -r /etc/redhat-release ]; then
+        if grep -e '^Red Hat Enterprise Linux' /etc/redhat-release; then
+            # Ensure *-server-opt repos are enabled
+            tox_enable_yum_repos '.*-server-opt\/'
+        fi
+
+        # install missing packages
+        sudo yum install -y "${packages[@]}"
+
+    else
+        echo "Unsupported Linux distribution" 1>&2
+        exit 1
+    fi
+}
+
+
+function tox_enable_yum_repos {
+    local yum_repos_regex=$1
+    local yum_repos=( $(yum repolist all |
+                        awk '/'${yum_repos_regex}'/{print $1}' |
+                        xargs -n1 dirname) )
+    if [ "${#yum_repos[@]}" != 0 ]; then
+        sudo yum-config-manager --enable "${yum_repos[@]}"
     fi
 }
 
