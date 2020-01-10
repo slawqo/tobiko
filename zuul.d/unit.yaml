@@ -1,16 +1,30 @@
 ---
 
 - job:
-    name: tobiko-tox-py38
+    name: tobiko-tox-py36-centos-7
     parent: openstack-tox
     nodeset: centos-7
     timeout: 2400
     description: |
-      Run unit tests for an OpenStack Python project under cPython
-      version 3.8.
+      Run unit tests for an OpenStack Python project under cPython version 3.6.
+      Uses tox with the ``py36`` environment.
+    vars:
+      tox_envlist: py36
+      bindep_profile: test py36
+      python_version: 3.6
+
+
+- job:
+    name: tobiko-tox-py38-centos-7
+    parent: openstack-tox
+    nodeset: centos-7
+    timeout: 2400
+    description: |
+      Run unit tests for an OpenStack Python project under cPython version 3.8.
       Uses tox with the ``py38`` environment.
     vars:
       tox_envlist: py38
       bindep_profile: test py38
       python_version: 3.8
+    # compile and install python3.8 from source code
     pre-run: playbooks/tox-py38/pre.yaml
