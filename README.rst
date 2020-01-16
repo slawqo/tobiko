@@ -17,6 +17,26 @@ the CI workflow to perform an operation such as an update or upgrade, and then
 runs test cases to validate that the cloud workloads are still functional.
 
 
+Project Requirements
+--------------------
+
+Tobiko Python framework is being tested with below Python versions:
+
+- Python 3.6
+- Python 3.7
+- Python 3.8
+
+and below Linux distributions:
+
+- CentOS 7 (with Python 3.6 and 3.8)
+- Ubuntu Bionic (with Python 3.6 and 3.7)
+
+The framework is being used for executing test cases. As Tobiko can be executed
+on nodes that are not part of the cloud to test against, this doesn't mean
+Tobiko requires cloud nodes have to run with one of tested Python versions
+or Linux distributions.
+
+
 Main Project Goals
 ~~~~~~~~~~~~~~~~~~
 
