@@ -347,3 +347,11 @@ def get_bool_env(name):
             LOG.exception("Environment variable %r is not a boolean: %r",
                           name, value)
     return None
+
+
+def get_list_env(name, separator=','):
+    value = get_env(name)
+    if value:
+        return value.split(separator)
+    else:
+        return []

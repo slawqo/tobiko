@@ -20,6 +20,7 @@ from tobiko.common import _fixture
 from tobiko.common import _logging
 from tobiko.common.managers import testcase as testcase_manager
 from tobiko.common.managers import loader as loader_manager
+from tobiko.common import _operation
 from tobiko.common import _os
 from tobiko.common import _select
 from tobiko.common import _skip
@@ -60,6 +61,16 @@ load_module = loader_manager.load_module
 
 makedirs = _os.makedirs
 open_output_file = _os.open_output_file
+
+runs_operation = _operation.runs_operation
+before_operation = _operation.before_operation
+after_operation = _operation.after_operation
+with_operation = _operation.with_operation
+RunsOperations = _operation.RunsOperations
+Operation = _operation.Operation
+get_operation = _operation.get_operation
+get_operation_name = _operation.get_operation_name
+operation_config = _operation.operation_config
 
 discover_testcases = testcase_manager.discover_testcases
 
