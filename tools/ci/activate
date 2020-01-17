@@ -6,3 +6,5 @@ function tools_dir {
 export CI_TOOLS_DIR=${CI_TOOLS_DIR:-$(tools_dir)}
 export CI_TOOLS_ORIGINAL_PATH=${CI_TOOLS_ORIGINAL_PATH:-${PATH}}
 export PATH=${CI_TOOLS_DIR}:${PATH}
+
+export PYTHONWARNINGS=${PYTHONWARNINGS:-ignore}
