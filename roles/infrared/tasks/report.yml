@@ -5,7 +5,7 @@
     chdir: "{{ test.dir }}"
     cmd: |
       source "{{ test.overcloudrc }}"
-      tools/ci/tox -e report
+      bash -x tools/ci/tox -e report
 
 
 - fetch:

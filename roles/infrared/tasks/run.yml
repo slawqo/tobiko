@@ -5,4 +5,4 @@
     chdir: "{{ test.dir }}"
     cmd: |
       source "{{ test.overcloudrc }}"
-      tools/ci/tox -e "{{ test.tests }}"
+      bash -x tools/ci/tox -e "{{ test.tests }}"
