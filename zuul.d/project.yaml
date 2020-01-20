@@ -14,7 +14,9 @@
     check:
       jobs:
         - tobiko-tox-py36-centos-7
+        - tobiko-tox-py36-centos-8
         - tobiko-tox-py38-centos-7
+        - tobiko-tox-py38-centos-8
         - tobiko-devstack-functional
         - tobiko-devstack-faults-centos-7
         - tobiko-devstack-faults-ubuntu-bionic
