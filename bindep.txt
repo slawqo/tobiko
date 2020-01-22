@@ -1,25 +1,26 @@
 # This file contains runtime (non-python) dependencies
 # More info at: https://docs.openstack.org/infra/bindep/readme.html
 
-gcc [platform:rpm]
-gcc [platform:dpkg]
+# All Linux
+gcc []
+git []
+python3 []
 
-git [platform:dpkg]
-git [platform:rpm]
+# Red Hat
+iproute [platform:redhat]
+libffi-devel [platform:redhat]
+openssl-devel [platform:redhat]
+python3-devel [platform:redhat]
 
-iproute [platform:rpm]
+# Ubuntu
+libffi-dev [platform:ubuntu]
+libssl-dev [platform:ubuntu]
+python3-dev [platform:ubuntu]
 
-libffi-devel [platform:rpm]
-libffi-dev [platform:dpkg]
+# RHEL/CentOS 7
+libselinux-python [platform:rhel-7]
+libselinux-python [platform:centos-7]
 
-openssl-devel [platform:rpm]
-libssl-dev [platform:dpkg]
-
-python3 [platform:rpm]
-python3 [platform:dpkg]
-
-python3-devel [platform:rpm]
-python3-dev [platform:dpkg]
-
-python3-libselinux [platform:rpm rhel8]
-libselinux-python [platform:rpm !rhel8]
+# RHEL/CentOS 8
+python3-libselinux [platform:rhel-8]
+python3-libselinux [platform:centos-8]

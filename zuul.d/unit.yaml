@@ -24,8 +24,6 @@
     name: tobiko-tox-py36-centos-8
     parent: tobiko-tox-py36-base
     nodeset: centos-8
-    vars:
-      bindep_profile: test py36 rhel8
 
 
 - job:
@@ -54,5 +52,3 @@
     name: tobiko-tox-py38-centos-8
     parent: tobiko-tox-py38-base
     nodeset: centos-8
-    vars:
-      bindep_profile: test py38 rhel8
