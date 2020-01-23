@@ -1,10 +1,33 @@
-function tools_dir {
+
+function get_ci_tools_dir {
     local tools_dir=$(dirname "${BASH_SOURCE[0]}")
-    PATH=${CI_TOOLS_ORIGINAL_PATH:-${PATH}} "${tools_dir}/realpath" "${tools_dir}"
+    realpath "${tools_dir}"
 }
 
-export CI_TOOLS_DIR=${CI_TOOLS_DIR:-$(tools_dir)}
+
+function realpath {
+    ${REALPATH} "$@"
+}
+
+
+function get_realpath {
+    (
+        export PATH=${CI_TOOLS_ORIGINAL_PATH:-${PATH}}
+        local tools_dir=$(dirname "${BASH_SOURCE[0]}")
+        local python=$(which python3 || which python2 || wich python)
+        if [ -x "${python}" ] && "${python}" --version > /dev/null; then
+            local script="${tools_dir}/realpath.py"
+            local script=$("${python}" "${script}" "${script}")
+            echo "${python}" "${script}"
+        else
+            which realpath
+        fi
+    )
+}
+
+
+export REALPATH=${REALPATH:-$(get_realpath)}
+export CI_TOOLS_DIR=${CI_TOOLS_DIR:-$(get_ci_tools_dir)}
 export CI_TOOLS_ORIGINAL_PATH=${CI_TOOLS_ORIGINAL_PATH:-${PATH}}
 export PATH=${CI_TOOLS_DIR}:${PATH}
-
 export PYTHONWARNINGS=${PYTHONWARNINGS:-ignore}
