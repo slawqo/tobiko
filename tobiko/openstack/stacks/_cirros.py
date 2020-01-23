@@ -17,6 +17,8 @@ import tobiko
 from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack.stacks import _nova
+from tobiko.shell import sh
+
 
 CONF = config.CONF
 
@@ -63,3 +65,12 @@ class CirrosSameHostServerStackFixture(
 class CirrosDifferentHostServerStackFixture(
         CirrosPeerServerStackFixture, _nova.DifferentHostServerStackFixture):
     pass
+
+
+class RebootCirrosServerOperation(sh.RebootHostOperation):
+
+    stack = tobiko.required_setup_fixture(CirrosServerStackFixture)
+
+    @property
+    def ssh_client(self):
+        return self.stack.ssh_client

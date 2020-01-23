@@ -27,11 +27,14 @@ from tobiko.openstack import stacks
 CONF = config.CONF
 
 
-class FloatingIPTest(testtools.TestCase):
+class FloatingIPTest(tobiko.RunsOperations, testtools.TestCase):
     """Tests connectivity via floating IPs"""
 
     #: Resources stack with floating IP and Nova server
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+
+    #: Reboots target server
+    server_reboot = tobiko.runs_operation(stacks.RebootCirrosServerOperation)
 
     def test_stack_create_complete(self):
         self.stack.key_pair_stack.wait_for_create_complete()

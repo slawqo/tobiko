@@ -35,6 +35,7 @@ CirrosPeerServerStackFixture = _cirros.CirrosPeerServerStackFixture
 CirrosDifferentHostServerStackFixture = (
     _cirros.CirrosDifferentHostServerStackFixture)
 CirrosSameHostServerStackFixture = _cirros.CirrosSameHostServerStackFixture
+RebootCirrosServerOperation = _cirros.RebootCirrosServerOperation
 
 L3haNetworkStackFixture = _l3ha.L3haNetworkStackFixture
 L3haServerStackFixture = _l3ha.L3haServerStackFixture
