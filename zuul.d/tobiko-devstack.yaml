@@ -189,7 +189,7 @@
           placement-client: true
           n-cpu: true
           neutron-agent: true
-          peakmem_tracker: true
+          memory_tracker: true
           q-agt: true
           q-l3: true
           q-meta: true
