@@ -7,6 +7,7 @@ import six
 import tobiko
 from tobiko.tripleo import overcloud
 from tobiko.shell import sh
+from tobiko.openstack import topology
 
 
 LOG = log.getLogger(__name__)
@@ -16,7 +17,7 @@ class PcsResourceException(tobiko.TobikoException):
     message = "pcs cluster is not in a healthy state"
 
 
-def get_pcs_resources_table(hostname='controller-0'):
+def get_pcs_resources_table():
     """
     get pcs status from a controller and parse it
     to have it's resources states in check
@@ -51,13 +52,28 @@ def get_pcs_resources_table(hostname='controller-0'):
 
     :return: dataframe of pcs resources stats table
     """
-    ssh_client = overcloud.overcloud_ssh_client(hostname)
-    output = sh.execute("sudo pcs status | grep ocf",
-                        ssh_client=ssh_client).stdout
-    stream = six.StringIO(output)
-    table = pandas.read_csv(stream, delim_whitespace=True, header=None)
-    table.columns = ['resource', 'resource_type', 'resource_state',
-                     'overcloud_node']
+    # TODO make more robust(done, need other methods to be too)
+    # TODO make table.columns retry without exception
+
+    nodes = topology.list_openstack_nodes(group='controller')
+    controller_node = nodes[0].name
+    ssh_client = overcloud.overcloud_ssh_client(controller_node)
+
+    # prevent pcs table read failure while pacemaker is starting
+    while True:
+        try:
+            output = sh.execute("sudo pcs status | grep ocf",
+                                ssh_client=ssh_client,
+                                expect_exit_status=None).stdout
+            stream = six.StringIO(output)
+            table = pandas.read_csv(stream, delim_whitespace=True, header=None)
+
+            table.columns = ['resource', 'resource_type', 'resource_state',
+                             'overcloud_node']
+        except ValueError:
+            pass
+        else:
+            break
     LOG.debug("Got pcs status :\n%s", table)
     return table
 
@@ -152,23 +168,26 @@ class PacemakerResourcesStatus(object):
             return False
 
     def ovn_resource_healthy(self):
-        nodes_num = self.resource_count("(ocf::heartbeat:redis):")
-        if nodes_num > 0:
-            return True
-        else:
-            master_num = self.resource_count_in_state(
-                "(ocf::heartbeat:redis):", "Master")
-            slave_num = self.resource_count_in_state(
-                "(ocf::heartbeat:redis):", "Slave")
-            if (master_num == 1) and (slave_num == nodes_num - master_num):
-                LOG.info(
-                    "pcs status check: resource ovn is in healthy state")
+        if self.container_runtime() == 'podman':
+            nodes_num = self.resource_count("(ocf::heartbeat:redis):")
+            if nodes_num > 0:
                 return True
             else:
-                LOG.info(
-                    "pcs status check: resource ovn is in not in "
-                    "healthy state")
-                return False
+                master_num = self.resource_count_in_state(
+                    "(ocf::heartbeat:redis):", "Master")
+                slave_num = self.resource_count_in_state(
+                    "(ocf::heartbeat:redis):", "Slave")
+                if (master_num == 1) and (slave_num == nodes_num - master_num):
+                    LOG.info(
+                        "pcs status check: resource ovn is in healthy state")
+                    return True
+                else:
+                    LOG.info(
+                        "pcs status check: resource ovn is in not in "
+                        "healthy state")
+                    return False
+        else:
+            return True
 
     @property
     def all_healthy(self):
@@ -177,23 +196,35 @@ class PacemakerResourcesStatus(object):
         and return a global healthy status
         :return: Bool
         """
-        if all([
-           self.rabbitmq_resource_healthy(),
-           self.galera_resource_healthy(),
-           self.redis_resource_healthy(),
-           self.vips_resource_healthy(),
-           self.ha_proxy_cinder_healthy(),
-           self.ovn_resource_healthy()
-           ]):
-            LOG.info("pcs status checks: all resources are in healthy state")
-            return True
-        else:
-            LOG.info("pcs status check: not all resources are in healthy "
-                     "state")
-            raise PcsResourceException()
+        for _ in range(360):
+
+            try:
+
+                if all([
+                   self.rabbitmq_resource_healthy(),
+                   self.galera_resource_healthy(),
+                   self.redis_resource_healthy(),
+                   self.vips_resource_healthy(),
+                   self.ha_proxy_cinder_healthy(),
+                   self.ovn_resource_healthy()
+                   ]):
+                    LOG.info("pcs status checks: all resources are"
+                             " in healthy state")
+                    return True
+                else:
+                    LOG.info("pcs status check: not all resources are "
+                             "in healthy "
+                             "state")
+                    raise PcsResourceException()
+            except PcsResourceException:
+                # reread pcs status
+                self.pcs_df = get_pcs_resources_table()
+        # exhausted all retries
+        return False
 
 
-def get_overcloud_nodes_running_pcs_resource(resource=None, resource_type=None,
+def get_overcloud_nodes_running_pcs_resource(resource=None,
+                                             resource_type=None,
                                              resource_state=None):
     """
     Check what nodes are running the specified resource/type/state

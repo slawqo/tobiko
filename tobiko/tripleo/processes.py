@@ -111,6 +111,11 @@ class OvercloudProcessesStatus(object):
         :return: Bool
         """
         for process_name in self.processes_to_check:
+            # osp16/python3 process is "neutron-server:"
+            if process_name == 'neutron-server' and \
+                    self.oc_procs_df.query('PROCESS=="{}"'.format(
+                    process_name)).empty:
+                process_name = 'neutron-server:'
             if not self.oc_procs_df.query('PROCESS=="{}"'.format(
                     process_name)).empty:
                 LOG.info("overcloud processes status checks: process {} is  "
