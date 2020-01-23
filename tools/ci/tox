@@ -45,7 +45,6 @@ function tox_setup {
             tox_pip install --upgrade setuptools wheel virtualenv tox
         fi
 
-        tox_install_bindeps
     fi
 }
 
@@ -83,6 +82,8 @@ function tox_activate {
         source "${venv_script}"
         set -eu
         tox_is_active
+
+        tox_install_bindeps
     fi
 }
 
@@ -98,19 +99,25 @@ function tox_install_bindeps {
         exit 0
     fi
 
-    local bindep=${BINDEP:-$(which bindep)}
-    if ! [ -x "${bindep}" ]; then
-        tox_pip install bindep
-        bindep=$(which bindep)
-    fi
-
     # process ${BINDEP_FILE}
-    local missing_packages=( $("${bindep}" -b -f "${bindep_file}") )
+    local missing_packages=( $(bindep -b -f "${bindep_file}") )
     if [ "${#missing_packages[@]}" != "0" ]; then
         tox_install_packages "${missing_packages[@]}"
-        if ! "${bindep}" -f "${bindep_file}"; then
-            exit 1
-        fi
+        "${BINDEP}" -f "${bindep_file}"
+    fi
+}
+
+
+function bindep {
+    export BINDEP=${BINDEP:-$(get_bindep)}
+    "${BINDEP}" "$@"
+}
+
+
+function get_bindep {
+    if ! which bindep; then
+        tox_pip install bindep > /dev/null
+        which bindep
     fi
 }
 
@@ -134,8 +141,8 @@ function tox_install_packages {
         sudo apt-get install -y "${packages[@]}"
 
     else
-        echo "Unsupported Linux distribution" 1>&2
-        exit 1
+        echo -e "Don't know how to install packages this platform"
+        bindep --profiles 1>&2
     fi
 }
 
