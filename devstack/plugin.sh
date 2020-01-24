@@ -24,7 +24,7 @@ function configure_tobiko {
   local tobiko_conf_file=$(mktemp)
   if [ -f "${TOBIKO_CONF_FILE}" ]; then
     # Start from existing tobiko.conf file
-    cp "${TOBIKO_CONF_FILE}" "${tobiko_conf}"
+    cp "${TOBIKO_CONF_FILE}" "${tobiko_conf_file}"
   fi
 
   configure_tobiko_default "${tobiko_conf_file}"
