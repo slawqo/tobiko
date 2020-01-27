@@ -35,6 +35,8 @@
         # devstack would consider that neutron-legacy isn't used and would not load proper
         # files
         q-dns: true
+        # see bug #1860753 (https://bugs.launchpad.net/devstack/+bug/1860753)
+        memory_tracker: false
         neutron-qos: true
         neutron-segments: true
         neutron-trunk: true
@@ -189,7 +191,8 @@
           placement-client: true
           n-cpu: true
           neutron-agent: true
-          memory_tracker: true
+          # see bug #1860753 (https://bugs.launchpad.net/devstack/+bug/1860753)
+          memory_tracker: false
           q-agt: true
           q-l3: true
           q-meta: true
