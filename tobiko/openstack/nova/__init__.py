@@ -31,6 +31,8 @@ nova_client = _client.nova_client
 NovaClientFixture = _client.NovaClientFixture
 wait_for_server_status = _client.wait_for_server_status
 ServerStatusTimeout = _client.ServerStatusTimeout
+shutoff_server = _client.shutoff_server
+activate_server = _client.activate_server
 
 skip_if_missing_hypervisors = _hypervisor.skip_if_missing_hypervisors
 get_same_host_hypervisors = _hypervisor.get_same_host_hypervisors

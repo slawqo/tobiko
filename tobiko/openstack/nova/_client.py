@@ -150,20 +150,52 @@ class ServerStatusTimeout(tobiko.TobikoException):
                "status after {timeout} seconds")
 
 
-def wait_for_server_status(server_id, status, client=None, timeout=30.,
-                           sleep_time=5.):
+def wait_for_server_status(server, status, client=None, timeout=None,
+                           sleep_time=None):
+    if timeout is None:
+        timeout = 300.
+    if sleep_time is None:
+        sleep_time = 5.
     start_time = time.time()
     while True:
-        server = get_server(server_id, client)
+        server = get_server(server=server, client=client)
         if server.status == status:
             break
 
         if time.time() - start_time >= timeout:
-            raise ServerStatusTimeout(server_id=server_id,
+            raise ServerStatusTimeout(server_id=server.id,
                                       status=status,
                                       timeout=timeout)
 
         LOG.debug('Waiting for server %r status to get from %r to %r',
-                  server_id, server.status, status)
+                  server.id, server.status, status)
         time.sleep(sleep_time)
     return server
+
+
+def shutoff_server(server, client=None, timeout=None, sleep_time=None):
+    client = nova_client(client)
+    server = get_server(server=server, client=client)
+    if server.status == 'SHUTOFF':
+        return server
+
+    client.servers.stop(server.id)
+    return wait_for_server_status(server=server.id, status='SHUTOFF',
+                                  client=client, timeout=timeout,
+                                  sleep_time=sleep_time)
+
+
+def activate_server(server, client=None, timeout=None, sleep_time=None):
+    client = nova_client(client)
+    server = get_server(server=server, client=client)
+    if server.status == 'ACTIVE':
+        return server
+
+    if server.status == 'SHUTOFF':
+        client.servers.start(server.id)
+    else:
+        client.servers.reboot(server.id, reboot_type='HARD')
+
+    return wait_for_server_status(server=server.id, status='ACTIVE',
+                                  client=client, timeout=timeout,
+                                  sleep_time=sleep_time)

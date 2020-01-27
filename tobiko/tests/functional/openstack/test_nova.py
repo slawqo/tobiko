@@ -96,7 +96,23 @@ class ClientTest(testtools.TestCase):
 
     def test_wait_for_server_status(self):
         server_id = self.stack.server_id
-        server = nova.wait_for_server_status(server_id, 'ACTIVE')
+        server = nova.wait_for_server_status(server=server_id, status='ACTIVE')
+        self.assertEqual(server_id, server.id)
+        self.assertEqual('ACTIVE', server.status)
+
+    def test_shutof_and_activate_server(self):
+        server_id = self.useFixture(stacks.CirrosServerStackFixture(
+            stack_name=self.id())).server_id
+
+        server = nova.wait_for_server_status(server=server_id, status='ACTIVE')
+        self.assertEqual(server_id, server.id)
+        self.assertEqual('ACTIVE', server.status)
+
+        server = nova.shutoff_server(server=server_id)
+        self.assertEqual(server_id, server.id)
+        self.assertEqual('SHUTOFF', server.status)
+
+        server = nova.activate_server(server=server_id)
         self.assertEqual(server_id, server.id)
         self.assertEqual('ACTIVE', server.status)
 
