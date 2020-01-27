@@ -20,7 +20,8 @@ function get_realpath {
             local script=$("${python}" "${script}" "${script}")
             echo "${python}" "${script}"
         else
-            which realpath
+            echo "Python command not found!" 1>&2
+            exit 1
         fi
     )
 }

@@ -103,7 +103,7 @@ function tox_install_bindeps {
     local missing_packages=( $(bindep -b -f "${bindep_file}") )
     if [ "${#missing_packages[@]}" != "0" ]; then
         tox_install_packages "${missing_packages[@]}"
-        "${BINDEP}" -f "${bindep_file}"
+        bindep -f "${bindep_file}"
     fi
 }
 
