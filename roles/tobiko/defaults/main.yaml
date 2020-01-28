@@ -59,6 +59,6 @@ test_report_prefix: tobiko_results_
 test_report_name: "01_{{ tox_envlist }}"
 collect_files_dir: "{{ zuul.executor.log_root }}"
 
-compress_collected_files: true
+compress_collected_files: false
 compressed_files_suffix:
   "{% if (compress_collected_files | bool) %}.gz{% endif %}"
