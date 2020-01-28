@@ -31,6 +31,12 @@ if ! which git; then
   sudo yum install -y git
 fi
 
+if ! which python3; then
+  echo "Install Git"
+  # DevStack is not able to install Python3 on its own on CentOS 7
+  sudo yum install -y python3
+fi
+
 if ! [ -d "${DEVSTACK_SRC_DIR}" ]; then
 
   echo "Download DevStack source files from ${DEVSTACK_GIT_REPO}#${DEVSTACK_GIT_BRANCH}"
