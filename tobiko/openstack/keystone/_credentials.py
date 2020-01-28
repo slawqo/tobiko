@@ -21,6 +21,7 @@ from oslo_log import log
 import yaml
 
 import tobiko
+import testtools
 
 
 LOG = log.getLogger(__name__)
@@ -267,17 +268,30 @@ class DefaultKeystoneCredentialsFixture(KeystoneCredentialsFixture):
     fixtures = DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES
 
     def get_credentials(self):
+        errors = []
         for fixture in self.fixtures:
             try:
                 credentials = tobiko.setup_fixture(fixture).credentials
             except Exception:
-                LOG.exception("Error setting up fixture %r", fixture)
+                LOG.debug("Error getting cretentials from %r", fixture)
+                errors.append(tobiko.exc_info())
                 continue
 
             if credentials:
                 LOG.info("Got default credentials from fixture %r: %r",
                          fixture, credentials)
                 return credentials
+            else:
+                LOG.debug('Got no credentials from %r', fixture)
+
+        if len(errors) == 1:
+            errors[0].reraise()
+        elif errors:
+            raise testtools.MultipleExceptions(errors)
+
+        raise ValueError("No such credentials from any of: \n    " +
+                         '\n    '.join(tobiko.get_fixture_name(fixture)
+                                       for fixture in self.fixtures))
 
 
 def api_version_from_url(auth_url):

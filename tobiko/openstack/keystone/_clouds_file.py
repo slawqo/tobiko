@@ -42,23 +42,21 @@ class DefaultCloudsFileConfig(tobiko.SharedFixture):
     clouds_files = None
 
     def setup_fixture(self):
-        from tobiko import config
-        CONF = config.CONF
-        keystone_conf = CONF.tobiko.keystone
+        keystone_conf = tobiko.tobiko_config().keystone
         self.cloud_name = keystone_conf.cloud_name
-        self.clouds_file_dirs = [
-            os.path.realpath(os.path.expanduser(d))
-            for d in keystone_conf.clouds_file_dirs]
+        self.clouds_file_dirs = keystone_conf.clouds_file_dirs
         self.clouds_file_names = keystone_conf.clouds_file_names
         self.clouds_files = self.list_cloud_files()
 
     def list_cloud_files(self):
         cloud_files = []
         for directory in self.clouds_file_dirs:
-            directory = os.path.realpath(os.path.expanduser(directory))
-            for file_name in self.clouds_file_names:
-                file_name = os.path.join(directory, file_name)
-                cloud_files.append(file_name)
+            directory = tobiko.tobiko_config_path(directory)
+            if os.path.isdir(directory):
+                for file_name in self.clouds_file_names:
+                    file_name = os.path.join(directory, file_name)
+                    if os.path.isfile(file_name):
+                        cloud_files.append(file_name)
         return cloud_files
 
 

@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 from tobiko.common import _asserts
+from tobiko.common import _config
 from tobiko.common import _detail
 from tobiko.common import _exception
 from tobiko.common import _fixture
@@ -30,6 +31,10 @@ details_content = _detail.details_content
 
 FailureException = _asserts.FailureException
 fail = _asserts.fail
+
+tobiko_config = _config.tobiko_config
+tobiko_config_dir = _config.tobiko_config_dir
+tobiko_config_path = _config.tobiko_config_path
 
 TobikoException = _exception.TobikoException
 check_valid_type = _exception.check_valid_type

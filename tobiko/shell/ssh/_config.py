@@ -44,9 +44,7 @@ class SSHDefaultConfigFixture(tobiko.SharedFixture):
     conf = None
 
     def setup_fixture(self):
-        from tobiko import config
-        CONF = config.CONF
-        self.conf = CONF.tobiko.ssh
+        self.conf = tobiko.tobiko_config().ssh
 
     def __getattr__(self, name):
         return getattr(self.conf, name)
@@ -72,7 +70,7 @@ class SSHConfigFixture(tobiko.SharedFixture):
     def setup_ssh_config(self):
         self.config = paramiko.SSHConfig()
         for config_file in self.config_files:
-            config_file = os.path.expanduser(config_file)
+            config_file = tobiko.tobiko_config_path(config_file)
             if os.path.exists(config_file):
                 LOG.debug("Parsing %r config file...", config_file)
                 with open(config_file) as f:

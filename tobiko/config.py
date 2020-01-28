@@ -160,8 +160,9 @@ def init_tobiko_config(default_config_dirs=None, default_config_files=None,
     CONF.set_source('tobiko', conf)
 
     # expand and normalize log_file and log_dir names
+    conf.config_dir = os.path.realpath(conf.find_file('.'))
+    log_dir = conf.log_dir or conf.config_dir
     log_file = conf.log_file or 'tobiko.log'
-    log_dir = conf.log_dir or conf.find_file('.')
     log_path = os.path.realpath(os.path.expanduser(
         os.path.join(log_dir, log_file)))
     conf.log_dir = os.path.dirname(log_path)

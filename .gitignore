@@ -38,3 +38,5 @@ Pipfile.lock
 
 # Tobiko configuration file
 tobiko.conf
+clouds.yaml
+ssh_config
