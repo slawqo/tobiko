@@ -11,6 +11,7 @@
 
 
 - name: "Compress test result files"
+  when: compress_collected_files | bool
   archive:
     path: "{{ item.path }}"
   with_items: "{{ test_result_files.files }}"
@@ -20,6 +21,6 @@
   synchronize:
     dest: "{{ collect_files_dir }}"
     mode: pull
-    src: "{{ item.path }}.gz"
+    src: "{{ item.path }}{{ compressed_files_suffix }}"
     verify_host: true
   with_items: "{{ test_result_files.files }}"
