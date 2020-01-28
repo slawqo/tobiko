@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from oslo_log import log
 import paramiko
 
+from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _io
 from tobiko.shell.sh import _local
@@ -83,9 +84,23 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
         if isinstance(ssh_client, ssh.SSHClientFixture):
             # Connect to SSH server
             ssh_client = ssh_client.connect()
-        process = ssh_client.get_transport().open_session()
 
         command = str(self.command)
+        timeout = self.timeout and float(self.timeout)
+        try:
+            process = ssh_client.get_transport().open_session(timeout=timeout)
+        except paramiko.SSHException as ex:
+            LOG.debug('Error executing command %r', command, exc_info=1)
+            error = str(ex)
+            if "Timeout opening channel." == error:
+                raise _exception.ShellTimeoutExpired(command=command,
+                                                     stdin=None,
+                                                     stdout=None,
+                                                     stderr=None,
+                                                     timeout=timeout)
+            else:
+                raise _exception.ShellError(error)
+
         LOG.debug("Execute command %r on remote host (timeout=%r)...",
                   command, self.timeout)
         if parameters.environment:
@@ -109,9 +124,8 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
             buffer_size=self.parameters.buffer_size)
 
     def poll_exit_status(self):
-        process = self.process
-        exit_status = process.exit_status
-        if exit_status < 0:
+        exit_status = getattr(self.process, 'exit_status', None)
+        if exit_status and exit_status < 0:
             exit_status = None
         return exit_status
 

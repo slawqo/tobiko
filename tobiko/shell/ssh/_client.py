@@ -451,7 +451,7 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
                 time.sleep(sleep_time)
 
         else:
-            LOG.info("Successfully logged it to %s", login)
+            LOG.debug("Successfully logged in to %s", login)
             return client, proxy_sock
 
 

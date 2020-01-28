@@ -80,6 +80,7 @@ def setup_tobiko_config(conf):
         if not paramiko_logger.isEnabledFor(log.DEBUG):
             # Print paramiko debugging messages
             paramiko_logger.logger.setLevel(log.DEBUG)
-    elif paramiko_logger.isEnabledFor(log.DEBUG):
-        # Silence paramiko debugging messages
-        paramiko_logger.logger.setLevel(log.WARNING)
+    else:
+        if paramiko_logger.isEnabledFor(log.ERROR):
+            # Silence paramiko debugging messages
+            paramiko_logger.logger.setLevel(log.FATAL)
