@@ -379,6 +379,13 @@ class SharedFixture(fixtures.Fixture):
         self._cleanup_executed = True
         return result
 
+    def __enter__(self):
+        return setup_fixture(self)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):  # noqa
+        cleanup_fixture(self)
+        return False  # propagate exceptions from the with body.
+
     def _setUp(self):
         self.setup_fixture()
 
