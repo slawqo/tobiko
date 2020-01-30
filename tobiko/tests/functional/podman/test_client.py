@@ -15,8 +15,9 @@
 #    under the License.
 from __future__ import absolute_import
 
-import testtools
+import types
 
+import testtools
 import six
 
 # We need to ignore this code under py2
@@ -30,8 +31,6 @@ import six
 # and it will raise related exceptions too.
 # For all these reasons we can't run podman tests under a python 2 environment
 if six.PY3:
-    from podman import client as podman_client
-    from podman.libs import containers
 
     from tobiko import podman
     from tobiko.openstack import topology
@@ -58,16 +57,10 @@ if six.PY3:
         def test_connect_podman_client(self):
             client = podman.get_podman_client(
                 ssh_client=self.ssh_client).connect()
-            podman_clients_valid_types = (
-                podman_client.LocalClient,
-                podman_client.RemoteClient
-            )
-            self.assertIsInstance(client, podman_clients_valid_types)
-            client.ping()
+            self.assertTrue(client.system.ping())
 
         def test_list_podman_containers(self):
-            podman_containers_list = podman.list_podman_containers(
-                    ssh_client=self.ssh_client)
-            self.assertTrue(podman_containers_list)
-            for container in podman_containers_list:
-                self.assertIsInstance(container, containers.Container)
+            client = podman.get_podman_client(
+                ssh_client=self.ssh_client).connect()
+            self.assertIsInstance(client.containers.list(),
+                                  types.GeneratorType)
