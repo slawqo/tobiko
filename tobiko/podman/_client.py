@@ -23,6 +23,7 @@ import tobiko
 from tobiko.podman import _exception
 from tobiko.podman import _shell
 from tobiko.shell import ssh
+from tobiko.shell import sh
 
 
 def get_podman_client(ssh_client=None):
@@ -74,6 +75,30 @@ class PodmanClientFixture(tobiko.SharedFixture):
         return ssh_client
 
     def setup_client(self):
+        # setup podman access via varlink
+        podman_client_setup_cmds = [
+            "sudo groupadd -f podman",
+            "sudo usermod -a -G podman heat-admin",
+            "sudo chmod o+w /etc/tmpfiles.d",
+            "sudo echo 'd /run/podman 0750 root heat-admin' > "
+            "/etc/tmpfiles.d/podman.conf",
+            "sudo cp /lib/systemd/system/io.podman.socket /etc/systemd/system/"
+            "io.podman.socket",
+            "sudo crudini --set /etc/systemd/system/io.podman.socket Socket "
+            "SocketMode 0660",
+            "sudo crudini --set /etc/systemd/system/io.podman.socket Socket"
+            " SocketGroup podman",
+            "sudo systemctl daemon-reload",
+            "sudo systemd-tmpfiles --create",
+            "sudo systemctl enable --now io.podman.socket",
+            "sudo chown -R root: /run/podman",
+            "sudo chmod g+rw /run/podman/io.podman",
+            "sudo systemctl start io.podman.socket"
+        ]
+
+        for cmd in podman_client_setup_cmds:
+            sh.execute(cmd, ssh_client=self.ssh_client)
+
         client = self.client
         if client is None:
             self.client = client = self.create_client()
@@ -81,11 +106,14 @@ class PodmanClientFixture(tobiko.SharedFixture):
 
     def create_client(self):
         podman_remote_socket = self.discover_podman_socket()
+        podman_remote_socket_uri = 'unix:/tmp/podman.sock'
+
         remote_uri = 'ssh://{username}@{host}{socket}'.format(
             username=self.ssh_client.connect_parameters['username'],
-            host=self.ssh_client.host,
+            host=self.ssh_client.connect_parameters["hostname"],
             socket=podman_remote_socket)
-        client = podman.Client(uri=podman_remote_socket,
+
+        client = podman.Client(uri=podman_remote_socket_uri,
                                remote_uri=remote_uri,
                                identity_file='~/.ssh/id_rsa')
         client.system.ping()
