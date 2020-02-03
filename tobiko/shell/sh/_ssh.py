@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from oslo_log import log
 import paramiko
 
+import tobiko
 from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _io
@@ -32,7 +33,7 @@ LOG = log.getLogger(__name__)
 def ssh_execute(ssh_client, command, environment=None, timeout=None,
                 stdin=None, stdout=None, stderr=None, shell=None,
                 expect_exit_status=0, **kwargs):
-    """Execute command on local host using local shell"""
+    """Execute command on remote host using SSH client"""
     process = ssh_process(command=command,
                           environment=environment,
                           timeout=timeout,
@@ -77,18 +78,24 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
 
     def create_process(self):
         """Execute command on a remote host using SSH client"""
-        parameters = self.parameters
-        assert isinstance(parameters, SSHShellProcessParameters)
-
-        ssh_client = self.ssh_client
-        if isinstance(ssh_client, ssh.SSHClientFixture):
-            # Connect to SSH server
-            ssh_client = ssh_client.connect()
-
         command = str(self.command)
+        ssh_client = self.ssh_client
         timeout = self.timeout and float(self.timeout)
+        parameters = self.parameters
+
+        tobiko.check_valid_type(ssh_client, ssh.SSHClientFixture)
+        tobiko.check_valid_type(parameters, SSHShellProcessParameters)
+
+        LOG.debug("Executing remote command: %r (login=%r, timeout=%r)...",
+                  command, ssh_client.login, timeout)
+
+        # Connect to SSH server
+        client = ssh_client.connect()
+
+        # Open a new SSH session
         try:
-            process = ssh_client.get_transport().open_session(timeout=timeout)
+            process = client.get_transport().open_session(
+                timeout=timeout)
         except paramiko.SSHException as ex:
             LOG.debug('Error executing command %r', command, exc_info=1)
             error = str(ex)
@@ -101,8 +108,6 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
             else:
                 raise _exception.ShellError(error)
 
-        LOG.debug("Execute command %r on remote host (timeout=%r)...",
-                  command, self.timeout)
         if parameters.environment:
             process.update_environment(parameters.environment)
         process.exec_command(command)

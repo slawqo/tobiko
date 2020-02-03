@@ -159,9 +159,6 @@ def select_files(files, timeout, mode='rw'):
     read_ready = select_read_ready_files(readable)
     write_ready = select_write_ready_files(writable)
     if not write_ready and not read_ready:
-        if timeout > 0.:
-            LOG.debug("Calling select with %d files and timeout %f",
-                      len(opened), timeout)
         rlist, wlist, xlist = select.select(readable, writable, opened,
                                             timeout)
         read_ready = readable & set(rlist + xlist)

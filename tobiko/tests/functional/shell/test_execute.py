@@ -32,11 +32,12 @@ class ExecuteTest(testtools.TestCase):
     shell = '/bin/sh -c'
 
     def test_succeed(self, command='true', stdin=None, stdout=None,
-                     stderr=None, **kwargs):
+                     stderr=None, expect_exit_status=0, **kwargs):
         process = self.execute(command=command,
                                stdin=stdin,
                                stdout=bool(stdout),
                                stderr=bool(stderr),
+                               expect_exit_status=expect_exit_status,
                                **kwargs)
         self.assertEqual(self.expected_command(command), process.command)
         if stdin:
@@ -51,7 +52,8 @@ class ExecuteTest(testtools.TestCase):
             self.assertEqual(stderr, str(process.stderr))
         else:
             self.assertIsNone(process.stderr)
-        self.assertEqual(0, process.exit_status)
+        if expect_exit_status is not None:
+            self.assertEqual(0, process.exit_status)
 
     def test_succeed_with_command_list(self):
         self.test_succeed(['echo', 'something'],
@@ -73,11 +75,16 @@ class ExecuteTest(testtools.TestCase):
     def test_succeed_with_timeout(self):
         self.test_succeed(timeout=30.)
 
+    def test_succeed_with_no_exit_status(self):
+        self.test_succeed(command='false', expect_exit_status=None)
+
     def test_fails(self, command='false', exit_status=None, stdin=None,
-                   stdout=None, stderr=None, **kwargs):
+                   stdout=None, stderr=None, expect_exit_status=0,
+                   **kwargs):
         ex = self.assertRaises(sh.ShellCommandFailed,
                                self.execute,
                                command=command,
+                               expect_exit_status=expect_exit_status,
                                stdin=stdin,
                                stdout=bool(stdout),
                                stderr=bool(stderr),
@@ -95,7 +102,7 @@ class ExecuteTest(testtools.TestCase):
             self.assertEqual(stderr, ex.stderr)
         else:
             self.assertIsNone(ex.stderr)
-        if exit_status:
+        if exit_status is not None:
             self.assertEqual(exit_status, ex.exit_status)
         else:
             self.assertTrue(ex.exit_status)
@@ -115,6 +122,9 @@ class ExecuteTest(testtools.TestCase):
         self.test_fails('cat && false',
                         stdin='some input\n',
                         stdout='some input\n')
+
+    def test_fails_with_check_exit_status(self):
+        self.test_fails(command='true', expect_exit_status=1, exit_status=0)
 
     def test_timeout_expires(self, command='sleep 10', timeout=5., stdin=None,
                              stdout=None, stderr=None, **kwargs):

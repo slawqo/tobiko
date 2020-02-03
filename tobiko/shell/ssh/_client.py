@@ -274,33 +274,18 @@ class SSHClientFixture(tobiko.SharedFixture):
             gather_parameters(destination=parameters,
                               schema=schema,
                               remove_from_schema=True)
-        if parameters:
-            LOG.debug('SSH connect parameters for host %r:\n%r', self.host,
-                      parameters)
         return parameters
 
     def gather_initial_connect_parameters(self, **kwargs):
-        parameters = gather_ssh_connect_parameters(
+        return gather_ssh_connect_parameters(
             source=self._connect_parameters, **kwargs)
-        if parameters:
-            LOG.debug('Initial SSH connect parameters for host %r:\n'
-                      '%r', self.host, parameters)
-        return parameters
 
     def gather_host_config_connect_parameters(self, **kwargs):
-        parameters = gather_ssh_connect_parameters(
+        return gather_ssh_connect_parameters(
             source=self.host_config.connect_parameters, **kwargs)
-        if parameters:
-            LOG.debug('Host configured SSH connect parameters for host %r:\n'
-                      '%r', self.host, parameters)
-        return parameters
 
     def gather_default_connect_parameters(self, **kwargs):
-        parameters = gather_ssh_connect_parameters(source=self, **kwargs)
-        if parameters:
-            LOG.debug('Default SSH connect parameters for host %r:\n'
-                      '%r', self.host, parameters)
-        return parameters
+        return gather_ssh_connect_parameters(source=self, **kwargs)
 
     def setup_ssh_client(self):
         self.client, self.proxy_sock = ssh_connect(
@@ -333,6 +318,9 @@ class SSHClientFixture(tobiko.SharedFixture):
     def connect(self):
         return tobiko.setup_fixture(self).client
 
+    def close(self):
+        tobiko.cleanup_fixture(self)
+
     def get_ssh_command(self, host=None, username=None, port=None,
                         command=None, config_files=None, host_config=None,
                         proxy_command=None, key_filename=None, **options):
@@ -360,6 +348,13 @@ class SSHClientFixture(tobiko.SharedFixture):
                                     proxy_command=proxy_command,
                                     key_filename=key_filename,
                                     **options)
+
+    @property
+    def login(self):
+        parameters = self.setup_connect_parameters()
+        return _command.ssh_login(hostname=parameters['hostname'],
+                                  username=parameters['username'],
+                                  port=parameters['port'])
 
 
 UNDEFINED_CLIENT = 'UNDEFINED_CLIENT'
@@ -449,8 +444,6 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
             LOG.debug("Error logging in to %r: %s", login, ex)
             sleep_time = start_time + interval - time.time()
             if sleep_time > 0.:
-                LOG.debug("Retrying connecting to %r in %d seconds...", login,
-                          sleep_time)
                 time.sleep(sleep_time)
 
         else:

@@ -274,13 +274,11 @@ def execute_ping(parameters, ssh_client=None, check=True):
 
     if stdout:
         output = str(stdout)
-        LOG.debug('Received ping STDOUT:\n%s', output)
     else:
         output = None
 
     if stderr:
         error = str(stderr)
-        LOG.info('Received ping STDERR:\n%s', error)
         if check and result.exit_status:
             handle_ping_command_error(error=error)
 

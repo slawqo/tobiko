@@ -39,6 +39,11 @@ def process(command=None, environment=None, timeout=None, shell=None,
     kwargs.update(command=command, environment=environment, timeout=timeout,
                   shell=shell, stdin=stdin, stdout=stdout, stderr=stderr,
                   sudo=sudo)
+    timeout = kwargs['timeout']
+    if timeout is not None:
+        if timeout < 0.:
+            raise ValueError("Invalid timeout for executing process: "
+                             "{!r}".format(timeout))
     try:
         from tobiko.shell.sh import _ssh
         from tobiko.shell import ssh
@@ -309,8 +314,6 @@ class ShellProcessFixture(tobiko.SharedFixture):
             read_ready, write_ready = _io.select_files(
                 files=streams, timeout=poll_interval)
             if read_ready or write_ready:
-                LOG.debug('Communicating with process (%s): %r', self.command,
-                          read_ready | write_ready)
                 # Avoid waiting for data the next time
                 poll_interval = 0.
                 if self.stdin in write_ready:
@@ -337,16 +340,10 @@ class ShellProcessFixture(tobiko.SharedFixture):
 
     def _is_communicating(self, streams, send, receive):
         if send and self.stdin in streams:
-            LOG.debug('Trying to send data to process (%s): %r', self.command,
-                      streams)
             return True
         elif receive and {self.stdout, self.stderr} & streams:
-            LOG.debug('Trying to receive data from process (%s): %r',
-                      self.command, streams)
             return True
         else:
-            LOG.debug('Stop communicating with process (%s): %r', self.command,
-                      streams)
             return False
 
     def _write_to_stdin(self, data, check=True):
@@ -355,8 +352,6 @@ class ShellProcessFixture(tobiko.SharedFixture):
             self.check_stdin_is_opened()
         sent_bytes = self.stdin.write(data)
         if sent_bytes:
-            LOG.debug("Written %d bytes to STDIN (%s)", sent_bytes,
-                      self.command)
             return data[sent_bytes:] or None
         else:
             LOG.debug("%r closed by peer on %r", self.stdin, self)
@@ -368,8 +363,6 @@ class ShellProcessFixture(tobiko.SharedFixture):
         # Read data from remote stream
         chunk = self.stdout.read(buffer_size)
         if chunk:
-            LOG.debug("Read %d bytes from STDOUT (%s)", len(chunk),
-                      self.command)
             return chunk
         else:
             LOG.debug("%r closed by peer on %r", self.stdout, self)
@@ -381,8 +374,6 @@ class ShellProcessFixture(tobiko.SharedFixture):
         # Read data from remote stream
         chunk = self.stderr.read(buffer_size)
         if chunk:
-            LOG.debug("Read %d bytes from STDERR (%s)", len(chunk),
-                      self.command)
             return chunk
         else:
             LOG.debug("%r closed by peer on %r", self.stderr, self)
@@ -398,7 +389,6 @@ class ShellProcessFixture(tobiko.SharedFixture):
                 stdin=str_from_stream(self.stdin),
                 stdout=str_from_stream(self.stdout),
                 stderr=str_from_stream(self.stderr))
-            LOG.debug("%s", ex)
             raise ex
         return time_left
 
@@ -412,7 +402,6 @@ class ShellProcessFixture(tobiko.SharedFixture):
                 stdin=self.stdin,
                 stdout=self.stdout,
                 stderr=self.stderr)
-            LOG.debug("%s", ex)
             raise ex
 
         exit_status = int(exit_status)
@@ -423,15 +412,7 @@ class ShellProcessFixture(tobiko.SharedFixture):
                 stdin=str_from_stream(self.stdin),
                 stdout=str_from_stream(self.stdout),
                 stderr=str_from_stream(self.stderr))
-            LOG.debug("%s", ex)
             raise ex
-
-        LOG.debug("Command '%s' succeeded (exit_status=%d):\n"
-                  "stdin:\n%s\n"
-                  "stdout:\n%s\n"
-                  "stderr:\n%s",
-                  self.command, exit_status,
-                  self.stdin, self.stdout, self.stderr)
 
 
 def merge_dictionaries(*dictionaries):

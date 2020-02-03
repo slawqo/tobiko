@@ -15,10 +15,13 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
+import enum
 
 from oslo_log import log
 import six
 
+import tobiko
 from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _process
 
@@ -29,29 +32,85 @@ LOG = log.getLogger(__name__)
 DATA_TYPES = six.string_types + (six.binary_type, six.text_type)
 
 
-class ShellExecuteResult(object):
+@enum.unique
+class ShellExecuteStatus(enum.Enum):
+    SUCCEEDED = 'SUCCEEDED'
+    FAILED = 'FAILED'
+    TIMEDOUT = 'TIMEDOUT'
+    UNTERMINATED = 'UNTERMINATED'
 
-    def __init__(self, command=None, exit_status=None, stdin=None, stdout=None,
-                 stderr=None):
-        self.command = str(command)
-        self.exit_status = exit_status
-        self.stdin = stdin and str(stdin) or None
-        self.stdout = stdout and str(stdout) or None
-        self.stderr = stderr and str(stderr) or None
+
+def execute_result(command, exit_status=None, timeout=None,
+                   status=None, login=None, stdin=None, stdout=None,
+                   stderr=None):
+    command = str(command)
+    if exit_status is not None:
+        exit_status = int(exit_status)
+    if timeout is not None:
+        timeout = float(timeout)
+    if status is not None:
+        status = ShellExecuteStatus(status)
+    stdin = _process.str_from_stream(stdin)
+    stdout = _process.str_from_stream(stdout)
+    stderr = _process.str_from_stream(stderr)
+    return ShellExecuteResult(command=command,
+                              exit_status=exit_status,
+                              timeout=timeout,
+                              status=status,
+                              stdin=stdin,
+                              stdout=stdout,
+                              stderr=stderr,
+                              login=login)
+
+
+class ShellExecuteResult(collections.namedtuple(
+        'ShellExecuteResult', ['command', 'exit_status', 'timeout', 'status',
+                               'login', 'stdin', 'stdout', 'stderr'])):
+
+    _details = None
+
+    @property
+    def details(self):
+        details = self._details
+        if details is None:
+            self._details = details = self.get_details()
+        return details
+
+    def get_details(self):
+        details = []
+        details.append("command: {!r}".format(self.command))
+
+        exit_status = self.exit_status
+        if exit_status is not None:
+            details.append("exit_status: {!r}".format(exit_status))
+
+        timeout = self.timeout
+        if timeout is not None:
+            details.append("timeout: {!r}".format(timeout))
+
+        status = self.status
+        if status is not None:
+            details.append("status: {!s}".format(status))
+
+        login = self.login
+        if login is not None:
+            details.append("login: {!r}".format(login))
+
+        stdin = self.stdin
+        if stdin:
+            details.append("stdin:\n{!s}".format(_indent(stdin)))
+
+        stdout = self.stdout
+        if stdout:
+            details.append("stdout:\n{!s}".format(_indent(stdout)))
+
+        stderr = self.stderr
+        if stderr:
+            details.append("stderr:\n{!s}".format(_indent(stderr)))
+        return '\n'.join(details)
 
     def format(self):
-        text = ''
-        if self.stdin:
-            text += '- stdin: >\n' + _indent(self.stdin) + '\n'
-        if self.stdout:
-            text += '- stdout: >\n' + _indent(self.stdout) + '\n'
-        if self.stderr:
-            text += '- stderr: >\n' + _indent(self.stderr) + '\n'
-        return ("Shell command result:\n"
-                "- command: {command}"
-                "- exit_status: {exit_status}\n"
-                ).format(command=self.command,
-                         exit_status=self.exit_status) + text
+        return self.details
 
 
 def _indent(text, space='    ', newline='\n'):
@@ -89,25 +148,48 @@ def execute(command, environment=None, timeout=None, shell=None,
                                stderr=stderr,
                                ssh_client=ssh_client,
                                **kwargs)
+    login = getattr(ssh_client, 'login', None)
     return execute_process(process=process,
                            stdin=stdin,
+                           login=login,
                            expect_exit_status=expect_exit_status)
 
 
-def execute_process(process, stdin, expect_exit_status):
+def execute_process(process, stdin, expect_exit_status, login=None):
+    error = None
+    status = None
     try:
         with process:
             if stdin and isinstance(stdin, DATA_TYPES):
                 process.send_all(data=stdin)
     except _exception.ShellTimeoutExpired:
+        status = ShellExecuteStatus.TIMEDOUT
         if expect_exit_status is not None:
-            raise
+            error = tobiko.exc_info()
     else:
         if expect_exit_status is not None:
-            process.check_exit_status(expect_exit_status)
+            try:
+                process.check_exit_status(expect_exit_status)
+            except _exception.ShellCommandFailed:
+                status = ShellExecuteStatus.FAILED
+                error = tobiko.exc_info()
+            except _exception.ShellProcessNotTeriminated:
+                status = ShellExecuteStatus.UNTERMINATED
+            else:
+                status = ShellExecuteStatus.SUCCEEDED
 
-    return ShellExecuteResult(command=str(process.command),
-                              exit_status=process.exit_status,
-                              stdin=_process.str_from_stream(process.stdin),
-                              stdout=_process.str_from_stream(process.stdout),
-                              stderr=_process.str_from_stream(process.stderr))
+    result = execute_result(command=process.command,
+                            exit_status=process.exit_status,
+                            timeout=process.timeout,
+                            status=status,
+                            login=login,
+                            stdin=process.stdin,
+                            stdout=process.stdout,
+                            stderr=process.stderr)
+    if error:
+        LOG.info("Command error:\n%s\n", result.details)
+        error.result = result
+        error.reraise()
+
+    LOG.debug("Command executed:\n%s\n", result.details)
+    return result
