@@ -37,9 +37,9 @@ OPTIONS = [
                 default=['/etc/ssh/ssh_config', '~/.ssh/config',
                          './ssh_config'],
                 help="Default user SSH configuration files"),
-    cfg.StrOpt('key_file',
-               default='~/.ssh/id_rsa',
-               help="Default SSH private key file"),
+    cfg.ListOpt('key_file',
+                default=['ssh_identity', '~/.ssh/id_rsa', '~/.ssh/id_dsa'],
+                help="Default SSH private key file"),
     cfg.BoolOpt('allow_agent',
                 default=False,
                 help=("Set to False to disable connecting to the "
