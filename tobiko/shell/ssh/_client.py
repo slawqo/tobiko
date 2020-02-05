@@ -353,6 +353,11 @@ class SSHClientFixture(tobiko.SharedFixture):
                                   username=parameters['username'],
                                   port=parameters['port'])
 
+    @property
+    def hostname(self):
+        parameters = self.setup_connect_parameters()
+        return parameters['hostname']
+
 
 UNDEFINED_CLIENT = 'UNDEFINED_CLIENT'
 

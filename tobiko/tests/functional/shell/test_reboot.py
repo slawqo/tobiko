@@ -1,4 +1,4 @@
-# Copyright (c) 2019 Red Hat, Inc.
+# Copyright (c) 2020 Red Hat, Inc.
 #
 # All Rights Reserved.
 #
@@ -47,21 +47,38 @@ class RebootHostTest(testtools.TestCase):
                   "uptime=%r", uptime_0)
         boottime_0 = time.time() - uptime_0
 
-        sh.reboot_host(ssh_client=ssh_client, **params)
+        # Wait for CirrOS init script to terminate before rebooting the VM
+        sh.wait_for_processes(command='^{.*}',
+                              ssh_client=ssh_client,
+                              timeout=90.)
+
+        reboot = sh.reboot_host(ssh_client=ssh_client, **params)
+
+        self.assertIs(ssh_client, reboot.ssh_client)
+        self.assertEqual(ssh_client.hostname, reboot.hostname)
+        self.assertGreater(reboot.start_time, 0.)
+        self.assertEqual(params.get('timeout', sh.RebootHostOperation.timeout),
+                         reboot.timeout)
+        self.assertIs(params.get('wait', True), reboot.wait)
+        self.assertEqual(params.get('sleep_interval', 1.),
+                         reboot.sleep_interval)
+
+        if not reboot.wait:
+            self.assertFalse(reboot.is_rebooted)
+            self.assert_is_not_connected(ssh_client)
+            reboot.wait_for_operation()
+
+        self.assertTrue(reboot.is_rebooted)
+        self.assert_is_connected(ssh_client)
 
         server = nova.wait_for_server_status(server, 'ACTIVE')
         self.assertEqual('ACTIVE', server.status)
 
-        wait = params.get('wait', True)
-        if wait:
-            self.assert_is_connected(ssh_client)
-            uptime_1 = sh.get_uptime(ssh_client=ssh_client)
-            boottime_1 = time.time() - uptime_1
-            LOG.debug("Reboot operation executed on remote host: "
-                      "uptime=%r", uptime_1)
-            self.assertGreater(boottime_1, boottime_0)
-        else:
-            self.assert_is_not_connected(ssh_client)
+        uptime_1 = sh.get_uptime(ssh_client=ssh_client)
+        boottime_1 = time.time() - uptime_1
+        LOG.debug("Reboot operation executed on remote host: "
+                  "uptime=%r", uptime_1)
+        self.assertGreater(boottime_1, boottime_0)
 
     def test_reboot_host_with_wait(self):
         self.test_reboot_host(wait=True)
@@ -79,7 +96,7 @@ class RebootHostTest(testtools.TestCase):
         server = nova.shutoff_server(self.stack.server_id)
         self.assertEqual('SHUTOFF', server.status)
 
-        self.assertRaises(sh.HostNameError, sh.reboot_host,
+        self.assertRaises(sh.ShellTimeoutExpired, sh.reboot_host,
                           ssh_client=ssh_client, timeout=5.0)
         self.assert_is_not_connected(ssh_client)
         server = nova.wait_for_server_status(self.stack.server_id, 'SHUTOFF')

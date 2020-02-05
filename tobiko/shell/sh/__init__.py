@@ -22,6 +22,7 @@ from tobiko.shell.sh import _hostname
 from tobiko.shell.sh import _io
 from tobiko.shell.sh import _local
 from tobiko.shell.sh import _process
+from tobiko.shell.sh import _ps
 from tobiko.shell.sh import _reboot
 from tobiko.shell.sh import _ssh
 from tobiko.shell.sh import _uptime
@@ -53,7 +54,15 @@ LocalExecutePathFixture = _local.LocalExecutePathFixture
 process = _process.process
 ShellProcessFixture = _process.ShellProcessFixture
 
+PsError = _ps.PsError
+PsWaitTimeout = _ps.PsWaitTimeout
+list_all_processes = _ps.list_all_processes
+list_kernel_processes = _ps.list_kernel_processes
+list_processes = _ps.list_processes
+wait_for_processes = _ps.wait_for_processes
+
 reboot_host = _reboot.reboot_host
+RebootHostOperation = _reboot.RebootHostOperation
 
 ssh_process = _ssh.ssh_process
 ssh_execute = _ssh.ssh_execute
