@@ -38,6 +38,8 @@ get_port = _client.get_port
 get_subnet = _client.get_subnet
 list_l3_agent_hosting_routers = _client.list_l3_agent_hosting_routers
 find_l3_agent_hosting_router = _client.find_l3_agent_hosting_router
+list_dhcp_agent_hosting_network = _client.list_dhcp_agent_hosting_network
+
 NoSuchNetwork = _client.NoSuchNetwork
 NoSuchPort = _client.NoSuchPort
 NoSuchRouter = _client.NoSuchRouter

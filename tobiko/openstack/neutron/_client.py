@@ -185,6 +185,14 @@ def find_l3_agent_hosting_router(router, client=None, unique=False,
         return default
 
 
+def list_dhcp_agent_hosting_network(network, client=None, **params):
+    agents = neutron_client(client).list_dhcp_agent_hosting_networks(
+        network, **params)
+    if isinstance(agents, collections.Mapping):
+        agents = agents['agents']
+    return tobiko.select(agents)
+
+
 class NoSuchNetwork(tobiko.ObjectNotFound):
     message = "No such network found for {id!r}"
 

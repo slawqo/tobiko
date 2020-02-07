@@ -25,6 +25,10 @@ LOG = log.getLogger(__name__)
 
 class TripleoTopology(topology.OpenStackTopology):
 
+    agent_to_service_name_mappings = {
+        'neutron-dhcp-agent': 'tripleo_neutron_dhcp',
+    }
+
     def discover_nodes(self):
         self.discover_undercloud_nodes()
         self.discover_overcloud_nodes()

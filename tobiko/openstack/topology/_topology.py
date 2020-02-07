@@ -153,6 +153,10 @@ class OpenStackTopology(tobiko.SharedFixture):
 
     config = tobiko.required_setup_fixture(OpenStackTopologyConfig)
 
+    agent_to_service_name_mappings = {
+        'neutron-dhcp-agent': 'devstack@q-dhcp',
+    }
+
     def __init__(self):
         super(OpenStackTopology, self).__init__()
         self._reachable_ips = set()
@@ -170,6 +174,12 @@ class OpenStackTopology(tobiko.SharedFixture):
         self._nodes_by_name.clear()
         self._nodes_by_ips.clear()
         self._nodes_by_group.clear()
+
+    def get_agent_service_name(self, agent_name):
+        try:
+            return self.agent_to_service_name_mappings[agent_name]
+        except KeyError:
+            return None
 
     def discover_nodes(self):
         self.discover_configured_nodes()
