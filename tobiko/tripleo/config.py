@@ -21,7 +21,7 @@ GROUP_NAME = 'tripleo'
 OPTIONS = [
     # Undercloud options
     cfg.StrOpt('undercloud_ssh_hostname',
-               default='undercloud-0',
+               default=None,
                help="hostname or IP address to be used to connect to "
                     "undercloud host"),
     cfg.IntOpt('undercloud_ssh_port',
@@ -30,9 +30,9 @@ OPTIONS = [
     cfg.StrOpt('undercloud_ssh_username',
                default='stack',
                help="Username with access to stackrc and overcloudrc files"),
-    cfg.ListOpt('undercloud_ssh_key_filename',
-                default=None,
-                help="SSH key filename used to login to Undercloud node"),
+    cfg.StrOpt('undercloud_ssh_key_filename',
+               default='~/.ssh/id_rsa',
+               help="SSH key filename used to login to Undercloud node"),
     cfg.StrOpt('undercloud_rcfile',
                default='~/stackrc',
                help="Undercloud RC filename"),

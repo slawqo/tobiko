@@ -27,43 +27,38 @@ import tobiko
 LOG = log.getLogger(__name__)
 
 
-def ssh_config(config_files=None, **defaults):
-    if config_files or defaults:
-        fixture = SSHConfigFixture(config_files=config_files, **defaults)
+def ssh_config(config_files=None):
+    if config_files:
+        fixture = SSHConfigFixture(config_files=config_files)
     else:
         fixture = SSHConfigFixture
     return tobiko.setup_fixture(fixture)
 
 
-def ssh_host_config(host=None, config_files=None, **defaults):
-    return ssh_config(config_files=config_files, **defaults).lookup(host)
+def ssh_host_config(host=None, config_files=None):
+    return ssh_config(config_files=config_files).lookup(host)
 
 
 class SSHDefaultConfigFixture(tobiko.SharedFixture):
 
-    def __init__(self, **defaults):
-        super(SSHDefaultConfigFixture, self).__init__()
-        self.__dict__.update((key, value)
-                             for key, value in defaults.items()
-                             if value is not None)
+    conf = None
+
+    def setup_fixture(self):
+        self.conf = tobiko.tobiko_config().ssh
 
     def __getattr__(self, name):
-        config = tobiko.tobiko_config().ssh
-        value = getattr(config, name)
-        self.__dict__[name] = value
-        return value
+        return getattr(self.conf, name)
 
 
 class SSHConfigFixture(tobiko.SharedFixture):
 
-    default = None
+    default = tobiko.required_setup_fixture(SSHDefaultConfigFixture)
+
     config_files = None
     config = None
 
-    def __init__(self, config_files=None, **defaults):
+    def __init__(self, config_files=None):
         super(SSHConfigFixture, self).__init__()
-        self.default = tobiko.setup_fixture(
-            SSHDefaultConfigFixture(**defaults))
         if config_files:
             self.config_files = tuple(config_files)
         else:
@@ -92,8 +87,7 @@ class SSHConfigFixture(tobiko.SharedFixture):
         return SSHHostConfig(host=host,
                              ssh_config=self,
                              host_config=host_config,
-                             config_files=self.config_files,
-                             default=self.default)
+                             config_files=self.config_files)
 
     def __repr__(self):
         return "{class_name!s}(config_files={config_files!r})".format(
@@ -103,8 +97,9 @@ class SSHConfigFixture(tobiko.SharedFixture):
 class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
                                                              'ssh_config',
                                                              'host_config',
-                                                             'config_files',
-                                                             'default'])):
+                                                             'config_files'])):
+
+    default = tobiko.required_setup_fixture(SSHDefaultConfigFixture)
 
     @property
     def hostname(self):
