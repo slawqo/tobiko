@@ -19,6 +19,7 @@ import six
 
 import podman
 
+
 import tobiko
 from tobiko.podman import _exception
 from tobiko.podman import _shell
@@ -76,28 +77,31 @@ class PodmanClientFixture(tobiko.SharedFixture):
 
     def setup_client(self):
         # setup podman access via varlink
-        podman_client_setup_cmds = [
-            "sudo groupadd -f podman",
-            "sudo usermod -a -G podman heat-admin",
-            "sudo chmod o+w /etc/tmpfiles.d",
-            "sudo echo 'd /run/podman 0750 root heat-admin' > "
-            "/etc/tmpfiles.d/podman.conf",
-            "sudo cp /lib/systemd/system/io.podman.socket /etc/systemd/system/"
-            "io.podman.socket",
-            "sudo crudini --set /etc/systemd/system/io.podman.socket Socket "
-            "SocketMode 0660",
-            "sudo crudini --set /etc/systemd/system/io.podman.socket Socket"
-            " SocketGroup podman",
-            "sudo systemctl daemon-reload",
-            "sudo systemd-tmpfiles --create",
-            "sudo systemctl enable --now io.podman.socket",
-            "sudo chown -R root: /run/podman",
-            "sudo chmod g+rw /run/podman/io.podman",
-            "sudo systemctl start io.podman.socket"
-        ]
+        podman_client_setup_cmds = \
+            "sudo test -f /var/varlink_client_access_setup ||  \
+            (sudo groupadd -f podman &&  \
+            sudo usermod -a -G podman heat-admin && \
+            sudo chmod -R o=wxr /etc/tmpfiles.d && \
+            sudo echo 'd /run/podman 0770 root heat-admin' >  \
+            /etc/tmpfiles.d/podman.conf && \
+            sudo cp /lib/systemd/system/io.podman.socket \
+            /etc/systemd/system/io.podman.socket && \
+            sudo crudini --set /etc/systemd/system/io.podman.socket Socket  \
+            SocketMode 0660 && \
+            sudo crudini --set /etc/systemd/system/io.podman.socket Socket  \
+            SocketGroup podman && \
+            sudo systemctl daemon-reload && \
+            sudo systemd-tmpfiles --create && \
+            sudo systemctl enable --now io.podman.socket && \
+            sudo chmod 777 /run/podman && \
+            sudo chown -R root: /run/podman && \
+            sudo chmod g+rw /run/podman/io.podman && \
+            sudo chmod 777 /run/podman/io.podman && \
+            sudo setenforce 0 && \
+            sudo systemctl start io.podman.socket && \
+            sudo touch /var/varlink_client_access_setup)"
 
-        for cmd in podman_client_setup_cmds:
-            sh.execute(cmd, ssh_client=self.ssh_client)
+        sh.execute(podman_client_setup_cmds, ssh_client=self.ssh_client)
 
         client = self.client
         if client is None:
@@ -105,19 +109,25 @@ class PodmanClientFixture(tobiko.SharedFixture):
         return client
 
     def create_client(self):
-        podman_remote_socket = self.discover_podman_socket()
-        podman_remote_socket_uri = 'unix:/tmp/podman.sock'
+        for _ in range(360):
 
-        remote_uri = 'ssh://{username}@{host}{socket}'.format(
-            username=self.ssh_client.connect_parameters['username'],
-            host=self.ssh_client.connect_parameters["hostname"],
-            socket=podman_remote_socket)
+            try:
+                podman_remote_socket = self.discover_podman_socket()
+                podman_remote_socket_uri = 'unix:/tmp/podman.sock'
 
-        client = podman.Client(uri=podman_remote_socket_uri,
-                               remote_uri=remote_uri,
-                               identity_file='~/.ssh/id_rsa')
-        client.system.ping()
-        return client
+                remote_uri = 'ssh://{username}@{host}{socket}'.format(
+                    username=self.ssh_client.connect_parameters['username'],
+                    host=self.ssh_client.connect_parameters["hostname"],
+                    socket=podman_remote_socket)
+
+                client = podman.Client(uri=podman_remote_socket_uri,
+                                       remote_uri=remote_uri,
+                                       identity_file='~/.ssh/id_rsa')
+                client.system.ping()
+                return client
+            except (ConnectionRefusedError, ConnectionResetError):
+                # retry
+                self.create_client()
 
     def connect(self):
         return tobiko.setup_fixture(self).client

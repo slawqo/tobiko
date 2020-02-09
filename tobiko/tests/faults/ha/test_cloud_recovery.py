@@ -6,6 +6,7 @@ from tobiko.shell import sh
 from tobiko.tests.faults.ha import cloud_disruptions
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import processes
+from tobiko.tripleo import containers
 from tobiko.openstack import stacks
 import tobiko
 
@@ -17,13 +18,12 @@ def nodes_health_check():
 
     # TODO:
     # Test existing created servers
-    # ServerStackResourcesTest().test_server_create()
 
 
 # check vm create with ssh and ping checks
 def check_vm_create(stack_name):
-    '''stack_name: unique stack name ,
-    so that each time a new vm is created'''
+    """stack_name: unique stack name ,
+    so that each time a new vm is created"""
     # create a vm
     stack = stacks.CirrosServerStackFixture(
         stack_name=stack_name)
@@ -61,8 +61,14 @@ class RebootNodesTest(testtools.TestCase):
 
     def test_reboot_computes_recovery(self):
         nodes_health_check()
+        computes_containers_dict_before = \
+            containers.list_containers(group='compute')
         cloud_disruptions.reset_all_compute_nodes(hard_reset=True)
         nodes_health_check()
+        computes_containers_dict_after = \
+            containers.list_containers(group='compute')
+        containers.assert_equal_containers_state(
+            computes_containers_dict_before, computes_containers_dict_after)
         check_vm_create(stack_name=self.id())
 
 # [..]

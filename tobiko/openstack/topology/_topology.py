@@ -26,6 +26,7 @@ from six.moves.urllib import parse
 
 import tobiko
 from tobiko import docker
+from tobiko import podman
 from tobiko.shell import ip
 from tobiko.shell import ping
 from tobiko.shell import sh
@@ -97,6 +98,7 @@ def set_default_openstack_topology_class(topology_class):
 class OpenStackTopologyNode(object):
 
     _docker_client = None
+    _podman_client = None
 
     def __init__(self, topology, name, public_ip, ssh_client):
         self._topology = weakref.ref(topology)
@@ -123,6 +125,14 @@ class OpenStackTopologyNode(object):
             self._docker_client = docker_client = docker.get_docker_client(
                 ssh_client=self.ssh_client)
         return docker_client
+
+    @property
+    def podman_client(self):
+        podman_client = self._podman_client
+        if not podman_client:
+            self._podman_client = podman_client = podman.get_podman_client(
+                ssh_client=self.ssh_client)
+        return podman_client
 
     def __repr__(self):
         return "{cls!s}<name={name!r}>".format(cls=type(self).__name__,
