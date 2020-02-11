@@ -18,12 +18,14 @@
     name: tobiko-tox-py36-centos-7
     parent: tobiko-tox-py36-base
     nodeset: centos-7
+    voting: false
 
 
 - job:
     name: tobiko-tox-py36-centos-8
     parent: tobiko-tox-py36-base
     nodeset: centos-8
+    voting: false
 
 
 - job:
@@ -46,9 +48,11 @@
     name: tobiko-tox-py38-centos-7
     parent: tobiko-tox-py38-base
     nodeset: centos-7
+    voting: false
 
 
 - job:
     name: tobiko-tox-py38-centos-8
     parent: tobiko-tox-py38-base
     nodeset: centos-8
+    voting: false

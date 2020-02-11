@@ -23,8 +23,6 @@
         - tobiko-tox-infrared-centos-7
     gate:
       jobs:
-        - tobiko-tox-py36-centos-7
-        - tobiko-tox-py38-centos-7
         - tobiko-devstack-functional
 
     experimental:
