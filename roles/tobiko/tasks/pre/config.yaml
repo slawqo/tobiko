@@ -15,7 +15,7 @@
             {% endfor %}
             {% endfor %}
       vars:
-        sections: "{{ tobiko_default_conf | combine(tobiko_conf) }}"
+        sections: "{{ tobiko_default_conf | combine(tobiko_conf, recursive=True) }}"
 
     - name: "show tobiko configuration"
       debug:
