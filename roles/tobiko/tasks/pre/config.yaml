@@ -17,6 +17,12 @@
       vars:
         sections: "{{ tobiko_default_conf | combine(tobiko_conf) }}"
 
+    - name: "show tobiko configuration"
+      debug:
+        msg: |
+          Tobiko configuration:
+          {{ tobiko_conf_yaml }}
+
     - name: "provide {{ tobiko_conf_file }} file"
       ini_file:
         path: "{{ tobiko_conf_file }}"
