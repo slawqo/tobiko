@@ -13,6 +13,10 @@
 #    under the License.
 from __future__ import absolute_import
 
+import socket
+
+import netaddr
+
 import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
@@ -28,7 +32,12 @@ def undercloud_ssh_client():
 
 
 def undercloud_host_config():
-    return tobiko.setup_fixture(UndecloudHostConfig)
+    tripleo_config = tobiko.tobiko_config().tripleo
+    return ssh.ssh_host_config(
+        host=tripleo_config.undercloud_ssh_hostname,
+        username=tripleo_config.undercloud_ssh_username,
+        port=tripleo_config.undercloud_ssh_port,
+        key_file=tripleo_config.undercloud_ssh_key_filename)
 
 
 def fetch_os_env(rcfile):
@@ -51,38 +60,26 @@ class UndercloudKeystoneCredentialsFixture(
         return load_undercloud_rcfile()
 
 
+def gethost_by_name(hostname):
+    try:
+        return netaddr.IPAddress(hostname)
+    except Exception:
+        ip_address = socket.gethostbyname(hostname)
+        return netaddr.IPAddress(ip_address)
+
+
 def has_undercloud():
     host_config = undercloud_host_config()
-    return bool(host_config.hostname)
+    try:
+        gethost_by_name(host_config.hostname)
+    except Exception:
+        return False
+    else:
+        return True
 
 
 skip_if_missing_undercloud = tobiko.skip_unless(
     'TripleO undercloud hostname not configured', has_undercloud)
-
-
-class UndecloudHostConfig(tobiko.SharedFixture):
-
-    host = 'undercloud-0'
-    hostname = None
-    port = None
-    username = None
-    key_filename = None
-
-    def __init__(self, **kwargs):
-        super(UndecloudHostConfig, self).__init__()
-        self._connect_parameters = ssh.gather_ssh_connect_parameters(**kwargs)
-
-    def setup_fixture(self):
-        self.hostname = CONF.tobiko.tripleo.undercloud_ssh_hostname
-        self.port = CONF.tobiko.tripleo.undercloud_ssh_port
-        self.username = CONF.tobiko.tripleo.undercloud_ssh_username
-        self.key_filename = CONF.tobiko.tripleo.undercloud_ssh_key_filename
-
-    @property
-    def connect_parameters(self):
-        parameters = ssh.gather_ssh_connect_parameters(self)
-        parameters.update(self._connect_parameters)
-        return parameters
 
 
 def undercloud_keystone_client():
