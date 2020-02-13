@@ -7,6 +7,7 @@ from tobiko.tests.faults.ha import cloud_disruptions
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import processes
 from tobiko.tripleo import containers
+from tobiko.tripleo import neutron
 from tobiko.openstack import stacks
 import tobiko
 
@@ -15,9 +16,12 @@ def nodes_health_check():
     # this method will be changed in future commit
     check_pacemaker_resources_health()
     check_overcloud_processes_health()
+    neutron.check_neutron_agents_health()
 
     # TODO:
     # Test existing created servers
+    # ServerStackResourcesTest().test_server_create()
+    # Add container checks to all health checks
 
 
 # check vm create with ssh and ping checks
