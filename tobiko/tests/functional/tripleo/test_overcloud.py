@@ -26,8 +26,8 @@ from tobiko.tripleo import overcloud
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import services
 from tobiko.tripleo import processes
+from tobiko.tripleo import neutron
 import tobiko
-
 
 CONF = config.CONF
 
@@ -92,11 +92,11 @@ class OvercloudNovaApiTest(testtools.TestCase):
 
 @overcloud.skip_if_missing_overcloud
 class OvercloudPacemakerTest(testtools.TestCase):
-
     """
     Assert that all pacemaker resources are in
     healthy state
     """
+
     def test_get_pacemaker_resource_table(self):
         resource_table = pacemaker.get_pcs_resources_table()
         self.assertIsInstance(resource_table, pd.DataFrame)
@@ -108,11 +108,11 @@ class OvercloudPacemakerTest(testtools.TestCase):
 
 @overcloud.skip_if_missing_overcloud
 class OvercloudServicesTest(testtools.TestCase):
-
     """
     Assert that a subset of overcloud services are in running state
     across the overcloud nodes
     """
+
     def test_get_services_resource_table(self):
         oss = services.OvercloudServicesStatus()
         self.assertIsInstance(oss.oc_services_df,
@@ -124,18 +124,18 @@ class OvercloudServicesTest(testtools.TestCase):
 
     def test_get_overcloud_nodes_running_pcs_resource(self):
         nodes_list = pacemaker.get_overcloud_nodes_running_pcs_resource(
-           resource_type='(ocf::heartbeat:rabbitmq-cluster):',
-           resource_state='Started')
+            resource_type='(ocf::heartbeat:rabbitmq-cluster):',
+            resource_state='Started')
         self.assertIsInstance(nodes_list, list)
 
 
 @overcloud.skip_if_missing_overcloud
 class OvercloudProcessesTest(testtools.TestCase):
-
     """
     Assert that a subset of overcloud processes are in running state
     across the overcloud nodes
     """
+
     def test_get_processes_resource_table(self):
         ops = processes.OvercloudProcessesStatus()
         self.assertIsInstance(ops.oc_procs_df,
@@ -144,3 +144,14 @@ class OvercloudProcessesTest(testtools.TestCase):
     def test_overcloud_processes(self):
         ops = processes.OvercloudProcessesStatus()
         self.assertTrue(ops.basic_overcloud_processes_running)
+
+
+@overcloud.skip_if_missing_overcloud
+class OvercloudNeutronAgentsTest(testtools.TestCase):
+    """
+    Assert that a the neutron agents are healthy
+    across the overcloud nodes
+    """
+
+    def test_neutron_agents_health(self):
+        neutron.check_neutron_agents_health()
