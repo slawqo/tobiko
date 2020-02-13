@@ -1,6 +1,7 @@
 ---
 
 - name: Run Tobiko Tests
+  ignore_errors: True
   shell:
     chdir: "{{ test.dir }}"
     cmd: |
