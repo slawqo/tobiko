@@ -106,7 +106,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.synced_folder ".", "/vagrant", type: "rsync",
-    rsync__exclude: [".tox/", "tobiko.conf", ".tobiko"]
+    rsync__exclude: [".tox/", "tobiko.conf", ".tobiko", ".infrared"]
 
   # OS faults doesn't support other ports for SSH connection used by ansible
   config.vm.network "forwarded_port", guest: 22, host: 22

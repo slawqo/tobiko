@@ -36,7 +36,7 @@ function tox_setup {
         # Cleanup and create virtualenv directory
         rm -fR "${TOX_VIRTUAL_ENV}"
         mkdir -p $(dirname "${TOX_VIRTUAL_ENV}")
-        "${TOX_BASE_PYTHON}" -m virtualenv "${TOX_VIRTUAL_ENV}"
+        "${TOX_BASE_PYTHON}" -m virtualenv --seeder pip "${TOX_VIRTUAL_ENV}"
 
         # Activate virtualenv
         if tox_activate; then
@@ -52,7 +52,7 @@ function tox_setup {
 function tox_install_deps {
     tox_install_pip
     if ! "${TOX_BASE_PYTHON}" -m virtualenv --version; then
-        "${TOX_BASE_PYTHON}" -m pip install --user virtualenv
+        "${TOX_BASE_PYTHON}" -m pip install --user --upgrade virtualenv
     fi
 }
 

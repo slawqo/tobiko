@@ -40,3 +40,4 @@ Pipfile.lock
 tobiko.conf
 clouds.yaml
 ssh_config
+.infrared

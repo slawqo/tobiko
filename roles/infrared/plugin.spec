@@ -1,7 +1,7 @@
 ---
 config:
     plugin_type: test
-    entry_point: ./roles/infrared/main.yml
+    entry_point: main.yml
 
 subparsers:
     tobiko:
