@@ -23,13 +23,14 @@ CONF = config.CONF
 TIPLEO_CONF = CONF.tobiko.tripleo
 
 
-class UndercloudConfigTest(unit.TobikoUnitTest):
+class TripleoConfigTest(unit.TobikoUnitTest):
 
-    def test_undercloud_ssh_key_filename(self):
-        value = TIPLEO_CONF.undercloud_ssh_key_filename
-        if value is not None:
-            self.assertIsInstance(value,
-                                  six.string_types)
+    def test_ssh_key_filename(self):
+        self.assertIsInstance(TIPLEO_CONF.undercloud_ssh_key_filename,
+                              six.string_types)
+
+
+class UndercloudConfigTest(unit.TobikoUnitTest):
 
     def test_undercloud_ssh_hostname(self):
         value = TIPLEO_CONF.undercloud_ssh_hostname

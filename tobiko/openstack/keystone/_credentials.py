@@ -272,8 +272,8 @@ class DefaultKeystoneCredentialsFixture(KeystoneCredentialsFixture):
         for fixture in self.fixtures:
             try:
                 credentials = tobiko.setup_fixture(fixture).credentials
-            except Exception as ex:
-                LOG.debug("Error getting cretentials from %r: %s", fixture, ex)
+            except Exception:
+                LOG.debug("Error getting cretentials from %r", fixture)
                 errors.append(tobiko.exc_info())
                 continue
 
