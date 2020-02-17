@@ -27,7 +27,6 @@
     gate:
       jobs:
         - tobiko-devstack-functional
-        - tobiko-tripleo-functional
 
     experimental:
       jobs:
