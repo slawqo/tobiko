@@ -75,10 +75,7 @@ def positive_int(value):
 def get_key_filename(value):
     if isinstance(value, six.string_types):
         value = [value]
-    key_filename = [tobiko.tobiko_config_path(v) for v in value]
-    return [f
-            for f in key_filename
-            if os.path.isfile(f)]
+    return [os.path.realpath(os.path.expanduser(v)) for v in value]
 
 
 SSH_CONNECT_PARAMETERS = {
