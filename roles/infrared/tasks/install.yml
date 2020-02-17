@@ -37,7 +37,5 @@
   register: git_log
   args:
     chdir: "{{ test.dir }}"
-  when: test.refsec != ''
 
 - debug: var=git_log.stdout_lines
-  when: test.refsec != ''
