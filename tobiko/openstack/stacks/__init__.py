@@ -17,7 +17,6 @@ from __future__ import absolute_import
 
 from tobiko.openstack.stacks import _centos
 from tobiko.openstack.stacks import _cirros
-from tobiko.openstack.stacks import _fedora
 from tobiko.openstack.stacks import _l3ha
 from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _nova
@@ -44,10 +43,6 @@ L3haCentosServerStackFixture = _l3ha.L3haCentosServerStackFixture
 L3haPeerServerStackFixture = _l3ha.L3haPeerServerStackFixture
 L3haDifferentHostServerStackFixture = _l3ha.L3haDifferentHostServerStackFixture
 L3haSameHostServerStackFixture = _l3ha.L3haSameHostServerStackFixture
-
-FedoraFlavorStackFixture = _fedora.FedoraFlavorStackFixture
-FedoraImageFixture = _fedora.FedoraImageFixture
-FedoraServerStackFixture = _fedora.FedoraServerStackFixture
 
 NetworkStackFixture = _neutron.NetworkStackFixture
 NetworkWithNetMtuWriteStackFixture = (
