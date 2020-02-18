@@ -11,4 +11,3 @@ Tobiko User Guide
    install
    config
    run-test-cases
-   run-faults
