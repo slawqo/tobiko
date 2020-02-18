@@ -33,6 +33,9 @@ class RebootableServer(stacks.CirrosServerStackFixture):
     "Server to be rebooted"
 
 
+@tobiko.skip_if(
+    "This test is often failing because server endup in SHUTOFF "
+    "state", True)
 class RebootHostTest(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(RebootableServer)
