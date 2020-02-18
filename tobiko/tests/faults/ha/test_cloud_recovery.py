@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import random
+
 import testtools
 from tobiko.shell import ping
 from tobiko.shell import sh
@@ -17,11 +19,13 @@ def nodes_health_check():
     check_pacemaker_resources_health()
     check_overcloud_processes_health()
     neutron.check_neutron_agents_health()
+    # create a uniq stack
+    check_vm_create(stack_name='stack{}'.format(random.randint(0, 10000)))
 
     # TODO:
-    # Test existing created servers
+    # Test existing created serverstest_controller_containers
     # ServerStackResourcesTest().test_server_create()
-    # Add container checks to all health checks
+    # Add specific container checks
 
 
 # check vm create with ssh and ping checks
@@ -61,7 +65,6 @@ class RebootNodesTest(testtools.TestCase):
         nodes_health_check()
         cloud_disruptions.reset_all_controller_nodes()
         nodes_health_check()
-        check_vm_create(stack_name=self.id())
 
     def test_reboot_computes_recovery(self):
         nodes_health_check()
@@ -73,7 +76,6 @@ class RebootNodesTest(testtools.TestCase):
             containers.list_containers(group='compute')
         containers.assert_equal_containers_state(
             computes_containers_dict_before, computes_containers_dict_after)
-        check_vm_create(stack_name=self.id())
 
 # [..]
 # more tests to folow
