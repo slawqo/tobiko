@@ -16,9 +16,13 @@
 from __future__ import absolute_import
 
 import netaddr
+from oslo_log import log
 
 import tobiko
 from tobiko.shell import sh
+
+
+LOG = log.getLogger(__name__)
 
 
 class IpError(tobiko.TobikoException):
@@ -66,8 +70,8 @@ def list_ip_addresses(ip_version=None, scope=None, **execute_params):
 
 
 def list_network_namespaces(**execute_params):
-    output = execute_ip(['-o', 'netns', 'list'], **execute_params)
     namespaces = tobiko.Selection()
+    output = execute_ip(['-o', 'netns', 'list'], **execute_params)
     if output:
         for line in output.splitlines():
             fields = line.strip().split()
@@ -76,10 +80,18 @@ def list_network_namespaces(**execute_params):
     return namespaces
 
 
-def execute_ip(ifconfig_args, **execute_params):
-    command = ['/sbin/ip'] + ifconfig_args
+IP_COMMAND = sh.shell_command(['/sbin/ip'])
+
+
+def execute_ip(ifconfig_args, ip_command=None, ignore_errors=False,
+               **execute_params):
+    if ip_command:
+        ip_command = sh.shell_command(ip_command)
+    else:
+        ip_command = IP_COMMAND
+    command = ip_command + ifconfig_args
     result = sh.execute(command, stdin=False, stdout=True, stderr=True,
                         expect_exit_status=None, **execute_params)
-    if result.exit_status:
+    if not ignore_errors and result.exit_status:
         raise IpError(error=result.stderr, exit_status=result.exit_status)
     return result.stdout

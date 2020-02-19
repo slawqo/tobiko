@@ -13,6 +13,7 @@ class NetworkNamespaceFixture(tobiko.SharedFixture):
     def setup_fixture(self):
         for node in topology.list_openstack_nodes():
             network_namespaces = ip.list_network_namespaces(
+                ignore_errors=True,
                 ssh_client=node.ssh_client)
             if network_namespaces:
                 self.network_namespace = network_namespaces.first

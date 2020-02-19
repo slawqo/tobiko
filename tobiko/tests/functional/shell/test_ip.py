@@ -115,6 +115,15 @@ class IpTest(testtools.TestCase):
     def test_list_ip_addresses_with_namespace_and_scope(self):
         self.test_list_ip_addresses_with_namespace(scope='global')
 
+    def test_list_ip_addresses_with_failing_command(self):
+        self.assertRaises(ip.IpError, ip.list_ip_addresses,
+                          ip_command=['false'],
+                          ssh_client=self.namespace.ssh_client)
+
+    def test_list_ip_addresses_with_ignore_errors(self, **execute_params):
+        self.test_list_ip_addresses(ignore_errors=True, ip_command='false',
+                                    **execute_params)
+
     def test_list_namespaces(self, **execute_params):
         namespaces = ip.list_network_namespaces(**execute_params)
         self.assertIsInstance(namespaces, list)
@@ -133,3 +142,12 @@ class IpTest(testtools.TestCase):
         if ssh_client is None:
             self.skip('SSH proxy server not configured')
         self.test_list_namespaces(ssh_client=ssh_client)
+
+    def test_list_namespaces_with_failing_command(self):
+        self.assertRaises(ip.IpError, ip.list_network_namespaces,
+                          ip_command=['false'],
+                          ssh_client=self.namespace.ssh_client)
+
+    def test_list_namespaces_with_ignore_errors(self, **execute_params):
+        self.test_list_namespaces(ignore_errors=True, ip_command='false',
+                                  **execute_params)
