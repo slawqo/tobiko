@@ -142,12 +142,8 @@ function configure_tobiko_neutron {
   # Write floating network
   local floating_network=${TOBIKO_NEUTRON_FLOATING_NETWORK}
   if [ "${floating_network}" != "" ]; then
-    local floating_network=$(openstack network show -f value -c name "${floating_network}")
-  else
-    local networks=( $( openstack network list -f value -c Name --enable --external) )
-    local floating_network=${networks[0]}
+    iniset "${tobiko_conf_file}" neutron floating_network "${floating_network}"
   fi
-  iniset "${tobiko_conf_file}" neutron floating_network "${floating_network}"
 }
 
 

@@ -96,3 +96,17 @@ class L3HaNetworkTestCase(NetworkTestCase):
 
     #: Stack of resources with a network with a gateway router
     stack = tobiko.required_setup_fixture(stacks.L3haNetworkStackFixture)
+
+
+class FloatingNetworkStackTest(testtools.TestCase):
+
+    @stacks.skip_if_missing_floating_network
+    def test_get_floating_network(self):
+        network = stacks.get_floating_network()
+        self.assertTrue(network['id'])
+        self.assertIs(True, network['router:external'])
+        self.assertEqual('ACTIVE', network['status'])
+
+    @stacks.skip_if_missing_floating_network
+    def test_has_floating_network(self):
+        self.assertIs(True, stacks.has_floating_network())

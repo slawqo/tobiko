@@ -1,0 +1,40 @@
+heat_template_version: newton
+
+
+description: |
+  Creates an network with a subnet and a gateway router to an external network
+  if given
+
+
+parameters:
+  external_id:
+    description: Default value to be assigned to network ports
+    type: string
+    default: '<no-external-id>'
+
+  has_external_id:
+    description: Extra network creation parameters
+    type: boolean
+    default: false
+
+
+conditions:
+  has_network:
+    get_param: has_external_id
+
+
+resources:
+  network:
+    type: OS::Neutron::Net
+    external_id: {get_param: external_id}
+    condition: has_network
+
+
+outputs:
+  network_id:
+    description: Network ID
+    value: {get_resource: network}
+
+  has_network:
+    description: Whenever has a floating network
+    value: {get_param: has_external_id}
