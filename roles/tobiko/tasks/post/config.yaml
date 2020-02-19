@@ -1,0 +1,15 @@
+---
+
+- name: check if {{ tobiko_conf_file }} file exists
+  stat:
+    path: "{{ tobiko_conf_file }}"
+  register: check_tobiko_conf_file
+
+
+- name: "Collect {{ tobiko_conf_file }} file"
+  synchronize:
+    dest: "{{ collect_files_dir }}"
+    mode: pull
+    src: "{{ tobiko_conf_file }}"
+    verify_host: true
+  when: check_tobiko_conf_file.stat.exists
