@@ -23,5 +23,6 @@
 
     - when: tobiko_post_run | bool
       block:
+        - include: post/config.yaml
         - include: post/report.yaml
         - include: post/log.yaml
