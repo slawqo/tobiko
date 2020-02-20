@@ -51,9 +51,7 @@ function tox_setup {
 
 function tox_install_deps {
     tox_install_pip
-    if ! "${TOX_BASE_PYTHON}" -m virtualenv --version; then
-        "${TOX_BASE_PYTHON}" -m pip install --user --upgrade virtualenv
-    fi
+    "${TOX_BASE_PYTHON}" -m pip install --user --upgrade virtualenv
 }
 
 
