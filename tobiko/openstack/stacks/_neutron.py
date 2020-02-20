@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import json
+
 import netaddr
 from oslo_log import log
 
@@ -25,8 +27,43 @@ from tobiko.openstack import neutron
 from tobiko.openstack.stacks import _hot
 
 
+LOG = log.getLogger(__name__)
+
+
 CONF = config.CONF
 LOG = log.getLogger(__name__)
+
+
+class FloatingNetworkStackFixture(heat.HeatStackFixture):
+
+    template = _hot.heat_template_file('neutron/floating_network.yaml')
+
+    @property
+    def external_name(self):
+        return tobiko.tobiko_config().neutron.floating_network
+
+    _external_network = None
+
+    @property
+    def external_network(self):
+        network = self._external_network
+        if network is None:
+            self._external_network = network = find_external_network(
+                name=self.external_name) or {}
+        return network
+
+    @property
+    def external_id(self):
+        network = self.external_network
+        return network and network['id'] or None
+
+    @property
+    def has_external_id(self):
+        return bool(self.external_id)
+
+    @property
+    def network_details(self):
+        return neutron.get_network(self.network_id)
 
 
 @neutron.skip_if_missing_networking_extensions('port-security')
@@ -68,10 +105,18 @@ class NetworkStackFixture(heat.HeatStackFixture):
         """Extra network creation parameters"""
         return {}
 
+    floating_network_stack = tobiko.required_setup_fixture(
+        FloatingNetworkStackFixture)
+
+    @property
+    def floating_network(self):
+        """Network ID where the Neutron floating IPs are created"""
+        return self.floating_network_stack.network_id
+
     @property
     def gateway_network(self):
-        """Floating IP network where the Neutron floating IPs are created"""
-        return CONF.tobiko.neutron.floating_network
+        """Network ID where gateway routes packages to"""
+        return self.floating_network
 
     ha = False
 
@@ -200,3 +245,48 @@ class SecurityGroupsFixture(heat.HeatStackFixture):
     """
     #: Heat template file
     template = _hot.heat_template_file('neutron/security_groups.yaml')
+
+
+def find_external_network(name=None):
+    network = None
+    if name:
+        try:
+            network = neutron.get_network(name)
+        except neutron.NoSuchNetwork:
+            LOG.debug('No such network with ID %r', name)
+
+    if not network:
+        params = {'router:external': True, "status": "ACTIVE"}
+        if name:
+            params['name'] = name
+        try:
+            network = neutron.find_network(**params)
+        except tobiko.ObjectNotFound:
+            LOG.exception('No such network (%s):',
+                          json.dumps(params, sort_keys=True))
+            if name:
+                message = ('No such external network with name or ID '
+                           '{!r}').format(name)
+                raise ValueError(message)
+
+    if network:
+        LOG.debug('Found external network %r:\n%s',
+                  network['name'], json.dumps(network, indent=4,
+                                              sort_keys=True))
+    return network
+
+
+def get_floating_network_id():
+    return tobiko.setup_fixture(FloatingNetworkStackFixture).network_id
+
+
+def get_floating_network():
+    return tobiko.setup_fixture(FloatingNetworkStackFixture).network_details
+
+
+def has_floating_network():
+    return tobiko.setup_fixture(FloatingNetworkStackFixture).has_network
+
+
+skip_if_missing_floating_network = tobiko.skip_unless(
+    'Floating network not found', has_floating_network)

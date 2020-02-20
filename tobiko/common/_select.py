@@ -81,7 +81,7 @@ def filter_by_items(dictionaries, exclude=False, **items):
 
 
 class ObjectNotFound(_exception.TobikoException):
-    "Object not found."
+    "Object not found"
 
 
 class MultipleObjectsFound(_exception.TobikoException):

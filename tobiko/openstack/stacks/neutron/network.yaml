@@ -75,9 +75,7 @@ parameters:
   gateway_network:
     description: Optional gateway network to route packages to
     type: string
-    default:
-    constraints:
-    - custom_constraint: neutron.network
+    default: '<no-gateway-network>'
 
   gateway_value_specs:
     description: Extra gateway router creation parameters

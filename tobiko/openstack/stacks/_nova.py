@@ -129,12 +129,13 @@ class ServerStackFixture(heat.HeatStackFixture):
     def network(self):
         return self.network_stack.network_id
 
-    #: Floating IP network where the Neutron floating IP is created
-    floating_network = CONF.tobiko.neutron.floating_network
+    #: Floating IP network where the Neutron floating IP are created
+    @property
+    def floating_network(self):
+        return self.network_stack.floating_network
 
     @property
     def has_floating_ip(self):
-        """Whenever to allocate floating IP for the server"""
         return bool(self.floating_network)
 
     @property

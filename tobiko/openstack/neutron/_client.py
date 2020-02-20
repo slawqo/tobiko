@@ -136,19 +136,32 @@ def get_floating_ip(floating_ip, client=None, **params):
 
 
 def get_network(network, client=None, **params):
-    return neutron_client(client).show_network(network, **params)['network']
+    try:
+        return neutron_client(client).show_network(network,
+                                                   **params)['network']
+    except neutronclient.exceptions.NotFound:
+        raise NoSuchNetwork(id=network)
 
 
 def get_port(port, client=None, **params):
-    return neutron_client(client).show_port(port, **params)['port']
+    try:
+        return neutron_client(client).show_port(port, **params)['port']
+    except neutronclient.exceptions.NotFound:
+        raise NoSuchPort(id=port)
 
 
 def get_router(router, client=None, **params):
-    return neutron_client(client).show_router(router, **params)['router']
+    try:
+        return neutron_client(client).show_router(router, **params)['router']
+    except neutronclient.exceptions.NotFound:
+        raise NoSuchRouter(id=router)
 
 
 def get_subnet(subnet, client=None, **params):
-    return neutron_client(client).show_subnet(subnet, **params)['subnet']
+    try:
+        return neutron_client(client).show_subnet(subnet, **params)['subnet']
+    except neutronclient.exceptions.NotFound:
+        raise NoSuchSubnet(id=subnet)
 
 
 def list_l3_agent_hosting_routers(router, client=None, **params):
@@ -170,3 +183,19 @@ def find_l3_agent_hosting_router(router, client=None, unique=False,
             return agents.first
     else:
         return default
+
+
+class NoSuchNetwork(tobiko.ObjectNotFound):
+    message = "No such network found for {id!r}"
+
+
+class NoSuchPort(tobiko.ObjectNotFound):
+    message = "No such port found for {id!r}"
+
+
+class NoSuchRouter(tobiko.ObjectNotFound):
+    message = "No such router found for {id!r}"
+
+
+class NoSuchSubnet(tobiko.ObjectNotFound):
+    message = "No such subnet found for {id!r}"

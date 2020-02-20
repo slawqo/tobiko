@@ -38,6 +38,10 @@ get_port = _client.get_port
 get_subnet = _client.get_subnet
 list_l3_agent_hosting_routers = _client.list_l3_agent_hosting_routers
 find_l3_agent_hosting_router = _client.find_l3_agent_hosting_router
+NoSuchNetwork = _client.NoSuchNetwork
+NoSuchPort = _client.NoSuchPort
+NoSuchRouter = _client.NoSuchRouter
+NoSuchSubnet = _client.NoSuchSubnet
 
 new_ipv4_cidr = _cidr.new_ipv4_cidr
 new_ipv6_cidr = _cidr.new_ipv6_cidr

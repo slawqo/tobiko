@@ -49,6 +49,10 @@ NetworkWithNetMtuWriteStackFixture = (
     _neutron.NetworkWithNetMtuWriteStackFixture)
 SecurityGroupsFixture = _neutron.SecurityGroupsFixture
 
+get_floating_network = _neutron.get_floating_network
+has_floating_network = _neutron.has_floating_network
+skip_if_missing_floating_network = _neutron.skip_if_missing_floating_network
+
 ServerStackFixture = _nova.ServerStackFixture
 KeyPairStackFixture = _nova.KeyPairStackFixture
 FlavorStackFixture = _nova.FlavorStackFixture
