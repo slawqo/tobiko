@@ -61,6 +61,8 @@ class RebootNodesTest(testtools.TestCase):
     """ HA Tests: run health check -> disruptive action -> health check
     disruptive_action: a function that runs some
     disruptive scenarion on a overcloud"""
+    def test_overcloud_health_check(self):
+        nodes_health_check()
 
     def test_reboot_controllers_recovery(self):
         nodes_health_check()
