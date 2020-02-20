@@ -14,13 +14,11 @@
 #    under the License.
 from __future__ import absolute_import
 
-import os
 import logging
 import argparse
 
 from oslo_log import log
 
-from tobiko.common.managers import ansible
 from tobiko import config
 
 
@@ -35,11 +33,6 @@ class TobikoCMD(object):
         log.setup(config.CONF.tobiko, 'tobiko')
         self.parser = self.get_parser()
         self.args = (self.parser).parse_args()
-
-        curr_dir = os.path.dirname(__file__)
-        self.playbooks_dir = os.path.join(curr_dir,
-                                          "../tests/scenario/playbooks")
-        self.ansibleManager = ansible.AnsibleManager(self.playbooks_dir)
 
     def get_parser(self):
         parser = argparse.ArgumentParser(add_help=True)

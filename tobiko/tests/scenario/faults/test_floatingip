@@ -1,2 +1,0 @@
-- name: 'Restart OVS'
-  action: 'restart openvswitch service'
