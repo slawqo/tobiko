@@ -11,7 +11,7 @@ def check_neutron_agents_health():
 
     for agent in agents['agents']:
         if not agent['alive']:
-            failures.append('failed agent: {}'.format(agent))
+            failures.append('failed agent: {}\n\n'.format(agent))
 
     if failures:
         tobiko.fail(

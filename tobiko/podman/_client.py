@@ -113,12 +113,16 @@ class PodmanClientFixture(tobiko.SharedFixture):
 
             try:
                 podman_remote_socket = self.discover_podman_socket()
-                podman_remote_socket_uri = 'unix:/tmp/podman.sock'
+                username = self.ssh_client.connect_parameters['username']
+                host = self.ssh_client.connect_parameters["hostname"]
+                socket = podman_remote_socket
+                podman_remote_socket_uri = \
+                    'unix:/tmp/podman.sock_{}'.format(host)
 
                 remote_uri = 'ssh://{username}@{host}{socket}'.format(
-                    username=self.ssh_client.connect_parameters['username'],
-                    host=self.ssh_client.connect_parameters["hostname"],
-                    socket=podman_remote_socket)
+                    username=username,
+                    host=host,
+                    socket=socket)
 
                 client = podman.Client(uri=podman_remote_socket_uri,
                                        remote_uri=remote_uri,
