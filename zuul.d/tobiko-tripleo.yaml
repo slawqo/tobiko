@@ -55,6 +55,15 @@
     voting: false
     vars:
       tox_envlist: functional
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/
+      - ^infrared/
+      - ^releasenotes/
+      - ^report/
+      - ^tobiko/tests/faults/
+      - ^tobiko/tests/scenario/
+      - ^tobiko/tests/unit/
 
 
 - job:
@@ -64,6 +73,15 @@
     abstract: true
     vars:
       tox_envlist: scenario
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/
+      - ^infrared/
+      - ^releasenotes/
+      - ^report/
+      - ^tobiko/tests/faults/
+      - ^tobiko/tests/functional/
+      - ^tobiko/tests/unit/
 
 
 - job:
@@ -73,3 +91,11 @@
     voting: false
     vars:
       tobiko_run_faults: true
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/
+      - ^infrared/
+      - ^releasenotes/
+      - ^report/
+      - ^tobiko/tests/functional/
+      - ^tobiko/tests/unit/
