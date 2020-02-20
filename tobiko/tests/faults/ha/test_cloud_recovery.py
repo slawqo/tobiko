@@ -10,6 +10,7 @@ from tobiko.tripleo import pacemaker
 from tobiko.tripleo import processes
 from tobiko.tripleo import containers
 from tobiko.tripleo import neutron
+from tobiko.tripleo import nova
 from tobiko.openstack import stacks
 import tobiko
 
@@ -18,14 +19,14 @@ def nodes_health_check():
     # this method will be changed in future commit
     check_pacemaker_resources_health()
     check_overcloud_processes_health()
+    nova.check_nova_services_health()
     neutron.check_neutron_agents_health()
+    containers.assert_all_tripleo_containers_running()
     # create a uniq stack
     check_vm_create(stack_name='stack{}'.format(random.randint(0, 10000)))
 
     # TODO:
-    # Test existing created serverstest_controller_containers
-    # ServerStackResourcesTest().test_server_create()
-    # Add specific container checks
+    # Test existing created servers
 
 
 # check vm create with ssh and ping checks
