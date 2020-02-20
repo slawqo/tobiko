@@ -209,9 +209,13 @@ class OpenStackTopology(tobiko.SharedFixture):
             node = self._add_node(hostname=hostname, ips=ips,
                                   ssh_client=ssh_client)
 
-        if node and group:
-            self.add_group(group=group).append(node)
-            node.add_group(group=group)
+        if group:
+            # Add group anyway enven if the node hasn't been added
+            group_nodes = self.add_group(group=group)
+            if node:
+                group_nodes.append(node)
+                node.add_group(group=group)
+
         return node
 
     def _add_node(self, ips, hostname=None, ssh_client=None):
