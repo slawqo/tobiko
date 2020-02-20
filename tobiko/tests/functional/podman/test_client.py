@@ -18,49 +18,48 @@ from __future__ import absolute_import
 import types
 
 import testtools
-import six
 
-# We need to ignore this code under py2
-# it's not compatible and parser will failed even if we use
-# the `unittest.skipIf` decorator, because during the test discovery
-# stestr and unittest will load this test
-# module before running it and it will load podman
-# too which isn't compatible in version leather than python 3
-# Also the varlink mock module isn't compatible with py27, is using
-# annotations syntaxe to generate varlink interface for the mocked service
-# and it will raise related exceptions too.
-# For all these reasons we can't run podman tests under a python 2 environment
-if six.PY3:
+import tobiko
+from tobiko import podman
+from tobiko.openstack import topology
 
-    from tobiko import podman
-    from tobiko.openstack import topology
 
-    class PodmanClientTest(testtools.TestCase):
+class PodmanNodeFixture(tobiko.SharedFixture):
 
-        ssh_client = None
+    node = None
 
-        def setUp(self):
-            super(PodmanClientTest, self).setUp()
-            for node in topology.list_openstack_nodes(group='controller'):
-                self.ssh_client = ssh_client = node.ssh_client
+    def setup_fixture(self):
+        nodes = topology.list_openstack_nodes()
+        for node in nodes:
+            assert node.ssh_client is not None
+            if podman.is_podman_running(ssh_client=node.ssh_client):
+                self.node = node
                 break
-            else:
-                self.skip('Any controller node found from OpenStack topology')
 
-            if not podman.is_podman_running(ssh_client=ssh_client):
-                self.skip('Podman server is not running')
+        if self.node is None:
+            tobiko.skip('Podman server is not running in any of nodes {}',
+                        ' '.join(node.name for node in nodes))
 
-        def test_get_podman_client(self):
-            client = podman.get_podman_client(ssh_client=self.ssh_client)
-            self.assertIsInstance(client, podman.PodmanClientFixture)
 
-        def test_connect_podman_client(self):
-            client = podman.get_podman_client(
-                ssh_client=self.ssh_client).connect()
-            self.assertTrue(client.system.ping())
+class PodmanClientTest(testtools.TestCase):
 
-        def test_list_podman_containers(self):
-            client = podman.get_podman_client(
-                ssh_client=self.ssh_client).connect()
-            self.assertIsInstance(client.containers.list(),
-                                  types.GeneratorType)
+    node = tobiko.required_setup_fixture(PodmanNodeFixture)
+
+    @property
+    def ssh_client(self):
+        return self.node.node.ssh_client
+
+    def test_get_podman_client(self):
+        client = podman.get_podman_client(ssh_client=self.ssh_client)
+        self.assertIsInstance(client, podman.PodmanClientFixture)
+
+    def test_connect_podman_client(self):
+        client = podman.get_podman_client(
+            ssh_client=self.ssh_client).connect()
+        self.assertTrue(client.system.ping())
+
+    def test_list_podman_containers(self):
+        client = podman.get_podman_client(
+            ssh_client=self.ssh_client).connect()
+        self.assertIsInstance(client.containers.list(),
+                              types.GeneratorType)

@@ -20,24 +20,35 @@ import testtools
 from docker import client as docker_client
 from docker.models import containers
 
+import tobiko
 from tobiko import docker
 from tobiko.openstack import topology
 
 
+class DockerNodeFixture(tobiko.SharedFixture):
+
+    node = None
+
+    def setup_fixture(self):
+        nodes = topology.list_openstack_nodes()
+        for node in nodes:
+            assert node.ssh_client is not None
+            if docker.is_docker_running(ssh_client=node.ssh_client):
+                self.node = node
+                break
+
+        if self.node is None:
+            tobiko.skip('Docker server is not running in any of nodes {}',
+                        ' '.join(node.name for node in nodes))
+
+
 class DockerClientTest(testtools.TestCase):
 
-    ssh_client = None
+    node = tobiko.required_setup_fixture(DockerNodeFixture)
 
-    def setUp(self):
-        super(DockerClientTest, self).setUp()
-        for node in topology.list_openstack_nodes(group='controller'):
-            self.ssh_client = ssh_client = node.ssh_client
-            break
-        else:
-            self.skip('Any controller node found from OpenStack topology')
-
-        if not docker.is_docker_running(ssh_client=ssh_client):
-            self.skip('Docker server is not running')
+    @property
+    def ssh_client(self):
+        return self.node.node.ssh_client
 
     def test_get_docker_client(self):
         client = docker.get_docker_client(ssh_client=self.ssh_client)
