@@ -23,7 +23,7 @@ OPTIONS = [
                 default=None,
                 help="List of hostname nodes"),
     cfg.StrOpt('key_file',
-               default='~/.ssh/id_rsa',
+               default=None,
                help="Default SSH key to login to cloud nodes"),
     cfg.StrOpt('username',
                default=None,
