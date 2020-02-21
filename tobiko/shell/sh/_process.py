@@ -131,11 +131,11 @@ class ShellProcessFixture(tobiko.SharedFixture):
         sudo = self.parameters.sudo
 
         shell = self.parameters.shell
+        if shell in [True, None]:
+            shell = default_shell_command()
+
         if shell:
-            if shell is True:
-                shell = default_shell_command()
-            else:
-                shell = _command.shell_command(shell)
+            shell = _command.shell_command(shell)
             command = shell + [str(command)]
         else:
             command = _command.shell_command(command)
@@ -478,7 +478,7 @@ def str_from_stream(stream):
 def default_shell_command():
     from tobiko import config
     CONF = config.CONF
-    return _command.shell_command(CONF.tobiko.shell.sudo)
+    return _command.shell_command(CONF.tobiko.shell.command)
 
 
 def default_sudo_command():
