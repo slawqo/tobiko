@@ -168,7 +168,8 @@ def comparable_container_keys(container):
 
     elif container_runtime_type == docker:
         return (container.attrs['Config']['Hostname'],
-                container.attrs['State']['Status'], container.attrs['Name'])
+                container.attrs['Name'].strip('/'),
+                container.attrs['State']['Status'])
 
 
 def get_container_states_list(containers_list):
