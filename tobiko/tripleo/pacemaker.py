@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import time
+
 from oslo_log import log
 import pandas
 import six
@@ -196,7 +198,7 @@ class PacemakerResourcesStatus(object):
         and return a global healthy status
         :return: Bool
         """
-        for _ in range(360):
+        for attempt_number in range(360):
 
             try:
 
@@ -212,15 +214,19 @@ class PacemakerResourcesStatus(object):
                              " in healthy state")
                     return True
                 else:
+
                     LOG.info("pcs status check: not all resources are "
                              "in healthy "
                              "state")
                     raise PcsResourceException()
             except PcsResourceException:
                 # reread pcs status
+                LOG.info('Retrying pacemaker resource checks attempt '
+                         '{} of 360'.format(attempt_number))
+                time.sleep(1)
                 self.pcs_df = get_pcs_resources_table()
         # exhausted all retries
-        return False
+        tobiko.fail('pcs cluster is not in a healthy state')
 
 
 def get_overcloud_nodes_running_pcs_resource(resource=None,
