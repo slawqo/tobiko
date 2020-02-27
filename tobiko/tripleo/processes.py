@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import time
+
 from oslo_log import log
 import pandas
 import six
@@ -110,21 +112,37 @@ class OvercloudProcessesStatus(object):
         Checks that the oc_procs_df dataframe has all of the list procs
         :return: Bool
         """
-        for process_name in self.processes_to_check:
-            # osp16/python3 process is "neutron-server:"
-            if process_name == 'neutron-server' and \
-                    self.oc_procs_df.query('PROCESS=="{}"'.format(
-                    process_name)).empty:
-                process_name = 'neutron-server:'
-            if not self.oc_procs_df.query('PROCESS=="{}"'.format(
-                    process_name)).empty:
-                LOG.info("overcloud processes status checks: process {} is  "
-                         "in running state".format(process_name))
-                continue
-            else:
-                LOG.info("Failure : overcloud processes status checks: "
-                         "process {} is not running ".format(process_name))
-                raise OvercloudProcessesException(
-                    process_error="process {} is not running ".format(
+
+        for attempt_number in range(120):
+
+            try:
+
+                for process_name in self.processes_to_check:
+                    # osp16/python3 process is "neutron-server:"
+                    if process_name == 'neutron-server' and \
+                            self.oc_procs_df.query('PROCESS=="{}"'.format(
+                            process_name)).empty:
+                        process_name = 'neutron-server:'
+                    if not self.oc_procs_df.query('PROCESS=="{}"'.format(
+                            process_name)).empty:
+                        LOG.info("overcloud processes status checks: "
+                                 "process {} is  "
+                                 "in running state".format(process_name))
+                        continue
+                    else:
+                        LOG.info("Failure : overcloud processes status checks:"
+                                 "process {} is not running ".format(
                                   process_name))
-        return True
+                        raise OvercloudProcessesException(
+                            process_error="process {} is not running ".format(
+                                          process_name))
+                # if all procs are running we can return true
+                return True
+            except OvercloudProcessesException:
+                LOG.info('Retrying overcloud processes checks attempt '
+                         '{} of 360'.format(attempt_number))
+                time.sleep(1)
+                self.oc_procs_df = overcloud.get_overcloud_nodes_dataframe(
+                    get_overcloud_node_processes_table)
+        # exhausted all retries
+        tobiko.fail('Not all overcloud processes are running !\n')
