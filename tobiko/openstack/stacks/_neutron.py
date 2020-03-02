@@ -159,6 +159,10 @@ class NetworkStackFixture(heat.HeatStackFixture):
         return netaddr.IPAddress(self.ipv4_subnet_details['gateway_ip'])
 
     @property
+    def ipv4_dns_nameservers(self):
+        return ','.join(CONF.tobiko.neutron.ipv4_dns_nameservers or [])
+
+    @property
     def ipv6_subnet_details(self):
         return neutron.get_subnet(self.ipv6_subnet_id)
 
@@ -169,6 +173,10 @@ class NetworkStackFixture(heat.HeatStackFixture):
     @property
     def ipv6_subnet_gateway_ip(self):
         return netaddr.IPAddress(self.ipv6_subnet_details['gateway_ip'])
+
+    @property
+    def ipv6_dns_nameservers(self):
+        return ','.join(CONF.tobiko.neutron.ipv6_dns_nameservers or [])
 
     @property
     def gateway_details(self):

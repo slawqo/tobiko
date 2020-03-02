@@ -42,16 +42,12 @@ parameters:
   ipv4_dns_nameservers:
     description: IPv4 nameservers IP addresses
     type: comma_delimited_list
-    default: []
-    constraints:
-      - custom_constraint: dns_name
+    default: ''
 
   ipv6_dns_nameservers:
     description: IPv6 nameservers IP addresses
     type: comma_delimited_list
-    default: []
-    constraints:
-      - custom_constraint: dns_name
+    default: ''
 
   ipv6_address_mode:
     description: IPv6 address mode
