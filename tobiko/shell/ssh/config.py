@@ -45,7 +45,7 @@ OPTIONS = [
                 help=("Set to False to disable connecting to the "
                       "SSH agent")),
     cfg.BoolOpt('compress',
-                default=False,
+                default=True,
                 help="Set to True to turn on compression"),
     cfg.FloatOpt('timeout',
                  default=10.,
