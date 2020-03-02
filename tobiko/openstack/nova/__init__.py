@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 from tobiko.openstack.nova import _client
+from tobiko.openstack.nova import _cloud_init
 from tobiko.openstack.nova import _hypervisor
 from tobiko.openstack.nova import _server
 
@@ -33,6 +34,13 @@ wait_for_server_status = _client.wait_for_server_status
 ServerStatusTimeout = _client.ServerStatusTimeout
 shutoff_server = _client.shutoff_server
 activate_server = _client.activate_server
+
+WaitForCloudInitTimeoutError = _cloud_init.WaitForCloudInitTimeoutError
+cloud_config = _cloud_init.cloud_config
+get_cloud_init_status = _cloud_init.get_cloud_init_status
+user_data = _cloud_init.user_data
+wait_for_cloud_init_done = _cloud_init.wait_for_cloud_init_done
+wait_for_cloud_init_status = _cloud_init.wait_for_cloud_init_status
 
 skip_if_missing_hypervisors = _hypervisor.skip_if_missing_hypervisors
 get_same_host_hypervisors = _hypervisor.get_same_host_hypervisors

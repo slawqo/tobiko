@@ -251,6 +251,12 @@ class ServerStackFixture(heat.HeatStackFixture):
         return nova.get_console_output(server=self.server_id,
                                        length=self.max_console_output_length)
 
+    cloud_config = nova.cloud_config()
+
+    @property
+    def user_data(self):
+        return nova.user_data(self.cloud_config)
+
 
 class PeerServerStackFixture(ServerStackFixture):
     """Server witch networking access requires passing by a peer Nova server
