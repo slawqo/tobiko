@@ -15,8 +15,12 @@
 #    under the License.
 from __future__ import absolute_import
 
+import six
+import yaml
+
 import tobiko
 from tobiko.shell import sh
+from tobiko.openstack import nova
 from tobiko.openstack import stacks
 from tobiko.tests.functional.openstack.stacks import test_cirros
 
@@ -27,8 +31,19 @@ class CentosServerStackTest(test_cirros.CirrosServerStackTest):
     #: Stack of resources with a server attached to a floating IP
     stack = tobiko.required_setup_fixture(stacks.CentosServerStackFixture)
 
-    def test_python(self):
-        python_version = sh.execute(['python', '--version'],
-                                    ssh_client=self.stack.ssh_client).stderr
-        self.assertTrue(python_version.startswith('Python 2.7'),
+    def test_cloud_config(self):
+        cloud_config = self.stack.cloud_config
+        self.assertIn('python3', cloud_config['packages'])
+
+    def test_user_data(self):
+        user_data = self.stack.user_data
+        self.assertIsInstance(user_data, six.string_types)
+        self.assertTrue(user_data.startswith('#cloud-config\n'), user_data)
+        self.assertEqual(self.stack.cloud_config, yaml.load(user_data))
+
+    def test_python3(self):
+        nova.wait_for_cloud_init_done(ssh_client=self.stack.ssh_client)
+        python_version = sh.execute(['python3', '--version'],
+                                    ssh_client=self.stack.ssh_client).stdout
+        self.assertTrue(python_version.startswith('Python 3.'),
                         python_version)
