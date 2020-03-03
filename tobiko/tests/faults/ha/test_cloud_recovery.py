@@ -77,11 +77,12 @@ class RebootNodesTest(testtools.TestCase):
         nodes_health_check()
         computes_containers_dict_after = \
             containers.list_containers(group='compute')
+        nova.start_all_instances()
         containers.assert_equal_containers_state(
             computes_containers_dict_before, computes_containers_dict_after)
 
 # [..]
-# more tests to folow
+# more tests to follow
 # run health checks
-# os faults stop rabbitmq service on one controller
+# faults stop rabbitmq service on one controller
 # run health checks again
