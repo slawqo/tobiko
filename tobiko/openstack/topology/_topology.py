@@ -155,6 +155,7 @@ class OpenStackTopology(tobiko.SharedFixture):
 
     agent_to_service_name_mappings = {
         'neutron-dhcp-agent': 'devstack@q-dhcp',
+        'neutron-l3-agent': 'devstack@q-l3',
     }
 
     def __init__(self):

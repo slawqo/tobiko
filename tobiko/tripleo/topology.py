@@ -29,6 +29,7 @@ class TripleoTopology(topology.OpenStackTopology):
 
     agent_to_service_name_mappings = {
         'neutron-dhcp-agent': 'tripleo_neutron_dhcp',
+        'neutron-l3-agent': 'tripleo_neutron_l3',
     }
 
     def discover_nodes(self):
