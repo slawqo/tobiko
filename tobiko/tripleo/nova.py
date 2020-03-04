@@ -37,3 +37,11 @@ def check_nova_services_health(timeout=120, interval=2):
     if failures:
         tobiko.fail(
             'nova agents are unhealthy:\n{!s}', '\n'.join(failures))
+
+
+def start_all_instances():
+    """try to start all stopped overcloud instances"""
+    nova_client = nova.get_nova_client()
+    servers = nova_client.servers.list()
+    for instance in servers:
+        nova.activate_server(instance)

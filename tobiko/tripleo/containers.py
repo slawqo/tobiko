@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import time
+
 from oslo_log import log
 import pandas
 
@@ -192,34 +194,45 @@ def dataframe_difference(df1, df2, which=None):
 
 
 def assert_equal_containers_state(expected_containers_list,
-                                  actual_containers_list):
+                                  actual_containers_list, timeout=120,
+                                  interval=2):
 
     """compare container with states from two lists"""
 
     failures = []
+    start = time.time()
+
     expected_containers_list_df = pandas.DataFrame(
         get_container_states_list(expected_containers_list),
         columns=['container_host', 'container_name', 'container_state'])
-    actual_containers_list_df = pandas.DataFrame(
-        get_container_states_list(actual_containers_list),
-        columns=['container_host', 'container_name', 'container_state'])
 
-    LOG.info('expected_containers_list_df: {} '.format(
-        expected_containers_list_df.to_string(index=False)))
-    LOG.info('actual_containers_list_df: {} '.format(
-        actual_containers_list_df.to_string(index=False)))
+    while time.time() - start < timeout:
 
-    # execute a dataframe diff between the excpected and actual containers
-    expected_containers_state_changed = \
-        dataframe_difference(expected_containers_list_df,
-                             actual_containers_list_df)
-    # check for changed state containers
-    if not expected_containers_state_changed.empty:
-        failures.append('expected containers changed state ! : \n\n{}'.format(
-            expected_containers_state_changed.to_string(index=False)))
+        failures = []
+        actual_containers_list_df = pandas.DataFrame(
+            get_container_states_list(actual_containers_list),
+            columns=['container_host', 'container_name', 'container_state'])
 
+        LOG.info('expected_containers_list_df: {} '.format(
+            expected_containers_list_df.to_string(index=False)))
+        LOG.info('actual_containers_list_df: {} '.format(
+            actual_containers_list_df.to_string(index=False)))
+
+        # execute a dataframe diff between the excpected and actual containers
+        expected_containers_state_changed = \
+            dataframe_difference(expected_containers_list_df,
+                                 actual_containers_list_df)
+        # check for changed state containers
+        if not expected_containers_state_changed.empty:
+            failures.append('expected containers changed state ! : '
+                            '\n\n{}'.format(expected_containers_state_changed.
+                                            to_string(index=False)))
+            LOG.info('container states mismatched:\n{}\n'.format(failures))
+            time.sleep(interval)
+            actual_containers_list = list_containers(group='compute')
+        else:
+            LOG.info("assert_equal_containers_state :"
+                     " OK, all containers are on the same state")
+            return
     if failures:
         tobiko.fail('container states mismatched:\n{!s}', '\n'.join(failures))
-    else:
-        LOG.info("assert_equal_containers_state :"
-                 " OK, all containers are on the same state")
