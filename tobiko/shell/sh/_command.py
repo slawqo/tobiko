@@ -16,7 +16,6 @@
 from __future__ import absolute_import
 
 import subprocess
-import shlex
 
 import six
 
@@ -25,7 +24,7 @@ def shell_command(command):
     if isinstance(command, ShellCommand):
         return command
     elif isinstance(command, six.string_types):
-        return ShellCommand(shlex.split(command, comments=True, posix=True))
+        return ShellCommand(command.split())
     elif command:
         return ShellCommand(str(a) for a in command)
     else:
