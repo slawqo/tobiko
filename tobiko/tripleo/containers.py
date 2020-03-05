@@ -229,6 +229,8 @@ def assert_equal_containers_state(expected_containers_list,
                                             to_string(index=False)))
             LOG.info('container states mismatched:\n{}\n'.format(failures))
             time.sleep(interval)
+            LOG.info('Retrying , timeout at: {}'
+                     .format(timeout-(time.time() - start)))
             actual_containers_list = list_containers(group='compute')
         else:
             LOG.info("assert_equal_containers_state :"

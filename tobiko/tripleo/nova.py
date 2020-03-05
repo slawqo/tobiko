@@ -44,4 +44,13 @@ def start_all_instances():
     nova_client = nova.get_nova_client()
     servers = nova_client.servers.list()
     for instance in servers:
-        nova.activate_server(instance)
+        activated_instance = nova.activate_server(instance)
+        time.sleep(3)
+        instance_info = 'instance {nova_instance} is {state} on {host}'.format(
+            nova_instance=activated_instance.name,
+            state=activated_instance.status,
+            host=activated_instance._info[  # pylint: disable=W0212
+                'OS-EXT-SRV-ATTR:hypervisor_hostname'])
+        LOG.info(instance_info)
+        if activated_instance.status != 'ACTIVE':
+            tobiko.fail(instance_info)
