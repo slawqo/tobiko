@@ -9,7 +9,6 @@ from tobiko.tests.faults.ha import cloud_disruptions
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import processes
 from tobiko.tripleo import containers
-from tobiko.tripleo import neutron
 from tobiko.tripleo import nova
 from tobiko.openstack import stacks
 import tobiko
@@ -17,14 +16,16 @@ import tobiko
 
 def overcloud_health_checks(passive_checks_only=False):
     # this method will be changed in future commit
-    check_pacemaker_resources_health()
-    check_overcloud_processes_health()
-    nova.check_nova_services_health()
-    neutron.check_neutron_agents_health()
+    # check_pacemaker_resources_health()
+    # check_overcloud_processes_health()
+    # nova.check_nova_services_health()
+    # neutron.check_neutron_agents_health()
     if not passive_checks_only:
         # create a uniq stack
         check_vm_create(stack_name='stack{}'.format(random.randint(0, 10000)))
-    containers.assert_all_tripleo_containers_running()
+    nova.start_all_instances()
+    # containers.assert_all_tripleo_containers_running()
+    containers.assert_equal_containers_state()
 
 
 # check vm create with ssh and ping checks
@@ -68,23 +69,9 @@ class RebootNodesTest(testtools.TestCase):
         overcloud_health_checks()
 
     def test_reboot_computes_recovery(self):
-
         overcloud_health_checks()
-
-        computes_containers_dict_before = \
-            containers.list_containers(group='compute')
-
         cloud_disruptions.reset_all_compute_nodes(hard_reset=True)
-
         overcloud_health_checks(passive_checks_only=True)
-
-        nova.start_all_instances()
-
-        computes_containers_dict_after = \
-            containers.list_containers(group='compute')
-
-        containers.assert_equal_containers_state(
-            computes_containers_dict_before, computes_containers_dict_after)
 
 
 # [..]

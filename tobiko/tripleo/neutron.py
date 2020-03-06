@@ -1,7 +1,11 @@
 from __future__ import absolute_import
 
+from oslo_log import log
+
 import tobiko
 from tobiko.openstack import neutron
+
+LOG = log.getLogger(__name__)
 
 
 def check_neutron_agents_health():
@@ -16,3 +20,5 @@ def check_neutron_agents_health():
     if failures:
         tobiko.fail(
             'neutron agents are unhealthy:\n{!s}', '\n'.join(failures))
+    else:
+        LOG.info('All neutron agents are healthy!')

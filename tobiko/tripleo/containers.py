@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import os
 import time
 
 from oslo_log import log
@@ -62,7 +63,13 @@ def list_containers(group=None):
     # attribute 'container_runtime'
 
     containers_list = tobiko.Selection()
-    openstack_nodes = topology.list_openstack_nodes(group=group)
+    if group:
+        openstack_nodes = topology.list_openstack_nodes(group=group)
+    else:
+        openstack_controllers = topology.list_openstack_nodes(
+            group='controller')
+        openstack_computes = topology.list_openstack_nodes(group='compute')
+        openstack_nodes = openstack_controllers + openstack_computes
 
     for node in openstack_nodes:
         ssh_client = node.ssh_client
@@ -70,6 +77,18 @@ def list_containers(group=None):
         node_containers_list = list_node_containers(client=container_client)
         containers_list.extend(node_containers_list)
     return containers_list
+
+
+expected_containers_file = '/home/stack/expected_containers_list_df.csv'
+
+
+def save_containers_state_to_file(expected_containers_list,):
+    expected_containers_list_df = pandas.DataFrame(
+        get_container_states_list(expected_containers_list),
+        columns=['container_host', 'container_name', 'container_state'])
+    expected_containers_list_df.to_csv(
+        expected_containers_file)
+    return expected_containers_file
 
 
 def assert_containers_running(group, excpected_containers):
@@ -193,22 +212,42 @@ def dataframe_difference(df1, df2, which=None):
     return diff_df
 
 
-def assert_equal_containers_state(expected_containers_list,
-                                  actual_containers_list, timeout=120,
-                                  interval=2):
+def assert_equal_containers_state(expected_containers_list=None,
+                                  timeout=120, interval=2,
+                                  recreate_expected=False):
 
-    """compare container with states from two lists"""
+    """compare all overcloud container states with using two lists:
+    one is current , the other some past list
+    first time this method runs it creates a file holding overcloud
+    containers' states: /home/stack/expected_containers_list_df.csv'
+    second time it creates a current containers states list and
+    compares them, they must be identical"""
+
+    # if we have a file or an explicit variable use that , otherwise  create
+    # and return
+    if recreate_expected or (not expected_containers_list and
+                             not os.path.exists(expected_containers_file)):
+        save_containers_state_to_file(list_containers())
+        return
+
+    elif expected_containers_list:
+        expected_containers_list_df = pandas.DataFrame(
+            get_container_states_list(expected_containers_list),
+            columns=['container_host', 'container_name', 'container_state'])
+
+    elif os.path.exists(expected_containers_file):
+        expected_containers_list_df = pandas.read_csv(
+            expected_containers_file)
 
     failures = []
     start = time.time()
-
-    expected_containers_list_df = pandas.DataFrame(
-        get_container_states_list(expected_containers_list),
-        columns=['container_host', 'container_name', 'container_state'])
+    error_info = 'Output explanation: left_only is the original state, ' \
+                 'right_only is the new state'
 
     while time.time() - start < timeout:
 
         failures = []
+        actual_containers_list = list_containers()
         actual_containers_list_df = pandas.DataFrame(
             get_container_states_list(actual_containers_list),
             columns=['container_host', 'container_name', 'container_state'])
@@ -218,23 +257,22 @@ def assert_equal_containers_state(expected_containers_list,
         LOG.info('actual_containers_list_df: {} '.format(
             actual_containers_list_df.to_string(index=False)))
 
-        # execute a dataframe diff between the excpected and actual containers
+        # execute a `dataframe` diff between the expected and actual containers
         expected_containers_state_changed = \
             dataframe_difference(expected_containers_list_df,
                                  actual_containers_list_df)
-        # check for changed state containers
+        # check for changed state containerstopology
         if not expected_containers_state_changed.empty:
             failures.append('expected containers changed state ! : '
-                            '\n\n{}'.format(expected_containers_state_changed.
-                                            to_string(index=False)))
+                            '\n\n{}\n{}'.format(
+                             expected_containers_state_changed.
+                             to_string(index=False), error_info))
             LOG.info('container states mismatched:\n{}\n'.format(failures))
             time.sleep(interval)
-            LOG.info('Retrying , timeout at: {}'
-                     .format(timeout-(time.time() - start)))
-            actual_containers_list = list_containers(group='compute')
         else:
             LOG.info("assert_equal_containers_state :"
                      " OK, all containers are on the same state")
             return
     if failures:
-        tobiko.fail('container states mismatched:\n{!s}', '\n'.join(failures))
+        tobiko.fail('container states mismatched:\n{!s}', '\n'.join(
+            failures))
