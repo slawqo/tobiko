@@ -21,10 +21,10 @@ def overcloud_health_checks(passive_checks_only=False):
     check_overcloud_processes_health()
     nova.check_nova_services_health()
     neutron.check_neutron_agents_health()
-    containers.assert_all_tripleo_containers_running()
     if not passive_checks_only:
         # create a uniq stack
         check_vm_create(stack_name='stack{}'.format(random.randint(0, 10000)))
+    containers.assert_all_tripleo_containers_running()
 
 
 # check vm create with ssh and ping checks
