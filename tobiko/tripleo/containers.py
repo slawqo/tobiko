@@ -10,6 +10,7 @@ import tobiko
 from tobiko import podman
 from tobiko import docker
 from tobiko.openstack import topology
+from tobiko.openstack import neutron
 
 
 LOG = log.getLogger(__name__)
@@ -91,7 +92,7 @@ def save_containers_state_to_file(expected_containers_list,):
     return expected_containers_file
 
 
-def assert_containers_running(group, excpected_containers):
+def assert_containers_running(group, expected_containers, full_name=True):
 
     """assert that all containers specified in the list are running
     on the specified openstack group(controller or compute etc..)"""
@@ -108,10 +109,15 @@ def assert_containers_running(group, excpected_containers):
         # check that the containers are present
         LOG.info('node: {} containers list : {}'.format(
             node.name, containers_list_df.to_string(index=False)))
-        for container in excpected_containers:
+        for container in expected_containers:
             # get container attrs dataframe
-            container_attrs = containers_list_df.query(
-                'container_name == "{}"'.format(container))
+            if full_name:
+                container_attrs = containers_list_df.query(
+                    'container_name == "{}"'.format(container))
+            else:
+                container_attrs = containers_list_df[
+                    containers_list_df['container_name'].
+                    str.contains(container)]
             # check if the container exists
             LOG.info('checking container: {}'.format(container))
             if container_attrs.empty:
@@ -177,6 +183,23 @@ def assert_all_tripleo_containers_running():
                                      common_compute_tripleo_containers)]:
         assert_containers_running(group, group_containers)
     # TODO: need to address OSP-version specific containers here.
+    # optional ovn containers checks
+    assert_ovn_containers_running()
+
+
+def assert_ovn_containers_running():
+    # specific OVN verifications
+    if len(neutron.get_networking_agents(binary='ovn-controller')) > 0:
+        # TODO: deployments with networker nodes are not supported
+        ovn_controller_containers = ['ovn_controller',
+                                     'ovn-dbs-bundle-podman-']
+        ovn_compute_containers = ['ovn_metadata_agent',
+                                  'ovn_controller']
+        for group, group_containers in [('controller',
+                                         ovn_controller_containers),
+                                        ('compute',
+                                         ovn_compute_containers)]:
+            assert_containers_running(group, group_containers, full_name=False)
 
 
 def comparable_container_keys(container):

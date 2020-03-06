@@ -55,6 +55,7 @@ has_networking_extensions = _extension.has_networking_extensions
 skip_if_missing_networking_extensions = (
     _extension.skip_if_missing_networking_extensions)
 skip_if_missing_networking_agents = _agent.skip_if_missing_networking_agents
+get_networking_agents = _agent.get_networking_agents
 
 find_port_ip_address = _port.find_port_ip_address
 list_port_ip_addresses = _port.list_port_ip_addresses
