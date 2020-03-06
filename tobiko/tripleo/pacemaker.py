@@ -170,26 +170,25 @@ class PacemakerResourcesStatus(object):
             return False
 
     def ovn_resource_healthy(self):
-        if self.container_runtime() == 'podman':
-            nodes_num = self.resource_count("(ocf::heartbeat:redis):")
-            if nodes_num > 0:
-                return True
-            else:
-                master_num = self.resource_count_in_state(
-                    "(ocf::heartbeat:redis):", "Master")
-                slave_num = self.resource_count_in_state(
-                    "(ocf::heartbeat:redis):", "Slave")
-                if (master_num == 1) and (slave_num == nodes_num - master_num):
-                    LOG.info(
-                        "pcs status check: resource ovn is in healthy state")
-                    return True
-                else:
-                    LOG.info(
-                        "pcs status check: resource ovn is in not in "
-                        "healthy state")
-                    return False
-        else:
+        if self.pcs_df.query(
+                'resource_type == "(ocf::ovn:ovndb-servers):"').empty:
+            LOG.info('pcs status check: ovn is not deployed, skipping ovn '
+                     'resource check')
             return True
+        nodes_num = self.resource_count("(ocf::ovn:ovndb-servers):")
+        master_num = self.resource_count_in_state(
+            "(ocf::ovn:ovndb-servers):", "Master")
+        slave_num = self.resource_count_in_state(
+            "(ocf::ovn:ovndb-servers):", "Slave")
+        if (master_num == 1) and (slave_num == nodes_num - master_num):
+            LOG.info(
+                "pcs status check: resource ovn is in healthy state")
+            return True
+        else:
+            LOG.info(
+                "pcs status check: resource ovn is in not in "
+                "healthy state")
+            return False
 
     @property
     def all_healthy(self):
