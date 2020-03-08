@@ -23,14 +23,14 @@ def overcloud_health_checks(passive_checks_only=False):
     neutron.check_neutron_agents_health()
     if not passive_checks_only:
         # create a uniq stack
-        check_vm_create(stack_name='stack{}'.format(random.randint(0, 10000)))
+        check_vm_create()
     nova.start_all_instances()
     containers.assert_all_tripleo_containers_running()
     containers.assert_equal_containers_state()
 
 
 # check vm create with ssh and ping checks
-def check_vm_create(stack_name):
+def check_vm_create(stack_name='stack{}'.format(random.randint(0, 1000000))):
     """stack_name: unique stack name ,
     so that each time a new vm is created"""
     # create a vm
