@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import re
+
 from oslo_log import log
 
 from tobiko.openstack import topology
@@ -64,3 +66,23 @@ def setup_tripleo_topology():
     if undercloud.has_undercloud() or overcloud.has_overcloud():
         topology.set_default_openstack_topology_class(
             'tobiko.tripleo.topology.TripleoTopology')
+
+
+def get_ip_to_nodes_dict(openstack_nodes=None):
+    if not openstack_nodes:
+        openstack_controllers = topology.list_openstack_nodes(
+            group='controller')
+        openstack_computes = topology.list_openstack_nodes(group='compute')
+        openstack_nodes = openstack_controllers + openstack_computes
+    ip_to_nodes_dict = {str(node.public_ip): node.name for node in
+                        openstack_nodes}
+    return ip_to_nodes_dict
+
+
+def str_is_not_ip(check_str):
+    letters = re.compile('[A-Za-z]')
+    return bool(letters.match(check_str))
+
+
+def ip_to_hostname(oc_ip):
+    return get_ip_to_nodes_dict()[oc_ip]

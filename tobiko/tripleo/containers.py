@@ -5,11 +5,14 @@ import time
 
 from oslo_log import log
 import pandas
+import podman as podmanlib
+import docker as dockerlib
 
 import tobiko
 from tobiko import podman
 from tobiko import docker
 from tobiko.openstack import topology
+from tobiko.tripleo import topology as tripleo_topology
 
 
 LOG = log.getLogger(__name__)
@@ -220,23 +223,85 @@ def assert_ovn_containers_running():
         LOG.info("Networking OVN not configured")
 
 
-def comparable_container_keys(container):
+def comparable_container_keys(container, include_container_objects=False):
     """returns the tuple : 'container_host','container_name',
-    'container_state'
+    'container_state, container object if specified'
      """
-    if container_runtime_module == podman:
-        return (container._client._context.hostname,  # pylint: disable=W0212
+    if container_runtime_module == podman and include_container_objects:
+        return (tripleo_topology.ip_to_hostname(
+            container._client._context.hostname),  # pylint: disable=W0212
+                container.data['names'], container.data['status'],
+                container)
+    elif container_runtime_module == podman:
+        return (tripleo_topology.ip_to_hostname(
+            container._client._context.hostname),  # pylint: disable=W0212
                 container.data['names'], container.data['status'])
 
+    elif container_runtime_module == docker and include_container_objects:
+        return (container.attrs['Config']['Hostname'],
+                container.attrs['Name'].strip('/'),
+                container.attrs['State']['Status'],
+                container)
     elif container_runtime_module == docker:
         return (container.attrs['Config']['Hostname'],
                 container.attrs['Name'].strip('/'),
                 container.attrs['State']['Status'])
 
 
-def get_container_states_list(containers_list):
+def list_containers_objects_df():
+    containers_list = list_containers()
+    containers_objects_list_df = pandas.DataFrame(
+        get_container_states_list(
+            containers_list, include_container_objects=True),
+        columns=['container_host', 'container_name',
+                 'container_state', 'container_object'])
+    return containers_objects_list_df
+
+
+def get_overcloud_container(container_name=None, container_host=None):
+    """gets an container object by name on specified host
+    container"""
+    con_obj_df = list_containers_objects_df()
+    if container_host:
+        contaniner_obj = con_obj_df.query(
+            'container_name == "{container_name}"'
+            ' and container_host == "{container_host}"'.
+            format(container_host=container_host,
+                   container_name=container_name))['container_object']
+    else:
+        contaniner_obj = con_obj_df.query(
+            'container_name == "{container_name}"'.
+            format(container_name=container_name))['container_object']
+    if not contaniner_obj.empty:
+        return contaniner_obj.values[0]
+    else:
+        tobiko.fail('container {} not found!'.format(container_name))
+
+
+def action_on_container(action,
+                        container_name=None, container_host=None):
+    """take a container snd preform an action on it
+    actions are as defined in : podman/libs/containers.py:14/164"""
+    container = get_overcloud_container(
+        container_name=container_name,
+        container_host=container_host)
+    # we get the specified action as function from podman lib
+    if container_runtime_module == podman:
+        container_function = getattr(
+            podmanlib.libs.containers.Container, '{}'.format(action))
+    else:
+        container_function = getattr(
+            dockerlib.models.containers.Container, '{}'.format(action))
+    LOG.info('action_on_container: executing : {} on {}'.format(action,
+                                                                container))
+    return container_function(container)
+
+
+def get_container_states_list(containers_list,
+                              include_container_objects=False):
     container_states_list = tobiko.Selection()
-    container_states_list.extend([comparable_container_keys(container) for
+    container_states_list.extend([comparable_container_keys(
+        container, include_container_objects=include_container_objects) for
                                   container in containers_list])
     return container_states_list
 
