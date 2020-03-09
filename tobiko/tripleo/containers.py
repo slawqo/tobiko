@@ -16,7 +16,7 @@ from tobiko.openstack import neutron
 LOG = log.getLogger(__name__)
 
 
-def container_runtime():
+def get_container_runtime_module():
     """check what container runtime is running
     and return a handle to it"""
     # TODO THIS LOCKS SSH CLIENT TO CONTROLLER
@@ -28,28 +28,35 @@ def container_runtime():
         return podman
 
 
-container_runtime_type = container_runtime()
+container_runtime_module = get_container_runtime_module()
+
+
+def get_container_runtime_name():
+    return container_runtime_module.__name__.rsplit('.', 1)[1]
+
+
+container_runtime_name = get_container_runtime_name()
 
 
 def list_node_containers(client):
     """returns a list of containers and their run state"""
 
-    if container_runtime_type == podman:
-        return container_runtime_type.list_podman_containers(client=client)
+    if container_runtime_module == podman:
+        return container_runtime_module.list_podman_containers(client=client)
 
-    elif container_runtime_type == docker:
-        return container_runtime_type.list_docker_containers(client=client)
+    elif container_runtime_module == docker:
+        return container_runtime_module.list_docker_containers(client=client)
 
 
 def get_container_client(ssh_client=None):
     """returns a list of containers and their run state"""
 
-    if container_runtime_type == podman:
-        return container_runtime_type.get_podman_client(
+    if container_runtime_module == podman:
+        return container_runtime_module.get_podman_client(
             ssh_client=ssh_client).connect()
 
-    elif container_runtime_type == docker:
-        return container_runtime_type.get_docker_client(
+    elif container_runtime_module == docker:
+        return container_runtime_module.get_docker_client(
             ssh_client=ssh_client).connect()
 
 
@@ -206,11 +213,11 @@ def comparable_container_keys(container):
     """returns the tuple : 'container_host','container_name',
     'container_state'
      """
-    if container_runtime_type == podman:
+    if container_runtime_module == podman:
         return (container._client._context.hostname,  # pylint: disable=W0212
                 container.data['names'], container.data['status'])
 
-    elif container_runtime_type == docker:
+    elif container_runtime_module == docker:
         return (container.attrs['Config']['Hostname'],
                 container.attrs['Name'].strip('/'),
                 container.attrs['State']['Status'])
