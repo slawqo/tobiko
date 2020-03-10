@@ -10,7 +10,6 @@ import tobiko
 from tobiko import podman
 from tobiko import docker
 from tobiko.openstack import topology
-from tobiko.openstack import neutron
 
 
 LOG = log.getLogger(__name__)
@@ -58,6 +57,13 @@ def get_container_client(ssh_client=None):
     elif container_runtime_module == docker:
         return container_runtime_module.get_docker_client(
             ssh_client=ssh_client).connect()
+
+
+def list_containers_df(group=None):
+    actual_containers_list = list_containers(group)
+    return pandas.DataFrame(
+        get_container_states_list(actual_containers_list),
+        columns=['container_host', 'container_name', 'container_state'])
 
 
 def list_containers(group=None):
@@ -196,10 +202,12 @@ def assert_all_tripleo_containers_running():
 
 def assert_ovn_containers_running():
     # specific OVN verifications
-    if len(neutron.get_networking_agents(binary='ovn-controller')) > 0:
+    if list_containers_df()['container_name'].\
+            str.contains('ovn').any(axis=None):
         # TODO: deployments with networker nodes are not supported
         ovn_controller_containers = ['ovn_controller',
-                                     'ovn-dbs-bundle-podman-']
+                                     'ovn-dbs-bundle-{}-'.
+                                     format(container_runtime_name)]
         ovn_compute_containers = ['ovn_metadata_agent',
                                   'ovn_controller']
         for group, group_containers in [('controller',
@@ -207,6 +215,9 @@ def assert_ovn_containers_running():
                                         ('compute',
                                          ovn_compute_containers)]:
             assert_containers_running(group, group_containers, full_name=False)
+        LOG.info("Networking OVN containers verified")
+    else:
+        LOG.info("Networking OVN not configured")
 
 
 def comparable_container_keys(container):
@@ -277,10 +288,7 @@ def assert_equal_containers_state(expected_containers_list=None,
     while time.time() - start < timeout:
 
         failures = []
-        actual_containers_list = list_containers()
-        actual_containers_list_df = pandas.DataFrame(
-            get_container_states_list(actual_containers_list),
-            columns=['container_host', 'container_name', 'container_state'])
+        actual_containers_list_df = list_containers_df()
 
         LOG.info('expected_containers_list_df: {} '.format(
             expected_containers_list_df.to_string(index=False)))
