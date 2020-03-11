@@ -89,7 +89,7 @@ class OvercloudSshKeyFileFixture(tobiko.SharedFixture):
 
     @property
     def key_filename(self):
-        return os.path.expanduser(
+        return tobiko.tobiko_config_path(
             CONF.tobiko.tripleo.overcloud_ssh_key_filename)
 
     def setup_fixture(self):

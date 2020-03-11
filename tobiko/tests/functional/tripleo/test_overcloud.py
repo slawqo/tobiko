@@ -78,7 +78,7 @@ class OvercloudNovaApiTest(testtools.TestCase):
                          host_config.port)
         self.assertEqual(CONF.tobiko.tripleo.overcloud_ssh_username,
                          host_config.username)
-        key_filename = os.path.expanduser(
+        key_filename = tobiko.tobiko_config_path(
             CONF.tobiko.tripleo.overcloud_ssh_key_filename)
         self.assertEqual(key_filename, host_config.key_filename)
         self.assertTrue(os.path.isfile(key_filename))
