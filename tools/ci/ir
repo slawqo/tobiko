@@ -5,6 +5,10 @@ source $(dirname "$0")/tox
 
 set -eu
 
+if [ "${IR_DEBUG:-}" != "" ]; then
+    set -x
+fi
+
 IR_VIRTUAL_ENV=$(realpath "${IR_VIRTUAL_ENV:-.tox/infrared}")
 IR_REPO="https://github.com/redhat-openstack/infrared.git"
 IR_BRANCH=${IR_BRANCH:-master}
@@ -12,6 +16,7 @@ IR_SOURCE_DIR=$(realpath "${IR_SOURCE_DIR:-${IR_VIRTUAL_ENV}/infrared}")
 IR_EXECUTABLE=${IR_VIRTUAL_ENV}/bin/infrared
 export IR_HOME=$(realpath ${IR_HOME:-$(pwd)/.infrared/})
 IR_TOBIKO_PLUGIN=$(realpath ${IR_TOBIKO_PLUGIN:-$(pwd)/roles/infrared})
+IR_WORKSPACE_FILE=${IR_WORKSPACE_FILE:-$(realpath ./workspace.tgz)}
 
 
 function ir {
@@ -33,11 +38,15 @@ function ir_setup {
             pip install --upgrade "${package_name}"
         done
 
+        rm -fR "${IR_HOME}"
         (
             cd "${IR_SOURCE_DIR}"
             "${IR_EXECUTABLE}" plugin list --available --versions || true
             "${IR_EXECUTABLE}" plugin remove tobiko || true
             "${IR_EXECUTABLE}" plugin add "${IR_TOBIKO_PLUGIN}"
+            if [ -f "${IR_WORKSPACE_FILE}" ]; then
+                "${IR_EXECUTABLE}" workspace import "${IR_WORKSPACE_FILE}"
+            fi
         )
     fi
 
