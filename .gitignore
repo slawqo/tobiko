@@ -26,6 +26,7 @@ doc/build/*
 dist/
 etc/*.sample
 tobiko_results*
+test_results*
 zuul/versioninfo
 
 # Files created by releasenotes build

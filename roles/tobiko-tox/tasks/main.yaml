@@ -1,0 +1,30 @@
+---
+
+- name: "Run test Tox envlist '{{ tox_envlist }}' on direcory '{{ tox_dir }}'"
+  shell:
+    chdir: "{{ tox_dir }}"
+    cmd: |
+        set -x
+        {{ tox_command }} -e "{{ tox_envlist }}" {{ tox_extra_args }}
+        exit_status=$?
+        {{ tox_command }} -c '{{ tobiko_dir }}' -e report
+        exit "${exit_status}"
+  register:
+    run_tox
+  environment:
+    TOBIKO_TEST_REPORT_DIR: "{{ tox_report_dir }}"
+    TOBIKO_TEST_REPORT_NAME: "{{ tox_report_name }}"
+  ignore_errors: yes
+
+
+- name: "Show test cases results"
+  debug: var=run_tox.stdout_lines
+  when:
+    - (run_tox.stdout_lines | length) > 0
+
+
+- name: "Show test cases errors"
+  debug: var=run_tox.stderr_lines
+  when:
+    - (run_tox.stderr_lines | length) > 0
+  failed_when: run_tox is failed

@@ -1,0 +1,55 @@
+---
+
+- name: "ensures local directory '{{ collect_dir }}' exists"
+  file:
+    path: '{{ collect_dir }}'
+    state: directory
+  delegate_to: 127.0.0.1
+
+
+- name: "look for report files in {{ report_dir }}"
+  find:
+    paths:
+      - "{{ report_dir }}"
+    patterns:
+      - "{{ report_name }}*.log"
+      - "{{ report_name }}*.subunit"
+      - "{{ report_name }}*.html"
+      - "{{ report_name }}*.xml"
+  register: find_report_files
+
+
+- name: "add found report files"
+  set_fact:
+    report_files: '{{ (( find_report_files.files | json_query("[*].path")) + report_files) | unique }}'
+
+
+- name: "check if report files exists"
+  stat:
+    path: "{{ item }}"
+    get_checksum: no
+  register: stat_report_files
+  loop: '{{ report_files }}'
+
+
+- name: "filter out non existing files"
+  set_fact:
+    report_files: '{{ stat_report_files.results | json_query("[?stat.exists].stat.path") }}'
+
+
+- name: "compress report files"
+  when: compress_collected_files | bool
+  archive:
+    path: '{{ item }}'
+  loop: '{{ report_files }}'
+
+
+- name: "collect report files to local directory '{{ collect_dir }}'"
+  synchronize:
+    dest: '{{ collect_dir }}'
+    mode: pull
+    src: "{{ item }}{{ report_files_suffix }}"
+    use_ssh_args: yes
+    recursive: yes
+  loop: '{{ report_files }}'
+  ignore_errors: yes

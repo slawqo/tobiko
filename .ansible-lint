@@ -1,4 +1,11 @@
 ---
 
+exclude_paths:
+  - ./roles/infrared/
+
 skip_list:
+  - '206'
+  - '306'
   - '403'
+  - '502'
+  - '701'

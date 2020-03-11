@@ -1,0 +1,57 @@
+---
+
+- name: "clean directory {{ dest_dir }}"
+  file:
+    path: "{{ dest_dir | realpath }}"
+    state: absent
+  when:
+    - clean_deploy_dir | bool
+    - |
+      (src_dir | length) == 0 or
+      (git_version | length) > 0 or
+      (git_refspec | length) == 0
+
+
+- name: "create directory {{ dest_dir }}"
+  file:
+    path: "{{ dest_dir | realpath }}"
+    state: directory
+
+
+- name: "copy '{{ src_dir }}' to '{{ dest_dir }}'"
+  synchronize:
+    src: "{{ src_dir | realpath }}/."
+    dest: "{{ dest_dir | realpath }}"
+    use_ssh_args: yes
+    recursive: yes
+    delete: "{{ clean_deploy_dir | bool }}"
+    rsync_opts:
+      - "--exclude-from={{ src_dir | realpath }}/.gitignore"
+  when:
+    - (src_dir | length) > 0
+    - (git_version | length) == 0
+    - (git_refspec | length) == 0
+
+
+- name: "checkout test cases from '{{ git_repo }}[{{ git_refspec or git_version }}]' to '{{ dest_dir }}'"
+  git:
+    dest: '{{ dest_dir }}'
+    repo: '{{ git_repo }}'
+    refspec: '{{ git_refspec }}'
+    version: '{%if (git_refspec | length) %}FETCH_HEAD{% else %}{{ git_version }}{% endif %}'
+    force: yes
+  when: |
+    (src_dir | length) == 0 or
+    (git_version | length) > 0 or
+    (git_refspec | length) > 0
+
+
+- name: "get last change details"  # noqa 303
+  command:
+    chdir: "{{ dest_dir }}"
+    cmd: git log -n 1
+  register: get_git_log
+
+
+- name: "show last change details"
+  debug: var=get_git_log.stdout_lines

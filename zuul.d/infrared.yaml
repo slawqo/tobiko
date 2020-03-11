@@ -10,6 +10,7 @@
       Run tobiko infrared plugin
     vars:
       tox_envlist: infrared
+      # tox_extra_args: -- --tox_envlist functional
       bindep_profile: test
       python_version: 3.6
     # compile and install python3.8 from source code
