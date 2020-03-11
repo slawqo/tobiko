@@ -40,4 +40,7 @@ Pipfile.lock
 tobiko.conf
 clouds.yaml
 ssh_config
+
+# Infrared things
 .infrared
+workspace.tgz
