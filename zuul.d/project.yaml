@@ -29,8 +29,3 @@
     gate:
       jobs:
         - tobiko-devstack-functional
-
-    experimental:
-      jobs:
-        - tobiko-devstack-faults-centos-7-queens
-        - tobiko-devstack-faults-centos-7-train

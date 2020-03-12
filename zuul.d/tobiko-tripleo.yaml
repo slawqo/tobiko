@@ -2,7 +2,7 @@
     name: tobiko-tripleo
     abstract: true
     description: Base Tobiko TripleO job
-    parent: tripleo-ci-centos-7-standalone
+    parent: tripleo-ci-centos-8-scenario002-standalone
     required-projects:
       - openstack/tripleo-ci
       - x/tobiko
