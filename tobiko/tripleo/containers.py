@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import os
 import time
+import functools
 
 from oslo_log import log
 import pandas
@@ -203,10 +204,15 @@ def assert_all_tripleo_containers_running():
     assert_ovn_containers_running()
 
 
+@functools.lru_cache()
+def ovn_used_on_overcloud():
+    return list_containers_df()['container_name'].\
+            str.contains('ovn').any(axis=None)
+
+
 def assert_ovn_containers_running():
     # specific OVN verifications
-    if list_containers_df()['container_name'].\
-            str.contains('ovn').any(axis=None):
+    if ovn_used_on_overcloud():
         # TODO: deployments with networker nodes are not supported
         ovn_controller_containers = ['ovn_controller',
                                      'ovn-dbs-bundle-{}-'.
@@ -248,6 +254,7 @@ def comparable_container_keys(container, include_container_objects=False):
                 container.attrs['State']['Status'])
 
 
+@functools.lru_cache()
 def list_containers_objects_df():
     containers_list = list_containers()
     containers_objects_list_df = pandas.DataFrame(
