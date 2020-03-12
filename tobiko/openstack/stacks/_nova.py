@@ -36,7 +36,7 @@ CONF = config.CONF
 
 class KeyPairStackFixture(heat.HeatStackFixture):
     template = _hot.heat_template_file('nova/key_pair.yaml')
-    key_file = os.path.expanduser(CONF.tobiko.nova.key_file)
+    key_file = tobiko.tobiko_config_path(CONF.tobiko.nova.key_file)
     public_key = None
     private_key = None
 
@@ -52,7 +52,7 @@ class KeyPairStackFixture(heat.HeatStackFixture):
             self.public_key = as_str(fd.read())
 
     def create_key_file(self):
-        key_file = os.path.realpath(self.key_file)
+        key_file = self.key_file
         if not os.path.isfile(key_file):
             key_dir = os.path.dirname(key_file)
             tobiko.makedirs(key_dir)
