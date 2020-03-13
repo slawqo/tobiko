@@ -26,6 +26,7 @@ find_openstack_node = _topology.find_openstack_node
 get_default_openstack_topology_class = (
     _topology.get_default_openstack_topology_class)
 list_openstack_nodes = _topology.list_openstack_nodes
+list_openstack_node_groups = _topology.list_openstack_node_groups
 OpenStackTopology = _topology.OpenStackTopology
 OpenStackTopologyNode = _topology.OpenStackTopologyNode
 set_default_openstack_topology_class = (
