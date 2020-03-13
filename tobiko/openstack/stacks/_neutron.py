@@ -91,7 +91,7 @@ class NetworkStackFixture(heat.HeatStackFixture):
     @property
     def has_ipv6(self):
         """Whenever to setup IPv6 subnet"""
-        return bool(CONF.tobiko.neutron.ipv4_cidr)
+        return bool(CONF.tobiko.neutron.ipv6_cidr)
 
     @property
     def ipv6_cidr(self):
