@@ -58,6 +58,7 @@ class SSHClientFixtureTest(unit.TobikoUnitTest):
 
         ssh_config = paramiko.SSHConfig()
         for ssh_config_file in CONF.tobiko.ssh.config_files:
+            ssh_config_file = tobiko.tobiko_config_path(ssh_config_file)
             if os.path.exists(ssh_config_file):
                 with open(ssh_config_file) as f:
                     ssh_config.parse(f)
