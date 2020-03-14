@@ -11,6 +11,7 @@ from tobiko.tripleo import processes
 from tobiko.tripleo import containers
 from tobiko.tripleo import nova
 from tobiko.tripleo import neutron
+from tobiko.tripleo import undercloud
 from tobiko.openstack import stacks
 import tobiko
 
@@ -56,7 +57,8 @@ def check_overcloud_processes_health():
             ).basic_overcloud_processes_running
 
 
-class RebootNodesTest(testtools.TestCase):
+@undercloud.skip_if_missing_undercloud
+class RebootTripleoNodesTest(testtools.TestCase):
 
     """ HA Tests: run health check -> disruptive action -> health check
     disruptive_action: a function that runs some
