@@ -20,6 +20,7 @@ import tobiko
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.openstack import topology
+from tobiko.shell import ping
 from tobiko.shell import sh
 
 
@@ -196,3 +197,50 @@ class L3AgentTest(testtools.TestCase, AgentTestMixin):
             router_radvd_pids,
             self.get_process_pids_for_resource(
                 "radvd", self.router_id, network_l3_agents))
+
+
+class OvsAgentTest(testtools.TestCase, AgentTestMixin):
+
+    #: Resources stack with Nova server to send messages to
+    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+
+    agent_type = 'Open vSwitch agent'
+
+    def setUp(self):
+        super(OvsAgentTest, self).setUp()
+        os_topology = topology.get_openstack_topology()
+        self.agent_service_name = os_topology.get_agent_service_name(
+            "neutron-ovs-agent")
+        if not self.agent_service_name:
+            self.skip("Neutron OVS agent's service name not defined for "
+                      "the topology %s" % os_topology)
+
+        self.ovs_agents = neutron.list_agents(agent_type=self.agent_type)
+        if not self.ovs_agents:
+            self.skip("No Neutron OVS agents found in the cloud.")
+
+        self.stopped_agents = []
+
+    def tearDown(self):
+        super(OvsAgentTest, self).tearDown()
+        # Try to start all agents which may be down during the tests
+        self.start_service_on_agents(
+            self.agent_service_name, self.stopped_agents)
+
+    def _get_agent_from_host(self, host):
+        for agent in self.ovs_agents:
+            if agent['host'] == host.name:
+                return agent
+
+    def test_vm_reachability_during_stop_ovs_agent(self):
+        # Check if vm is reachable before test
+        ping.ping_until_received(
+            self.stack.ip_address).assert_replied()
+
+        vm_host = topology.get_openstack_node(
+            hostname=self.stack.hypervisor_host)
+        agent = self._get_agent_from_host(vm_host)
+        self.stop_service_on_agents(self.agent_service_name, [agent])
+        ping.ping_until_received(
+            self.stack.floating_ip_address).assert_replied()
+        self.start_service_on_agents(self.agent_service_name, [agent])
