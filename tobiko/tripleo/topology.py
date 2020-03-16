@@ -70,10 +70,7 @@ def setup_tripleo_topology():
 
 def get_ip_to_nodes_dict(openstack_nodes=None):
     if not openstack_nodes:
-        openstack_controllers = topology.list_openstack_nodes(
-            group='controller')
-        openstack_computes = topology.list_openstack_nodes(group='compute')
-        openstack_nodes = openstack_controllers + openstack_computes
+        openstack_nodes = topology.list_openstack_nodes(group='overcloud')
     ip_to_nodes_dict = {str(node.public_ip): node.name for node in
                         openstack_nodes}
     return ip_to_nodes_dict

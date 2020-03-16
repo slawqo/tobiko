@@ -84,10 +84,7 @@ def list_containers(group=None):
     if group:
         openstack_nodes = topology.list_openstack_nodes(group=group)
     else:
-        openstack_controllers = topology.list_openstack_nodes(
-            group='controller')
-        openstack_computes = topology.list_openstack_nodes(group='compute')
-        openstack_nodes = openstack_controllers + openstack_computes
+        openstack_nodes = topology.list_openstack_nodes(group='overcloud')
 
     for node in openstack_nodes:
         ssh_client = node.ssh_client
@@ -213,18 +210,20 @@ def ovn_used_on_overcloud():
 def assert_ovn_containers_running():
     # specific OVN verifications
     if ovn_used_on_overcloud():
-        # TODO: deployments with networker nodes are not supported
         ovn_controller_containers = ['ovn_controller',
                                      'ovn-dbs-bundle-{}-'.
                                      format(container_runtime_name)]
         ovn_compute_containers = ['ovn_metadata_agent',
                                   'ovn_controller']
-        for group, group_containers in [('controller',
-                                         ovn_controller_containers),
-                                        ('compute',
-                                         ovn_compute_containers)]:
+        group_containers_list = [('controller', ovn_controller_containers),
+                                 ('compute', ovn_compute_containers)]
+        if 'networker' in topology.list_openstack_node_groups():
+            ovn_networker_containers = ['ovn_controller']
+            group_containers_list.append(('networker',
+                                          ovn_networker_containers))
+        for group, group_containers in group_containers_list:
             assert_containers_running(group, group_containers, full_name=False)
-        LOG.info("Networking OVN containers verified")
+        LOG.info("Networking OVN containers verified in running state")
     else:
         LOG.info("Networking OVN not configured")
 
