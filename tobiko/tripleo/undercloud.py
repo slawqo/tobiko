@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+from oslo_log import log
+
 import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
@@ -20,6 +22,8 @@ from tobiko.shell import ssh
 from tobiko.shell import sh
 
 CONF = config.CONF
+
+LOG = log.getLogger(__name__)
 
 
 def undercloud_ssh_client():
@@ -51,9 +55,23 @@ class UndercloudKeystoneCredentialsFixture(
         return load_undercloud_rcfile()
 
 
+class HasUndercloudFixture(tobiko.SharedFixture):
+
+    has_undercloud = None
+
+    def setup_fixture(self):
+        ssh_client = undercloud_ssh_client()
+        try:
+            ssh_client.connect()
+        except Exception as ex:
+            LOG.debug('Unable to connect to undercloud host: %s', ex)
+            self.has_undercloud = False
+        else:
+            self.has_undercloud = True
+
+
 def has_undercloud():
-    host_config = undercloud_host_config()
-    return bool(host_config.hostname)
+    return tobiko.setup_fixture(HasUndercloudFixture).has_undercloud
 
 
 skip_if_missing_undercloud = tobiko.skip_unless(

@@ -21,7 +21,7 @@ GROUP_NAME = 'tripleo'
 OPTIONS = [
     # Undercloud options
     cfg.StrOpt('undercloud_ssh_hostname',
-               default=None,
+               default='undercloud-0',
                help="hostname or IP address to be used to connect to "
                     "undercloud host"),
     cfg.IntOpt('undercloud_ssh_port',
