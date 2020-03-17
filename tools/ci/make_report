@@ -2,7 +2,7 @@
 
 # Produce test HTML report file into ${REPORT_DIR}
 
-set -xeu
+set -eu
 
 # Imput paths
 TOBIKO_TOX_DIR=${TOBIKO_TOX_DIR:-$(pwd)}
