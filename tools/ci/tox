@@ -6,15 +6,15 @@ source $(dirname "$0")/activate
 
 
 export PYTHON_VERSION=${PYTHON_VERSION:-}
-TOX_BASE_PYTHON=${PYTHON:-${CI_TOOLS_DIR}/python}
-TOX_VIRTUAL_ENV=$(realpath "${TOX_VIRTUAL_ENV:-.tox/tox}")
+export TOX_BASE_PYTHON=${TOX_BASE_PYTHON:-${CI_TOOLS_DIR}/python}
+export TOX_VIRTUAL_ENV=$(realpath "${TOX_VIRTUAL_ENV:-.tox/tox}")
 
 BINDEP=${BINDEP:-}
 BINDEP_FILE=${BINDEP_FILE:-$(pwd)/bindep.txt}
 
 
 function tox {
-    tox_setup
+    tox_setup 1>&2
     "${TOX_VIRTUAL_ENV}/bin/tox" "$@"
 }
 
@@ -39,19 +39,25 @@ function tox_setup {
         "${TOX_BASE_PYTHON}" -m virtualenv --seeder pip "${TOX_VIRTUAL_ENV}"
 
         # Activate virtualenv
-        if tox_activate; then
-            # Install/upgrade the last Python packages into the new virutalenv
-            curl https://bootstrap.pypa.io/get-pip.py | tox_python
-            tox_pip install --upgrade setuptools wheel virtualenv tox
-        fi
+        tox_activate
 
+        # Install binary packages
+        tox_install_bindeps
+
+        # Install/upgrade the last Python packages into the new virutalenv
+        curl https://bootstrap.pypa.io/get-pip.py | tox_python
+        tox_pip install --upgrade setuptools wheel virtualenv tox
     fi
 }
 
 
 function tox_install_deps {
     tox_install_pip
-    "${TOX_BASE_PYTHON}" -m pip install --user --upgrade virtualenv
+    local options="--upgrade"
+    if [ "${VIRTUAL_ENV:-}" == "" ]; then
+        options="${options} --user"
+    fi
+    "${TOX_BASE_PYTHON}" -m pip install ${options} virtualenv
 }
 
 
@@ -80,8 +86,6 @@ function tox_activate {
         source "${venv_script}"
         set -eu
         tox_is_active
-
-        tox_install_bindeps
     fi
 }
 
@@ -101,7 +105,7 @@ function tox_install_bindeps {
     local missing_packages=( $(bindep -b -f "${bindep_file}") )
     if [ "${#missing_packages[@]}" != "0" ]; then
         tox_install_packages "${missing_packages[@]}"
-        bindep -f "${bindep_file}"
+        bindep -f "${bindep_file}" || true
     fi
 }
 
