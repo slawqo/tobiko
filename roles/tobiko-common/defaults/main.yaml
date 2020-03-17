@@ -30,7 +30,6 @@ test_conf: {}
 # Logging options
 test_log_debug: true
 
-
 # --- Test report options -----------------------------------------------------
 
 # Remote directory where test cases shoulw write report files to

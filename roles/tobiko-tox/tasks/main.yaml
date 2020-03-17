@@ -1,13 +1,15 @@
 ---
 
-- name: "Run test Tox envlist '{{ tox_envlist }}' on direcory '{{ tox_dir }}'"
+- name: "run test Tox envlist '{{ tox_envlist }}' on direcory '{{ tox_dir }}'"
   shell:
     chdir: "{{ tox_dir }}"
     cmd: |
         set -x
+
         {{ tox_command }} -e "{{ tox_envlist }}" {{ tox_extra_args }}
         exit_status=$?
-        {{ tox_command }} -c '{{ tobiko_dir }}' -e report
+
+        {{ tox_command }} -c '{{ tobiko_dir }}' -e report 1>&2
         exit "${exit_status}"
   register:
     run_tox
