@@ -2,7 +2,7 @@
 
 # Directory where test cases has been deployed to
 tox_dir: '{{ test_dir | realpath }}'
-tox_command: "{{ tobiko_dir | realpath }}/tools/ci/tox"
+tox_command: "tox"
 tox_envlist: py36
 tox_extra_args: ''
 
