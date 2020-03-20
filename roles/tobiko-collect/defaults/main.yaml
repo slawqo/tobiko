@@ -5,6 +5,3 @@ report_dir: '{{ test_report_dir | realpath }}'
 report_files: '{{ test_report_files }}'
 report_name: '{{ test_report_name }}'
 collect_dir: '{{ test_collect_dir | realpath }}'
-
-compress_collected_files: no
-report_files_suffix: '{% if (compress_collected_files | bool) %}.gz{% endif %}'

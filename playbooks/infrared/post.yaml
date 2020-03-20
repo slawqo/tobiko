@@ -1,0 +1,9 @@
+---
+
+- hosts: all
+  tasks:
+
+    - name: "list test results files at '{{ test_results_dir }}'"
+      command:
+        cmd: 'ls -lh'
+        chdir: '{{ test_results_dir }}'

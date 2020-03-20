@@ -4,7 +4,7 @@
   file:
     path: '{{ collect_dir }}'
     state: directory
-  delegate_to: 127.0.0.1
+  delegate_to: localhost
 
 
 - name: "look for report files in {{ report_dir }}"
@@ -32,24 +32,19 @@
   loop: '{{ report_files }}'
 
 
-- name: "filter out non existing files"
+- name: "filter out non existing report files"
   set_fact:
-    report_files: '{{ stat_report_files.results | json_query("[?stat.exists].stat.path") }}'
-
-
-- name: "compress report files"
-  when: compress_collected_files | bool
-  archive:
-    path: '{{ item }}'
-  loop: '{{ report_files }}'
+    report_files: >
+        {{ stat_report_files.results |
+           json_query("[?stat.exists].stat.path") }}
 
 
 - name: "collect report files to local directory '{{ collect_dir }}'"
   synchronize:
-    dest: '{{ collect_dir }}'
+    dest: '{{ collect_dir }}/{{ item | basename }}'
     mode: pull
-    src: "{{ item }}{{ report_files_suffix }}"
+    src: '{{ item }}'
     use_ssh_args: yes
     recursive: yes
-  loop: '{{ report_files }}'
   ignore_errors: yes
+  loop: '{{ report_files }}'

@@ -2,7 +2,7 @@
 
 # --- Tobiko deploy options ---------------------------------------------------
 
-user_home: '{{ ansible_env.get("HOME", "~")}}'
+user_home: '{{ ansible_env.get("HOME", "~") }}'
 
 tobiko_dir: '{{ user_home }}/src/tobiko'
 tobiko_src_dir: '{{ role_path | dirname | dirname }}'
@@ -13,9 +13,9 @@ tobiko_git_version: ''
 
 # --- Test deploy options -----------------------------------------------------
 
-test_dir: '{{ tobiko_dir }}'
-test_src_dir: '{{ tobiko_src_dir }}'
-test_git_repo: '{{ tobiko_git_repo }}'
+test_dir: '{{ tobiko_dir | realpath }}'
+test_src_dir: '{{ tobiko_src_dir | realpath }}'
+test_git_repo: '{{ tobiko_git_repo | realpath }}'
 test_git_refspec: ''
 test_git_version: ''
 
@@ -23,7 +23,7 @@ test_git_version: ''
 # --- Test configuration options ----------------------------------------------
 
 # Configuration options
-test_conf_file: '{{ test_dir }}/tobiko.conf'
+test_conf_file: '{{ test_dir | realpath }}/tobiko.conf'
 
 test_conf: {}
 
@@ -33,16 +33,16 @@ test_log_debug: true
 # --- Test report options -----------------------------------------------------
 
 # Remote directory where test cases shoulw write report files to
-test_report_dir: "{{ test_dir }}"
+test_report_dir: "{{ test_dir | realpath }}"
 test_report_files:
-  - '{{ test_conf_file }}'
-  - '{{ test_log_file }}'
+  - '{{ test_conf_file | realpath }}'
+  - '{{ test_log_file | realpath }}'
 
 # Test report files prefix
 test_report_name: test_results
 
 # Log file where test cases should write logging messages to
-test_log_file: "{{ test_report_dir }}/tobiko.log"
+test_log_file: '{{ test_report_dir | realpath }}/tobiko.log'
 
 # Local where test cases results are being collected to
-test_collect_dir: "{{ test_src_dir }}/{{ test_report_name }}"
+test_collect_dir: '{{ test_src_dir | realpath }}/{{ test_report_name }}'
