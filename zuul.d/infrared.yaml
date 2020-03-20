@@ -1,17 +1,41 @@
 ---
 
 - job:
-    name: tobiko-tox-infrared-centos-7
+    name: tobiko-tox-infrared-py36
     parent: openstack-tox
-    voting: false
-    nodeset: centos-7
-    timeout: 2400
+    abstract: true
+    timeout: 1800
     description: |
-      Run tobiko infrared plugin
+      Run test cases using tobiko infrared plugin
     vars:
       tox_envlist: infrared
-      # tox_extra_args: -- --tox_envlist functional
       bindep_profile: test
       python_version: 3.6
-    # compile and install python3.8 from source code
     pre-run: playbooks/infrared/pre.yaml
+
+
+- job:
+    name: tobiko-tox-infrared-py36-centos-7
+    parent: tobiko-tox-infrared-py36
+    nodeset: centos-7
+    voting: false
+    description: |
+      Run py36 test cases using tobiko infrared plugin on CentOS 7
+
+
+- job:
+    name: tobiko-tox-infrared-py36-centos-8
+    parent: tobiko-tox-infrared-py36
+    nodeset: centos-8
+    voting: false
+    description: |
+      Run py36 test cases using tobiko infrared plugin on CentOS 8
+
+
+- job:
+    name: tobiko-tox-infrared-py36-ubuntu-bionic
+    parent: tobiko-tox-infrared-py36
+    nodeset: ubuntu-bionic
+    voting: false
+    description: |
+      Run py36 test cases using tobiko infrared plugin on Ubuntu Bionic
