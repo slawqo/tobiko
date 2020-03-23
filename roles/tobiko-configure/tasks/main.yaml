@@ -14,13 +14,6 @@
     sections: "{{ default_conf | combine(conf, recursive=True) }}"
 
 
-- name: "show tobiko configuration"
-  debug:
-    msg: |
-      Tobiko configuration:
-      {{ conf_yaml }}
-
-
 - name: "generate '{{ conf_file }}' file"
   ini_file:
     path: "{{ conf_file }}"
@@ -35,15 +28,13 @@
   loop: "{{ conf_yaml | from_yaml | list }}"
 
 
-- name: "read {{ conf_file }} file"
-  slurp:
-    src: "{{ conf_file }}"
+- name: "read resulting {{ conf_file }} file"
+  command: "cat '{{ conf_file }}'"
   register: read_conf_file
 
 
-- name: "show {{ conf_file }} file"
-  debug:
-    msg: "{{ read_conf_file['content'] | b64decode }}"
+- name: "show resulting '{{ conf_file }}' file"
+  debug: var=read_conf_file.stdout_lines
 
 
 # TODO (fressi): move it to a Tobiko python fixture
