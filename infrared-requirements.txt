@@ -1,0 +1,1 @@
+git+https://github.com/redhat-openstack/infrared.git  # Apache-2.0
