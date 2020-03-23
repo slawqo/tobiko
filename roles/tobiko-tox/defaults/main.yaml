@@ -2,11 +2,13 @@
 
 # Directory where test cases has been deployed to
 tox_dir: '{{ test_dir | realpath }}'
-tox_command: "tox"
+tox_command: tox
+tox_environment: {}
 tox_envlist: py36
 tox_extra_args: ''
 
-tox_command_line: '{{ tox_command }} "-e{{ tox_envlist }}" {{ tox_extra_args }}'
-
-tox_report_dir: "{{ test_report_dir | realpath }}"
+tox_report_dir: '{{ test_report_dir | realpath }}'
 tox_report_name: '{{ test_report_name }}_{{ tox_envlist }}'
+tox_report_env:
+  TOBIKO_TEST_REPORT_DIR: '{{ tox_report_dir }}'
+  TOBIKO_TEST_REPORT_NAME: '{{ tox_report_name }}'

@@ -18,9 +18,11 @@ TOBIKO_TEST_REPORT_XML=${TOBIKO_TEST_REPORT_XML:-${TOBIKO_TEST_REPORT_DIR}/${TOB
 
 
 function make_report() {
-    make_report_subunit
-    make_report_html
-    make_report_xml
+    if [[ -f .stestr/failing ]]; then
+        make_report_subunit
+        make_report_html
+        make_report_xml
+    fi
 }
 
 
