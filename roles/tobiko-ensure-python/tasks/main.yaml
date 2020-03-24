@@ -1,0 +1,102 @@
+---
+
+- name: "validate python_version value: {{ python_version }}"
+  assert:
+    that:
+      - (python_version|string).split(".") | length >= 1
+      - (python_version|string).split(".") | length <= 2
+      - (python_version|string).split(".")[0] == '3'
+
+
+- name: "include OS-specific variables"
+  include_vars: "{{ item }}"
+  ignore_errors: yes
+  with_first_found:
+    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yaml"
+    - "{{ ansible_distribution }}.{{ ansible_architecture }}.yaml"
+    - "{{ ansible_distribution }}.yaml"
+    - "{{ ansible_os_family }}.yaml"
+
+
+- block:
+    - name: "get Python info for '{{ python_command }}'"
+      script:
+        cmd: get_python_info.py --base --quiet
+        executable: '{{ python_command }}'
+      register: get_python_info
+
+  rescue:
+    - name: "install Python {{ python_version }} packages"
+      become: true
+      package:
+        name: "{{ python_packages }}"
+
+    - name: "get Python info for '{{ python_command }}'"
+      script:
+        cmd: get_python_info.py --base --quiet
+        executable: '{{ python_command }}'
+      register: get_python_info
+
+
+- name: "set python_info fact"
+  set_fact:
+    python_info: '{{ get_python_info.stdout | from_json }}'
+
+
+- name: "update Python executable facts"
+  set_fact:
+    python_command: '{{ python_info.executables | first | basename }}'
+    python_executable: '{{ python_info.executables | first }}'
+    python_version: '{{ python_info.version }}'
+
+
+- name: "show Python executables facts"
+  debug:
+    msg:
+      python_command: '{{ python_command }}'
+      python_executable: '{{ python_executable }}'
+      python_info: '{{ python_info }}'
+      python_version: '{{ python_version }}'
+
+
+- block:
+    - name: "get Python info for '{{ unversioned_python_command }}'"
+      script:
+        cmd: get_python_info.py --base --quiet
+        executable: '{{ unversioned_python_command }}'
+      register: get_unversioned_python_info
+
+  rescue:
+    - name: "set '{{ python_executable }}' as default alternative for python"
+      become: true
+      command: "alternatives --set python '{{ unversioned_python_alternative }}'"
+
+    - name: "get Python info for '{{ unversioned_python_command }}'"
+      script:
+        cmd: get_python_info.py --base --quiet
+        executable: '{{ unversioned_python_command }}'
+      register: get_unversioned_python_info
+
+
+- name: "set unversioned_python_info fact"
+  set_fact:
+    unversioned_python_info: '{{ get_unversioned_python_info.stdout | from_json }}'
+
+
+- name: "update unversioned Python executable facts"
+  set_fact:
+    unversioned_python_command:
+      '{{ unversioned_python_info.executables | first | basename }}'
+    unversioned_python_executable:
+      '{{ unversioned_python_info.executables | first }}'
+    unversioned_python_version:
+      '{{ unversioned_python_info.version }}'
+
+
+- name: "show unversioned Python executables facts"
+  debug:
+    msg:
+      unversioned_python_command: '{{ unversioned_python_command }}'
+      unversioned_python_executable: '{{ unversioned_python_executable }}'
+      unversioned_python_info: '{{ unversioned_python_info }}'
+      unversioned_python_version: '{{ unversioned_python_version }}'

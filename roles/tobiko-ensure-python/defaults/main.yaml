@@ -1,0 +1,7 @@
+---
+
+python_version: '3'
+python_command: 'python{{ python_version }}'
+
+unversioned_python_command: '/usr/bin/python'
+unversioned_python_alternative: '/usr/bin/python3'
