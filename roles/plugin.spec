@@ -116,7 +116,3 @@ subparsers:
             type: Value
             help: local directory where report files are going to be copied to
             ansible_variable: test_collect_dir
-          compress-collected:
-            type: Flag
-            help: compress report files before collecting them
-            ansible_variable: compress_collected_files

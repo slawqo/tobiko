@@ -2,16 +2,19 @@
 
 - job:
     name: tobiko-tox-infrared-py36
-    parent: openstack-tox
+    parent: openstack-tox-py36
     abstract: true
     timeout: 1800
     description: |
       Run test cases using tobiko infrared plugin
     vars:
+      zuul_output_dir: '{{ ansible_user_dir }}/zuul-output'
+      test_results_dir: '{{ zuul_output_dir }}/logs'
       tox_envlist: infrared
-      bindep_profile: test
-      python_version: 3.6
+      tox_extra_args: >
+        -- --collect-dir '{{ test_results_dir }}'
     pre-run: playbooks/infrared/pre.yaml
+    post-run: playbooks/infrared/post.yaml
 
 
 - job:
