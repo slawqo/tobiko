@@ -2,7 +2,7 @@
 
 # Directory where test cases has been deployed to
 tox_dir: '{{ test_dir | realpath }}'
-tox_command: tox
+tox_command: '{{ tox_executable | default(tox) }}'
 tox_environment: {}
 tox_envlist:
 tox_extra_args: ''

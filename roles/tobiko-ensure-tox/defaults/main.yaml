@@ -1,0 +1,4 @@
+---
+
+tox_executable: tox
+tox_min_version: 3.4

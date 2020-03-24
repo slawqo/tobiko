@@ -3,4 +3,3 @@
 dependencies:
   - role: tobiko-common
   - role: tobiko-ensure-python
-  - role: tobiko-ensure-tox
