@@ -2,3 +2,8 @@
 
 dependencies:
   - role: tobiko-common
+
+  - role: tobiko-ensure-git
+    when: >
+      (tobiko_git_repo is defined) or
+      (test_git_repo is defined)
