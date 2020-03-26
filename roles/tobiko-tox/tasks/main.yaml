@@ -1,10 +1,26 @@
 ---
 
-- name: "run test Tox envlist '{{ tox_envlist }}' on direcory '{{ tox_dir }}'"
-  shell:
-    chdir: "{{ tox_dir }}"
-    cmd: |
-        {{ tox_command }} -e "{{ tox_envlist }}" {{ tox_extra_args }}
+- name: "set 'PYTHON={{ tox_python }}' in Tox environment variables"
+  set_fact:
+    tox_environment: >
+        {{ tox_environment | combine({ "PYTHON": (tox_python or "") }) }}
+  when:
+    - tox_python is defined
+
+
+- name: "show tox environment"
+  debug: var=tox_environment
+
+
+- name: "normalize white spaces from Tox command line"
+  set_fact:
+    tox_command_line: '{{ tox_command_line.split() | join(" ") }}'
+
+
+- name: "run Tox on direcory '{{ tox_dir }}': '{{ tox_command_line }}'"
+  command:
+    chdir: '{{ tox_dir }}'
+    cmd: '{{ tox_command_line }}'
   register:
     run_tox
   environment: '{{ tox_environment }}'

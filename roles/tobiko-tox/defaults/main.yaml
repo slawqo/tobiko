@@ -4,9 +4,14 @@
 tox_dir: '{{ test_dir | realpath }}'
 tox_command: tox
 tox_environment: {}
-tox_envlist: py36
+tox_envlist:
 tox_extra_args: ''
+tox_command_line: >
+    {{ tox_command }}
+        {% if tox_envlist %} -e {{ tox_envlist | quote }} {% endif %}
+        {{ tox_extra_args }}
 
+tox_python: 'python3'
 tox_report_dir: '{{ test_report_dir | realpath }}'
 tox_report_name: '{{ test_report_name }}_{{ tox_envlist }}'
 tox_report_env:

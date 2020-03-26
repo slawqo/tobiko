@@ -12,7 +12,8 @@
       test_results_dir: '{{ zuul_output_dir }}/logs'
       tox_envlist: infrared
       tox_extra_args: >
-        -- --collect-dir '{{ test_results_dir }}'
+        --
+        --collect-dir '{{ test_results_dir }}'
     pre-run: playbooks/infrared/pre.yaml
     post-run: playbooks/infrared/post.yaml
 

@@ -14,7 +14,7 @@ function get_realpath {
     (
         export PATH=${CI_TOOLS_ORIGINAL_PATH:-${PATH}}
         local tools_dir=$(dirname "${BASH_SOURCE[0]}")
-        local python=$(which python3 || which python2 || wich python)
+        local python=$(which python3 || which python2 || which python)
         if [ -x "${python}" ] && "${python}" --version > /dev/null; then
             local script="${tools_dir}/realpath.py"
             local script=$("${python}" "${script}" "${script}")

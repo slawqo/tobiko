@@ -19,7 +19,6 @@ test_git_repo: '{{ tobiko_git_repo | realpath }}'
 test_git_refspec: ''
 test_git_version: ''
 
-
 # --- Test configuration options ----------------------------------------------
 
 # Configuration options

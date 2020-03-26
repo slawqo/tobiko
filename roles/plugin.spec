@@ -20,6 +20,11 @@ subparsers:
             default: localhost
             help: Target host where test cases are deployed and executed
             ansible_variable: test_host
+          ansible-python-interpreter:
+            type: Value
+            default: python3
+            help: Python interpreter executed by ansible on target hosts
+            ansible_variable: ansible_python_interpreter
 
       - title: Control flow
         options:
@@ -89,14 +94,22 @@ subparsers:
             type: Value
             help: command to be executed for tox (typically tox)
             ansible_variable: tox_command
+          tox-environment:
+            type: Value
+            help: envitonment variables to be set when running test cases
+            ansible_variable: tox_environment
           tox-envlist:
             type: Value
-            help: tox environment list to be executed
+            help: Tox environment names to be executed
             ansible_variable: tox_envlist
           tox-extra-args:
             type: Value
             help: extra options to be passed to Tox
             ansible_variable: tox_extra_args
+          tox-python:
+            type: Value
+            help: Python interpreter to be used for executing test cases
+            ansible_variable: tox_python
           test-report-dir:
             type: Value
             help: directory where to store test report files
