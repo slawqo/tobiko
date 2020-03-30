@@ -10,6 +10,7 @@ from tobiko.tripleo import topology as tripleo_topology
 from tobiko.openstack import keystone
 from tobiko.tripleo import pacemaker
 from oslo_log import log
+from tobiko.tests.faults.ha import test_cloud_recovery
 
 
 LOG = log.getLogger(__name__)
@@ -83,8 +84,16 @@ def reset_all_controller_nodes(disrupt_method=hard_reset_method,
                                  exclude_list=exclude_list)
 
 
+def reset_all_controller_nodes_sequentially(disrupt_method=hard_reset_method,
+                                            sequentially=True,
+                                            exclude_list=None):
+    disrupt_all_controller_nodes(disrupt_method=disrupt_method,
+                                 sequentially=sequentially,
+                                 exclude_list=exclude_list)
+
+
 def disrupt_all_controller_nodes(disrupt_method=hard_reset_method,
-                                 exclude_list=None):
+                                 sequentially=False, exclude_list=None):
     # reboot all controllers and wait for ssh Up on them
     # method : method of disruptino to use : reset | network_disruption
     # hard reset is simultaneous while soft is sequential
@@ -105,12 +114,11 @@ def disrupt_all_controller_nodes(disrupt_method=hard_reset_method,
         LOG.info('disrupt exec: {} on server: {}'.format(disrupt_method,
                                                          controller.name))
         tobiko.cleanup_fixture(controller.ssh_client)
-
-    for controller in topology.list_openstack_nodes(group='controller'):
-        controller_checked = sh.execute("hostname",
-                                        ssh_client=controller.ssh_client,
-                                        expect_exit_status=None).stdout
-        LOG.info('{} is up '.format(controller_checked))
+        if sequentially:
+            test_cloud_recovery.check_overcloud_node_responsive(controller)
+    if not sequentially:
+        for controller in topology.list_openstack_nodes(group='controller'):
+            test_cloud_recovery.check_overcloud_node_responsive(controller)
 
 
 def get_main_vip():

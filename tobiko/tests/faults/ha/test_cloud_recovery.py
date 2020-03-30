@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import random
+from oslo_log import log
 
 import testtools
 from tobiko.shell import ping
@@ -14,6 +15,9 @@ from tobiko.tripleo import neutron
 from tobiko.tripleo import undercloud
 from tobiko.openstack import stacks
 import tobiko
+
+
+LOG = log.getLogger(__name__)
 
 
 def overcloud_health_checks(passive_checks_only=False):
@@ -51,6 +55,13 @@ def check_vm_create(stack_name='stack{}'.format(random.randint(0, 1000000))):
         stack.floating_ip_address).assert_replied()
 
 
+def check_overcloud_node_responsive(node):
+    """wait until we get response for hostname command"""
+    hostname_check = sh.execute("hostname", ssh_client=node.ssh_client,
+                                expect_exit_status=None).stdout
+    LOG.info('{} is up '.format(hostname_check))
+
+
 # check cluster failed statuses
 def check_pacemaker_resources_health():
     return pacemaker.PacemakerResourcesStatus().all_healthy
@@ -78,6 +89,11 @@ class RebootTripleoNodesTest(testtools.TestCase):
     def test_hard_reboot_controllers_recovery(self):
         overcloud_health_checks()
         cloud_disruptions.reset_all_controller_nodes()
+        overcloud_health_checks()
+
+    def test_sequentially_hard_reboot_controllers_recovery(self):
+        overcloud_health_checks()
+        cloud_disruptions.reset_all_controller_nodes_sequentially()
         overcloud_health_checks()
 
     def test_reboot_computes_recovery(self):
