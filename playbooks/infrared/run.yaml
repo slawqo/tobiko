@@ -1,0 +1,74 @@
+---
+
+- hosts: all
+  vars:
+    zuul_output_dir: '{{ ansible_user_dir }}/zuul-output'
+    zuul_work_dir: '{{ zuul.project.src_dir }}'
+    test_collect_dir: '{{ zuul_output_dir }}/logs'
+
+  roles:
+    - tobiko-common
+    - tobiko-ensure-bindep
+    - tobiko-ensure-tox
+
+  tasks:
+
+    - debug: var=unversioned_python_info
+    - debug: var=python_info
+
+    - block:
+        - name: "get missing binary dependencies"
+          command:
+            cmd: >
+              {{ bindep_executable | quote }} -b -f bindep.txt
+            chdir: '{{ zuul_work_dir }}'
+          register: get_missing_deps
+
+      rescue:
+        - name: "install missing dependencies"
+          become: yes
+          package:
+            name: '{{ get_missing_deps.stdout_lines }}'
+
+    - name: "run Tox InfraRed plugin"
+      command:
+        cmd: >
+          {{ tox_executable | quote }} -e infrared --
+            --collect-dir {{ test_collect_dir | quote }}
+        chdir: '{{ zuul_work_dir }}'
+      environment:
+        PYTHON: '{{ unversioned_python_executable }}'
+        ANSIBLE_PYTHON_INTERPRETER: '{{ unversioned_python_executable }}'
+      ignore_errors: yes
+      register: run_tox
+
+    - name: "show Tox output"
+      debug: var=run_tox.stdout_lines
+
+    - name: "show Tox errors"
+      debug: var=run_tox.stderr_lines
+      when: run_tox is failed
+      failed_when: yes
+
+    - name: "list collected files"
+      command: >
+        ls '{{ test_collect_dir }}'
+      register: list_test_result_files
+
+    - name: "set collected files fact"
+      set_fact:
+        collected_files: '{{ list_test_result_files.stdout_lines }}'
+
+    - name: "show collected files"
+      debug: var=collected_files
+
+    - name: "check collected files"
+      assert:
+        that:
+          - item in collected_files
+      loop:
+        - tobiko.log
+        - tobiko.conf
+        - test_results.html
+        - test_results.subunit
+        - test_results.xml

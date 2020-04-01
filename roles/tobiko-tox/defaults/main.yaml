@@ -17,3 +17,6 @@ tox_report_name: '{{ test_report_name }}{% if tox_envlist %}_{{ tox_envlist }}{%
 tox_report_env:
   TOBIKO_TEST_REPORT_DIR: '{{ tox_report_dir }}'
   TOBIKO_TEST_REPORT_NAME: '{{ tox_report_name }}'
+
+tox_constrain_env:
+  PYTHON: '{{ tox_python }}'

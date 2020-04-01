@@ -1,13 +1,5 @@
 ---
 
-- name: "set 'PYTHON={{ tox_python }}' in Tox environment variables"
-  set_fact:
-    tox_environment: >
-        {{ tox_environment | combine({ "PYTHON": (tox_python or "") }) }}
-  when:
-    - tox_python is defined
-
-
 - name: "show tox environment"
   debug: var=tox_environment
 
@@ -23,7 +15,7 @@
     cmd: '{{ tox_command_line }}'
   register:
     run_tox
-  environment: '{{ tox_environment }}'
+  environment: '{{ tox_environment | combine(tox_constrain_env) }}'
   ignore_errors: yes
 
 
@@ -40,7 +32,7 @@
         {{ tox_command }} -e report
   register:
     make_report
-  environment: '{{ tox_report_env }}'
+  environment: '{{ tox_report_env | combine(tox_constrain_env) }}'
   ignore_errors: yes
 
 

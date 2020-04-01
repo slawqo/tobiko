@@ -1,26 +1,18 @@
 ---
 
 - job:
-    name: tobiko-tox-infrared-py36
-    parent: openstack-tox-py36
+    name: tobiko-tox-infrared
+    parent: tox
     abstract: true
     timeout: 1800
     description: |
       Run test cases using tobiko infrared plugin
-    vars:
-      zuul_output_dir: '{{ ansible_user_dir }}/zuul-output'
-      test_results_dir: '{{ zuul_output_dir }}/logs'
-      tox_envlist: infrared
-      tox_extra_args: >
-        --
-        --collect-dir '{{ test_results_dir }}'
-    pre-run: playbooks/infrared/pre.yaml
-    post-run: playbooks/infrared/post.yaml
+    run: playbooks/infrared/run.yaml
 
 
 - job:
-    name: tobiko-tox-infrared-py36-centos-7
-    parent: tobiko-tox-infrared-py36
+    name: tobiko-tox-infrared-centos-7
+    parent: tobiko-tox-infrared
     nodeset: centos-7
     voting: false
     description: |
@@ -28,8 +20,8 @@
 
 
 - job:
-    name: tobiko-tox-infrared-py36-centos-8
-    parent: tobiko-tox-infrared-py36
+    name: tobiko-tox-infrared-centos-8
+    parent: tobiko-tox-infrared
     nodeset: centos-8
     voting: false
     description: |
@@ -37,8 +29,8 @@
 
 
 - job:
-    name: tobiko-tox-infrared-py36-ubuntu-bionic
-    parent: tobiko-tox-infrared-py36
+    name: tobiko-tox-infrared-ubuntu-bionic
+    parent: tobiko-tox-infrared
     nodeset: ubuntu-bionic
     voting: false
     description: |
