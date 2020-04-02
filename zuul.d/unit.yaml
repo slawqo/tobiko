@@ -1,13 +1,6 @@
 ---
 
 - job:
-    name: tobiko-tox-py36-centos-7
-    parent: openstack-tox-py36
-    nodeset: centos-7
-    voting: false
-
-
-- job:
     name: tobiko-tox-py36-centos-8
     parent: openstack-tox-py36
     nodeset: centos-8
@@ -23,13 +16,6 @@
       Uses tox with the ``py38`` environment.
     # compile and install python3.8 from source code
     pre-run: playbooks/tox-py38/pre.yaml
-
-
-- job:
-    name: tobiko-tox-py38-centos-7
-    parent: tobiko-tox-py38
-    nodeset: centos-7
-    voting: false
 
 
 - job:
