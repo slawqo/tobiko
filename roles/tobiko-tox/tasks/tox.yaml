@@ -1,0 +1,49 @@
+---
+
+- name: "normalize white spaces from Tox command line"
+  set_fact:
+    tox_command_line: '{{ tox_command_line.split() | join(" ") }}'
+
+
+- name: "run Tox on direcory '{{ tox_dir }}': '{{ tox_command_line }}'"
+  command:
+    chdir: '{{ tox_dir }}'
+    cmd: '{{ tox_command_line }}'
+  register:
+    run_tox
+  environment: '{{ tox_environment | combine(tox_constrain_env) }}'
+  ignore_errors: yes
+
+
+- name: "show test cases results"
+  debug: var=run_tox.stdout_lines
+  when:
+    - (run_tox.stdout_lines | length) > 0
+
+
+- name: "generate test case report files"
+  shell:
+    chdir: "{{ tobiko_dir }}"
+    cmd: |
+        {{ tox_command }} -e report
+  register:
+    make_report
+  environment: '{{ tox_report_env | combine(tox_constrain_env) }}'
+  ignore_errors: yes
+
+
+- name:
+  block:
+    - name: "show test cases errors"
+      debug: var=run_tox.stderr_lines
+      when:
+        - (run_tox.stderr_lines | length) > 0
+
+    - name: 'report test cases failure'
+      debug:
+        msg: 'test cases have failed'
+      failed_when: yes
+
+  when:
+    - run_tox is defined
+    - run_tox is failed

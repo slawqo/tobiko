@@ -1,23 +1,28 @@
 ---
 
-# --- Tobiko deploy options ---------------------------------------------------
+# --- Tobiko workflow stages
 
-user_home: '{{ ansible_env.get("HOME", "~") }}'
-
-tobiko_dir: '{{ user_home }}/src/tobiko'
-tobiko_src_dir: '{{ role_path | dirname | dirname }}'
-tobiko_git_repo: 'https://opendev.org/x/tobiko.git'
-tobiko_git_refspec: ''
-tobiko_git_version: ''
+test_stage: all
 
 
 # --- Test deploy options -----------------------------------------------------
 
+test_home: '{{ (ansible_user_dir + "/src") | realpath }}'
 test_dir: '{{ tobiko_dir | realpath }}'
-test_src_dir: '{{ tobiko_src_dir | realpath }}'
-test_git_repo: '{{ tobiko_git_repo | realpath }}'
+test_src_dir: ''
+test_git_repo: ''
 test_git_refspec: ''
 test_git_version: ''
+
+
+# --- Tobiko deploy options ---------------------------------------------------
+
+tobiko_dir: '{{ test_home | realpath }}/tobiko'
+tobiko_src_dir: '{{ role_path | realpath | dirname | dirname }}'
+tobiko_git_repo: 'https://opendev.org/x/tobiko.git'
+tobiko_git_refspec: ''
+tobiko_git_version: ''
+
 
 # --- Test configuration options ----------------------------------------------
 

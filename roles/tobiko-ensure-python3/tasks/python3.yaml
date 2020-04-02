@@ -1,0 +1,50 @@
+---
+
+- name: "validate python_version value: {{ python_version }}"
+  assert:
+    that:
+      - (python_version | string).split(".") | length >= 1
+      - (python_version | string).split(".") | length <= 2
+      - (python_version | string).split(".")[0] == '3'
+
+
+- block:
+    - name: "get Python info for '{{ python3_executable }}'"
+      script:
+        cmd: get_python_info.py --base --quiet
+        executable: '{{ python3_executable }}'
+      register: get_python_info
+
+  rescue:
+    - block:
+        - name: "install Python '{{ python3_executable }}' packages"
+          become: true
+          package:
+            name: "{{ python3_packages }}"
+
+        - name: "get Python info for '{{ python3_executable }}'"
+          script:
+            cmd: get_python_info.py --base --quiet
+            executable: '{{ python3_executable }}'
+          register: get_python_info
+
+      when:
+        - python3_packages is defined
+
+    - name: "report '{{ python3_executable }}' failure"
+      fail:
+        msg: get_python_info
+      when: get_python_info is failed
+
+
+- name: "set python3_info fact"
+  set_fact:
+    python3_executable: '{{ (get_python_info.stdout | from_json).executables | first }}'
+    python3_info: '{{ get_python_info.stdout | from_json }}'
+
+
+- name: "show '{{ python3_executable }}' facts"
+  debug:
+    msg:
+      python3_executable: '{{ python3_executable }}'
+      python3_info: '{{ python3_info }}'

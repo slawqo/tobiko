@@ -20,17 +20,11 @@ subparsers:
             default: localhost
             help: Target host where test cases are deployed and executed
             ansible_variable: test_host
-          ansible-python-interpreter:
-            type: Value
-            default: python3
-            help: Python interpreter executed by ansible on target hosts
-            ansible_variable: ansible_python_interpreter
 
       - title: Control flow
         options:
           stage:
             type: Value
-            default: all
             ansible_variable: test_stage
 
       - title: Deploy stage

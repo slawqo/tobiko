@@ -1,0 +1,41 @@
+---
+
+- block:
+    - name: "get Python info for '{{ python_executable }}'"
+      script:
+        cmd: get_python_info.py --base --quiet
+        executable: '{{ python_executable }}'
+      register: get_python_info
+
+  rescue:
+    - block:
+      - name: "set '{{ python_alternative }}' as default alternative for python"
+        become: true
+        command: "alternatives --set python '{{ python_alternative }}'"
+
+      - name: "get Python info for '{{ python_executable }}'"
+        script:
+          cmd: get_python_info.py --base --quiet
+          executable: '{{ python_executable }}'
+        register: get_python_info
+
+      when:
+        - python_alternative is defined
+
+    - name: "report '{{ python_executable }}' failure"
+      fail:
+        msg: get_python_info
+      when: get_python_info is failed
+
+
+- name: "set python_info fact"
+  set_fact:
+    python_executable: '{{ (get_python_info.stdout | from_json).executables | first }}'
+    python_info: '{{ get_python_info.stdout | from_json }}'
+
+
+- name: "show '{{ python_executable }}' executables facts"
+  debug:
+    msg:
+      python_executable: '{{ python_executable }}'
+      python_info: '{{ python_info }}'

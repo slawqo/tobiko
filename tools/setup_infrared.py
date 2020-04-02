@@ -24,23 +24,33 @@ LOG = logging.getLogger(__name__)
 
 def main():
     setup_logging()
-    add_plugin('tobiko', os.environ.get('IR_TOBIKO_PLUGIN'))
-    import_workspace(os.environ.get('IR_WORKSPACE_FILE'))
+    add_tobiko_plugin()
+    import_workspace()
+    copy_ansible_inventory()
 
 
 def setup_logging(level=logging.DEBUG):
     logging.basicConfig(
-        level=level, stream=sys.stderr,
+        level=level,
+        stream=sys.stderr,
         format='%(name)-s: %(levelname)-7s %(asctime)-15s | %(message)s')
 
 
+def add_tobiko_plugin():
+    add_plugin('tobiko', os.environ.get('IR_TOBIKO_PLUGIN'))
+
+
 def add_plugin(name, path):
-    path = path or os.environ.get('IR_TOBIKO_PLUGIN')
     if path:
         path = normalize_path(path)
         if os.path.isdir(path):
             remove_plugin(name)
             execute('ir plugin add "{}"', path)
+        else:
+            LOG.debug("Plug-in '%s' directory not found: '%s'", name, path)
+
+    else:
+        LOG.debug("Plug-in '%s' path not specified", name)
 
 
 def remove_plugin(name):
@@ -52,7 +62,8 @@ def remove_plugin(name):
         return True
 
 
-def import_workspace(filename):
+def import_workspace(filename=None):
+    filename = filename or os.environ.get('IR_WORKSPACE_FILE')
     if filename:
         filename = normalize_path(filename)
         if os.path.isfile(filename):
@@ -63,6 +74,24 @@ def import_workspace(filename):
                 # workspace
                 workspace = name_from_path(filename)
                 execute('ir workspace checkout "{}"', workspace)
+        else:
+            LOG.debug("No such workspace file: '%s'", filename)
+    else:
+        LOG.debug('Workspace file not specified')
+
+
+def copy_ansible_inventory(filename=None):
+    filename = filename or os.environ.get('ANSIBLE_INVENTORY')
+    if filename:
+        if os.path.isfile(filename):
+            destination = execute('ir workspace inventory')
+            if not os.path.exists(os.path.basename(destination)):
+                os.makedirs(os.path.basename(destination))
+            execute('cp {} {}', filename, destination)
+        else:
+            LOG.debug('Inventary file not found: %r', filename)
+    else:
+        LOG.debug('Ansible inventory file not specified')
 
 
 def normalize_path(path):
@@ -73,7 +102,8 @@ def execute(command, *args, **kwargs):
     if args or kwargs:
         command = command.format(*args, **kwargs)
     LOG.info('%s', command)
-    return subprocess.check_output(command, shell=True)
+    return subprocess.check_output(command, shell=True,
+                                   universal_newlines=True)
 
 
 def name_from_path(path):

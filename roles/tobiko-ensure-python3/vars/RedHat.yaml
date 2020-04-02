@@ -1,0 +1,18 @@
+---
+
+python_alternative: '/usr/bin/python3'
+
+python3_package_name: "python{{ python_version | regex_replace('\\.', '') }}"
+
+python3_packages:
+  - bzip2-devel
+  - gcc
+  - make
+  - openssl-devel
+  - readline-devel
+  - sqlite-devel
+  - zlib-devel
+  - '{{ python3_package_name }}'
+  - '{{ python3_package_name }}-devel'
+  - '{{ python3_package_name }}-setuptools'
+  - '{{ python3_package_name }}-virtualenv'

@@ -2,5 +2,5 @@
 
 dependencies:
   - role: tobiko-common
-  - role: tobiko-ensure-python
+  - role: tobiko-ensure-python3
   - role: tobiko-ensure-tox

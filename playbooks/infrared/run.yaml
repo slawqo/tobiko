@@ -6,17 +6,13 @@
     test_collect_dir: '{{ zuul_output_dir }}/logs'
 
   roles:
-    - role: tobiko-ensure-python
+    - role: tobiko-ensure-python3
 
     - name: "run Tox InfraRed plugin"
       role: tox
       vars:
         tox_envlist: infrared
-        tox_extra_args:
-          '-- --collect-dir {{ test_collect_dir | quote }}'
-        tox_environment:
-          PYTHON: '{{ unversioned_python_executable }}'
-          ANSIBLE_PYTHON_INTERPRETER: '{{ unversioned_python_executable }}'
+        tox_extra_args: '-- --collect-dir {{ test_collect_dir | quote }}'
 
   tasks:
     - name: "list collected files"

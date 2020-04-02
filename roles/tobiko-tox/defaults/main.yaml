@@ -11,7 +11,7 @@ tox_command_line: >
         {% if tox_envlist %} -e {{ tox_envlist | quote }} {% endif %}
         {{ tox_extra_args }}
 
-tox_python: '{{ python_executable }}'
+tox_python: '{{ python3_executable }}'
 tox_report_dir: '{{ test_report_dir | realpath }}'
 tox_report_name: '{{ test_report_name }}{% if tox_envlist %}_{{ tox_envlist }}{% endif %}'
 tox_report_env:

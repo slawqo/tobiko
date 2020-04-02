@@ -1,23 +1,6 @@
 ---
 
-- name: "ensure Tox is installed"
-  command: |
-    '{{ python_executable }}' -m pip install --user 'tox>={{ tox_min_version }}'
-  register: result
-  changed_when: "'Successfully installed' in result.stdout"
-
-
-- name: "set tox_executable fact"
-  set_fact:
-    tox_executable: "{{ ansible_user_dir }}/.local/bin/tox"
-    cacheable: true
-  when: result is changed
-
-
-- name: "get installed Tox version"
-  command: "{{ tox_executable }} --version"
-  register: get_installed_tox_version
-
-
-- name: "show Tox installed version"
-  debug: var=get_installed_tox_version.stdout_lines
+- name: "ensures '{{ tox_executable }}' command is available"
+  include_tasks: tox.yaml
+  when:
+    - test_stage in ['all', 'pre-run', 'tox']

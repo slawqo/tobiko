@@ -26,7 +26,7 @@ LOG = logging.getLogger(__name__)
 GET_PYTHON_VERSION_SCRIPT = """
 import sys
 
-version = '.'.join(str(i) for i in sys.version_info[:3])
+version = '.'.join(str(i) for i in sys.version_info)
 print(version)
 """
 
@@ -47,7 +47,9 @@ def main():
         info['executable']
         for info in iter_python_executables_info(match_version=version,
                                                  base=args.base)]
-    info = {'version': version, 'executables': executables}
+    info = {'version': version,
+            'executable': sys.executable,
+            'executables': executables}
     output = json.dumps(info, indent=4, sort_keys=True)
     print(output)
 
@@ -64,7 +66,7 @@ def setup_logging(quiet=False):
 
 
 def get_python_version():
-    return '.'.join(str(i) for i in sys.version_info[:3])
+    return '.'.join(str(i) for i in sys.version_info)
 
 
 def iter_python_executables_info(match_version=None, base=None):
@@ -84,34 +86,17 @@ def iter_python_executables_info(match_version=None, base=None):
             raise last_error
 
 
-def iter_python_executables(base=None):
-    iterated = set()
-    for executable in _iter_python_executables(base=base):
-        # Iterate every executable only once
-        if executable not in iterated:
-            iterated.add(executable)
-            yield executable
-
-
-def _iter_python_executables(base):
+def iter_python_executables(base):
     if base:
-        base_prefix = getattr(sys, 'base_prefix', None)
-        if base_prefix:
-            for executable in iter_prefix_executables(base_prefix):
-                yield executable
-
-    for executable in iter_prefix_executables(sys.prefix):
-        yield executable
-
-    yield sys.executable
-
-
-def iter_prefix_executables(prefix):
-    if os.path.isdir(prefix):
-        for python_name in iter_versioned_names():
-            executable = os.path.join(prefix, 'bin', python_name)
-            if os.path.isfile(executable):
-                yield executable
+        prefix = getattr(sys, 'base_prefix', sys.prefix)
+    else:
+        prefix = sys.prefix
+    if prefix:
+        if os.path.isdir(prefix):
+            for python_name in iter_versioned_names():
+                executable = os.path.join(prefix, 'bin', python_name)
+                if os.path.isfile(executable):
+                    yield executable
 
 
 def iter_versioned_names(unversioned=None):
