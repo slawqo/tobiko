@@ -20,7 +20,6 @@
         - tobiko-devstack-faults-ubuntu-bionic
         - tobiko-tox-infrared-centos-7
         - tobiko-tox-infrared-centos-8
-        - tobiko-tox-infrared-ubuntu-bionic
         - tobiko-tripleo-functional
         - tobiko-tripleo-faults
 
