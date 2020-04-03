@@ -7,17 +7,34 @@
   changed_when: "'Successfully installed' in result.stdout"
 
 
-- name: "set tox_executable fact"
-  set_fact:
-    tox_executable: "{{ ansible_user_dir }}/.local/bin/tox"
-    cacheable: true
-  when: result is changed
+- block:
+    - name: "get '{{ tox_executable }}' full path"
+      command: >
+        which '{{ tox_executable }}'
+      register: get_tox_path
+
+    - name: "update tox_executable fact"
+      set_fact:
+        tox_executable: '{{ get_tox_path.stdout_lines | first }}'
+
+  rescue:
+    - name: "update tox_executable fact"
+      set_fact:
+        tox_executable: '{{ ansible_user_dir }}/.local/bin/tox'
 
 
 - name: "get installed Tox version"
-  command: "{{ tox_executable }} --version"
-  register: get_installed_tox_version
+  command: "'{{ tox_executable }}' --version"
+  register: get_tox_version
 
 
-- name: "show Tox installed version"
-  debug: var=get_installed_tox_version.stdout_lines
+- name: "update tox_version fact"
+  set_fact:
+    tox_version: '{{ get_tox_version.stdout }}'
+
+
+- name: "show Tox facts"
+  debug:
+    msg:
+      tox_executable: '{{ tox_executable }}'
+      tox_version: '{{ tox_version }}'

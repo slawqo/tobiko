@@ -7,21 +7,29 @@ test_stage: all
 
 # --- Test deploy options -----------------------------------------------------
 
-test_home: '{{ (ansible_user_dir + "/src") | realpath }}'
-test_dir: '{{ tobiko_dir | realpath }}'
-test_src_dir: ''
-test_git_repo: ''
+deploy_home: '{{ ansible_user_dir | realpath }}/src'
+
+git_base: 'https://opendev.org'
+
+test_dir: "{{ deploy_home }}/{{ test_project }}"
+test_project:
+  "{{ test_git_repo | urlsplit('path') | regex_replace('^\\/|\\/$', '') | splitext | first }}"
+test_git_repo: '{{ git_base }}/x/tobiko.git'
 test_git_refspec: ''
-test_git_version: ''
+test_git_version: 'master'
+test_src_dir: ''
 
+# NOTE: if test_dir and tobiko_dir variables endup being the same actual
+# directory then test_src and test_git_* variables will be overriden
+# tobiko_src and tobiko_git_* variables
 
-# --- Tobiko deploy options ---------------------------------------------------
-
-tobiko_dir: '{{ test_home | realpath }}/tobiko'
-tobiko_src_dir: '{{ role_path | realpath | dirname | dirname }}'
-tobiko_git_repo: 'https://opendev.org/x/tobiko.git'
+tobiko_dir: "{{ deploy_home }}/{{ tobiko_project }}"
+tobiko_project:
+  "{{ tobiko_git_repo | urlsplit('path') | regex_replace('^\\/|\\/$', '') | splitext | first }}"
+tobiko_git_repo: '{{ git_base }}/x/tobiko.git'
 tobiko_git_refspec: ''
 tobiko_git_version: ''
+tobiko_src_dir: ''
 
 
 # --- Test configuration options ----------------------------------------------

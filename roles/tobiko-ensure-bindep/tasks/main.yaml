@@ -3,4 +3,4 @@
 - name: "ensures '{{ bindep_executable }}' command is available"
   include_tasks: bindep.yaml
   when:
-    - test_stage in ['all', 'pre-run', 'bindep']
+    - bindep_version is not defined

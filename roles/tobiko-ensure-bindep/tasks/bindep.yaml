@@ -1,23 +1,40 @@
 ---
 
 - name: "ensure Bindep is installed"
-  command: |
+  command: >
     '{{ python_executable }}' -m pip install --user 'bindep>={{ bindep_min_version }}'
-  register: result
-  changed_when: "'Successfully installed' in result.stdout"
+  register: install_bindep
+  changed_when: "'Successfully installed' in install_bindep.stdout"
 
 
-- name: "set bindep_executable fact"
-  set_fact:
-    bindep_executable: "{{ ansible_user_dir }}/.local/bin/bindep"
-    cacheable: true
-  when: result is changed
+- block:
+    - name: "get '{{ bindep_executable }}' full path"
+      command: >
+        which '{{ bindep_executable }}'
+      register: get_bindep_path
+
+    - name: "update bindep_executable fact"
+      set_fact:
+        bindep_executable: '{{ get_bindep_path.stdout_lines | first }}'
+
+  rescue:
+    - name: "update bindep_executable fact"
+      set_fact:
+        bindep_executable: '{{ ansible_user_dir }}/.local/bin/bindep'
 
 
 - name: "get installed Bindep version"
-  command: "{{ bindep_executable }} --version"
-  register: get_installed_bindep_version
+  command: "'{{ bindep_executable }}' --version"
+  register: get_bindep_version
 
 
-- name: "show Bindep installed version"
-  debug: var=get_installed_bindep_version.stdout_lines
+- name: "update bindep_version fact"
+  set_fact:
+    bindep_version: '{{ get_bindep_version.stdout }}'
+
+
+- name: "show Bindep facts"
+  debug:
+    msg:
+      bindep_executable: '{{ bindep_executable }}'
+      bindep_version: '{{ bindep_version }}'

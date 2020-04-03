@@ -1,0 +1,23 @@
+---
+
+- block:
+    - name: "get installed rsync version"   # noqa 303
+      shell: >
+        rsync --version
+      register: get_rsync_gersion
+
+  rescue:
+    - name: "install rsync packages"
+      become: true
+      package:
+        name: rsync
+
+    - name: "get installed rsync version"  # noqa 303
+      shell: >
+        rsync --version
+      register: get_rsync_gersion
+
+
+- name: "show installed rsync version"
+  debug:
+    var: get_rsync_gersion.stdout_lines

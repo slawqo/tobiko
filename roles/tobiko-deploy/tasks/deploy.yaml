@@ -1,0 +1,21 @@
+---
+
+- name: 'combine test_deploy_dirs variables'
+  set_fact:
+    _test_deploy_dirs: >
+      {{ _test_deploy_dirs |
+        default({}) |
+        combine({(item.dest_dir | expanduser | realpath): item}) }}
+  loop: '{{ test_deploy_dirs }}'
+  loop_control:
+    label: '{{ item.dest_dir }}'
+
+- name: "show combined deploy variables"
+  debug: var=_test_deploy_dirs
+
+- name: "deploy test directories'"
+  include_tasks: deploy-dir.yaml
+  loop: '{{ _test_deploy_dirs | dictsort }}'
+  loop_control:
+    label: '{{ deploy.0 }}'
+    loop_var: deploy

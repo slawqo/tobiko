@@ -1,0 +1,6 @@
+---
+
+- name: "ensures 'rsync' command is available"
+  include_tasks: rsync.yaml
+  when:
+    - test_stage in ['all', 'pre-run', 'rsync']

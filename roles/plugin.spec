@@ -29,35 +29,22 @@ subparsers:
 
       - title: Deploy stage
         options:
-          clean-deploy-dir:
+          clean:
             type: Flag
             help: Cleanup directory where test cases will be downloaded
             ansible_variable: clean_deploy_dir
-          tobiko-src-dir:
+          git-base:
             type: Value
-            help: Local directory where tobiko scripts are found
-            ansible_variable: tobiko_src_dir
-          tobiko-dir:
-            type: Value
-            help: Test host directory where Tobiko has to be deployed to
-            ansible_variable: tobiko_dir
-          tobiko-version:
-            type: Value
-            help: Git version to be used for checking out Tobiko scripts
-            ansible_variable: tobiko_git_version
-          tobiko-refspec:
-            type: Value
-            help: Git refspect to be used for checking out Tobiko scripts
-            ansible_variable: tobiko_git_refspec
-
-          test-src-dir:
-            type: Value
-            help: Local directory where test cases (and tox.ini file) are found
-            ansible_variable: test_src_dir
+            help: Git Url prefix where test projects are fetched from
+            ansible_variable: git_base
           test-dir:
             type: Value
             help: Test host directory where test cases (and tox.ini file) are found
             ansible_variable: test_dir
+          test-repo:
+            type: Value
+            help: Git URL from where to download test files
+            ansible_variable: test_git_repo
           test-version:
             type: Value
             help: Git version to be used for checking out test scripts
@@ -66,6 +53,30 @@ subparsers:
             type: Value
             help: Git refspect to be used for checking out test scripts
             ansible_variable: test_git_refspec
+          test-src-dir:
+            type: Value
+            help: Local directory where test cases (and tox.ini file) are found
+            ansible_variable: test_src_dir
+          tobiko-dir:
+            type: Value
+            help: Test host directory where Tobiko has to be deployed to
+            ansible_variable: tobiko_dir
+          tobiko-repo:
+            type: Value
+            help: Git URL from where to download tobiko files
+            ansible_variable: tobiko_git_repo
+          tobiko-version:
+            type: Value
+            help: Git version to be used for checking out Tobiko scripts
+            ansible_variable: tobiko_git_version
+          tobiko-refspec:
+            type: Value
+            help: Git refspect to be used for checking out Tobiko scripts
+            ansible_variable: tobiko_git_refspec
+          tobiko-src-dir:
+            type: Value
+            help: Local directory where tobiko scripts are found
+            ansible_variable: tobiko_src_dir
 
       - title: Configure stage
         options:
@@ -123,3 +134,4 @@ subparsers:
             type: Value
             help: local directory where report files are going to be copied to
             ansible_variable: test_collect_dir
+            default: '{{ inventory_dir }}/{{ test_report_name }}'

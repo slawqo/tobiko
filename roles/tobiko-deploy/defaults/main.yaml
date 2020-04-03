@@ -1,11 +1,25 @@
 ---
 
-# Directory where files has to be deployed to
-src_dir: '{{ tobiko_src_dir }}'
-dest_dir: '{{ tobiko_dir }}'
-
-git_repo: '{{ tobiko_git_repo }}'
-git_refspec: '{{ tobiko_git_refspec }}'
-git_version: '{{ tobiko_git_version }}'
+# Directoies where files has to be deployed to
 
 clean_deploy_dir: false
+
+test_deploy_dirs:
+  # test suite directory
+  - clean_dir: '{{ clean_deploy_dir }}'
+    dest_dir: '{{ test_dir }}'
+    git_repo: '{{ test_git_repo }}'
+    git_refspec: '{{ test_git_refspec }}'
+    git_version: '{{ test_git_version }}'
+    src_dir: '{{ test_src_dir }}'
+
+  # Tobiko framework directory
+  - clean_dir: '{{ clean_deploy_dir }}'
+    dest_dir: '{{ tobiko_dir }}'
+    git_repo: '{{ tobiko_git_repo }}'
+    git_refspec: '{{ tobiko_git_refspec }}'
+    git_version: '{{ tobiko_git_version }}'
+    src_dir: '{{ tobiko_src_dir }}'
+
+bindep_file: bindep.txt
+bindep_profiles: test
