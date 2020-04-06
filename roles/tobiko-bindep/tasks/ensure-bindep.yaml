@@ -8,29 +8,31 @@
 
 
 - block:
-    - name: "get '{{ bindep_executable }}' full path"
-      command: >
-        which '{{ bindep_executable }}'
+    - name: "get '{{ bindep_command }}' full path"
+      shell: |
+        export PATH={{ python_exe_path }}
+        which '{{ bindep_command }}'
       register: get_bindep_path
 
-    - name: "update bindep_executable fact"
+    - name: "set bindep_executable fact"
       set_fact:
         bindep_executable: '{{ get_bindep_path.stdout_lines | first }}'
 
   rescue:
-    - name: "update bindep_executable fact"
+    - name: "set bindep_executable fact"
       set_fact:
         bindep_executable: '{{ ansible_user_dir }}/.local/bin/bindep'
 
 
-- name: "get installed Bindep version"
-  command: "'{{ bindep_executable }}' --version"
+- name: "get '{{ bindep_executable }}' version"
+  shell: "'{{ bindep_executable }}' --version 2>&1"
   register: get_bindep_version
+  failed_when: '(get_bindep_version.stdout_lines | length) == 0'
 
 
 - name: "update bindep_version fact"
   set_fact:
-    bindep_version: '{{ get_bindep_version.stdout }}'
+    bindep_version: '{{ get_bindep_version.stdout_lines | first }}'
 
 
 - name: "show Bindep facts"

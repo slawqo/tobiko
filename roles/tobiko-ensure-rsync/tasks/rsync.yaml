@@ -1,23 +1,42 @@
 ---
 
 - block:
-    - name: "get installed rsync version"   # noqa 303
+    - name: "get '{{ rsync_executable }}' full path"
       shell: >
-        rsync --version
-      register: get_rsync_gersion
+        which '{{ rsync_executable }}'
+      register: get_rsync_path
 
   rescue:
-    - name: "install rsync packages"
+    - name: "install Rsync packages"
       become: true
       package:
         name: rsync
 
-    - name: "get installed rsync version"  # noqa 303
+    - name: "get '{{ rsync_executable }}' full path"
       shell: >
-        rsync --version
-      register: get_rsync_gersion
+        which '{{ rsync_executable }}'
+      register: get_rsync_path
 
 
-- name: "show installed rsync version"
+- name: "update rsync_executable fact"
+  set_fact:
+    rsync_executable: '{{ get_rsync_path.stdout_lines | first }}'
+
+
+- name: "get Rsync version"
+  command: >
+    '{{ rsync_executable }}' --version
+  register:
+    get_rsync_version
+
+
+- name: update rsync_version fact
+  set_fact:
+    rsync_version: '{{ get_rsync_version.stdout_lines | first }}'
+
+
+- name: "show Rsync facts"
   debug:
-    var: get_rsync_gersion.stdout_lines
+    msg:
+      rsync_executable: '{{ rsync_executable }}'
+      rsync_version: '{{ rsync_version }}'

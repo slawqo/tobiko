@@ -1,0 +1,45 @@
+---
+
+- name: "install '{{ python_command }}' packages"
+  become: true
+  package:
+    name: "{{ python_packages[python_command] | flatten }}"
+  when: 'python_command in python_packages'
+  register: install_python_packages
+
+
+- name: "show installed packages"
+  debug: var=install_python_packages.changes
+  when: install_python_packages is changed
+
+
+- name: "get '{{ python_command }}' full path"
+  shell: |
+    export PATH={{ python_exe_path }}
+    which "{{ python_command }}"
+  register: get_python_exe
+
+
+- name: "get '{{ get_python_exe.stdout_lines | first }}' info"
+  script:
+    cmd: get_python_info.py --base --quiet
+    executable: '{{ get_python_exe.stdout_lines | first }}'
+  register: get_python_info
+
+
+- name: "set python_info['{{ python_command }}'] fact"
+  set_fact:
+    python_info: >
+      {{ python_info | combine({python_command:
+                                (get_python_info.stdout | from_json)}) }}
+
+
+- name: "upgrade Pip command to latest version"
+  command: >
+    '{{ python_info[python_command].executable }}' -m pip install pip --upgrade --user
+
+
+- name: "show python_info facts"
+  debug:
+    msg:
+      python_info: '{{ python_info }}'

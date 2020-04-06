@@ -63,27 +63,3 @@
 
 - name: "show last change details"
   debug: var=get_git_log.stdout_lines
-
-
-- block:
-    - name: "check missing binary dependencies from '{{ bindep_file }}'"
-      command:
-        cmd: >
-          '{{ bindep_executable }}' -b -f '{{ bindep_file }}' {{ bindep_profiles }}
-        chdir: '{{ dest_dir }}'
-      register: get_bindeps
-      changed_when: no
-
-  rescue:
-    - name: "install missing dependencies"
-      become: yes
-      package:
-        name: '{{ get_bindeps.stdout_lines }}'
-
-    - name: "check missing binary dependencies from '{{ bindep_file }}'"
-      command:
-        cmd: >
-          '{{ bindep_executable }}' -b -f '{{ bindep_file }}' {{ bindep_profiles }}
-        chdir: '{{ dest_dir }}'
-      register: get_bindeps
-      changed_when: no

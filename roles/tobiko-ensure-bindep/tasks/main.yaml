@@ -1,6 +1,0 @@
----
-
-- name: "ensures '{{ bindep_executable }}' command is available"
-  include_tasks: bindep.yaml
-  when:
-    - bindep_version is not defined

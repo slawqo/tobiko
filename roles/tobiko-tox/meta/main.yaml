@@ -2,5 +2,7 @@
 
 dependencies:
   - role: tobiko-common
-  - role: tobiko-ensure-python3
+  - role: tobiko-bindep
+    vars:
+      bindep_file: '{{ tox_dir }}/bindep.txt'
   - role: tobiko-ensure-tox

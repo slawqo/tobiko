@@ -1,0 +1,5 @@
+---
+
+test_workflow_steps:
+  - tox_description: 'run functional test cases'
+    tox_envlist: functional

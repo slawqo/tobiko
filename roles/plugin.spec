@@ -89,8 +89,12 @@ subparsers:
             help: enable/disable verbose log entries in tests results log file
             ansible_variable: test_log_debug
 
-      - title: Run tox stage
+      - title: Run stage
         options:
+          workflow:
+            type: Value
+            help: name of workflow to execute
+            ansible_variable: test_workflow
           tox-dir:
             type: Value
             help: directory from where run tox (typically test_dir)

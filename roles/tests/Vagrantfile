@@ -8,11 +8,11 @@ VAGRANTFILE_API_VERSION = "2"
 CPUS = 4
 
 # Customize the amount of memory on the VM
-MEMORY = 512
+MEMORY = ENV.fetch("VM_SIZE", "512").to_i
 
 # Every Vagrant development environment requires a box. You can search for
 # boxes at https://vagrantcloud.com/search.
-BOX = "generic/centos8"
+BOX = ENV.fetch("VM_BOX", "generic/centos8")
 
 TOX_INI_DIR = '../..'
 

@@ -1,6 +1,6 @@
 ---
 
-- name: "ensures 'git' command is available"
+- name: "ensure '{{ git_executable }}' command is available"
   include_tasks: git.yaml
   when:
     - git_version is not defined

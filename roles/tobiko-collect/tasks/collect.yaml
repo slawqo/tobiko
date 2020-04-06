@@ -1,6 +1,6 @@
 ---
 
-- name: "ensures local directory '{{ collect_dir }}' exists"
+- name: "ensure local directory '{{ collect_dir }}' exists"
   file:
     path: '{{ collect_dir }}'
     state: directory

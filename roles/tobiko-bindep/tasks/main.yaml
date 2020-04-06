@@ -1,0 +1,36 @@
+---
+
+- name: "ensure '{{ bindep_command }}' command is available"
+  include_tasks: ensure-bindep.yaml
+  when:
+    - bindep_executable is not defined
+
+
+- name: "check '{{ bindep_file }}' file exists"
+  stat:
+    path: '{{ bindep_file | realpath }}'
+  register: check_bindep_file
+
+
+- block:
+    - name: "run '{{ bindep_command }}' with profile '{{ bindep_profile }}'"
+      command: >
+        '{{ bindep_executable }}' -b -f '{{ bindep_file }}' {{ bindep_profile }}
+      when:
+        - check_bindep_file.stat.readable
+      register: run_bindep
+      changed_when: no
+
+  rescue:
+    - debug: var=run_bindep
+      when: '(run_bindep.stdout_lines | length) == 0'
+      failed_when: yes
+
+    - name: 'install missing packages'
+      become: yes
+      package:
+        name: '{{ run_bindep.stdout_lines }}'
+      register: install_packages
+
+    - name: 'show installed packages'
+      debug: var=install_packages

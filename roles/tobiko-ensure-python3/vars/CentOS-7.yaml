@@ -1,0 +1,17 @@
+---
+
+python_packages:
+  python:
+    - bzip2-devel
+    - gcc
+    - make
+    - openssl-devel
+    - python2-devel
+    - python2-pip
+    - readline-devel
+    - sqlite-devel
+    - zlib-devel
+  python3:
+    - python3
+  python3.6:
+    - python36

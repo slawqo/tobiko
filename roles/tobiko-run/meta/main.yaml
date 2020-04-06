@@ -1,4 +1,4 @@
 ---
 
 dependencies:
-  - role: tobiko-tox
+  - role: tobiko-common

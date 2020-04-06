@@ -1,5 +1,19 @@
 ---
 
-python_executable: '/usr/bin/python'
+python_exe_dirs:
+  - ~/.local/bin
+  - ~/bin
+  - /usr/local/bin
+  - /usr/bin
+  - /usr/local/sbin
+  - /usr/sbin
+
+python_exe_path:
+  "{{ python_exe_dirs | join(':') }}"
+
 python_version: '3'
-python3_executable: '/usr/bin/python{{ python_version }}'
+python_command: 'python'
+python3_command: 'python{{ python_version }}'
+
+python_packages: {}
+python_info: {}

@@ -1,22 +1,21 @@
 ---
 
 # Directory where test cases has been deployed to
+tox_description: 'run test cases'
 tox_dir: '{{ test_dir | realpath }}'
 tox_command: '{{ tox_executable | default(tox) }}'
 tox_environment: {}
 tox_envlist:
 tox_extra_args: ''
-tox_command_line: >
-    {{ tox_command }}
-        {% if tox_envlist %} -e {{ tox_envlist | quote }} {% endif %}
-        {{ tox_extra_args }}
 
 tox_python: '{{ python3_executable }}'
 tox_report_dir: '{{ test_report_dir | realpath }}'
-tox_report_name: '{{ test_report_name }}{% if tox_envlist %}_{{ tox_envlist }}{% endif %}'
+tox_step_name:
+tox_step_index: 0
+tox_report_name:
+  "{{ test_report_name }}{% if tox_step_index %}_{{ '{:02d}'.format(tox_step_index | int) }}{% endif %}{% if tox_step_name %}_{{ tox_step_name }}{% endif %}{% if tox_envlist %}_{{ tox_envlist }}{% endif %}"
 tox_report_env:
   TOBIKO_TEST_REPORT_DIR: '{{ tox_report_dir }}'
   TOBIKO_TEST_REPORT_NAME: '{{ tox_report_name }}'
 
-tox_constrain_env:
-  PYTHON: '{{ tox_python }}'
+tox_constrain_env: {}

@@ -1,0 +1,16 @@
+---
+
+- name: "include test workflow steps for name '{{ test_workflow }}'"
+  include_vars: "{{ test_workflow }}.yaml"
+
+
+- name: "show test workflow steps"
+  debug: var=test_workflow_steps
+
+
+- name: "run '{{ test_workflow }}' test steps"
+  include_tasks: run.yaml
+  loop: '{{ test_workflow_steps }}'
+  loop_control:
+    label: '{{ test_step.tox_description }}'
+    loop_var: test_step

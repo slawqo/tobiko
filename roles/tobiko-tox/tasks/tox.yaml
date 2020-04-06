@@ -1,11 +1,29 @@
 ---
 
+- name: "set Tox command line fact"
+  set_fact:
+    tox_command_line: >
+        {{ tox_command }}
+            {% if tox_envlist %} -e {{ tox_envlist | quote }} {% endif %}
+            {{ tox_extra_args }}
+
+
 - name: "normalize white spaces from Tox command line"
   set_fact:
     tox_command_line: '{{ tox_command_line.split() | join(" ") }}'
 
 
-- name: "run Tox on direcory '{{ tox_dir }}': '{{ tox_command_line }}'"
+- name: "show tox variables"
+  debug:
+    msg:
+      tox_command_line: '{{ tox_command_line }}'
+      tox_description: '{{ tox_description }}'
+      tox_dir: '{{ tox_dir }}'
+      tox_environment: '{{ tox_environment | combine(tox_constrain_env) }}'
+      tox_report_env: '{{ tox_report_env | combine(tox_constrain_env) }}'
+
+
+- name: "{{ tox_description }}"
   command:
     chdir: '{{ tox_dir }}'
     cmd: '{{ tox_command_line }}'

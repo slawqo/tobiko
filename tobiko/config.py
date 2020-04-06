@@ -339,9 +339,9 @@ def get_bool_env(name):
     value = get_env(name)
     if value:
         value = str(value).lower()
-        if value in ["true", "1"]:
+        if value in ['true', '1', 'yes']:
             return True
-        elif value in ["false", '0']:
+        elif value in ['false', '0', 'no']:
             return False
         else:
             LOG.exception("Environment variable %r is not a boolean: %r",

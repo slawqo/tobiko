@@ -3,22 +3,23 @@
 - name: "ensure Tox is installed"
   command: |
     '{{ python_executable }}' -m pip install --user 'tox>={{ tox_min_version }}'
-  register: result
-  changed_when: "'Successfully installed' in result.stdout"
+  register: install_tox
+  changed_when: "'Successfully installed' in install_tox.stdout"
 
 
 - block:
-    - name: "get '{{ tox_executable }}' full path"
-      command: >
-        which '{{ tox_executable }}'
+    - name: "get '{{ tox_command }}' full path"
+      shell: |
+        export PATH={{ python_exe_path }}
+        which '{{ tox_command }}'
       register: get_tox_path
 
-    - name: "update tox_executable fact"
+    - name: "set tox_executable fact"
       set_fact:
         tox_executable: '{{ get_tox_path.stdout_lines | first }}'
 
   rescue:
-    - name: "update tox_executable fact"
+    - name: "set tox_executable fact"
       set_fact:
         tox_executable: '{{ ansible_user_dir }}/.local/bin/tox'
 
@@ -30,7 +31,7 @@
 
 - name: "update tox_version fact"
   set_fact:
-    tox_version: '{{ get_tox_version.stdout }}'
+    tox_version: '{{ get_tox_version.stdout_lines | first }}'
 
 
 - name: "show Tox facts"

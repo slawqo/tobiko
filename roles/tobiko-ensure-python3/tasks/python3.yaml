@@ -1,6 +1,12 @@
 ---
 
-- name: "validate python_version value: {{ python_version }}"
+- name: "include platform variables"
+  include_tasks: platform.yaml
+  when:
+    - python_platform is not defined
+
+
+- name: "validate Python version: {{ python_version }}"
   assert:
     that:
       - (python_version | string).split(".") | length >= 1
@@ -8,43 +14,33 @@
       - (python_version | string).split(".")[0] == '3'
 
 
+- include_tasks: install.yaml
+  vars:
+    python_command: '{{ python3_command }}'
+
+
+- name: "set python3_executable fact"
+  set_fact:
+    python3_executable: '{{ python_info[python3_command].executable }}'
+
+
 - block:
-    - name: "get Python info for '{{ python3_executable }}'"
-      script:
-        cmd: get_python_info.py --base --quiet
-        executable: '{{ python3_executable }}'
-      register: get_python_info
+    - include_tasks: install.yaml
+      when: python_command not in python_info
+
+    - name: "set python_executable fact"
+      set_fact:
+        python_executable: '{{ python_info[python_command].executable }}'
 
   rescue:
-    - block:
-        - name: "install Python '{{ python3_executable }}' packages"
-          become: true
-          package:
-            name: "{{ python3_packages }}"
+    - name: "try setting python alternative to '{{ python_alternative }}'"
+      become: true
+      command: "alternatives --set python '{{ python_alternative }}'"
+      ignore_errors: yes
+      when: 'python_alternative is defined'
 
-        - name: "get Python info for '{{ python3_executable }}'"
-          script:
-            cmd: get_python_info.py --base --quiet
-            executable: '{{ python3_executable }}'
-          register: get_python_info
+    - include_tasks: install.yaml
 
-      when:
-        - python3_packages is defined
-
-    - name: "report '{{ python3_executable }}' failure"
-      fail:
-        msg: get_python_info
-      when: get_python_info is failed
-
-
-- name: "set python3_info fact"
-  set_fact:
-    python3_executable: '{{ (get_python_info.stdout | from_json).executables | first }}'
-    python3_info: '{{ get_python_info.stdout | from_json }}'
-
-
-- name: "show '{{ python3_executable }}' facts"
-  debug:
-    msg:
-      python3_executable: '{{ python3_executable }}'
-      python3_info: '{{ python3_info }}'
+    - name: "set python_executable fact"
+      set_fact:
+        python_executable: '{{ python_info[python_command].executable }}'
