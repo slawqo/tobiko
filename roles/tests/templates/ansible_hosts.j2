@@ -1,0 +1,9 @@
+
+[vagrant]
+{% for node in (vagrant_nodes | dictsort) %}
+{{ node.0 }}
+{% endfor %}
+
+[vagrant:vars]
+ansible_python_interpreter = {{ ansible_python_interpreter }}
+

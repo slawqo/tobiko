@@ -1,0 +1,14 @@
+
+# --- localhost ---
+
+127.0.0.1  localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1        localhost localhost.localdomain localhost6 localhost6.localdomain6
+127.0.0.1  ::1  {{ vagrant_nodes[inventory_hostname].hostname }}
+
+
+# -- Vagrant nodes ---
+
+{% for node in (vagrant_nodes | dictsort) %}
+{{ node.1.ip }} {{ node.1.hostname }}
+{% endfor %}
+

@@ -1,0 +1,89 @@
+---
+
+- hosts: primary
+  tasks:
+    - name: "copy /etc/resolv.conf"
+      become: yes
+      copy:
+        src: /etc/resolv.conf
+        dest: /etc/resolv.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: "make /etc/hosts"
+      become: yes
+      template:
+        src: 'hosts.j2'
+        dest: '/etc/hosts'
+        owner: root
+        mode: '0644'
+
+    - name: "make ~/.ssh/config file with all Vagrant nodes"
+      template:
+        src: 'ssh_config.j2'
+        dest: '/home/vagrant/.ssh/config'
+        owner: vagrant
+        mode: '0600'
+
+    - name: "generate local SSH key '{{ ssh_key_file }}'"
+      openssh_keypair:
+        path: '{{ ssh_key_file }}'
+        type: rsa
+        size: 4096
+        state: present
+        force: no
+      delegate_to: localhost
+
+    - name: "copy '{{ ssh_key_file }}' file to host"
+      copy:
+        src: '{{ ssh_key_file }}{{ item }}'
+        dest: '/home/vagrant/.ssh/id_rsa{{ item }}'
+        owner: vagrant
+        group: vagrant
+        mode: '0600'
+      loop:
+        - ''
+        - '.pub'
+
+    - name: "set ansible_python_interpreter fact"
+      set_fact:
+        ansible_python_interpreter: >
+          {{ ansible_python_interpreter |
+             default("/usr/libexec/platform-python") }}
+
+    - name: "make Ansible inventory file with vagrant nodes"
+      template:
+        src: 'ansible_hosts.j2'
+        dest: '/vagrant/ansible_hosts'
+
+
+- hosts: all
+  tasks:
+
+    - name: "set authorized SSH key taken from '{{ ssh_key_file }}'"
+      authorized_key:
+        user: vagrant
+        state: present
+        key: "{{ lookup('file', ssh_key_file + '.pub') }}"
+
+
+- hosts: primary
+  tasks:
+
+    - name: "check ICMP connectivity"
+      shell: |
+        set -xe
+        ping -c 1 '{{ item.1.ip }}'
+        ping -c 1 '{{ item.1.hostname }}'
+      register: check_icmp_connectivity
+      loop: '{{ vagrant_nodes | dictsort }}'
+
+    - name: "check SSH connectivity via hostname"
+      shell: |
+        set -xe
+        ssh '{{ item.1.ip }}' hostname
+        ssh '{{ item.1.hostname }}' hostname
+        ssh '{{ item.0 }}' hostname
+      register: check_ssh_connectivity
+      loop: '{{ vagrant_nodes | dictsort }}'

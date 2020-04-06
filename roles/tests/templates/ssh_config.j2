@@ -1,0 +1,12 @@
+
+# --- Vagrant nodes ---
+
+{% for node in (vagrant_nodes | dictsort) %}
+Host {{ node.0 }} {{ node.1.hostname }} {{ node.1.ip }}
+  Hostname {{ node.1.hostname }}
+  User vagrant
+  StrictHostkeyChecking no
+  UserKnownHostsFile /dev/null
+  IdentityFile ~/.ssh/id_rsa
+
+{% endfor %}
