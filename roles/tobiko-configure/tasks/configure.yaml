@@ -1,0 +1,46 @@
+---
+
+- name: "list configuration options"
+  set_fact:
+    conf_yaml: |
+        {% for section, options in (sections.items() | sort)  %}
+        {% for option, value in (options.items() | sort)  %}
+        - section: "{{ section }}"
+          option: "{{ option }}"
+          value: "{{ value }}"
+        {% endfor %}
+        {% endfor %}
+  vars:
+    sections: "{{ default_conf | combine(conf, recursive=True) }}"
+
+
+- name: "generate '{{ conf_file }}' file"
+  ini_file:
+    path: "{{ conf_file }}"
+    section: "{{ item.section }}"
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+    mode: '0644'
+  when:
+    - item.section
+    - item.option
+    - item.value
+  loop: "{{ conf_yaml | from_yaml | list }}"
+
+
+- name: "read resulting {{ conf_file }} file"
+  command: "cat '{{ conf_file }}'"
+  register: read_conf_file
+
+
+- name: "show resulting '{{ conf_file }}' file"
+  debug: var=read_conf_file.stdout_lines
+
+
+# TODO (fressi): move it to a Tobiko python fixture
+- name: Set permissive quotas for instances and cores
+  shell: |
+    source "{{ stackrc_file }}"
+    openstack quota set --instances -1 admin
+    openstack quota set --cores -1 admin
+  ignore_errors: yes

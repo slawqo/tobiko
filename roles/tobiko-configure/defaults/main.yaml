@@ -16,4 +16,4 @@ log_debug: '{{ test_log_debug | bool }}'
 log_file: "{{ test_log_file | realpath }}"
 
 # OpenStack client credentials
-stackrc_file: '{{ user_home }}/overcloudrc'
+stackrc_file: '{{ ansible_user_dir }}/overcloudrc'

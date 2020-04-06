@@ -1,50 +1,6 @@
 ---
 
-- name: "ensures local directory '{{ collect_dir }}' exists"
-  file:
-    path: '{{ collect_dir }}'
-    state: directory
-  delegate_to: localhost
-
-
-- name: "look for report files in {{ report_dir }}"
-  find:
-    paths:
-      - "{{ report_dir }}"
-    patterns:
-      - "{{ report_name }}*.log"
-      - "{{ report_name }}*.subunit"
-      - "{{ report_name }}*.html"
-      - "{{ report_name }}*.xml"
-  register: find_report_files
-
-
-- name: "add found report files"
-  set_fact:
-    report_files: '{{ (( find_report_files.files | json_query("[*].path")) + report_files) | unique }}'
-
-
-- name: "check if report files exists"
-  stat:
-    path: "{{ item }}"
-    get_checksum: no
-  register: stat_report_files
-  loop: '{{ report_files }}'
-
-
-- name: "filter out non existing report files"
-  set_fact:
-    report_files: >
-        {{ stat_report_files.results |
-           json_query("[?stat.exists].stat.path") }}
-
-
-- name: "collect report files to local directory '{{ collect_dir }}'"
-  synchronize:
-    dest: '{{ collect_dir }}/{{ item | basename }}'
-    mode: pull
-    src: '{{ item }}'
-    use_ssh_args: yes
-    recursive: yes
-  ignore_errors: yes
-  loop: '{{ report_files }}'
+- name: "collect test results"
+  include_tasks: collect.yaml
+  when:
+    - test_stage in ['all', 'post-run', 'collect']

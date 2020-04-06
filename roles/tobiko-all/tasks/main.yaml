@@ -1,0 +1,28 @@
+---
+
+- block:
+    - name: "initialize test execution"
+      include_role:
+        name: tobiko-pre-run
+
+    - name: "run tests"
+      include_role:
+        name: tobiko-run
+
+  rescue:
+    - name: "finalize test execution"
+      include_role:
+        name: tobiko-post-run
+      ignore_errors: yes
+
+    - fail:
+        msg: 'TEST EXECUTION FAILED'
+
+
+- name: "finalize test execution"
+  include_role:
+    name: tobiko-post-run
+
+
+- debug:
+    msg: 'TEST EXECUTION SUCCEEDED'

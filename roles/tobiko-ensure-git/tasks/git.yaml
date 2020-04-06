@@ -1,0 +1,42 @@
+---
+
+- block:
+    - name: "get '{{ git_executable }}' full path"
+      shell: >
+        which '{{ git_executable }}'
+      register: get_git_path
+
+  rescue:
+    - name: "install Git packages"
+      become: true
+      package:
+        name: git
+
+    - name: "get '{{ git_executable }}' full path"
+      shell: >
+        which '{{ git_executable }}'
+      register: get_git_path
+
+
+- name: "update git_executable fact"
+  set_fact:
+    git_executable: '{{ get_git_path.stdout_lines | first }}'
+
+
+- name: "get Git version"
+  command: >
+    '{{ git_executable }}' --version
+  register:
+    get_git_version
+
+
+- name: update git_version fact
+  set_fact:
+    git_version: '{{ get_git_version.stdout_lines | first }}'
+
+
+- name: "show Git facts"
+  debug:
+    msg:
+      git_executable: '{{ git_executable }}'
+      git_version: '{{ git_version }}'

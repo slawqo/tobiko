@@ -1,24 +1,6 @@
 ---
 
-- block:
-    - name: "get installed git version"  # noqa 303
-      shell: >
-        git --version
-      register: get_git_gersion
-
-  rescue:
-    - name: "install Git packages"
-      become: true
-      package:
-        name: git
-
-    - name: "get installed git version"  # noqa 303
-      shell: >
-        git --version
-      register: get_git_gersion
-
-
-- name: "show installed git version"
-  debug:
-    var: get_git_gersion.stdout
-    verbosity: 1
+- name: "ensures 'git' command is available"
+  include_tasks: git.yaml
+  when:
+    - git_version is not defined
