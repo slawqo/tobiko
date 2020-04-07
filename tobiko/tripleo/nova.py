@@ -41,9 +41,7 @@ def check_nova_services_health(timeout=120, interval=2):
 
 def start_all_instances():
     """try to start all stopped overcloud instances"""
-    nova_client = nova.get_nova_client()
-    servers = nova_client.servers.list()
-    for instance in servers:
+    for instance in nova.list_servers():
         activated_instance = nova.activate_server(instance)
         time.sleep(3)
         instance_info = 'instance {nova_instance} is {state} on {host}'.format(
@@ -54,3 +52,16 @@ def start_all_instances():
         LOG.info(instance_info)
         if activated_instance.status != 'ACTIVE':
             tobiko.fail(instance_info)
+
+
+def wait_for_all_instances_status(status, timeout=None):
+    """wait for all instances for a certain status or raise an exception"""
+    for instance in nova.list_servers():
+        nova.wait_for_server_status(server=instance.id, status=status,
+                                    timeout=timeout)
+        instance_info = 'instance {nova_instance} is {state} on {host}'.format(
+            nova_instance=instance.name,
+            state=status,
+            host=instance._info[  # pylint: disable=W0212
+                'OS-EXT-SRV-ATTR:hypervisor_hostname'])
+        LOG.info(instance_info)
