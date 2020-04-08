@@ -1,5 +1,25 @@
 ---
 
+- hosts: all
+  tasks:
+    - name: "show platform id variables"
+      debug:
+        msg:
+          ansible_architecture: '{{ ansible_architecture }}'
+          ansible_distribution: '{{ ansible_distribution }}'
+          ansible_distribution_major_version: '{{ ansible_distribution_major_version }}'
+          ansible_os_family: '{{ ansible_os_family }}'
+
+    - name: "include platform variables"
+      include_vars: "{{ item }}"
+      with_first_found:
+        - "provision-{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yaml"
+        - "provision-{{ ansible_distribution }}.{{ ansible_architecture }}.yaml"
+        - "provision-{{ ansible_distribution }}.yaml"
+        - "provision-{{ ansible_os_family }}.yaml"
+      register: include_platform_vars
+
+
 - hosts: primary
   tasks:
     - name: "copy /etc/resolv.conf"
@@ -46,12 +66,6 @@
         - ''
         - '.pub'
 
-    - name: "set ansible_python_interpreter fact"
-      set_fact:
-        ansible_python_interpreter: >
-          {{ ansible_python_interpreter |
-             default("/usr/libexec/platform-python") }}
-
     - name: "make Ansible inventory file with vagrant nodes"
       template:
         src: 'ansible_hosts.j2'
@@ -60,6 +74,14 @@
 
 - hosts: all
   tasks:
+
+    - name: "update APT database"
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      become: yes
+      when:
+        - ansible_os_family == 'Debian'
 
     - name: "set authorized SSH key taken from '{{ ssh_key_file }}'"
       authorized_key:

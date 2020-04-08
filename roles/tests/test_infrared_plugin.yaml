@@ -17,12 +17,6 @@
         path: '{{ test_collect_dir }}'
         state: absent
 
-    - name: "set ansible_python_interpreter fact"
-      set_fact:
-        ansible_python_interpreter: >
-          {{ ansible_python_interpreter |
-             default("/usr/libexec/platform-python") }}
-
     - name: "run Tox InfraRed plugin"
       command: >
         '{{ tox_executable }}' -e infrared --
