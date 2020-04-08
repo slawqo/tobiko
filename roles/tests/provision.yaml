@@ -1,25 +1,5 @@
 ---
 
-- hosts: all
-  tasks:
-    - name: "show platform id variables"
-      debug:
-        msg:
-          ansible_architecture: '{{ ansible_architecture }}'
-          ansible_distribution: '{{ ansible_distribution }}'
-          ansible_distribution_major_version: '{{ ansible_distribution_major_version }}'
-          ansible_os_family: '{{ ansible_os_family }}'
-
-    - name: "include platform variables"
-      include_vars: "{{ item }}"
-      with_first_found:
-        - "provision-{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yaml"
-        - "provision-{{ ansible_distribution }}.{{ ansible_architecture }}.yaml"
-        - "provision-{{ ansible_distribution }}.yaml"
-        - "provision-{{ ansible_os_family }}.yaml"
-      register: include_platform_vars
-
-
 - hosts: primary
   tasks:
     - name: "copy /etc/resolv.conf"
@@ -66,11 +46,6 @@
         - ''
         - '.pub'
 
-    - name: "make Ansible inventory file with vagrant nodes"
-      template:
-        src: 'ansible_hosts.j2'
-        dest: '/vagrant/ansible_hosts'
-
 
 - hosts: all
   tasks:
@@ -92,12 +67,12 @@
 
 - hosts: primary
   tasks:
-
     - name: "check ICMP connectivity"
       shell: |
         set -xe
         ping -c 1 '{{ item.1.ip }}'
         ping -c 1 '{{ item.1.hostname }}'
+      changed_when: false
       register: check_icmp_connectivity
       loop: '{{ vagrant_nodes | dictsort }}'
 
@@ -107,5 +82,29 @@
         ssh '{{ item.1.ip }}' hostname
         ssh '{{ item.1.hostname }}' hostname
         ssh '{{ item.0 }}' hostname
+      changed_when: false
       register: check_ssh_connectivity
       loop: '{{ vagrant_nodes | dictsort }}'
+
+    - name: "set test_inventory_hostvars_yaml fact"
+      set_fact:
+        test_inventory_hostvars_yaml: |
+          ---
+          {% for name, node in (vagrant_nodes | dictsort) %}
+          {{ name }}:
+            ansible_host: {{ node.hostname }}
+          {% endfor %}
+
+    - name: "set test_inventory_hostvars fact"
+      set_fact:
+        test_inventory_hostvars:
+          '{{ test_inventory_hostvars_yaml | from_yaml }}'
+
+    - debug: var=test_inventory_hostvars
+
+
+- hosts: primary
+  roles:
+    - role: tobiko-inventory
+      vars:
+        test_inventory_file: /vagrant/ansible_hosts

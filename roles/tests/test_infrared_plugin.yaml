@@ -1,18 +1,16 @@
 ---
 
 - hosts: primary
-
   vars:
     test_src_dir: /vagrant
     test_collect_dir: '{{ test_src_dir }}/test_results'
-
   roles:
     - tobiko-ensure-tox
     - tobiko-ensure-git
     - tobiko-ensure-rsync
 
   tasks:
-    - name: "remove collected files"
+    - name: "remove '{{ test_collect_dir }}' dir"
       file:
         path: '{{ test_collect_dir }}'
         state: absent
@@ -35,25 +33,10 @@
       when: run_tox is failed
       failed_when: yes
 
-    - name: "list collected files"
-      command: >
-        ls '{{ test_collect_dir }}'
-      register: list_test_result_files
 
-    - name: "set collected files fact"
-      set_fact:
-        collected_files: '{{ list_test_result_files.stdout_lines }}'
-
-    - name: "show collected files"
-      debug: var=collected_files
-
-    - name: "check collected files"
-      assert:
-        that:
-          - item in collected_files
-      loop:
-        - tobiko.log
-        - tobiko.conf
-        - test_results.html
-        - test_results.subunit
-        - test_results.xml
+- hosts: primary
+  vars:
+    test_src_dir: /vagrant
+    test_collect_dir: '{{ test_src_dir }}/test_results'
+  roles:
+    - tobiko-check-collected-files

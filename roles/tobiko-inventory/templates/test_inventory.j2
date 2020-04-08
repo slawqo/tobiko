@@ -1,0 +1,8 @@
+[all]
+{% for name, vars in (test_inventory_hostvars | dictsort) %}
+{{ name }} ansible_host={{ vars.ansible_host }}
+{% endfor %}
+
+[all:vars]
+ansible_python_interpreter = {{ test_inventory_python_interpreter }}
+ansible_user = {{ test_inventory_user }}

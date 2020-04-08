@@ -1,0 +1,5 @@
+---
+
+test_inventory_user: '{{ ansible_user }}'
+test_inventory_hostvars: {}
+test_inventory_file: '{{ test_src_dir | realpath }}/ansible_hosts'

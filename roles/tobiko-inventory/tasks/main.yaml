@@ -1,0 +1,65 @@
+---
+
+- name: "read platform vars from file"
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "test-inventory-{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yaml"
+    - "test-inventory-{{ ansible_distribution }}.{{ ansible_architecture }}.yaml"
+    - "test-inventory-{{ ansible_distribution }}.yaml"
+    - "test-inventory-{{ ansible_os_family }}.yaml"
+  register: include_platform_vars
+
+
+- debug: var=test_inventory_python_interpreter
+
+
+- when: test_inventory_user is not defined
+  block:
+    - name: "get remote username"
+      command: whoami
+      changed_when: false
+      become: false
+      register: get_inventory_user
+
+    - name: "set test_inventory_user fact"
+      set_fact:
+        test_inventory_user: "{{ get_inventory_user.stdout_lines | first }}"
+
+
+- debug: var=test_inventory_user
+
+
+- name: "get default test_inventory_hostvars entries from hostvars"
+  set_fact:
+    test_inventory_hostvars: >
+      {{ {hostname: {varname: value} } |
+         combine(test_inventory_hostvars) }}
+  vars:
+    hostname: '{{ item.0 }}'
+    varname: '{{ item.1 }}'
+    value: '{{ hostvars[hostname][varname] }}'
+  loop: "{{ hostvars.keys() | product(['ansible_host']) | list }}"
+  loop_control:
+    label: '{{ hostname }}.{{ varname }} = {{ value }}'
+  when:
+    - hostvars[hostname][varname] is defined
+    - test_inventory_hostvars[hostname][varname] is not defined
+
+
+- debug: var=test_inventory_hostvars
+
+
+- name: "writes inventory file to: '{{ test_inventory_file }}'"
+  template:
+    src: 'test_inventory.j2'
+    dest: '{{ test_inventory_file }}'
+
+
+- name: "read inventory file from: '{{ test_inventory_file }}'"
+  command: "cat '{{ test_inventory_file }}'"
+  changed_when: false
+  register: read_test_inventory_file
+
+
+- name: "show inventory file: '{{ test_inventory_file }}'"
+  debug: var=read_test_inventory_file.stdout_lines
