@@ -25,6 +25,9 @@ def overcloud_health_checks(passive_checks_only=False):
     if not passive_checks_only:
         # create a uniq stack
         check_vm_create()
+    else:
+        # verify VM status is updated after reboot
+        nova.wait_for_all_instances_status('SHUTOFF')
     nova.start_all_instances()
     containers.assert_all_tripleo_containers_running()
     containers.assert_equal_containers_state()
