@@ -85,3 +85,8 @@ def str_is_not_ip(check_str):
 
 def ip_to_hostname(oc_ip):
     return get_ip_to_nodes_dict()[oc_ip]
+
+
+def actual_node_groups(groups):
+    """return only existing node groups"""
+    return set(groups).intersection(topology.list_openstack_node_groups())

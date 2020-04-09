@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import tobiko
 from tobiko.shell import sh
 from tobiko.openstack import topology
+from tobiko.tripleo import topology as tripleo_topology
 from oslo_log import log
 
 
@@ -19,7 +20,10 @@ def reset_all_controller_nodes(hard_reset=False):
                        'sudo echo b > /proc/sysrq-trigger'
     else:
         reset_method = 'sudo reboot'
-    nodes = topology.list_openstack_nodes(group='controller')
+    controlplane_groups = ['controller', 'messaging', 'database', 'networker']
+    actual_controlplane_groups = tripleo_topology.actual_node_groups(
+        controlplane_groups)
+    nodes = topology.list_openstack_nodes(group=actual_controlplane_groups)
     for controller in nodes:
         # using ssh_client.connect we use a fire and forget reboot method
         controller.ssh_client.connect().exec_command(reset_method)
