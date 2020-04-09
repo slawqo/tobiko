@@ -51,10 +51,13 @@ def get_openstack_topology(topology_class=None):
 
 def list_openstack_nodes(topology=None, group=None, hostnames=None, **kwargs):
     topology = topology or get_openstack_topology()
-    if group:
+    if group is None:
+        nodes = topology.nodes
+    elif isinstance(group, str):
         nodes = topology.get_group(group=group)
     else:
-        nodes = topology.nodes
+        nodes = topology.get_groups(groups=group)
+
     if hostnames:
         names = {node_name_from_hostname(hostname)
                  for hostname in hostnames}
@@ -296,6 +299,12 @@ class OpenStackTopology(tobiko.SharedFixture):
             return self._nodes_by_group[group]
         except KeyError:
             raise _exception.NoSuchOpenStackTopologyNodeGroup(group=group)
+
+    def get_groups(self, groups):
+        nodes = []
+        for i in groups:
+            nodes.extend(self.get_group(i))
+        return nodes
 
     @property
     def groups(self):
