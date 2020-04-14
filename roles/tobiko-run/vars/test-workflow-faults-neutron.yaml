@@ -1,0 +1,18 @@
+---
+
+test_workflow_steps:
+  - tox_description: 'create workload resources'
+    tox_envlist: neutron
+    tox_step_name: create_resources
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: no
+
+  - tox_description: 'run disruptive test cases'
+    tox_envlist: faults
+    tox_step_name: faults
+
+  - tox_description: 'verify workload resources'
+    tox_envlist: neutron
+    tox_step_name: verify_resources'
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: yes

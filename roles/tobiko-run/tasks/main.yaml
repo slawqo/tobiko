@@ -1,7 +1,7 @@
 ---
 
 - name: "include test workflow steps for name '{{ test_workflow }}'"
-  include_vars: "{{ test_workflow }}.yaml"
+  include_vars: "test-workflow-{{ test_workflow }}.yaml"
 
 
 - name: "show test workflow steps"
