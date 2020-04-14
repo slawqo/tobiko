@@ -1,19 +1,12 @@
 ---
 
-# Configuration options
-conf_file: '{{ test_conf_file | realpath }}'
-
-default_conf:
+test_default_conf:
   DEFAULT:
-    debug: "{{ log_debug }}"
-    log_dir: "{{ log_file | dirname }}"
-    log_file: "{{ log_file | basename }}"
+    debug: "{{ test_log_debug }}"
+    log_dir: "{{ test_log_file | dirname }}"
+    log_file: "{{ test_log_file | basename }}"
 
-conf: {}
-
-# Logging options
-log_debug: '{{ test_log_debug | bool }}'
-log_file: "{{ test_log_file | realpath }}"
+test_log_debug: true
 
 # OpenStack client credentials
 stackrc_file: '{{ ansible_user_dir }}/overcloudrc'
