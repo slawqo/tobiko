@@ -41,9 +41,10 @@ def get_container_runtime_name():
 container_runtime_name = get_container_runtime_name()
 
 
-def list_node_containers(client):
+@functools.lru_cache()
+def list_node_containers(ssh_client):
     """returns a list of containers and their run state"""
-
+    client = get_container_client(ssh_client=ssh_client)
     if container_runtime_module == podman:
         return container_runtime_module.list_podman_containers(client=client)
 
@@ -87,9 +88,7 @@ def list_containers(group=None):
         openstack_nodes = topology.list_openstack_nodes(group='overcloud')
 
     for node in openstack_nodes:
-        ssh_client = node.ssh_client
-        container_client = get_container_client(ssh_client)
-        node_containers_list = list_node_containers(client=container_client)
+        node_containers_list = list_node_containers(ssh_client=node.ssh_client)
         containers_list.extend(node_containers_list)
     return containers_list
 
@@ -115,8 +114,7 @@ def assert_containers_running(group, expected_containers, full_name=True):
 
     openstack_nodes = topology.list_openstack_nodes(group=group)
     for node in openstack_nodes:
-        container_client = get_container_client(node.ssh_client)
-        node_containers = list_node_containers(client=container_client)
+        node_containers = list_node_containers(ssh_client=node.ssh_client)
         containers_list_df = pandas.DataFrame(
             get_container_states_list(node_containers),
             columns=['container_host', 'container_name', 'container_state'])
