@@ -16,8 +16,10 @@ test_project:
   "{{ test_git_repo | urlsplit('path') | regex_replace('^\\/|\\/$', '') | splitext | first }}"
 test_git_repo: '{{ git_base }}/x/tobiko.git'
 test_git_refspec: ''
+test_git_remote: 'origin'
 test_git_version: 'master'
 test_src_dir: ''
+
 
 # NOTE: if test_dir and tobiko_dir variables endup being the same actual
 # directory then test_src and test_git_* variables will be overriden
@@ -28,6 +30,7 @@ tobiko_project:
   "{{ tobiko_git_repo | urlsplit('path') | regex_replace('^\\/|\\/$', '') | splitext | first }}"
 tobiko_git_repo: '{{ git_base }}/x/tobiko.git'
 tobiko_git_refspec: ''
+tobiko_git_remote: 'origin'
 tobiko_git_version: 'master'
 tobiko_src_dir: ''
 

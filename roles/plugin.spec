@@ -49,6 +49,10 @@ subparsers:
             type: Value
             help: Git version to be used for checking out test scripts
             ansible_variable: test_git_version
+          test-remote:
+            type: Value
+            help: Git remote name to be used for checking out test scripts
+            ansible_variable: test_git_remote
           test-refspec:
             type: Value
             help: Git refspect to be used for checking out test scripts
@@ -69,6 +73,10 @@ subparsers:
             type: Value
             help: Git version to be used for checking out Tobiko scripts
             ansible_variable: tobiko_git_version
+          tobiko-remote:
+            type: Value
+            help: Git remote name to be used for checking out test scripts
+            ansible_variable: tobiko_git_remote
           tobiko-refspec:
             type: Value
             help: Git refspect to be used for checking out Tobiko scripts
