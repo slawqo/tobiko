@@ -29,6 +29,7 @@ def overcloud_health_checks(passive_checks_only=False):
         # verify VM status is updated after reboot
         nova.wait_for_all_instances_status('SHUTOFF')
     nova.start_all_instances()
+    containers.list_node_containers.cache_clear()
     containers.assert_all_tripleo_containers_running()
     containers.assert_equal_containers_state()
 
