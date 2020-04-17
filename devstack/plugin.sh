@@ -131,7 +131,9 @@ function configure_tobiko_nova {
 
   # Write key_file
   local key_file=${TOBIKO_NOVA_KEY_FILE:-}
-  iniset "${tobiko_conf_file}" nova key_file "${key_file}"
+  if [ "${key_file}" != "" ]; then
+      iniset "${tobiko_conf_file}" nova key_file "${key_file}"
+  fi
 }
 
 
