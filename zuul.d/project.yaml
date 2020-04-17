@@ -16,7 +16,7 @@
         - tobiko-tox-py36-centos-8
         - tobiko-tox-py38-centos-8
         - tobiko-devstack-functional
-        - tobiko-devstack-faults-centos-7
+        - tobiko-devstack-faults-centos-7-train
         - tobiko-devstack-faults-ubuntu-bionic
         - tobiko-tox-infrared-centos-7
         - tobiko-tox-infrared-centos-8

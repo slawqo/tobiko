@@ -229,6 +229,14 @@
     parent: tobiko-devstack-faults-centos-7
     override-checkout: stable/train
     voting: false
+    vars:
+      devstack_services:
+        # Disable Octavia services
+        octavia: false
+        o-cw: false
+        o-hk: false
+        o-hm: false
+        o-api: false
 
 
 - job:

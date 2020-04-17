@@ -4,8 +4,11 @@ TOBIKO_PLUGIN_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 function install_tobiko {
   echo_summary "Installing tobiko-plugin"
-  install_python3
-  setup_dev_lib ${TOBIKO_BINDEP} tobiko
+
+  if [ "${TOBIKO_BINDEP}" != "" ]; then
+    install_python3
+    install_bindep "${TOBIKO_DIR}/bindep.txt" test
+  fi
 }
 
 
