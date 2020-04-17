@@ -141,10 +141,10 @@ def init_tobiko_config(default_config_dirs=None, default_config_files=None,
     if default_config_dirs is None:
         default_config_dirs = cfg.find_config_dirs(project=project, prog=prog)
     if default_config_files is None:
-        default_config_files = (workspace_config_files(project=project,
-                                                       prog=prog) +
-                                cfg.find_config_files(project=project,
-                                                      prog=prog))
+        default_config_files = (cfg.find_config_files(project=project,
+                                                      prog=prog) +
+                                workspace_config_files(project=project,
+                                                       prog=prog))
 
     # Register configuration options
     conf = cfg.ConfigOpts()
@@ -174,10 +174,13 @@ def init_tobiko_config(default_config_dirs=None, default_config_files=None,
               " - product_name: %r\n"
               " - version: %r\n"
               " - default_config_dirs: %r\n"
-              " - default_config_files: %r\n",
+              " - default_config_files: %r\n"
+              " - log_file: %r\n",
               product_name,
               version,
-              default_config_dirs, default_config_files)
+              default_config_dirs,
+              default_config_files,
+              os.path.join(log_dir, log_file))
 
 
 def register_tobiko_options(conf):
