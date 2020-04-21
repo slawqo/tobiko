@@ -16,8 +16,6 @@ subparsers:
         options:
           host:
             type: Value
-            required: True
-            default: localhost
             help: Target host where test cases are deployed and executed
             ansible_variable: test_host
 

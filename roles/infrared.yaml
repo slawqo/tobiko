@@ -1,6 +1,20 @@
 ---
 
-- hosts: '{{ test_host }}'
+- hosts: 'localhost'
+  tasks:
+    - name: "select test host from inventory"
+      set_fact:
+        test_host: '{{ item }}'
+      when:
+        - test_host is not defined
+        - item in hostvars
+      loop:
+        - "undercloud-0"
+        - "tempest"
+        - "primary"
+
+
+- hosts: '{{ test_host | default("localhost") }}'
   gather_facts: yes
   any_errors_fatal: yes
   roles:
