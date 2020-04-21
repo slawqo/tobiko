@@ -1,7 +1,7 @@
 ---
 
 - name: "install '{{ python_command }}' packages"
-  become: true
+  become: '{{ test_become | bool }}'
   package:
     name: "{{ python_packages[python_command] | flatten }}"
   when: 'python_command in python_packages'

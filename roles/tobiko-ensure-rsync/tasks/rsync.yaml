@@ -4,17 +4,19 @@
     - name: "get '{{ rsync_executable }}' full path"
       shell: >
         which '{{ rsync_executable }}'
+      changed_when: no
       register: get_rsync_path
 
   rescue:
     - name: "install Rsync packages"
-      become: true
+      become: '{{ test_become | bool }}'
       package:
         name: rsync
 
     - name: "get '{{ rsync_executable }}' full path"
       shell: >
         which '{{ rsync_executable }}'
+      changed_when: no
       register: get_rsync_path
 
 
@@ -26,6 +28,7 @@
 - name: "get Rsync version"
   command: >
     '{{ rsync_executable }}' --version
+  changed_when: no
   register:
     get_rsync_version
 

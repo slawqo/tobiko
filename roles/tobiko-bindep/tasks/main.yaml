@@ -27,7 +27,7 @@
       failed_when: yes
 
     - name: 'install missing packages'
-      become: yes
+      become: '{{ test_become | bool }}'
       package:
         name: '{{ run_bindep.stdout_lines }}'
       register: install_packages

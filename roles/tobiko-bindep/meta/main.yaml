@@ -1,4 +1,5 @@
 ---
 
 dependencies:
-  - role: tobiko-ensure-python3
+  - tobiko-common
+  - tobiko-ensure-python3

@@ -34,7 +34,7 @@
 
   rescue:
     - name: "try setting python alternative to '{{ python_alternative }}'"
-      become: true
+      become: '{{ test_become | bool }}'
       command: "alternatives --set python '{{ python_alternative }}'"
       ignore_errors: yes
       when: 'python_alternative is defined'

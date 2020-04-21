@@ -17,8 +17,8 @@
   block:
     - name: "get remote username"
       command: whoami
-      changed_when: false
-      become: false
+      changed_when: no
+      become: no
       register: get_inventory_user
 
     - name: "set test_inventory_user fact"
