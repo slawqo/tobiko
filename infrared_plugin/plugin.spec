@@ -67,6 +67,7 @@ subparsers:
             type: Value
             help: Git URL from where to download tobiko files
             ansible_variable: tobiko_git_repo
+            default: 'https://opendev.org/x/tobiko.git'
           tobiko-version:
             type: Value
             help: Git version to be used for checking out Tobiko scripts
@@ -82,7 +83,9 @@ subparsers:
           tobiko-src-dir:
             type: Value
             help: Local directory where tobiko scripts are found
+            required: yes
             ansible_variable: tobiko_src_dir
+            default: '{{ inventory_dir }}/src/tobiko'
 
       - title: Configure stage
         options:

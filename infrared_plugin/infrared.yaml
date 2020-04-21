@@ -1,0 +1,48 @@
+---
+
+- hosts: 'localhost'
+  tasks:
+    - name: "select test host from inventory"
+      set_fact:
+        test_host: '{{ item }}'
+      when:
+        - test_host is not defined
+        - item in hostvars
+      loop:
+        - "undercloud-0"
+        - "tempest"
+        - "primary"
+
+    - name: "ensure '{{ tobiko_src_dir }}' directory exists"
+      file:
+        dest: '{{ tobiko_src_dir }}'
+      register:
+        create_tobiko_src_dir
+
+    - name: "override tobiko_git_version because tobiko_git_refspec is '{{ tobiko_git_refspec }}'"
+      set_fact:
+        tobiko_git_version: 'FETCH_HEAD'
+      when:
+        - tobiko_git_refspec is defined
+        - '(tobiko_git_refspec | length) > 0'
+
+    - name: "checkout Tobiko files from '{{ tobiko_git_repo }}' to '{{ tobiko_src_dir }}'"
+      git:
+        dest: '{{ tobiko_src_dir }}'
+        repo: '{{ tobiko_git_repo }}'
+        refspec: '{{ tobiko_git_refspec | default(omit) }}'
+        version: '{{ tobiko_git_version | default(omit) }}'
+        remote: '{{ tobiko_git_remote | default(omit) }}'
+      when: create_tobiko_src_dir is changed
+
+    - name: "ensure Tobiko roles are accessible to IR plugin"
+      file:
+        src: '{{ tobiko_src_dir | realpath }}/roles'
+        dest: '{{ playbook_dir }}/roles'
+        state: link
+
+
+- hosts: '{{ test_host | default("localhost") }}'
+  gather_facts: yes
+  tasks:
+    - include_role: name=tobiko-all
