@@ -10,8 +10,10 @@
   loop_control:
     label: '{{ item.dest_dir }}'
 
+
 - name: "show combined deploy variables"
   debug: var=_test_deploy_dirs
+
 
 - name: "deploy test directories'"
   include_tasks: deploy-dir.yaml

@@ -8,6 +8,8 @@ test_deploy_dirs:
   # test suite directory
   - clean_dir: '{{ clean_deploy_dir }}'
     dest_dir: '{{ test_dir }}'
+    dest_user: '{{ test_user }}'
+    dest_group: '{{ test_group }}'
     git_repo: '{{ test_git_repo }}'
     git_refspec: '{{ test_git_refspec }}'
     git_remote: '{{ test_git_remote }}'
@@ -17,6 +19,8 @@ test_deploy_dirs:
   # Tobiko framework directory
   - clean_dir: '{{ clean_deploy_dir }}'
     dest_dir: '{{ tobiko_dir }}'
+    dest_user: '{{ tobiko_user }}'
+    dest_group: '{{ tobiko_group }}'
     git_repo: '{{ tobiko_git_repo }}'
     git_refspec: '{{ tobiko_git_refspec }}'
     git_remote: '{{ tobiko_git_remote }}'

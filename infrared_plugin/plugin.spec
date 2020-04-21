@@ -12,6 +12,13 @@ subparsers:
     include_groups: ["Ansible options", "Inventory", "Common options", "Answers file"]
     groups:
 
+      - title: Common options
+        options:
+          no-become:
+            type: Flag
+            help: Forbid roles from escalate tasks execution as superuser
+            ansible_variable: test_no_become
+
       - title: Topology options
         options:
           host:
@@ -39,6 +46,14 @@ subparsers:
             type: Value
             help: Test host directory where test cases (and tox.ini file) are found
             ansible_variable: test_dir
+          test-user:
+            type: Value
+            help: Test host user that should own tests directory
+            ansible_variable: test_user
+          test-group:
+            type: Value
+            help: Test host user group that should own tests directory
+            ansible_variable: test_group
           test-repo:
             type: Value
             help: Git URL from where to download test files
@@ -63,6 +78,14 @@ subparsers:
             type: Value
             help: Test host directory where Tobiko has to be deployed to
             ansible_variable: tobiko_dir
+          tobiko-user:
+            type: Value
+            help: Test host user that should own Tobiko directory
+            ansible_variable: tobiko_user
+          tobiko-group:
+            type: Value
+            help: Test host user group that should own Tobiko directory
+            ansible_variable: tobiko_group
           tobiko-repo:
             type: Value
             help: Git URL from where to download tobiko files

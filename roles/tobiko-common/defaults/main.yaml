@@ -3,7 +3,8 @@
 # --- Tobiko workflow stages
 
 test_stage: all
-
+test_no_become: false
+test_become: '{{ not (test_no_become | bool) }}'
 
 # --- Test deploy options -----------------------------------------------------
 
@@ -16,9 +17,11 @@ test_project:
   "{{ test_git_repo | urlsplit('path') | regex_replace('^\\/|\\/$', '') | splitext | first }}"
 test_git_repo: '{{ git_base }}/x/tobiko.git'
 test_git_refspec: ''
-test_git_remote: 'origin'
+test_git_remote: '{{ omit }}'
 test_git_version: 'master'
 test_src_dir: ''
+test_user: '{{ ansible_user | default(omit) }}'
+test_group: '{{ test_user }}'
 
 
 # NOTE: if test_dir and tobiko_dir variables endup being the same actual
@@ -30,9 +33,11 @@ tobiko_project:
   "{{ tobiko_git_repo | urlsplit('path') | regex_replace('^\\/|\\/$', '') | splitext | first }}"
 tobiko_git_repo: '{{ git_base }}/x/tobiko.git'
 tobiko_git_refspec: ''
-tobiko_git_remote: 'origin'
+tobiko_git_remote: '{{ omit }}'
 tobiko_git_version: 'master'
 tobiko_src_dir: ''
+tobiko_user: '{{ ansible_user | default(omit) }}'
+tobiko_group: '{{ tobiko_user }}'
 
 
 # --- Test configuration options ----------------------------------------------

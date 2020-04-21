@@ -16,11 +16,19 @@
     - clean_dir | bool
 
 
-- name: "create directory '{{ dest_dir }}'"
+- name: "setup directory '{{ dest_dir }}'"
   file:
     path: "{{ dest_dir | realpath }}"
     state: directory
+    owner: '{{ dest_user | default(omit) }}'
+    group: '{{ dest_group | default(omit) }}'
+    mode: '0755'
+    recurse: yes
+  become: '{{ test_become | bool }}'
   register: create_dest_dir
+
+
+- debug: var=create_dest_dir
 
 
 - name: "override git_version and src_dir because git_refspec is '{{ git_refspec }}'"
@@ -30,13 +38,13 @@
   when: '(git_refspec | length) > 0'
 
 
-- name: "checkout files from '{{ git_repo }}[{{ git_refspec or git_version }}]' to '{{ dest_dir }}'"
+- name: "checkout files from '{{ git_repo }}[{{ git_refspec | default(git_version) }}]' to '{{ dest_dir }}'"
   git:
     dest: '{{ dest_dir }}'
     repo: '{{ git_repo }}'
-    refspec: '{{ git_refspec }}'
+    refspec: '{{ git_refspec | default(omit) }}'
     version: '{{ git_version }}'
-    remote: '{{ git_remote }}'
+    remote: '{{ git_remote | default(omit) }}'
     force: yes
   register: checkout_files
   when: '((src_dir | length) == 0) or (create_dest_dir is changed)'
