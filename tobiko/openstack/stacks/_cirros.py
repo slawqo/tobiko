@@ -22,9 +22,11 @@ from tobiko.shell import sh
 
 CONF = config.CONF
 
+CIRROS_IMAGE_VERSION = '0.5.1'
 
-CIRROS_IMAGE_URL = \
-    'http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img'
+CIRROS_IMAGE_URL = (
+    'http://download.cirros-cloud.net/{version}/'
+    'cirros-{version}-x86_64-disk.img').format(version=CIRROS_IMAGE_VERSION)
 
 
 class CirrosImageFixture(glance.URLGlanceImageFixture):
