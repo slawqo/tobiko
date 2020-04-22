@@ -60,19 +60,15 @@
           $NOVA_CONF:
             quota:
               instances: 20
-      test_results_stage_name: test_results
       zuul_copy_output:
-        '{{ devstack_log_dir }}/tobiko*.log': logs
         '{{ stage_dir }}/stackviz': logs
       extensions_to_txt:
         conf: true
         log: true
         yaml: true
         yml: true
-      tobiko_user: stack
-      tobiko_dir: /opt/stack/tobiko
-      tobiko_log_file: /opt/stack/logs/tobiko.log
-      test_report_dir: /opt/stack/logs
+      tobiko_dir: '/opt/stack/tobiko'
+      test_src_dir: '{{ zuul.executor.work_root }}/{{ zuul.project.src_dir }}'
 
     pre-run: playbooks/devstack/pre.yaml
     run: playbooks/devstack/run.yaml
@@ -102,8 +98,6 @@
       - openstack/tripleo-image-elements
     timeout: 7800
     vars:
-      devstack_plugins:
-        octavia: https://opendev.org/openstack/octavia
       devstack_services:
         # Octavia
         octavia: true
@@ -134,7 +128,7 @@
     description: |
       Base Tobiko devstack job to execute functional tests.
     vars:
-      tox_envlist: functional
+      test_workflow: functional
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/
@@ -161,27 +155,8 @@
 
 
 - job:
-    name: tobiko-devstack-scenario
+    name: tobiko-devstack-multinode
     parent: tobiko-devstack
-    abstract: true
-    description: |
-      Integration test that runs all tests against DevStack provided cloud
-    vars:
-      tox_envlist: scenario
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/
-      - ^infrared/
-      - ^releasenotes/
-      - ^report/
-      - ^tobiko/tests/faults/
-      - ^tobiko/tests/functional/
-      - ^tobiko/tests/unit/
-
-
-- job:
-    name: tobiko-devstack-scenario-multinode
-    parent: tobiko-devstack-scenario
     abstract: true
     description: Base Tobiko devstack job with multinode.
     vars:
@@ -214,12 +189,12 @@
 
 - job:
     name: tobiko-devstack-faults
-    parent: tobiko-devstack-scenario-multinode
+    parent: tobiko-devstack-multinode
     abstract: true
     description: |
       Base Tobiko devstack job to execute scenario+faults+scenario test cases.
     vars:
-      tobiko_run_faults: true
+      test_workflow: faults
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/

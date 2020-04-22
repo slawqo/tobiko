@@ -2,9 +2,7 @@
 TOBIKO_PLUGIN_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 
-function install_tobiko {
-  echo_summary "Installing tobiko-plugin"
-
+function install_tobiko_deps {
   if [ "${TOBIKO_BINDEP}" != "" ]; then
     install_python3
     install_bindep "${TOBIKO_DIR}/bindep.txt" test
@@ -163,9 +161,11 @@ function iniset_nonempty {
 if [[ "$1" == "stack" ]]; then
     case "$2" in
         install)
-            install_tobiko
+            echo_summary "Installing Tobiko dependencies"
+            install_tobiko_deps
             ;;
         test-config)
+            echo_summary "Configuring Tobiko test cases"
             configure_tobiko
             ;;
     esac

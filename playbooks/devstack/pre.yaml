@@ -1,58 +1,17 @@
 ---
 
-# devstack copies repos from hardcoded list of organizations only and performa
-# is not there so e.g. os-faults repo can't be copied there easily and we need
-# to do this on our own
-# copied from https://opendev.org/openstack/devstack/src/branch/master/roles/setup-devstack-source-dirs/tasks/main.yaml
-
-- hosts: all
-  tasks:
-    - name: Find source repos from performa organization
-      find:
-        paths:
-          - src/opendev.org/performa
-        file_type: directory
-      register: found_repos
-
-    - name: Copy Zuul repos into devstack working directory
-      synchronize:
-        src: "{{ item.path }}"
-        dest: /opt/stack
-        use_ssh_args: true
-        recursive: true
-      with_items: '{{ found_repos.files }}'
-      become: yes
-
-    - name: Set ownership of repos
-      file:
-        path: /opt/stack
-        state: directory
-        recurse: true
-        owner: stack
-        group: stack
-      become: yes
+- hosts: tempest
+  roles:
+    - tobiko-zuul
+    - tobiko-pre-run
 
 
 - hosts: all
   roles:
-
-    - role: bindep
-
     - role: copy-build-sshkey
-      copy_sshkey_target_user: stack
+      vars:
+        copy_sshkey_target_user: zuul
 
     - role: multi-node-setup
 
     - role: orchestrate-devstack
-
-
-- hosts: tempest
-  roles:
-
-    - role: tobiko
-      tags:
-        - tobiko-pre-run
-      vars:
-        tobiko_pre_run: true
-        tobiko_run: false
-        tobiko_post_run: false

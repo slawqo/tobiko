@@ -1,3 +1,5 @@
+define_plugin tobiko
+plugin_requires tobiko heat
 
 # --- General settings ----
 TOBIKO_REPO=${TOBIKO_REPO:-${GIT_BASE}/x/tobiko.git}
