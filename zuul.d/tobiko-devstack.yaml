@@ -2,7 +2,6 @@
     name: tobiko-devstack-base
     parent: devstack
     abstract: true
-    nodeset: openstack-single-node-bionic
     description: |
       Base Tobiko devstack job.
 
@@ -148,6 +147,19 @@
 
 
 - job:
+    name: tobiko-devstack-functional-centos-7
+    parent: tobiko-devstack-functional
+    nodeset: devstack-single-node-centos-7
+    override-checkout: stable/train
+
+
+- job:
+    name: tobiko-devstack-functional-ubuntu-bionic
+    parent: tobiko-devstack-functional
+    nodeset: openstack-single-node-bionic
+
+
+- job:
     name: tobiko-devstack-scenario
     parent: tobiko-devstack
     abstract: true
@@ -221,12 +233,6 @@
     name: tobiko-devstack-faults-centos-7
     parent: tobiko-devstack-faults
     nodeset: openstack-three-node-centos-7
-    voting: false
-
-
-- job:
-    name: tobiko-devstack-faults-centos-7-train
-    parent: tobiko-devstack-faults-centos-7
     override-checkout: stable/train
     voting: false
     vars:
