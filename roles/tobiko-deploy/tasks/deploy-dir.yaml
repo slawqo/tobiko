@@ -47,7 +47,7 @@
     remote: '{{ git_remote | default(omit) }}'
     force: yes
   register: checkout_files
-  when: '((src_dir | length) == 0) or (create_dest_dir is changed)'
+  when: '((src_dir | length) == 0)'
 
 
 - name: "copy '{{ src_dir }}' to '{{ dest_dir }}'"
