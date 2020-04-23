@@ -9,9 +9,10 @@
         - test_host is not defined
         - item in hostvars
       loop:
-        - "undercloud-0"
-        - "tempest"
-        - "primary"
+        - undercloud-0
+        - tempest
+        - tester
+        - primary
 
     - name: "ensure '{{ tobiko_src_dir }}' directory exists"
       file:
@@ -42,7 +43,8 @@
         state: link
 
 
-- hosts: '{{ test_host | default("localhost") }}'
+- hosts:
+    '{{ test_host | default(hostvars.localhost.test_host) | default("localhost") }}'
   gather_facts: yes
   tasks:
     - include_role: name=tobiko-all
