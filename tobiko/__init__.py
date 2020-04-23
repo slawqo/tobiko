@@ -25,6 +25,7 @@ from tobiko.common import _operation
 from tobiko.common import _os
 from tobiko.common import _select
 from tobiko.common import _skip
+from tobiko.common import _utils
 
 
 details_content = _detail.details_content
@@ -88,6 +89,8 @@ SkipException = _skip.SkipException
 skip = _skip.skip
 skip_if = _skip.skip_if
 skip_unless = _skip.skip_unless
+
+get_short_hostname = _utils.get_short_hostname
 
 
 from tobiko import config  # noqa

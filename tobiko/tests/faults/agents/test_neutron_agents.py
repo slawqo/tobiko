@@ -31,6 +31,10 @@ from tobiko.shell import sh
 LOG = log.getLogger(__name__)
 
 
+class AgentNotFoundOnHost(tobiko.TobikoException):
+    message = ("Agent {agent_type!s} not found on the host {host!s}")
+
+
 class AgentTestMixin(object):
 
     def stop_service_on_agents(self, service_name, agents):
@@ -341,9 +345,12 @@ class OvsAgentTest(testtools.TestCase, AgentTestMixin):
             self.agent_service_name, self.stopped_agents)
 
     def _get_agent_from_host(self, host):
+        host_shortname = tobiko.get_short_hostname(host.name)
         for agent in self.ovs_agents:
-            if agent['host'] == host.name:
+            if host_shortname == tobiko.get_short_hostname(agent['host']):
                 return agent
+        raise AgentNotFoundOnHost(agent_type="neutron-ovs-agent",
+                                  host=host.name)
 
     def test_vm_reachability_during_stop_ovs_agent(self):
         # Check if vm is reachable before test
