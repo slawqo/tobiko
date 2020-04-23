@@ -278,6 +278,13 @@ class L3AgentTest(testtools.TestCase, AgentTestMixin):
         return True
 
     def test_radvd_during_stop_l3_agent(self):
+        os_topology = topology.get_openstack_topology()
+        if os_topology.has_containers:
+            self.skip("Radvd process is currently run directly in "
+                      "neutron-l3-agent container so it will be always killed "
+                      "when neutron-l3-agent container is killed and this "
+                      "test is not needed")
+
         if not self._is_radvd_process_expected():
             self.skip("Radvd process is not expected to be run on router %s" %
                       self.router_id)
