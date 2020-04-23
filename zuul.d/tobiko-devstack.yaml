@@ -151,6 +151,7 @@
     parent: tobiko-devstack-functional
     nodeset: devstack-single-node-centos-7
     override-checkout: stable/train
+    voting: false
 
 
 - job:
