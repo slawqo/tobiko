@@ -103,7 +103,7 @@ def wait_for_cloud_init_done(ssh_client=None, timeout=None,
 def wait_for_cloud_init_status(expected, ssh_client=None, timeout=None,
                                sleep_interval=None):
     expected = set(expected)
-    timeout = timeout and float(timeout) or 600.
+    timeout = timeout and float(timeout) or 1200.
     sleep_interval = sleep_interval and float(sleep_interval) or 5.
     start_time = time.time()
     actual = get_cloud_init_status(ssh_client=ssh_client, timeout=timeout)
