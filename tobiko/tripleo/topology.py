@@ -33,6 +33,8 @@ class TripleoTopology(topology.OpenStackTopology):
         'neutron-ovs-agent': 'tripleo_neutron_ovs_agent',
     }
 
+    has_containers = True
+
     def discover_nodes(self):
         self.discover_undercloud_nodes()
         self.discover_overcloud_nodes()

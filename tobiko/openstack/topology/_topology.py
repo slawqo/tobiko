@@ -162,6 +162,8 @@ class OpenStackTopology(tobiko.SharedFixture):
         'neutron-ovs-agent': 'devstack@q-agt',
     }
 
+    has_containers = False
+
     def __init__(self):
         super(OpenStackTopology, self).__init__()
         self._reachable_ips = set()
