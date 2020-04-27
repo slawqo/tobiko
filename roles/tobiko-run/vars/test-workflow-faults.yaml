@@ -13,6 +13,6 @@ test_workflow_steps:
 
   - tox_description: 'verify workload resources'
     tox_envlist: scenario
-    tox_step_name: verify_resources'
+    tox_step_name: verify_resources
     tox_environment:
       TOBIKO_PREVENT_CREATE: yes
