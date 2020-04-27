@@ -11,7 +11,7 @@
     run: playbooks/tripleo/run.yaml
     post-run: playbooks/tripleo/post.yaml
     vars:
-      tobiko_conf:
+      test_conf:
         keystone:
           cloud_name: standalone
       featureset: '052'
@@ -48,13 +48,14 @@
           - tripleo-environments
           - x/tobiko
 
+
 - job:
     name: tobiko-tripleo-functional
     description: Functional testing Tobiko TripleO job
     parent: tobiko-tripleo
     voting: false
     vars:
-      tox_envlist: functional
+      test_workflow: functional
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/
@@ -67,30 +68,12 @@
 
 
 - job:
-    name: tobiko-tripleo-scenario
-    description: Scenario testing Tobiko TripleO job
-    parent: tobiko-tripleo
-    abstract: true
-    vars:
-      tox_envlist: scenario
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/
-      - ^infrared/
-      - ^releasenotes/
-      - ^report/
-      - ^tobiko/tests/faults/
-      - ^tobiko/tests/functional/
-      - ^tobiko/tests/unit/
-
-
-- job:
     name: tobiko-tripleo-faults
     description: OS faults and scenario testing Tobiko TripleO job
-    parent: tobiko-tripleo-scenario
+    parent: tobiko-tripleo
     voting: false
     vars:
-      tobiko_run_faults: true
+      test_workflow: faults
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/

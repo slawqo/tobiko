@@ -14,13 +14,7 @@
 
 ---
 
-- hosts:
-    - primary
-
+- hosts: primary
   roles:
-    - name: run Tobiko test cases
-      role: tobiko
-      vars:
-        tobiko_pre_run: false
-        tobiko_run: true
-        tobiko_post_run: false
+    - tobiko-zuul
+    - tobiko-run
