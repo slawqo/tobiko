@@ -68,7 +68,6 @@
         yaml: true
         yml: true
       tobiko_dir: '/opt/stack/tobiko'
-      test_src_dir: '{{ zuul.executor.work_root }}/{{ zuul.project.src_dir }}'
 
     pre-run: playbooks/devstack/pre.yaml
     run: playbooks/devstack/run.yaml
