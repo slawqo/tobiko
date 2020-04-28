@@ -7,6 +7,7 @@
     timeout: 1800
     description: |
       Run test cases using tobiko infrared plugin
+    pre-run: playbooks/infrared/pre.yaml
     run: playbooks/infrared/run.yaml
     vars:
       test_collect_dir: '{{ zuul_output_dir }}/logs'
@@ -16,6 +17,7 @@
       tox_environ:
         ANSIBLE_INVENTORY: '{{ test_inventory_file }}'
       zuul_output_dir: '{{ ansible_user_dir }}/zuul-output'
+      zuul_work_dir: "{{ zuul.project.src_dir }}"
 
 
 - job:
