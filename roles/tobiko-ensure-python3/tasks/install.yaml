@@ -34,9 +34,14 @@
                                 (get_python_info.stdout | from_json)}) }}
 
 
-- name: "upgrade Pip command to latest version"
+- name: "upgrade '{{ python_command }}' packages to the latest versions"
   command: >
-    '{{ python_info[python_command].executable }}' -m pip install pip --upgrade --user
+    '{{ python_info[python_command].executable }}' -m pip install '{{ item }}' \
+      --upgrade --user
+  loop:
+    - pip
+    - setuptools
+    - wheel
 
 
 - name: "show python_info facts"
