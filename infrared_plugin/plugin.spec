@@ -2,7 +2,7 @@
 
 config:
   plugin_type: test
-  entry_point: infrared.yaml
+  entry_point: main.yaml
 
 
 subparsers:

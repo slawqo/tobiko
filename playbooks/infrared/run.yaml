@@ -2,7 +2,5 @@
 
 - hosts: primary
   roles:
-    - role: tobiko-ensure-python3
-    - role: tobiko-inventory
-    - role: tox
-    - role: tobiko-check-collected-files
+    - tox
+    - tobiko-check-collected-files

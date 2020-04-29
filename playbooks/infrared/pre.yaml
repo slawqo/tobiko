@@ -1,0 +1,6 @@
+---
+
+- hosts: primary
+  roles:
+    - tobiko-ensure-python3
+    - tobiko-inventory

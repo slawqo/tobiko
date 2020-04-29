@@ -17,6 +17,7 @@
     - name: "ensure '{{ tobiko_src_dir }}' directory exists"
       file:
         dest: '{{ tobiko_src_dir }}'
+        state: directory
       register:
         create_tobiko_src_dir
 
