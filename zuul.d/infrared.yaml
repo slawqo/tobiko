@@ -9,6 +9,8 @@
       Run test cases using tobiko infrared plugin
     pre-run: playbooks/infrared/pre.yaml
     run: playbooks/infrared/run.yaml
+    required-projects:
+      x/tobiko
     vars:
       test_collect_dir: '{{ zuul_output_dir }}/logs'
       test_inventory_file: '{{ zuul_work_dir }}/ansible_hosts'
@@ -17,7 +19,7 @@
       tox_environ:
         ANSIBLE_INVENTORY: '{{ test_inventory_file }}'
       zuul_output_dir: '{{ ansible_user_dir }}/zuul-output'
-      zuul_work_dir: "{{ zuul.project.src_dir }}"
+      zuul_work_dir: "{{ zuul.projects['opendev.org/x/tobiko'].src_dir }}"
 
 
 - job:
@@ -36,6 +38,7 @@
     voting: false
     description: |
       Run py36 test cases using tobiko infrared plugin on CentOS 8
+
 
 - job:
     name: tobiko-tox-infrared-ubuntu-bionic
