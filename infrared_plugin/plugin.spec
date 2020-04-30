@@ -127,6 +127,10 @@ subparsers:
             type: Value
             help: name of workflow to execute
             ansible_variable: test_workflow
+          failfast:
+            type: Flag
+            help: Stop the test run on the first step error or failure
+            ansible_variable: test_failfast
           tox-dir:
             type: Value
             help: directory from where run tox (typically test_dir)

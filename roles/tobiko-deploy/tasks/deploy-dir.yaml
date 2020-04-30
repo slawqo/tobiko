@@ -22,7 +22,7 @@
     state: directory
     owner: '{{ dest_user | default(omit) }}'
     group: '{{ dest_group | default(omit) }}'
-    mode: '0755'
+    mode: '{{ dest_mode | default(omit) }}'
     recurse: yes
   become: '{{ test_become | bool }}'
   register: create_dest_dir

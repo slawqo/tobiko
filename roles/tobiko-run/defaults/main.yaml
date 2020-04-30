@@ -1,5 +1,7 @@
 ---
 
+test_failfast: false
 test_workflow: default
 tox_step_name:
 tox_step_index: 0
+test_step_failures: []

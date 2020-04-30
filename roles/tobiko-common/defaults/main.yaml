@@ -22,6 +22,7 @@ test_git_version: 'master'
 test_src_dir: ''
 test_user: '{{ ansible_user | default(omit) }}'
 test_group: '{{ test_user }}'
+test_mode: '{{ omit }}'
 
 
 # NOTE: if test_dir and tobiko_dir variables endup being the same actual
@@ -38,6 +39,7 @@ tobiko_git_version: 'master'
 tobiko_src_dir: ''
 tobiko_user: '{{ ansible_user | default(omit) }}'
 tobiko_group: '{{ tobiko_user }}'
+tobiko_mode: '{{ omit }}'
 
 
 # --- Test configuration options ----------------------------------------------

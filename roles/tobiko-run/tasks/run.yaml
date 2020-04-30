@@ -15,6 +15,17 @@
     - (test_workflow_steps | length) > 1
 
 
-- name: '{{ test_step.tox_description }}'
-  include_role:
-    name: tobiko-tox
+- block:
+    - name: '{{ test_step.tox_description }}'
+      include_role:
+        name: tobiko-tox
+
+  rescue:
+    - name: "add step failure: '{{ tox_step_name }}'"
+      set_fact:
+        test_step_failures: '{{ test_step_failures + [test_step] }}'
+
+    - name: "abort execution at first failure"
+      debug: var=test_step
+      when: test_failfast
+      failed_when: yes

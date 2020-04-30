@@ -14,3 +14,9 @@
   loop_control:
     label: '{{ test_step.tox_description }}'
     loop_var: test_step
+
+
+- name: "report test step failures"
+  debug: var=test_step_failures
+  when: '(test_step_failures | length) > 0'
+  failed_when: yes
