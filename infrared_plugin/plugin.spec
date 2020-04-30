@@ -171,6 +171,10 @@ subparsers:
             type: Value
             help: URL or path to upper contraints file
             ansible_variable: upper_constraints_file
+          ignore-test-failures:
+            type: Flag
+            help: Ignore test execution errors
+            ansible_variable: ignore_test_failures
 
       - title: Collect stage
         options:

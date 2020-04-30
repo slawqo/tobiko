@@ -53,6 +53,7 @@ def main():
         succeeded = run_tests()
         if succeeded:
             LOG.info('SUCCEEDED')
+            sys.exit(0)
         else:
             LOG.info('FAILED')
             sys.exit(1)

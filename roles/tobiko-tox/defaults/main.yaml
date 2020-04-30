@@ -21,3 +21,10 @@ tox_constrain_env:
   TOX_REPORT_DIR: '{{ tox_report_dir }}'
   TOX_REPORT_NAME: '{{ tox_report_name }}'
   TOX_CONSTRAINTS_FILE: '{{ tox_constraints_file }}'
+
+tox_succeeded_rc: 0
+tox_failed_rc: 1
+
+tox_expected_rcs:
+  - '{{ tox_succeeded_rc }}'
+ignore_test_failures: no

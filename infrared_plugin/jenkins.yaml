@@ -1,0 +1,7 @@
+---
+
+# Test cases failures are threated as success to allow Jenkinst to complete
+# yellow builds
+tox_expected_rcs:
+  - '{{ tox_succeeded_rc }}'
+  - '{{ tox_failed_rc }}'
