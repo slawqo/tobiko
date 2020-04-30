@@ -28,3 +28,4 @@
     gate:
       jobs:
         - tobiko-devstack-functional
+        - tobiko-tox-infrared-centos-8
