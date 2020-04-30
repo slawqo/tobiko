@@ -50,7 +50,7 @@ OPTIONS = [
                  default=10.,
                  help="SSH connect timeout in seconds"),
     cfg.IntOpt('connection_attempts',
-               default=60,
+               default=100,
                help=("Maximum number of connection attempts to be tried "
                      "before timeout")),
     cfg.FloatOpt('connection_interval',
