@@ -10,17 +10,19 @@
     pre-run: playbooks/infrared/pre.yaml
     run: playbooks/infrared/run.yaml
     required-projects:
-      x/tobiko
+      - name: openstack/requirements
+      - name: x/tobiko
     vars:
       test_collect_dir: '{{ zuul_output_dir }}/logs'
       test_inventory_file: '{{ zuul_work_dir }}/ansible_hosts'
       tox_envlist: infrared
       tox_extra_args: -- --host secondary --collect-dir {{ test_collect_dir | quote }}
+      tox_constraints_file: '{{ upper_constraints_file }}'
+      upper_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/openstack/requirements/upper-constraints.txt'
       tox_environ:
         ANSIBLE_INVENTORY: '{{ test_inventory_file }}'
       zuul_output_dir: '{{ ansible_user_dir }}/zuul-output'
       zuul_work_dir: "{{ zuul.projects['opendev.org/x/tobiko'].src_dir }}"
-
 
 - job:
     name: tobiko-tox-infrared-centos-7

@@ -12,6 +12,7 @@
       - openstack/devstack-gate
       - openstack/heat
       - openstack/neutron
+      - openstack/requirements
       - x/tobiko
     timeout: 7200
     vars:
@@ -68,6 +69,7 @@
         yaml: true
         yml: true
       tobiko_dir: '/opt/stack/tobiko'
+      upper_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/openstack/requirements/upper-constraints.txt'
 
     pre-run: playbooks/devstack/pre.yaml
     run: playbooks/devstack/run.yaml

@@ -37,11 +37,12 @@
 - name: "upgrade '{{ python_command }}' packages to the latest versions"
   command: >
     '{{ python_info[python_command].executable }}' -m pip install '{{ item }}' \
-      --upgrade --user
+      --upgrade --user -c '{{ remote_constraints_file }}'
   loop:
     - pip
     - setuptools
     - wheel
+    - virtualenv
 
 
 - name: "show python_info facts"

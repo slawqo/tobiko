@@ -18,6 +18,9 @@ TOX_INI_DIR = '../..'
 
 TEST_DIR = File.dirname(__FILE__)
 
+UPPER_CONSTRAINTS_FILE = ENV.fetch(
+  "UPPER_CONSTRAINTS_FILE",
+  "https://opendev.org/openstack/requirements/raw/branch/master/upper-constraints.txt")
 
 # list of VMs
 NODES = {
@@ -120,6 +123,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       node.vm.provision "ansible" do |ansible|
         ansible.limit = 'all'
         ansible.playbook = playbook_file
+        ansible.extra_vars = {
+          'upper_constraints_file' => UPPER_CONSTRAINTS_FILE,
+        }
       end
     end
   end

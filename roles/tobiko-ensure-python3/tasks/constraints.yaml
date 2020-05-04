@@ -1,0 +1,35 @@
+---
+
+- block:
+
+    - name: "look at remote host constraints file '{{ upper_constraints_file }}'"
+      stat:
+        path: '{{ upper_constraints_file | realpath }}'
+      when: "not upper_constraints_file.startswith('http')"
+      register: stat_upper_constraints_file
+      failed_when: 'not stat_upper_constraints_file.stat.exists'
+
+    - name: "set remote upper constraints file path"
+      set_fact:
+        remote_constraints_file: '{{ upper_constraints_file }}'
+
+  rescue:
+    - name: "create temporary upper requirements file"
+      tempfile:
+        state: file
+        suffix: .txt
+      register: create_upper_constraints_file
+
+    - debug: var=create_upper_constraints_file
+
+    - name: "copy upper requirements file"
+      copy:
+        src: '{{ upper_constraints_file }}'
+        dest: '{{ create_upper_constraints_file.path }}'
+        mode: "0644"
+
+    - name: "set remote upper constraints file path"
+      set_fact:
+        remote_constraints_file: '{{ create_upper_constraints_file.path }}'
+
+    - debug: var=upper_constraints_file

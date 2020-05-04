@@ -16,12 +16,14 @@
         state: absent
 
     - name: "run Tox InfraRed plugin"
-      command: >
-        '{{ tox_executable }}' -e infrared --
-          --host secondary
-          --collect-dir '{{ test_collect_dir }}'
-      args:
+      command:
+        cmd: >
+          '{{ tox_executable }}' -e infrared --
+            --host secondary
+            --collect-dir '{{ test_collect_dir }}'
         chdir: /vagrant
+      environment:
+          UPPER_CONSTRAINTS_FILE: '{{ remote_constraints_file }}'
       ignore_errors: yes
       register: run_tox
 
