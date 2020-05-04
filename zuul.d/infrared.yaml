@@ -35,7 +35,7 @@
     name: tobiko-tox-infrared-centos-8
     parent: tobiko-tox-infrared
     nodeset: centos-8-2-node
-    voting: true
+    voting: false
     description: |
       Run py36 test cases using tobiko infrared plugin on CentOS 8
 
