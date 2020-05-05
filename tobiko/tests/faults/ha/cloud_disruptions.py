@@ -46,10 +46,12 @@ def reset_node(node_name, hard_reset=False):
     LOG.info('{} is up '.format(node_checked))
 
 
-def reset_all_controller_nodes(hard_reset=False):
+def reset_all_controller_nodes(hard_reset=False, exclude_list=None):
 
     # reboot all controllers and wait for ssh Up on them
     # hard reset is simultaneous while soft is sequential
+    # exclude_list = list of nodes to NOT reset
+
     if hard_reset:
         reset_method = hard_reset_method
     else:
@@ -58,6 +60,11 @@ def reset_all_controller_nodes(hard_reset=False):
     actual_controlplane_groups = tripleo_topology.actual_node_groups(
         controlplane_groups)
     nodes = topology.list_openstack_nodes(group=actual_controlplane_groups)
+
+    # remove excluded nodes from reset list
+    if exclude_list:
+        nodes = [node for node in nodes if node.name not in exclude_list]
+
     for controller in nodes:
         # using ssh_client.connect we use a fire and forget reboot method
         controller.ssh_client.connect().exec_command(reset_method)
@@ -72,7 +79,7 @@ def reset_all_controller_nodes(hard_reset=False):
         LOG.info('{} is up '.format(controller_checked))
 
 
-def reset_controller_main_vip(hard_reset=True):
+def reset_controller_main_vip(hard_reset=True, inverse=False):
 
     # reset the controller holding the main vip (os_auth_url)
     # ip resource (managed via pacemaker)
@@ -84,8 +91,18 @@ def reset_controller_main_vip(hard_reset=True):
     # find the node holding that resource via :
     main_vim_controller = pacemaker.get_overcloud_nodes_running_pcs_resource(
         resource=f"ip-{auth_url_ip}")[0]
-    # get that node's ssh_client and reset it
-    reset_node(main_vim_controller, hard_reset=hard_reset)
+
+    if inverse:
+        # inverse the nodes reset selection
+        reset_all_controller_nodes(hard_reset=True,
+                                   exclude_list=[main_vim_controller])
+    else:
+        # get that node's ssh_client and reset it
+        reset_node(main_vim_controller, hard_reset=hard_reset)
+
+
+def reset_controllers_non_main_vip():
+    reset_controller_main_vip(hard_reset=True, inverse=True)
 
 
 def reset_all_compute_nodes(hard_reset=False):
