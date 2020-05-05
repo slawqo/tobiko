@@ -1,4 +1,4 @@
 ---
 
 tox_command: tox
-tox_min_version: 3.4
+tox_min_version: 3.8

@@ -31,6 +31,7 @@
       loop:
         - tobiko.log
         - tobiko.conf
+        - '{{ test_report_name }}.log'
         - '{{ test_report_name }}.html'
         - '{{ test_report_name }}.subunit'
         - '{{ test_report_name }}.xml'

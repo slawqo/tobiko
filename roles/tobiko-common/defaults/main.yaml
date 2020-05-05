@@ -52,7 +52,7 @@ test_conf: {}
 # --- Test report options -----------------------------------------------------
 
 # Remote directory where test cases shoulw write report files to
-test_report_dir: "{{ test_dir | realpath }}"
+test_report_dir: "{{ test_dir | realpath }}/report"
 test_report_files:
   - '{{ test_conf_file | realpath }}'
   - '{{ test_log_file | realpath }}'

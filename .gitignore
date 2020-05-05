@@ -21,11 +21,11 @@ __pycache__
 AUTHORS
 build/*
 ChangeLog
-cover/
 doc/build/*
+cover/
 dist/
 etc/*.sample
-tobiko_results*
+report/
 test_results*
 zuul/versioninfo
 
