@@ -20,6 +20,7 @@
         - tobiko-devstack-faults-ubuntu-bionic
         - tobiko-tox-infrared-centos-8
         - tobiko-tox-infrared-ubuntu-bionic
+        - tobiko-tox-infrared-ubuntu-focal
 
     gate:
       jobs:

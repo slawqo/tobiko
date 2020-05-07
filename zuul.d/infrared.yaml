@@ -31,7 +31,7 @@
     nodeset: centos-8-2-node
     voting: true
     description: |
-      Run py36 test cases using tobiko infrared plugin on CentOS 8
+      Run test cases using tobiko infrared plugin on CentOS 8
 
 
 - job:
@@ -40,4 +40,17 @@
     nodeset: ubuntu-bionic-2-node
     voting: false
     description: |
-      Run py36 test cases using tobiko infrared plugin on Ubuntu Bionic
+      Run test cases using tobiko infrared plugin on Ubuntu Bionic
+
+
+- job:
+    name: tobiko-tox-infrared-ubuntu-focal
+    parent: tobiko-tox-infrared
+    nodeset: ubuntu-focal-2-node
+    voting: false
+    description: |
+      Run test cases using tobiko infrared plugin on Ubuntu Focal
+    vars:
+      tox_environment:
+        # This patchset fixes installing IR on Ubuntu Focal and Python 3.8
+        IR_DEPS: "git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/23/493623/2"
