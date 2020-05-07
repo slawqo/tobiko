@@ -49,6 +49,12 @@
 - debug: var=test_inventory_hostvars
 
 
+- name: "ensures inventory directory exists"
+  file:
+    path: '{{ test_inventory_file | dirname }}'
+    state: directory
+
+
 - name: "writes inventory file to: '{{ test_inventory_file }}'"
   template:
     src: 'test_inventory.j2'

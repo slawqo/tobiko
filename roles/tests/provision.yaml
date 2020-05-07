@@ -1,5 +1,19 @@
 ---
 
+- hosts: all
+  tasks:
+    - name: Register as user '{{ rh_username }}' and auto-subscribe to available content
+      become: yes
+      redhat_subscription:
+        state: present
+        username: '{{ rh_username }}'
+        password: '{{ rh_password }}'
+        auto_attach: yes
+      when:
+      - rh_username is defined
+      - rh_username != ''
+
+
 - hosts: primary
   tasks:
     - name: "copy /etc/resolv.conf"
@@ -106,5 +120,4 @@
 - hosts: primary
   roles:
     - role: tobiko-inventory
-      vars:
-        test_inventory_file: /vagrant/ansible_hosts
+    - role: tobiko-deploy

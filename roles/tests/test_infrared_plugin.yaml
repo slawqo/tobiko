@@ -2,8 +2,8 @@
 
 - hosts: primary
   vars:
-    test_src_dir: /vagrant
-    test_collect_dir: '{{ test_src_dir }}/test_results'
+    test_collect_dir: '{{ test_dir }}/test_results'
+
   roles:
     - tobiko-ensure-tox
     - tobiko-ensure-git
@@ -21,7 +21,7 @@
           '{{ tox_executable }}' -e infrared --
             --host secondary
             --collect-dir '{{ test_collect_dir }}'
-        chdir: /vagrant
+        chdir: '{{ test_dir }}'
       environment:
           UPPER_CONSTRAINTS_FILE: '{{ remote_constraints_file }}'
       ignore_errors: yes
@@ -38,7 +38,6 @@
 
 - hosts: primary
   vars:
-    test_src_dir: /vagrant
-    test_collect_dir: '{{ test_src_dir }}/test_results'
+    test_collect_dir: '{{ test_dir }}/test_results'
   roles:
     - tobiko-check-collected-files
