@@ -3,4 +3,4 @@
 - hosts: tempest
   roles:
     - tobiko-zuul
-    - tobiko-post-run
+    - tobiko-collect

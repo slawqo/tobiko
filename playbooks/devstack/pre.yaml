@@ -3,7 +3,7 @@
 - hosts: tempest
   roles:
     - tobiko-zuul
-    - tobiko-pre-run
+    - tobiko-configure
 
 
 - hosts: all
