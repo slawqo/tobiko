@@ -43,13 +43,12 @@
         dest: '{{ playbook_dir }}/roles'
         state: link
 
-    - name: "include Jenkins settings"
-      include_vars: jenkins.yaml
-      when: "(lookup('env','JENKINS_URL') | length) > 0"
-
 
 - hosts:
     '{{ test_host | default(hostvars.localhost.test_host) | default("localhost") }}'
   gather_facts: yes
   tasks:
+    - name: "include Jenkins settings"
+      include_vars: jenkins.yaml
+      when: "(lookup('env','JENKINS_URL') | length) > 0"
     - include_role: name=tobiko-all
