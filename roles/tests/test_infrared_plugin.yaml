@@ -6,8 +6,6 @@
 
   roles:
     - tobiko-ensure-tox
-    - tobiko-ensure-git
-    - tobiko-ensure-rsync
 
   tasks:
     - name: "remove '{{ test_collect_dir }}' dir"

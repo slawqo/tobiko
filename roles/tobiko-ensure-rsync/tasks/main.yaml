@@ -1,6 +1,0 @@
----
-
-- name: "ensure '{{ rsync_executable }}' command is available"
-  include_tasks: rsync.yaml
-  when:
-    - rsync_version is not defined

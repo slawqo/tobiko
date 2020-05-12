@@ -2,4 +2,3 @@
 
 dependencies:
   - role: tobiko-common
-  - role: tobiko-ensure-rsync

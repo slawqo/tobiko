@@ -1,6 +1,0 @@
----
-
-- name: "deploy test cases"
-  include_tasks: deploy.yaml
-  when:
-    - test_stage in ['all', 'pre-run', 'deploy']
