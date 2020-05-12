@@ -3,7 +3,7 @@
 - hosts: primary
   roles:
     - tobiko-zuul
-    - tobiko-pre-run
+    - tobiko-configure
 
     - name: "import tripleo-ci common role"
       role: common

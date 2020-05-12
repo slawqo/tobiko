@@ -3,4 +3,4 @@
 - hosts: primary
   roles:
     - tobiko-zuul
-    - tobiko-post-run
+    - tobiko-collect
