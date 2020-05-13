@@ -8,7 +8,9 @@
       Run unit tests for an OpenStack Python project under cPython version 3.8.
       Uses tox with the ``py38`` environment.
     # compile and install python3.8 from source code
-    pre-run: playbooks/tox-py38/pre.yaml
+    pre-run: playbooks/unit/pre.yaml
+    vars:
+      python_release: "3.8.2"
 
 
 - job:

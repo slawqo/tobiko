@@ -1,0 +1,12 @@
+---
+
+- hosts: all
+  roles:
+    - role: tobiko-compile-python
+      vars:
+        python_command: "python{{ python_version }}"
+        python_version: "{{ python_release.split('.')[:2] | join('.') }}"
+        pip_command: "pip{{ python_version }}"
+        pip_install_packages:
+          - virtualenv
+          - tox
