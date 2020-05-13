@@ -198,7 +198,7 @@ def _items_from_object(obj, schema):
 
 
 def exclude_mapping_items(mapping, exclude):
-        # Exclude parameters that are already in target dictionary
+    """Exclude parameters that are already in target dictionary"""
     return {key: value
             for key, value in mapping.items()
             if key not in exclude}

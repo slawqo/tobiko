@@ -66,7 +66,7 @@ class LocalExecutePathFixture(_path.ExecutePathFixture):
 
     executable_dirs = [os.path.realpath(os.path.join(d, 'bin'))
                        for d in [sys.prefix, sys.exec_prefix]]
-    environ = os.environ
+    environ = dict(os.environ)
 
 
 class LocalShellProcessFixture(_process.ShellProcessFixture):

@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing  # noqa
+
 from oslo_log import log
 
 import tobiko
