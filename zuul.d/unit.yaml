@@ -1,13 +1,6 @@
 ---
 
 - job:
-    name: tobiko-tox-py36-centos-8
-    parent: openstack-tox-py36
-    nodeset: centos-8
-    voting: false
-
-
-- job:
     name: tobiko-tox-py38
     parent: openstack-tox-py38
     timeout: 2400
