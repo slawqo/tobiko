@@ -13,7 +13,6 @@
 
     check:
       jobs:
-        - tobiko-tox-py36-centos-8
         - tobiko-tox-py38-centos-8
         - tobiko-devstack-functional-ubuntu-bionic
         - tobiko-devstack-functional-centos-7
