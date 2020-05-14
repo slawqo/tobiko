@@ -150,6 +150,13 @@
 
 
 - job:
+    name: tobiko-devstack-functional-centos-8
+    parent: tobiko-devstack-functional
+    nodeset: devstack-single-node-centos-8
+    voting: false
+
+
+- job:
     name: tobiko-devstack-functional-ubuntu-bionic
     parent: tobiko-devstack-functional
     nodeset: openstack-single-node-bionic
@@ -220,6 +227,13 @@
         o-hk: false
         o-hm: false
         o-api: false
+
+
+- job:
+    name: tobiko-devstack-faults-centos-8
+    parent: tobiko-devstack-faults
+    nodeset: openstack-three-node-centos-8
+    voting: false
 
 
 - job:
