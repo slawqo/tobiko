@@ -14,9 +14,11 @@
     check:
       jobs:
         - tobiko-tox-py38-centos-8
-        - tobiko-devstack-functional-ubuntu-bionic
         - tobiko-devstack-functional-centos-7
+        - tobiko-devstack-functional-centos-8
+        - tobiko-devstack-functional-ubuntu-bionic
         - tobiko-devstack-faults-centos-7
+        - tobiko-devstack-faults-centos-8
         - tobiko-devstack-faults-ubuntu-bionic
         - tobiko-tox-infrared-centos-7
         - tobiko-tox-infrared-centos-8
