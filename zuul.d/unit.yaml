@@ -10,7 +10,7 @@
     # compile and install python3.8 from source code
     pre-run: playbooks/unit/pre.yaml
     vars:
-      python_release: "3.8.2"
+      python_release: "3.8.3"
 
 
 - job:
