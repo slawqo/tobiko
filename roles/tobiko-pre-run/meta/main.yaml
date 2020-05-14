@@ -1,6 +1,0 @@
----
-
-dependencies:
-  - role: tobiko-common
-  - role: tobiko-deploy
-  - role: tobiko-configure

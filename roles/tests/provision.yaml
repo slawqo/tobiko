@@ -78,6 +78,13 @@
         state: present
         key: "{{ lookup('file', ssh_key_file + '.pub') }}"
 
+    - name: "ensure deploy tools are installed"
+      become: true
+      package: name='{{ item }}'
+      loop:
+        - git
+        - rsync
+
 
 - hosts: primary
   tasks:
@@ -120,4 +127,13 @@
 - hosts: primary
   roles:
     - role: tobiko-inventory
-    - role: tobiko-deploy
+
+  tasks:
+    - name: "copy '{{ tobiko_src_dir }}' to '{{ tobiko_dir }}'"
+      synchronize:
+        src: "{{ tobiko_src_dir | realpath }}/."
+        dest: "{{ tobiko_dir | realpath }}"
+        use_ssh_args: yes
+        recursive: yes
+        rsync_opts:
+          - '--exclude-from={{ tobiko_src_dir | realpath }}/.gitignore'

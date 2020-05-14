@@ -1,0 +1,4 @@
+---
+
+- name: 'apply Jenkins settings'
+  include_vars: jenkins.yaml

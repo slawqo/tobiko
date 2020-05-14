@@ -1,6 +1,0 @@
----
-
-dependencies:
-  - role: tobiko-common
-  - role: tobiko-ensure-rsync
-  - role: tobiko-ensure-git

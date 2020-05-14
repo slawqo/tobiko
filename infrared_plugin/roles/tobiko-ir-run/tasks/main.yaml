@@ -1,0 +1,63 @@
+---
+
+- block:
+    - include_role: name=tobiko-ir-jenkins
+      when:  "(lookup('env','JENKINS_URL') | length) > 0"
+
+    - name: "consolidate deploy facts"
+      set_fact:
+        tobiko_dir: '{{ tobiko_dir | realpath }}'
+        tobiko_src_dir: '{{ tobiko_src_dir | realpath }}'
+        tobiko_git_repo: '{{ tobiko_git_repo }}'
+        tobiko_git_version: "{{ tobiko_git_version }}"
+        tobiko_git_refspec: "{{ tobiko_git_refspec }}"
+        tobiko_git_remote: "{{ tobiko_git_remote }}"
+        test_dir: '{{ test_dir | realpath }}'
+        test_src_dir: '{{ test_src_dir | realpath }}'
+        test_git_repo: '{{ test_git_repo }}'
+        test_git_version: "{{ test_git_version }}"
+        test_git_refspec: "{{ test_git_refspec }}"
+        test_git_remote: "{{ test_git_remote }}"
+
+    - name: "deploy Tobiko files"
+      include_role: name=tobiko-ir-deploy
+      vars:
+        deploy_dir: '{{ tobiko_dir }}'
+        deploy_src_dir: '{{ tobiko_src_dir }}'
+        deploy_git_repo: '{{ tobiko_git_repo }}'
+        deploy_git_version: "{{ tobiko_git_version }}"
+        deploy_git_refspec: "{{ tobiko_git_refspec }}"
+        deploy_git_remote: '{{ tobiko_git_remote  }}'
+
+    - name: "deploy test files"
+      include_role: name=tobiko-ir-deploy
+      vars:
+        deploy_dir: '{{ test_dir }}'
+        deploy_src_dir: '{{ test_src_dir }}'
+        deploy_git_repo: '{{ test_git_repo }}'
+        deploy_git_version: "{{ test_git_version }}"
+        deploy_git_refspec: "{{ test_git_refspec }}"
+        deploy_git_remote: '{{ test_git_remote }}'
+      when: test_dir != tobiko_dir
+
+    - name: "initialize test execution"
+      include_role: name=tobiko-configure
+
+    - name: "run tests"
+      include_role: name=tobiko-run
+
+  rescue:
+    - name: "finalize test execution"
+      include_role: name=tobiko-collect
+      ignore_errors: yes
+
+    - fail:
+        msg: 'TEST EXECUTION FAILED'
+
+
+- name: "finalize test execution"
+  include_role: name=tobiko-collect
+
+
+- debug:
+    msg: 'TEST EXECUTION SUCCEEDED'
