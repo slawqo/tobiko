@@ -81,6 +81,7 @@ class OctaviaBasicTrafficScenarioTest(base.TobikoTest):
     members_count = 2
 
     def setUp(self):
+        # pylint: disable=no-member
         super(OctaviaBasicTrafficScenarioTest, self).setUp()
 
         # Wait for members
