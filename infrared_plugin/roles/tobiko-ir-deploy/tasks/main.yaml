@@ -15,26 +15,6 @@
   register: create_dest_dir
 
 
-- name: "override deploy_git_version and deploy_src_dir because deploy_git_refspec is '{{ deploy_git_refspec }}'"
-  set_fact:
-    deploy_git_version: 'FETCH_HEAD'
-    deploy_src_dir: ''
-  when: "(deploy_git_refspec | length) > 0"
-
-
-- name: "checkout files from '{{ deploy_git_repo }}[{{ deploy_git_refspec | default(deploy_git_version) }}]' to '{{ deploy_dir }}'"
-  git:
-    dest: '{{ deploy_dir }}'
-    repo: '{{ deploy_git_repo }}'
-    refspec: '{{ deploy_git_refspec or omit }}'
-    version: '{{ deploy_git_version }}'
-    remote: '{{ deploy_git_remote or omit }}'
-    force: yes
-  register: checkout_files
-  when:
-    - (deploy_git_version | length) > 0
-
-
 - name: "copy '{{ deploy_src_dir }}' to '{{ deploy_dir }}'"
   synchronize:
     src: "{{ deploy_src_dir | realpath }}/."
@@ -45,8 +25,28 @@
       - '--exclude-from={{ deploy_src_dir | realpath }}/.gitignore'
   register: copy_src_dir
   when:
-    - checkout_files is skipped
     - (deploy_src_dir | length) > 0
+
+
+- when: (copy_src_dir | length) == 0
+  block:
+
+  - name: "override deploy_git_version and deploy_src_dir because deploy_git_refspec is '{{ deploy_git_refspec }}'"
+    set_fact:
+      deploy_git_version: 'FETCH_HEAD'
+    when: "(deploy_git_refspec | length) > 0"
+
+  - name: "checkout files from '{{ deploy_git_repo }}[{{ deploy_git_refspec | default(deploy_git_version) }}]' to '{{ deploy_dir }}'"
+    git:
+      dest: '{{ deploy_dir }}'
+      repo: '{{ deploy_git_repo }}'
+      refspec: '{{ deploy_git_refspec or omit }}'
+      version: '{{ deploy_git_version or omit }}'
+      remote: '{{ deploy_git_remote or omit }}'
+      force: yes
+    register: checkout_files
+    when:
+      - (deploy_git_version | length) > 0
 
 
 - name: "get last change details for '{{ deploy_dir }}'"  # noqa 303
