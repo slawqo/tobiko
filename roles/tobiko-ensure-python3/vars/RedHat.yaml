@@ -1,7 +1,5 @@
 ---
 
-python_alternative: '/usr/bin/python3'
-
 python_packages:
   python3:
     - python3

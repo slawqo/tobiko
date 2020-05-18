@@ -1,0 +1,25 @@
+---
+
+- name: "include platform variables"
+  include_tasks: platform.yaml
+  when:
+    - python_platform is not defined
+
+
+- name: "validate Python version: {{ python_version }}"
+  assert:
+    that:
+      - (python_version | string).split(".") | length >= 1
+      - (python_version | string).split(".") | length <= 2
+      - (python_version | string).split(".")[0] == '3'
+
+
+- include_tasks: constraints.yaml
+
+
+- include_tasks: install.yaml
+
+
+- name: "set python_executable fact"
+  set_fact:
+    python_executable: '{{ python_info[python_command].executable }}'

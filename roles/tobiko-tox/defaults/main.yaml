@@ -8,7 +8,7 @@ tox_environment: {}
 tox_envlist:
 tox_extra_args: ''
 
-tox_python: '{{ python3_executable }}'
+tox_python: '{{ python_executable }}'
 tox_report_dir: '{{ test_report_dir | realpath }}'
 tox_step_name:
 tox_step_index: 0

@@ -12,42 +12,6 @@
 
 
 - nodeset:
-    name: openstack-three-node-centos-7
-    nodes:
-      - name: controller
-        label: centos-7
-      - name: compute1
-        label: centos-7
-      - name: compute2
-        label: centos-7
-
-    groups:
-      # Node where tests are executed and test results collected
-      - name: tempest
-        nodes:
-          - controller
-      # Nodes running the compute service
-      - name: compute
-        nodes:
-          - compute1
-          - compute2
-      # Nodes that are not the controller
-      - name: subnode
-        nodes:
-         - compute1
-         - compute2
-      # Switch node for multinode networking setup
-      - name: switch
-        nodes:
-          - controller
-      # Peer nodes for multinode networking setup
-      - name: peers
-        nodes:
-          - compute1
-          - compute2
-
-
-- nodeset:
     name: openstack-three-node-centos-8
     nodes:
       - name: controller

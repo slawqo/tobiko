@@ -12,8 +12,7 @@ python_exe_path:
   "{{ python_exe_dirs | join(':') }}"
 
 python_version: '3'
-python_command: 'python'
-python3_command: 'python{{ python_version }}'
+python_command: 'python{{ python_version }}'
 
 python_packages: {}
 python_info: {}

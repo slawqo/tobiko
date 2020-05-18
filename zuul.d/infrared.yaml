@@ -24,14 +24,6 @@
       zuul_output_dir: '{{ ansible_user_dir }}/zuul-output'
       zuul_work_dir: "{{ zuul.projects['opendev.org/x/tobiko'].src_dir }}"
 
-- job:
-    name: tobiko-tox-infrared-centos-7
-    parent: tobiko-tox-infrared
-    nodeset: centos-7-2-node
-    voting: false
-    description: |
-      Run py36 test cases using tobiko infrared plugin on CentOS 7
-
 
 - job:
     name: tobiko-tox-infrared-centos-8
