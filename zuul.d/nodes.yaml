@@ -12,6 +12,19 @@
 
 
 - nodeset:
+    name: ubuntu-focal-2-node
+    nodes:
+      - name: primary
+        label: ubuntu-focal
+      - name: secondary
+        label: ubuntu-focal
+    groups:
+      - name: subnodes
+        nodes:
+          - secondary
+
+
+- nodeset:
     name: openstack-three-node-centos-8
     nodes:
       - name: controller
