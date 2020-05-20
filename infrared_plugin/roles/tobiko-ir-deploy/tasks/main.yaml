@@ -28,7 +28,7 @@
     - (deploy_src_dir | length) > 0
 
 
-- when: (copy_src_dir | length) == 0
+- when: copy_src_dir is skipped
   block:
 
   - name: "override deploy_git_version and deploy_src_dir because deploy_git_refspec is '{{ deploy_git_refspec }}'"
