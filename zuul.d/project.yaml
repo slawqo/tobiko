@@ -20,10 +20,13 @@
         - tobiko-devstack-faults-ubuntu-bionic
         - tobiko-tox-infrared-centos-8
         - tobiko-tox-infrared-ubuntu-bionic
-        - tobiko-tripleo-functional
-        - tobiko-tripleo-faults
 
     gate:
       jobs:
         - tobiko-devstack-functional
         - tobiko-tox-infrared-centos-8
+
+    periodic:
+      jobs:
+        - tobiko-tripleo-functional
+        - tobiko-tripleo-faults
