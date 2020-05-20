@@ -72,12 +72,12 @@ class RebootTripleoNodesTest(testtools.TestCase):
 
     def test_reboot_controllers_recovery(self):
         overcloud_health_checks()
-        cloud_disruptions.reset_all_controller_nodes()
+        cloud_disruptions.disrupt_all_controller_nodes()
         overcloud_health_checks()
 
     def test_hard_reboot_controllers_recovery(self):
         overcloud_health_checks()
-        cloud_disruptions.reset_all_controller_nodes(hard_reset=True)
+        cloud_disruptions.reset_all_controller_nodes()
         overcloud_health_checks()
 
     def test_reboot_computes_recovery(self):
@@ -95,7 +95,17 @@ class RebootTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.reset_controllers_non_main_vip()
         overcloud_health_checks()
 
+    def test_network_disruptor_main_vip(self):
+        overcloud_health_checks()
+        cloud_disruptions.network_disrupt_controller_main_vip()
+        overcloud_health_checks()
+        cloud_disruptions.network_undisrupt_controller_main_vip()
 
+    def test_network_disruptor_non_main_vip(self):
+        overcloud_health_checks()
+        cloud_disruptions.network_disrupt_controllers_non_main_vip()
+        overcloud_health_checks()
+        cloud_disruptions.network_undisrupt_controllers_non_main_vip()
 # [..]
 # more tests to follow
 # run health checks
