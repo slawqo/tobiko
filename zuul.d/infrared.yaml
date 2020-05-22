@@ -32,10 +32,6 @@
     voting: false
     description: |
       Run test cases using tobiko infrared plugin on CentOS 7
-    vars:
-      tox_environment:
-        # This patchset fixes installing IR on CentOS 7 and Python 3.6
-        IR_DEPS: "git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/15/493715/3"
 
 
 - job:
