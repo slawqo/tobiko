@@ -53,6 +53,19 @@
 
 
 - job:
+    name: tobiko-tox-infrared-fedora-32
+    parent: tobiko-tox-infrared
+    nodeset: fedora-32-2-node
+    voting: false
+    description: |
+      Run test cases using tobiko infrared plugin on Fedora 32
+    vars:
+      tox_environment:
+        # This patchset fixes to use IR with Python 3.8
+        IR_DEPS: "git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/23/493623/3"
+
+
+- job:
     name: tobiko-tox-infrared-ubuntu-bionic
     parent: tobiko-tox-infrared
     nodeset: ubuntu-bionic-2-node

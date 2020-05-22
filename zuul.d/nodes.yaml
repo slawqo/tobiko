@@ -25,6 +25,19 @@
 
 
 - nodeset:
+    name: fedora-32-2-node
+    nodes:
+      - name: primary
+        label: fedora-32
+      - name: secondary
+        label: fedora-32
+    groups:
+      - name: subnodes
+        nodes:
+          - secondary
+
+
+- nodeset:
     name: ubuntu-focal-2-node
     nodes:
       - name: primary

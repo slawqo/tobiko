@@ -8,7 +8,7 @@ VAGRANTFILE_API_VERSION = "2"
 CPUS = 4
 
 # Customize the amount of memory on the VM
-MEMORY = ENV.fetch("VM_SIZE", "1024").to_i
+MEMORY = ENV.fetch("VM_SIZE", "4096").to_i
 
 # Every Vagrant development environment requires a box. You can search for
 # boxes at https://vagrantcloud.com/search.

@@ -13,6 +13,26 @@
         path: '{{ test_collect_dir }}'
         state: absent
 
+    - name: "show ansible distro variables"
+      debug:
+        msg:
+          ansible_architecture: '{{ ansible_architecture }}'
+          ansible_distribution: '{{ ansible_distribution }}'
+          ansible_distribution_major_version: '{{ ansible_distribution_major_version }}'
+          ansible_distribution_version: '{{ ansible_distribution_version }}'
+          ansible_os_family: '{{ ansible_os_family }}'
+
+    - name: "include platform variables"
+      include_vars: "{{ item }}"
+      ignore_errors: yes
+      with_first_found:
+        - "test-{{ ansible_distribution }}-{{ ansible_distribution_version }}.yaml"
+        - "test-{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yaml"
+        - "test-{{ ansible_distribution }}.{{ ansible_architecture }}.yaml"
+        - "test-{{ ansible_distribution }}.yaml"
+        - "test-{{ ansible_os_family }}.yaml"
+      register: include_platform_vars
+
     - name: "run Tox InfraRed plugin"
       command:
         cmd: >
@@ -21,7 +41,7 @@
             --collect-dir '{{ test_collect_dir }}'
         chdir: '{{ test_dir }}'
       environment:
-          UPPER_CONSTRAINTS_FILE: '{{ remote_constraints_file }}'
+        IR_DEPS: "{{ ir_deps | default('') }}"
       ignore_errors: yes
       register: run_tox
 
