@@ -70,5 +70,5 @@
       Run test cases using tobiko infrared plugin on Ubuntu Focal
     vars:
       tox_environment:
-        # This patchset fixes installing IR on Ubuntu Focal and Python 3.8
-        IR_DEPS: "git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/23/493623/2"
+        # This patchset fixes to use IR with Python 3.8
+        IR_DEPS: "git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/23/493623/3"
