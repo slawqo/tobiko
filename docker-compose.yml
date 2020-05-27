@@ -1,0 +1,32 @@
+---
+
+version: '3.4'
+services:
+  py3:
+    build:
+      context: .
+      target: tests
+      args:
+        OS_TEST_PATH: ./tests/unit
+  functional:
+    build:
+      context: .
+      target: tests
+      args:
+        OS_TEST_PATH: ./tests/functional
+  scenario:
+    build:
+      context: .
+      target: tests
+      args:
+        OS_TEST_PATH: ./tests/scenario
+  faults:
+    build:
+      context: .
+      target: tests
+      args:
+        OS_TEST_PATH: ./tests/faults
+  infrared:
+    build:
+      context: ./infrared_plugin
+      target: tobiko_plugin

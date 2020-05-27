@@ -1,0 +1,47 @@
+*.sw?
+*.egg
+*.egg-info
+*.pyc
+*.log
+
+# Hidden files
+.coverage
+.coverage.*
+.eggs
+.mypy_cache
+.stestr
+.test
+.testrepository
+.tobiko-env
+.tox
+.vagrant
+.venv
+
+__pycache__
+AUTHORS
+build/*
+ChangeLog
+doc/build/*
+cover/
+dist/
+etc/*.sample
+report/
+test_results*
+zuul/versioninfo
+
+# Files created by releasenotes build
+releasenotes/build
+
+# Docs related files
+doc/source/_static/config-samples/*.sample
+
+Pipfile.lock
+
+# Tobiko configuration file
+tobiko.conf
+clouds.yaml
+ssh_config
+
+# Infrared things
+.infrared
+workspace.tgz
