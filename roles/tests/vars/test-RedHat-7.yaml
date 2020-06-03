@@ -1,0 +1,5 @@
+---
+
+# This InfraRed patchset is required to workaround missing SE Linux Python 3 bindings
+#  https://review.gerrithub.io/c/redhat-openstack/infrared/+/493715
+ir_deps: "git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/15/493715/5"
