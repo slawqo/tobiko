@@ -1,3 +1,6 @@
 ---
 
 compile_python3: yes
+
+python_release: "3.7.7"
+python_command: "python3.7"

@@ -13,6 +13,7 @@
       - name: openstack/requirements
       - name: x/tobiko
     vars:
+      ensure_pip_from_packages_with_python2: no
       test_collect_dir: '{{ zuul_output_dir }}/logs'
       test_inventory_file: '{{ zuul_work_dir }}/ansible_hosts'
       tox_envlist: infrared
@@ -32,6 +33,10 @@
     voting: false
     description: |
       Run test cases using tobiko infrared plugin on CentOS 7
+    vars:
+      tox_environment:
+        # This patchset is required to workaround missing SE Linux Python 3 bindings
+        IR_DEPS: "git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/15/493715/5"
 
 
 - job:
