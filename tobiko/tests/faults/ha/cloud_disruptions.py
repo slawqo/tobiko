@@ -16,7 +16,22 @@ LOG = log.getLogger(__name__)
 
 hard_reset_method = 'sudo chmod o+w /proc/sysrq-trigger;' \
                'sudo echo b > /proc/sysrq-trigger'
+
 soft_reset_method = 'sudo reboot'
+
+network_disruption = """
+ sudo iptables-save -f /root/working.iptables.rules &&
+ sudo iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT &&
+ sudo iptables -A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j \
+ ACCEPT &&
+ sudo iptables -A INPUT ! -i lo -j REJECT --reject-with icmp-host-prohibited &&
+ sudo iptables -A OUTPUT -p tcp --sport 22 -j ACCEPT &&
+ sudo iptables -A OUTPUT ! -o lo -j REJECT --reject-with icmp-host-prohibited
+"""
+
+undisrupt_network = """
+ sudo iptables-restore /root/working.iptables.rules
+"""
 
 
 def get_node(node_name):
@@ -24,38 +39,57 @@ def get_node(node_name):
             node.name == node_name][0]
 
 
-def reset_node(node_name, hard_reset=False):
+def network_disrupt_node(node_name, disrupt_method=network_disruption):
+    disrupt_node(node_name, disrupt_method=disrupt_method)
+
+
+def network_undisrupt_node(node_name, disrupt_method=undisrupt_network):
+    disrupt_node(node_name, disrupt_method=disrupt_method)
+
+
+def reset_node(node_name, disrupt_method=hard_reset_method):
+    disrupt_node(node_name, disrupt_method=disrupt_method)
+
+
+def disrupt_node(node_name, disrupt_method=hard_reset_method):
 
     # reboot all controllers and wait for ssh Up on them
     # hard reset is simultaneous while soft is sequential
-    if hard_reset:
-        reset_method = hard_reset_method
-    else:
-        reset_method = soft_reset_method
+    # method : method of disruptino to use : reset | network_disruption
 
     # using ssh_client.connect we use a fire and forget reboot method
     node = get_node(node_name)
-    node.ssh_client.connect().exec_command(reset_method)
-    LOG.info('reboot exec: {} on server: {}'.format(reset_method,
-                                                    node.name))
-    tobiko.cleanup_fixture(node.ssh_client)
+    node.ssh_client.connect().exec_command(disrupt_method)
+    LOG.info('disrupt exec: {} on server: {}'.format(disrupt_method,
+                                                     node.name))
 
     node_checked = sh.execute("hostname",
                               ssh_client=node.ssh_client,
                               expect_exit_status=None).stdout
     LOG.info('{} is up '.format(node_checked))
 
+    tobiko.cleanup_fixture(node.ssh_client)
 
-def reset_all_controller_nodes(hard_reset=False, exclude_list=None):
 
+def network_disrupt_all_controller_nodes(disrupt_method=network_disruption,
+                                         exclude_list=None):
+    disrupt_all_controller_nodes(disrupt_method=disrupt_method,
+                                 exclude_list=exclude_list)
+
+
+def reset_all_controller_nodes(disrupt_method=hard_reset_method,
+                               exclude_list=None):
+    disrupt_all_controller_nodes(disrupt_method=disrupt_method,
+                                 exclude_list=exclude_list)
+
+
+def disrupt_all_controller_nodes(disrupt_method=hard_reset_method,
+                                 exclude_list=None):
     # reboot all controllers and wait for ssh Up on them
+    # method : method of disruptino to use : reset | network_disruption
     # hard reset is simultaneous while soft is sequential
     # exclude_list = list of nodes to NOT reset
 
-    if hard_reset:
-        reset_method = hard_reset_method
-    else:
-        reset_method = soft_reset_method
     controlplane_groups = ['controller', 'messaging', 'database', 'networker']
     actual_controlplane_groups = tripleo_topology.actual_node_groups(
         controlplane_groups)
@@ -67,9 +101,9 @@ def reset_all_controller_nodes(hard_reset=False, exclude_list=None):
 
     for controller in nodes:
         # using ssh_client.connect we use a fire and forget reboot method
-        controller.ssh_client.connect().exec_command(reset_method)
-        LOG.info('reboot exec: {} on server: {}'.format(reset_method,
-                                                        controller.name))
+        controller.ssh_client.connect().exec_command(disrupt_method)
+        LOG.info('disrupt exec: {} on server: {}'.format(disrupt_method,
+                                                         controller.name))
         tobiko.cleanup_fixture(controller.ssh_client)
 
     for controller in topology.list_openstack_nodes(group='controller'):
@@ -79,30 +113,67 @@ def reset_all_controller_nodes(hard_reset=False, exclude_list=None):
         LOG.info('{} is up '.format(controller_checked))
 
 
-def reset_controller_main_vip(hard_reset=True, inverse=False):
+def get_main_vip():
+    """return the ip of the overcloud main_vip"""
+    credentials = keystone.default_keystone_credentials()
+    auth_url = credentials.auth_url
+    auth_url_ip = re.findall(r'[0-9]+(?:\.[0-9]+){3}', auth_url)[0]
+    return auth_url_ip
+
+
+def get_main_vip_controller(main_vip):
+    """return the controller hostname ,
+    which is holding the main_vip pacemaker resource"""
+    main_vim_controller = pacemaker.get_overcloud_nodes_running_pcs_resource(
+        resource=f"ip-{main_vip}")[0]
+    return main_vim_controller
+
+
+def disrupt_controller_main_vip(disrupt_method=hard_reset_method,
+                                inverse=False):
 
     # reset the controller holding the main vip (os_auth_url)
     # ip resource (managed via pacemaker)
     # find main vip by getting it from
-    credentials = keystone.default_keystone_credentials()
-    auth_url = credentials.auth_url
-    auth_url_ip = re.findall(r'[0-9]+(?:\.[0-9]+){3}', auth_url)[0]
+    main_vip = get_main_vip()
 
     # find the node holding that resource via :
-    main_vim_controller = pacemaker.get_overcloud_nodes_running_pcs_resource(
-        resource=f"ip-{auth_url_ip}")[0]
+
+    main_vim_controller = get_main_vip_controller(main_vip)
 
     if inverse:
         # inverse the nodes reset selection
-        reset_all_controller_nodes(hard_reset=True,
-                                   exclude_list=[main_vim_controller])
+        disrupt_all_controller_nodes(disrupt_method=disrupt_method,
+                                     exclude_list=[main_vim_controller])
     else:
         # get that node's ssh_client and reset it
-        reset_node(main_vim_controller, hard_reset=hard_reset)
+        disrupt_node(main_vim_controller, disrupt_method=disrupt_method)
+
+
+def reset_controller_main_vip():
+    disrupt_controller_main_vip(disrupt_method=hard_reset_method)
 
 
 def reset_controllers_non_main_vip():
-    reset_controller_main_vip(hard_reset=True, inverse=True)
+    disrupt_controller_main_vip(disrupt_method=hard_reset_method, inverse=True)
+
+
+def network_disrupt_controller_main_vip():
+    disrupt_controller_main_vip(disrupt_method=network_disruption)
+
+
+def network_undisrupt_controller_main_vip():
+    disrupt_controller_main_vip(disrupt_method=undisrupt_network)
+
+
+def network_disrupt_controllers_non_main_vip():
+    disrupt_controller_main_vip(disrupt_method=network_disruption,
+                                inverse=True)
+
+
+def network_undisrupt_controllers_non_main_vip():
+    disrupt_controller_main_vip(disrupt_method=undisrupt_network,
+                                inverse=True)
 
 
 def reset_all_compute_nodes(hard_reset=False):
