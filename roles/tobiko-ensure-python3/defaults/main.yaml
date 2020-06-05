@@ -17,4 +17,5 @@ python_command: 'python{{ python_version }}'
 python_packages: {}
 python_info: {}
 
+enable_yum_repos: []
 compile_python3: no

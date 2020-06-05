@@ -1,5 +1,12 @@
 ---
 
+- name: "enable yum repos"
+  become: yes
+  command:
+    yum-config-manager --enable '{{ item }}'
+  loop: '{{ enable_yum_repos }}'
+
+
 - name: "install '{{ python_command }}' packages"
   become: '{{ test_become | bool }}'
   package:
