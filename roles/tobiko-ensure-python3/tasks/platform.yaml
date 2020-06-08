@@ -1,23 +1,44 @@
 ---
 
-- name: "show ansible distro variables"
-  debug:
-    msg:
-      ansible_architecture: '{{ ansible_architecture }}'
-      ansible_distribution: '{{ ansible_distribution }}'
-      ansible_distribution_major_version: '{{ ansible_distribution_major_version }}'
-      ansible_os_family: '{{ ansible_os_family }}'
+- when: osp_version is not defined
+  block:
+  - name: "get RHOSP version"
+    register: get_rhosp_version
+    shell:
+      awk '{print $6}' /etc/rhosp-release
+
+  - name: show RHOSP version
+    debug: var=get_rhosp_version.stdout_lines
+
+  - name: set rhosp_version and python_vars_prefixes facts
+    set_fact:
+      rhosp_version: '{{ get_rhosp_version.stdout_lines | first }}'
+      python_vars_prefixes: "{{ ['rhosp'] + python_vars_prefixes }}"
+
+  rescue:
+  - debug:
+      msg='this is not an RHOSP host'
+
+
+- name:
+  set_fact:
+    python_vars_files: >
+      {{ python_vars_prefixes |
+         product(python_vars_names) |
+         map('join', '-') |
+         product(['yaml']) |
+         map('join', '.') |
+         list }}
+
+
+- name: "show platform vars files"
+  debug: var=python_vars_files
 
 
 - name: "include platform variables"
   include_vars: "{{ item }}"
   ignore_errors: yes
-  with_first_found:
-    - "py3-{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yaml"
-    - "py3-{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yaml"
-    - "py3-{{ ansible_distribution }}.{{ ansible_architecture }}.yaml"
-    - "py3-{{ ansible_distribution }}.yaml"
-    - "py3-{{ ansible_os_family }}.yaml"
+  with_first_found: '{{ python_vars_files }}'
   register: include_platform_vars
 
 

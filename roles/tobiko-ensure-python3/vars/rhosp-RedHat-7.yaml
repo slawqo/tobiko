@@ -1,7 +1,7 @@
 ---
 
 enable_yum_repos:
-  - rhel-7-server-optional-rpms
+  - rhelosp-rhel-*-server-opt
 
 python_packages:
   python3:

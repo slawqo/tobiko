@@ -3,7 +3,7 @@
 - name: "enable yum repos"
   become: yes
   shell:
-    yum-config-manager --enable '{{ item }}' |grep baseurl
+    yum-config-manager --enable '{{ item }}' | grep baseurl
   loop: '{{ enable_yum_repos }}'
 
 

@@ -19,3 +19,13 @@ python_info: {}
 
 enable_yum_repos: []
 compile_python3: no
+
+python_vars_prefixes:
+  - py3
+
+python_vars_names:
+  - "{{ ansible_distribution }}-{{ ansible_distribution_version }}"
+  - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}"
+  - "{{ ansible_os_family }}-{{ ansible_distribution_major_version }}"
+  - "{{ ansible_distribution }}"
+  - "{{ ansible_os_family }}"
