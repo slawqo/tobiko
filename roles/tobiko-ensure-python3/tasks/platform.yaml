@@ -13,11 +13,11 @@
   include_vars: "{{ item }}"
   ignore_errors: yes
   with_first_found:
-    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yaml"
-    - "{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yaml"
-    - "{{ ansible_distribution }}.{{ ansible_architecture }}.yaml"
-    - "{{ ansible_distribution }}.yaml"
-    - "{{ ansible_os_family }}.yaml"
+    - "py3-{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yaml"
+    - "py3-{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yaml"
+    - "py3-{{ ansible_distribution }}.{{ ansible_architecture }}.yaml"
+    - "py3-{{ ansible_distribution }}.yaml"
+    - "py3-{{ ansible_os_family }}.yaml"
   register: include_platform_vars
 
 
