@@ -64,10 +64,6 @@
     voting: false
     description: |
       Run test cases using tobiko infrared plugin on Fedora 32
-    vars:
-      tox_environment:
-        # This patchset fixes to use IR with Python 3.8
-        IR_DEPS: "git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/23/493623/5"
 
 
 - job:
@@ -86,7 +82,3 @@
     voting: false
     description: |
       Run test cases using tobiko infrared plugin on Ubuntu Focal
-    vars:
-      tox_environment:
-        # This patchset fixes to use IR with Python 3.8
-        IR_DEPS: "git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/23/493623/5"
