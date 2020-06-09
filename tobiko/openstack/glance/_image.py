@@ -18,6 +18,7 @@ import io
 import os
 import tempfile
 import time
+import typing
 
 from oslo_log import log
 import requests
@@ -182,8 +183,10 @@ class UploadGranceImageFixture(GlanceImageFixture):
     disk_format = "raw"
     container_format = "bare"
     create_image_retries = None
+    tags: typing.List[str] = []
 
-    def __init__(self, disk_format=None, container_format=None, **kwargs):
+    def __init__(self, disk_format=None, container_format=None, tags=None,
+                 **kwargs):
         super(UploadGranceImageFixture, self).__init__(**kwargs)
 
         if container_format:
@@ -193,6 +196,9 @@ class UploadGranceImageFixture(GlanceImageFixture):
         if disk_format:
             self.disk_format = disk_format
         tobiko.check_valid_type(self.disk_format, str)
+
+        self.tags = list(tags or self.tags)
+        tobiko.check_valid_type(self.tags, list)
 
         self.prevent_image_create = get_bool_env('TOBIKO_PREVENT_CREATE')
 
@@ -223,10 +229,7 @@ class UploadGranceImageFixture(GlanceImageFixture):
                               '(re-tries left %d)...',
                               self.image_name, retries)
                     image_id = _client.create_image(
-                        client=self.glance_client,
-                        name=self.image_name,
-                        disk_format=self.disk_format,
-                        container_format=self.container_format)['id']
+                        **self.create_image_parameters)['id']
 
                     cleanup_image_ids.add(image_id)
                     LOG.debug('Created image %r (id=%r)...',
@@ -249,6 +252,14 @@ class UploadGranceImageFixture(GlanceImageFixture):
                 cleanup_image_ids.remove(image.id)
 
         return image
+
+    @property
+    def create_image_parameters(self):
+        return dict(client=self.glance_client,
+                    name=self.image_name,
+                    disk_format=self.disk_format,
+                    container_format=self.container_format,
+                    tags=self.tags)
 
     @contextlib.contextmanager
     def _cleanup_image_ids(self):

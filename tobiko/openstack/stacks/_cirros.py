@@ -76,3 +76,14 @@ class RebootCirrosServerOperation(sh.RebootHostOperation):
     @property
     def ssh_client(self):
         return self.stack.ssh_client
+
+
+class EvacuableCirrosImageFixture(CirrosImageFixture):
+
+    tags = ['evacuable']
+
+
+class EvacuableServerStackFixture(CirrosServerStackFixture):
+
+    #: Glance image used to create a Nova server instance
+    image_fixture = tobiko.required_setup_fixture(EvacuableCirrosImageFixture)

@@ -52,3 +52,17 @@ class CirrosServerStackTest(testtools.TestCase):
         self.stack.ssh_client.connect()
         output = self.stack.console_output
         self.assertTrue(output)
+
+
+class EvacuablesServerStackTest(CirrosServerStackTest):
+
+    #: Stack of resources with a server attached to a floating IP
+    stack = tobiko.required_setup_fixture(stacks.EvacuableServerStackFixture)
+
+    def test_image_fixture_tags(self):
+        image_fixture = self.stack.image_fixture
+        self.assertEqual(['evacuable'], image_fixture.tags)
+
+    def test_image_tags(self):
+        image = self.stack.image_fixture.get_image()
+        self.assertEqual(['evacuable'], image.tags)
