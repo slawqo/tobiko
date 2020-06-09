@@ -69,12 +69,12 @@ def ensure_workspace(filename=None):
     workspace = common.name_from_path(filename)
     if os.path.isfile(filename):
         try:
-            common.execute('ir workspace import "{}"', filename)
+            common.execute('ir workspace delete "{}"', workspace)
         except subprocess.CalledProcessError as ex:
-            LOG.debug("workspace file '%s' not imported: %s", filename, ex)
-        else:
-            LOG.info("workspace imported from file '%s'", filename)
-            return
+            LOG.debug("workspace '%s' not deleted: %s", workspace, ex)
+        common.execute('ir workspace import "{}"', filename)
+        LOG.info("workspace imported from file '%s'", filename)
+        return
     else:
         LOG.debug("workspace file not found: '%s'", filename)
 
