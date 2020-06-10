@@ -60,7 +60,7 @@
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/
-      - ^infrared/
+      - ^infrared_plugin/
       - ^releasenotes/
       - ^report/
       - ^tobiko/tests/faults/
@@ -78,7 +78,7 @@
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/
-      - ^infrared/
+      - ^infrared_plugin/
       - ^releasenotes/
       - ^report/
       - ^tobiko/tests/functional/
