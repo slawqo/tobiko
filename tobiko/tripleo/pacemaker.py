@@ -67,9 +67,10 @@ def get_pcs_resources_table():
             output = sh.execute("sudo pcs status | grep ocf",
                                 ssh_client=ssh_client,
                                 expect_exit_status=None).stdout
+            # remove the first column when it only includes '*' characters
+            output = output.replace('*', '').strip()
             stream = six.StringIO(output)
             table = pandas.read_csv(stream, delim_whitespace=True, header=None)
-
             table.columns = ['resource', 'resource_type', 'resource_state',
                              'overcloud_node']
         except ValueError:
