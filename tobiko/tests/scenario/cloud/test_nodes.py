@@ -17,7 +17,6 @@ from __future__ import absolute_import
 import testtools
 
 import tobiko
-from tobiko import docker
 from tobiko.shell import ip
 from tobiko.shell import ping
 from tobiko.shell import sh
@@ -60,21 +59,3 @@ class OpenstackNodesTest(testtools.TestCase):
                     tobiko.fail("Duplicate network namespace {!r} in node "
                                 "{!r}: {!r}, {!r}", namespace, node.name,
                                 other_ips, ips)
-
-    def test_controller_containers(self):
-        for node in self.topology.get_group('controller'):
-            self._test_node_containers(node=node)
-
-    def test_compute_containers(self):
-        for node in self.topology.get_group('compute'):
-            self._test_node_containers(node=node)
-
-    def _test_node_containers(self, node):
-        if docker.is_docker_running(ssh_client=node.ssh_client):
-            containers = docker.list_docker_containers(
-                client=node.docker_client)
-            self.assertNotEqual([], containers)
-            for container in containers:
-                self.assertEqual('running', container.status,
-                                 'container {!r} is not running'.format(
-                                     container.name))
