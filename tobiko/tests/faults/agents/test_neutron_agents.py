@@ -245,6 +245,7 @@ class L3AgentTest(testtools.TestCase, AgentTestMixin):
         self.start_service_on_agents(
             self.agent_service_name, self.stopped_agents)
 
+    @neutron.skip_if_missing_networking_extensions('l3_agent_scheduler')
     def test_metadata_haproxy_during_stop_L3_agent(self):
         network_l3_agents = neutron.list_l3_agent_hosting_routers(
             self.router_id)
