@@ -59,3 +59,10 @@
 
 - name: "show last change details"
   debug: var=get_git_log.stdout_lines
+
+#we need also the master here so we are on the latest branch of validations
+- name: "get validation-framework master checks"
+  git:
+    repo: https://github.com/openstack/tripleo-validations.git
+    dest: "{{ ansible_env.HOME }}/tripleo-validations"
+    version: master

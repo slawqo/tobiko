@@ -8,6 +8,7 @@ from tobiko.tripleo import containers
 from tobiko.tripleo import nova
 from tobiko.tripleo import neutron
 from tobiko.tripleo import undercloud
+from tobiko.tripleo import validations
 
 
 def overcloud_health_checks(passive_checks_only=False):
@@ -23,6 +24,7 @@ def overcloud_health_checks(passive_checks_only=False):
     containers.list_node_containers.cache_clear()
     containers.assert_all_tripleo_containers_running()
     containers.assert_equal_containers_state()
+    validations.run_post_deployment_validations()
 
 
 # check vm create with ssh and ping checks
