@@ -9,6 +9,7 @@ from tobiko.openstack import topology
 from tobiko.tripleo import topology as tripleo_topology
 from tobiko.openstack import keystone
 from tobiko.tripleo import pacemaker
+from tobiko.tripleo import containers
 from oslo_log import log
 from tobiko.tests.faults.ha import test_cloud_recovery
 
@@ -33,6 +34,7 @@ network_disruption = """
 undisrupt_network = """
  sudo iptables-restore /root/working.iptables.rules
 """
+ovn_db_pcs_resource_restart = """sudo pcs resource restart ovn-dbs-bundle"""
 
 
 def get_node(node_name):
@@ -203,3 +205,22 @@ def reset_all_compute_nodes(hard_reset=False):
         compute_checked = sh.execute("hostname", ssh_client=compute.ssh_client,
                                      expect_exit_status=None).stdout
         LOG.info('{} is up '.format(compute_checked))
+
+
+def reset_ovndb_master_resource():
+    """restart ovndb pacemaker resource"""
+    disrupt_node('controller-0', disrupt_method=ovn_db_pcs_resource_restart)
+
+
+def reset_ovndb_master_container():
+    """get and restart the ovndb master container
+    use of partial name :  resource: ovn-dbs-bundle-0 =>
+    container: ovn-dbs-bundle-podman-2"""
+    node = pacemaker.get_overcloud_nodes_running_pcs_resource(
+        resource_type='(ocf::ovn:ovndb-servers):', resource_state='Master')[0]
+    resource = pacemaker.get_overcloud_resource(
+        resource_type='(ocf::ovn:ovndb-servers):', resource_state='Master')
+    resource = resource[0].rsplit('-', 1)[0]
+    containers.action_on_container('restart',
+                                   partial_container_name=resource,
+                                   container_host=node)

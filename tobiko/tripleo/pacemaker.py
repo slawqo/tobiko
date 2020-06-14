@@ -234,7 +234,7 @@ def get_overcloud_nodes_running_pcs_resource(resource=None,
                                              resource_state=None):
     """
     Check what nodes are running the specified resource/type/state
-    resource/type/state: exact str of a process name as seen in pcs status
+    resource/type/state: exact str of a resource name as seen in pcs status
     :return: list of overcloud nodes
     """
     pcs_df = get_pcs_resources_table()
@@ -254,3 +254,35 @@ def get_overcloud_nodes_running_pcs_resource(resource=None,
         pcs_df_query_resource_type = pcs_df.query(
             'resource_type=="{}"'.format(resource_type))
         return pcs_df_query_resource_type['overcloud_node'].unique().tolist()
+
+
+def get_resource_master_node(resource_type=None):
+    get_overcloud_nodes_running_pcs_resource(
+        resource_type=resource_type, resource_state='Master')
+
+
+def get_ovn_db_master_node():
+    get_overcloud_nodes_running_pcs_resource(
+        resource_type='(ocf::ovn:ovndb-servers):', resource_state='Master')
+
+
+def get_overcloud_resource(resource_type=None,
+                           resource_state=None):
+    """
+    Check what nodes are running the specified resource/type/state
+    resource/type/state: exact str of a resource name as seen in pcs status
+    :return: list of overcloud nodes
+    """
+    pcs_df = get_pcs_resources_table()
+
+    if resource_type and resource_state:
+        pcs_df_query_resource_type_state = pcs_df.query(
+            'resource_type=="{}" and resource_state=="{}"'.format(
+                resource_type, resource_state))
+        return pcs_df_query_resource_type_state[
+            'resource'].unique().tolist()
+
+    if resource_type and not resource_state:
+        pcs_df_query_resource_type = pcs_df.query(
+            'resource_type=="{}"'.format(resource_type))
+        return pcs_df_query_resource_type['resource'].unique().tolist()

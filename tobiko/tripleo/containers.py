@@ -262,11 +262,18 @@ def list_containers_objects_df():
     return containers_objects_list_df
 
 
-def get_overcloud_container(container_name=None, container_host=None):
+def get_overcloud_container(container_name=None, container_host=None,
+                            partial_container_name=None):
     """gets an container object by name on specified host
     container"""
     con_obj_df = list_containers_objects_df()
-    if container_host:
+    if partial_container_name and container_host:
+        con_obj_df = con_obj_df[con_obj_df['container_name'].str.contains(
+            partial_container_name)]
+        contaniner_obj = con_obj_df.query(
+            'container_host == "{container_host}"'.format(
+                container_host=container_host))['container_object']
+    elif container_host:
         contaniner_obj = con_obj_df.query(
             'container_name == "{container_name}"'
             ' and container_host == "{container_host}"'.
@@ -283,12 +290,14 @@ def get_overcloud_container(container_name=None, container_host=None):
 
 
 def action_on_container(action,
-                        container_name=None, container_host=None):
+                        container_name=None, container_host=None,
+                        partial_container_name=None):
     """take a container snd preform an action on it
     actions are as defined in : podman/libs/containers.py:14/164"""
     container = get_overcloud_container(
         container_name=container_name,
-        container_host=container_host)
+        container_host=container_host,
+        partial_container_name=partial_container_name)
     # we get the specified action as function from podman lib
     if container_runtime_module == podman:
         container_function = getattr(

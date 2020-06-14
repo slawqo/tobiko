@@ -122,6 +122,16 @@ class RebootTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.network_disrupt_controllers_non_main_vip()
         overcloud_health_checks()
         cloud_disruptions.network_undisrupt_controllers_non_main_vip()
+
+    def test_reset_ovndb_master_resource(self):
+        overcloud_health_checks()
+        cloud_disruptions.reset_ovndb_master_resource()
+        overcloud_health_checks()
+
+    def test_reset_ovndb_master_container(self):
+        overcloud_health_checks()
+        cloud_disruptions.reset_ovndb_master_container()
+        overcloud_health_checks()
 # [..]
 # more tests to follow
 # run health checks
