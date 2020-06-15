@@ -1,11 +1,6 @@
 from __future__ import absolute_import
 
-import random
-from oslo_log import log
-
 import testtools
-from tobiko.shell import ping
-from tobiko.shell import sh
 from tobiko.tests.faults.ha import cloud_disruptions
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import processes
@@ -13,11 +8,6 @@ from tobiko.tripleo import containers
 from tobiko.tripleo import nova
 from tobiko.tripleo import neutron
 from tobiko.tripleo import undercloud
-from tobiko.openstack import stacks
-import tobiko
-
-
-LOG = log.getLogger(__name__)
 
 
 def overcloud_health_checks(passive_checks_only=False):
@@ -29,37 +19,15 @@ def overcloud_health_checks(passive_checks_only=False):
     if not passive_checks_only:
         # create a uniq stack
         check_vm_create()
-    else:
-        # verify VM status is updated after reboot
-        nova.wait_for_all_instances_status('SHUTOFF')
-    nova.start_all_instances()
+        nova.start_all_instances()
     containers.list_node_containers.cache_clear()
     containers.assert_all_tripleo_containers_running()
     containers.assert_equal_containers_state()
 
 
 # check vm create with ssh and ping checks
-def check_vm_create(stack_name='stack{}'.format(random.randint(0, 1000000))):
-    """stack_name: unique stack name ,
-    so that each time a new vm is created"""
-    # create a vm
-    stack = stacks.CirrosServerStackFixture(
-        stack_name=stack_name)
-    tobiko.reset_fixture(stack)
-    stack.wait_for_create_complete()
-    # Test SSH connectivity to floating IP address
-    sh.get_hostname(ssh_client=stack.ssh_client)
-
-    # Test ICMP connectivity to floating IP address
-    ping.ping_until_received(
-        stack.floating_ip_address).assert_replied()
-
-
-def check_overcloud_node_responsive(node):
-    """wait until we get response for hostname command"""
-    hostname_check = sh.execute("hostname", ssh_client=node.ssh_client,
-                                expect_exit_status=None).stdout
-    LOG.info('{} is up '.format(hostname_check))
+def check_vm_create():
+    nova.random_vm_create()
 
 
 # check cluster failed statuses
@@ -73,7 +41,7 @@ def check_overcloud_processes_health():
 
 
 @undercloud.skip_if_missing_undercloud
-class RebootTripleoNodesTest(testtools.TestCase):
+class DisruptTripleoNodesTest(testtools.TestCase):
 
     """ HA Tests: run health check -> disruptive action -> health check
     disruptive_action: a function that runs some
@@ -91,14 +59,11 @@ class RebootTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.reset_all_controller_nodes()
         overcloud_health_checks()
 
-    def test_sequentially_hard_reboot_controllers_recovery(self):
-        overcloud_health_checks()
-        cloud_disruptions.reset_all_controller_nodes_sequentially()
-        overcloud_health_checks()
-
     def test_reboot_computes_recovery(self):
         overcloud_health_checks()
         cloud_disruptions.reset_all_compute_nodes(hard_reset=True)
+        # verify VM status is updated after reboot
+        nova.wait_for_all_instances_status('SHUTOFF')
         overcloud_health_checks(passive_checks_only=True)
 
     def test_reboot_controller_main_vip(self):
@@ -132,6 +97,26 @@ class RebootTripleoNodesTest(testtools.TestCase):
         overcloud_health_checks()
         cloud_disruptions.reset_ovndb_master_container()
         overcloud_health_checks()
+
+    @pacemaker.skip_if_instanceha_not_delpoyed
+    def test_instanceha_evacuation_hard_reset(self):
+        overcloud_health_checks()
+        cloud_disruptions.check_iha_evacuation_hard_reset()
+
+    @pacemaker.skip_if_instanceha_not_delpoyed
+    def test_instanceha_evacuation_network_disruption(self):
+        overcloud_health_checks()
+        cloud_disruptions.check_iha_evacuation_network_disruption()
+
+    def test_instanceha_evacuation_hard_reset_shutfoff_inatance(self):
+        overcloud_health_checks()
+        cloud_disruptions.check_iha_evacuation_hard_reset_shutfoff_inatance()
+
+    def test_check_instanceha_evacuation_evac_image_vm(self):
+        overcloud_health_checks()
+        cloud_disruptions.check_iha_evacuation_evac_image_vm()
+
+
 # [..]
 # more tests to follow
 # run health checks

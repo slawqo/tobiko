@@ -286,3 +286,17 @@ def get_overcloud_resource(resource_type=None,
         pcs_df_query_resource_type = pcs_df.query(
             'resource_type=="{}"'.format(resource_type))
         return pcs_df_query_resource_type['resource'].unique().tolist()
+
+
+def instanceha_delpoyed():
+    """check IHA deployment
+    checks for existance of the nova-evacuate resource"""
+    if overcloud.has_overcloud():
+        return get_overcloud_nodes_running_pcs_resource(
+            resource='nova-evacuate')
+    else:
+        return False
+
+
+skip_if_instanceha_not_delpoyed = tobiko.skip_unless(
+    'instanceha not delpoyed', instanceha_delpoyed())
