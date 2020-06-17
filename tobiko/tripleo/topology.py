@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import re
+import typing
 
 from oslo_log import log
 
@@ -35,6 +36,9 @@ class TripleoTopology(topology.OpenStackTopology):
 
     has_containers = True
 
+    # TODO: add more known subgrups here
+    known_subgroups: typing.List[str] = ['controller', 'compute']
+
     def discover_nodes(self):
         self.discover_undercloud_nodes()
         self.discover_overcloud_nodes()
@@ -55,15 +59,55 @@ class TripleoTopology(topology.OpenStackTopology):
                 node = self.add_node(address=config.hostname,
                                      group='overcloud',
                                      ssh_client=ssh_client)
-
-                group = node.name.split('-', 1)[0]
-                if group == node.name:
-                    LOG.warning("Unable to get node group name node name: %r",
-                                node.name)
-                else:
-                    self.add_node(hostname=node.name, group=group)
+                self.discover_overcloud_node_subgroups(node)
         else:
             super(TripleoTopology, self).discover_nodes()
+
+    def discover_overcloud_node_subgroups(self, node):
+        # set of subgroups extracted from node name
+        subgroups: typing.Set[str] = set()
+
+        # extract subgroups names from node name
+        subgroups.update(subgroup
+                         for subgroup in node.name.split('-')
+                         if is_valid_overcloud_group_name(group_name=subgroup,
+                                                          node_name=node.name))
+
+        # add all those known subgroups names that are contained in
+        # the node name (controller, compute, ...)
+        subgroups.update(subgroup
+                         for subgroup in self.known_subgroups
+                         if subgroup in node.name)
+
+        # bind node to discovered subgroups
+        if subgroups:
+            for subgroup in sorted(subgroups):
+                LOG.debug("Add node '%s' to subgroup '%s'", node.name,
+                          subgroup)
+                self.add_node(hostname=node.name, group=subgroup)
+        else:
+            LOG.warning("Unable to obtain any node subgroup from node "
+                        "name: '%s'", node.name)
+        return subgroups
+
+
+def is_valid_overcloud_group_name(group_name: str, node_name: str = None):
+    if not group_name:
+        return False
+    if group_name in ['overcloud', node_name]:
+        return False
+    if is_number(group_name):
+        return False
+    return True
+
+
+def is_number(text: str):
+    try:
+        float(text)
+    except ValueError:
+        return False
+    else:
+        return True
 
 
 def setup_tripleo_topology():

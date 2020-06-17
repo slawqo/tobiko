@@ -15,7 +15,7 @@ from __future__ import absolute_import
 
 import collections
 import socket
-import typing  # noqa
+import typing
 import weakref
 
 
@@ -103,18 +103,19 @@ class OpenStackTopologyNode(object):
     _docker_client = None
     _podman_client = None
 
-    def __init__(self, topology, name, public_ip, ssh_client):
+    def __init__(self, topology, name: str, public_ip,
+                 ssh_client):
         self._topology = weakref.ref(topology)
-        self.name = name
+        self.name: str = name
         self.public_ip = public_ip
         self.ssh_client = ssh_client
-        self.groups = set()
+        self.groups: typing.Set[str] = set()
 
     @property
     def topology(self):
         return self._topology()
 
-    def add_group(self, group):
+    def add_group(self, group: str):
         self.groups.add(group)
 
     @property
@@ -211,7 +212,7 @@ class OpenStackTopology(tobiko.SharedFixture):
                           group='compute')
 
     def add_node(self, hostname=None, address=None, group=None,
-                 ssh_client=None):
+                 ssh_client=None) -> OpenStackTopologyNode:
         name = hostname and node_name_from_hostname(hostname) or None
         ips = set()
         if address:
