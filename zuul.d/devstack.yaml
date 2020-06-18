@@ -13,6 +13,7 @@
       - openstack/heat
       - openstack/neutron
       - openstack/requirements
+      - openstack/validations-libs
       - x/tobiko
     timeout: 7200
     vars:
