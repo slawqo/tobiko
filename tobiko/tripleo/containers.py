@@ -385,6 +385,8 @@ def assert_equal_containers_state(expected_containers_list=None,
                              to_string(index=False), error_info))
             LOG.info('container states mismatched:\n{}\n'.format(failures))
             time.sleep(interval)
+            # clear cache to obtain new data
+            list_node_containers.cache_clear()
         else:
             LOG.info("assert_equal_containers_state :"
                      " OK, all containers are on the same state")
