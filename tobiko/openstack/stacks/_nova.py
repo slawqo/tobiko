@@ -70,7 +70,7 @@ class KeyPairStackFixture(heat.HeatStackFixture):
 class FlavorStackFixture(heat.HeatStackFixture):
     template = _hot.heat_template_file('nova/flavor.yaml')
 
-    disk = None
+    disk: typing.Optional[int] = None
     ephemeral = None
     extra_specs = None
     is_public = None
