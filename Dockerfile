@@ -1,39 +1,107 @@
 ARG base_image="docker.io/library/centos:8"
 
-FROM "${base_image}" as tobiko
+FROM "${base_image}" as base
 
-# Install binary dependencies
-RUN dnf install -y gcc git python3 python3-devel && \
-    alternatives --set python /usr/bin/python3
+# Make sure Git and Python 3 are installed on your system.
+RUN yum install -y git python3 rsync which
 
-# Get Tobiko source files
-ARG tobiko_src_dir=.
-ENV TOBIKO_DIR=/src/tobiko
-# Copy Tobiko source files
-RUN mkdir /src
-ADD "${tobiko_src_dir}" "${TOBIKO_DIR}"
-WORKDIR "${TOBIKO_DIR}"
+# Check your Python 3 version is greater than 3.6
+RUN python3 -c 'import sys; sys.version_info >= (3, 6)'
 
-# Install Python requirements
-ARG constraints_file=https://opendev.org/openstack/requirements/raw/branch/master/upper-constraints.txt
-ENV PIP_INSTALL="python -m pip install -c ${constraints_file}"
-RUN set -x && \
-    python --version && \
-    ${PIP_INSTALL} --upgrade pip && \
-    ${PIP_INSTALL} --upgrade setuptools wheel && \
-    ${PIP_INSTALL} -r ./requirements.txt && \
-    ${PIP_INSTALL} ./
+# Ensure Pip is installed and up-to date
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3
+
+# Check installed Pip version
+RUN python3 -m pip --version
+
+# Ensure basic Python packages are installed and up-to-date
+RUN python3 -m pip install --upgrade setuptools wheel virtualenv tox six
+
+# Check installed Tox version
+RUN tox --version
 
 
 # -----------------------------------------------------------------------------
 
-FROM tobiko as tests
+FROM base as sources
 
-RUN ${PIP_INSTALL} -r ./test-requirements.txt
+# Get Tobiko source code using Git
+RUN mkdir -p /src
+ADD . /src/tobiko
+WORKDIR /src/tobiko
 
-# Run test cases
-ENV OS_LOG_CAPTURE=true
-ENV OS_STDOUT_CAPTURE=true
-ENV OS_STDERR_CAPTURE=true
-ENV OS_TEST_PATH=tobiko/tests/unit
-ENTRYPOINT ./tools/run_tests.py
+
+# -----------------------------------------------------------------------------
+
+FROM sources as bindeps
+
+# Ensure required binary packages are installed
+RUN ./tools/install-bindeps.sh
+
+# Check bindeps are installed
+CMD tox -e bindeps
+
+
+# -----------------------------------------------------------------------------
+
+FROM bindeps as py3
+
+# Prepare py3 Tox virtualenv
+RUN tox -e py3 --notest
+
+# Run unit yest cases
+CMD tox -e py3
+
+
+# -----------------------------------------------------------------------------
+
+FROM py3 as venv
+
+# Run bash inside py3 Tox environment
+CMD tox -e venv
+
+
+# -----------------------------------------------------------------------------
+
+FROM py3 as functional
+
+# Run functional test cases
+CMD tox -e functional
+
+
+# -----------------------------------------------------------------------------
+
+FROM py3 as scenario
+
+# Run scenario test cases
+CMD tox -e scenario
+
+
+# -----------------------------------------------------------------------------
+
+FROM py3 as neutron
+
+# Run scenario test cases
+CMD tox -e neutron
+
+
+# -----------------------------------------------------------------------------
+
+FROM py3 as faults
+
+# Run faults test cases
+CMD tox -e faults
+
+
+# -----------------------------------------------------------------------------
+
+from bindeps as infrared
+
+# Set Python 3 as default alternative for python command
+RUN alternatives --set python /usr/bin/python3
+
+# Prepare infrared Tox virtualenv
+RUN tox -e infrared --notest
+
+# Run Tobiko InfraRed plugin
+CMD tox -e infrared

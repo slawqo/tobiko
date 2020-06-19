@@ -2,31 +2,52 @@
 
 version: '3.4'
 services:
+  base:
+    build:
+      context: .
+      target: base
+
+  sources:
+    build:
+      context: .
+      target: sources
+
+  bindeps:
+    build:
+      context: .
+      target: bindeps
+
   py3:
     build:
       context: .
-      target: tests
-      args:
-        OS_TEST_PATH: ./tests/unit
+      target: py3
+
+  venv:
+    build:
+      context: .
+      target: venv
+
   functional:
     build:
       context: .
-      target: tests
-      args:
-        OS_TEST_PATH: ./tests/functional
+      target: functional
+
   scenario:
     build:
       context: .
-      target: tests
-      args:
-        OS_TEST_PATH: ./tests/scenario
+      target: scenario
+
+  neutron:
+    build:
+      context: .
+      target: neutron
+
   faults:
     build:
       context: .
-      target: tests
-      args:
-        OS_TEST_PATH: ./tests/faults
+      target: faults
+
   infrared:
     build:
-      context: ./infrared_plugin
-      target: tobiko_plugin
+      context: .
+      target: infrared
