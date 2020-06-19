@@ -32,7 +32,7 @@ Make sure Git and Python 3 are installed on your system.
 
 For instance on RedHat Linux you could type::
 
-    sudo yum install -y git python3
+    sudo yum install -y git python3 which
 
 Check your Python 3 version is greater than 3.6::
 
@@ -67,30 +67,9 @@ Get Tobiko source code using Git::
 Install Missing Binary Packages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Check required binary packages are installed::
+Install required binary packages::
 
-    tox -e bindep
-
-For instance on a clean CentOS 8 host at this point I could expect to get below
-errors::
-
-    Missing packages:
-        bzip2-devel libffi-devel openssl-devel python3-devel python3-wheel readline-devel sqlite-devel
-    ERROR: InvocationError for command /home/vagrant/tobiko/.tox/bindep/bin/bindep test (exited with code 1)
-
-Fix above error by simply installing missing packages::
-
-    .tox/bindep/bin/bindep -b | xargs -r sudo yum install -y
-
-Finally check again all missing packages are installed::
-
-    $ tox -e bindep
-    bindep installed: bindep==2.8.1,distro==1.5.0,Parsley==1.3,pbr==5.4.5
-    bindep run-test-pre: PYTHONHASHSEED='1750048501'
-    bindep run-test: commands[0] | bindep test
-    __________________________________________________________________________ summary __________________________________________________________________________
-      bindep: commands succeeded
-      congratulations :)
+    tools/install-bindeps.sh
 
 
 Configure Logging Options
@@ -150,7 +129,7 @@ Finally you need to specify which credentials Tobiko should pick up via
 Specify 'OS_CLOUD' environment variable
 +++++++++++++++++++++++++++++++++++++++
 
-Ensure below environment variable is defined before executing Tobiko test
+Ensure *OS_CLOUD* environment variable is defined before executing Tobiko test
 cases::
 
     export OS_CLOUD=<cloud-name>
