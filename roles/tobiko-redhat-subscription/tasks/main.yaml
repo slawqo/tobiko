@@ -1,0 +1,13 @@
+---
+
+- name: subscribe to Red Hat repositories
+  become: yes
+  redhat_subscription:
+    state: present
+    activationkey: '{{ redhat_activationkey or omit }}'
+    username: '{{ redhat_username or omit }}'
+    password: '{{ redhat_password or omit }}'
+    auto_attach: yes
+  when:
+    - ansible_distribution == 'RedHat'
+    - redhat_activationkey or redhat_username

@@ -1,0 +1,9 @@
+---
+
+- include_tasks: install-bindeps.yaml
+- include_tasks: ensure-stack-user.yaml
+- include_tasks: run-unstack.yaml
+- include_tasks: deploy-devstack.yaml
+- include_tasks: deploy-requirements.yaml
+- include_tasks: deploy-tobiko.yaml
+- include_tasks: run-stack.yaml

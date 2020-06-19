@@ -1,0 +1,51 @@
+---
+
+- name: "check '{{ devstack_src_dir }}' exists"
+  stat:
+    path: '{{ devstack_src_dir }}'
+  delegate_to: localhost
+  register: check_devstack_src_dir_exists
+  when: "(devstack_src_dir | length) > 0"
+  failed_when: no
+
+
+- name: "ensure '{{ devstack_dir }}' exists"
+  become: yes
+  become_user: root
+  file:
+    path: '{{ devstack_dir | realpath }}'
+    state: directory
+    mode: '0755'
+    owner: stack
+    group: stack
+    recurse: yes
+
+
+- become: yes
+  become_user: stack
+  block:
+
+    - name: "copy '{{ devstack_src_dir }}' to '{{ devstack_dir }}'"
+      synchronize:
+        group: no
+        owner: no
+        src: "{{ devstack_src_dir | realpath }}/."
+        dest: "{{ devstack_dir | realpath }}"
+        use_ssh_args: yes
+        recursive: yes
+        rsync_opts:
+          - '--exclude-from={{ devstack_src_dir | realpath }}/.gitignore'
+      register: copy_devstack_src_dir
+      when: check_devstack_src_dir_exists.stat.isdir | default(False)
+
+    - name: fetch DevStack sources from '{{ devstack_git_repo }}'
+      git:
+        repo: '{{ devstack_git_repo }}'
+        dest: '{{ devstack_dir }}'
+        version: '{{ devstack_git_version }}'
+      when: copy_devstack_src_dir is skipped
+
+    - name: copy local.conf file
+      copy:
+        src: '{{ devstack_local_conf_file }}'
+        dest: '{{ devstack_dir }}/local.conf'

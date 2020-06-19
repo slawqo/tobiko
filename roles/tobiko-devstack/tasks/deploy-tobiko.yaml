@@ -1,0 +1,35 @@
+---
+
+- name: "check '{{ tobiko_src_dir }}' exists"
+  stat:
+    path: '{{ tobiko_src_dir }}'
+  delegate_to: localhost
+  register: check_tobiko_src_dir_exists
+
+
+- name: "ensure '{{ devstack_tobiko_dir }}' exists"
+  become: yes
+  become_user: root
+  file:
+    path: '{{ devstack_tobiko_dir | realpath }}'
+    state: directory
+    mode: '0755'
+    owner: stack
+    group: stack
+    recurse: yes
+
+
+- name: "copy '{{ tobiko_src_dir }}' to '{{ devstack_tobiko_dir }}'"
+  become: yes
+  become_user: stack
+  synchronize:
+    group: no
+    owner: no
+    src: "{{ tobiko_src_dir | realpath }}/."
+    dest: "{{ devstack_tobiko_dir | realpath }}"
+    use_ssh_args: yes
+    recursive: yes
+    rsync_opts:
+      - '--exclude-from={{ tobiko_src_dir | realpath }}/.gitignore'
+  register: copy_tobiko_src_dir
+  when: check_tobiko_src_dir_exists.stat.isdir | default(False)
