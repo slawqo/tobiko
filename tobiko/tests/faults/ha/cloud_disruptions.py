@@ -10,6 +10,7 @@ from tobiko.tripleo import topology as tripleo_topology
 from tobiko.openstack import keystone
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import containers
+from tobiko.tripleo import nova
 from oslo_log import log
 from tobiko.tests.faults.ha import test_cloud_recovery
 
@@ -38,6 +39,7 @@ ovn_db_pcs_resource_restart = """sudo pcs resource restart ovn-dbs-bundle"""
 
 
 def get_node(node_name):
+    node_name = node_name.split('.')[0]
     return [node for node in topology.list_openstack_nodes() if
             node.name == node_name][0]
 
@@ -65,7 +67,10 @@ def disrupt_node(node_name, disrupt_method=hard_reset_method):
     node.ssh_client.connect().exec_command(disrupt_method)
     LOG.info('disrupt exec: {} on server: {}'.format(disrupt_method,
                                                      node.name))
+    check_overcloud_node_responsive(node)
 
+
+def check_overcloud_node_responsive(node):
     node_checked = sh.execute("hostname",
                               ssh_client=node.ssh_client,
                               expect_exit_status=None).stdout
@@ -117,10 +122,10 @@ def disrupt_all_controller_nodes(disrupt_method=hard_reset_method,
                                                          controller.name))
         tobiko.cleanup_fixture(controller.ssh_client)
         if sequentially:
-            test_cloud_recovery.check_overcloud_node_responsive(controller)
+            check_overcloud_node_responsive(controller)
     if not sequentially:
         for controller in topology.list_openstack_nodes(group='controller'):
-            test_cloud_recovery.check_overcloud_node_responsive(controller)
+            check_overcloud_node_responsive(controller)
 
 
 def get_main_vip():
@@ -224,3 +229,58 @@ def reset_ovndb_master_container():
     containers.action_on_container('restart',
                                    partial_container_name=resource,
                                    container_host=node)
+
+
+def evac_failover_compute(compute_host, failover_type=hard_reset_method):
+    """disrupt a compute, to trigger it's instance-HA evacuation
+    failover_type=hard_reset_method etc.."""
+    reset_node(compute_host, disrupt_method=failover_type)
+
+
+def check_iha_evacuation(failover_type=None, vm_type=None):
+    """check vms on compute host,disrupt compute host,
+    check all vms evacuated and pingable"""
+    for iteration in range(2):
+        LOG.info(f'Beign IHA tests iteration {iteration}')
+        LOG.info('creatr 4 vms')
+        nova.create_multiple_unique_vms(n_vms=4)
+        compute_host = nova.get_random_compute_with_vms_name()
+        vms_starting_state_df = nova.get_compute_vms_df(compute_host)
+        if vm_type == 'shutoff':
+            nova.stop_all_instances()
+        if vm_type == 'evac_image_vm':
+            evac_vm_stack = nova.random_vm_create_evacuable_image_tag()
+            evac_vm_id = nova.get_stack_server_id(evac_vm_stack)
+            org_nova_evac_df = nova.vm_df(evac_vm_id, nova.get_vms_table())
+        nova.check_df_vms_ping(vms_starting_state_df)
+        LOG.info(f'perform a failover on {compute_host}')
+        evac_failover_compute(compute_host, failover_type=failover_type)
+        test_cloud_recovery.overcloud_health_checks(passive_checks_only=True)
+        vms_new_state_df = nova.get_compute_vms_df(compute_host)
+        if vm_type == 'evac_image_vm':
+            nova.check_vm_evacuations(vms_df_old=org_nova_evac_df,
+                                      vms_df_new=vms_new_state_df,
+                                      check_no_evacuation=True)
+            new_nova_evac_df = nova.vm_df(evac_vm_id, nova.get_vms_table())
+            nova.check_vm_evacuations(org_nova_evac_df, new_nova_evac_df)
+        LOG.info('check evac is Done')
+        nova.check_vm_evacuations(vms_df_old=vms_starting_state_df,
+                                  vms_df_new=vms_new_state_df)
+        nova.check_df_vms_ping(vms_starting_state_df)
+
+
+def check_iha_evacuation_evac_image_vm():
+    check_iha_evacuation(failover_type=hard_reset_method,
+                         vm_type='evac_image_vm')
+
+
+def check_iha_evacuation_hard_reset():
+    check_iha_evacuation(failover_type=hard_reset_method)
+
+
+def check_iha_evacuation_network_disruption():
+    check_iha_evacuation(failover_type=network_disruption)
+
+
+def check_iha_evacuation_hard_reset_shutfoff_inatance():
+    check_iha_evacuation(failover_type=hard_reset_method, vm_type='shutoff')
