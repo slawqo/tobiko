@@ -1,23 +1,24 @@
 ---
 
-- when: osp_version is not defined
-  block:
-  - name: "get RHOSP version"
-    register: get_rhosp_version
-    shell:
-      awk '{print $6}' /etc/rhosp-release
+- name: "get RHOSP version"
+  shell:
+    awk '{print $6}' /etc/rhosp-release
+  register: get_rhosp_version
+  failed_when: no
+  changed_when: no
 
-  - name: show RHOSP version
-    debug: var=get_rhosp_version.stdout_lines
 
-  - name: set rhosp_version and python_vars_prefixes facts
-    set_fact:
-      rhosp_version: '{{ get_rhosp_version.stdout_lines | first }}'
-      python_vars_prefixes: "{{ ['rhosp'] + python_vars_prefixes }}"
+- name: set rhosp_version and python_vars_prefixes facts
+  set_fact:
+    rhosp_version: '{{ get_rhosp_version.stdout_lines | first }}'
+    python_vars_prefixes: "{{ ['rhosp'] + python_vars_prefixes }}"
+  when:
+    - (get_rhosp_version.rc == 0)
 
-  rescue:
-  - debug:
-      msg='this is not an RHOSP host'
+
+- name: show RHOSP version
+  debug: var=rhosp_version
+  when: rhosp_version is defined
 
 
 - name:
