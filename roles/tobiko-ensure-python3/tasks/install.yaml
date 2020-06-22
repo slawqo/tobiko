@@ -31,6 +31,7 @@
     export PATH={{ python_exe_path }}
     which "{{ python_command }}"
   register: get_python_exe
+  changed_when: no
 
 
 - name: "get '{{ get_python_exe.stdout_lines | first }}' info"
@@ -38,6 +39,7 @@
     cmd: get_python_info.py --base --quiet
     executable: '{{ get_python_exe.stdout_lines | first }}'
   register: get_python_info
+  changed_when: no
 
 
 - name: "set python_info['{{ python_command }}'] fact"
@@ -51,6 +53,9 @@
   command: >
     '{{ python_info[python_command].executable }}' -m pip install '{{ item }}' \
       --upgrade --user -c '{{ remote_constraints_file }}'
+  register: upgrade_python_packages
+  changed_when:
+    "'Successfully installed' in upgrade_python_packages.stdout"
   loop:
     - pip
     - setuptools
