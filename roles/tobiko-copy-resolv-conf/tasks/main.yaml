@@ -1,0 +1,10 @@
+---
+
+- name: copy '{{ resolv_conf_file}}' file
+  become: yes
+  copy:
+    src: '{{ resolv_conf_file}}'
+    dest: /etc/resolv.conf
+    owner: root
+    group: root
+    mode: '0644'

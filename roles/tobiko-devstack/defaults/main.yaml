@@ -1,0 +1,13 @@
+---
+
+devstack_dest_dir: /opt/stack
+devstack_dir: '{{ devstack_dest_dir }}/devstack'
+devstack_git_repo: 'http://opendev.org/openstack/devstack'
+devstack_git_version: 'master'
+devstack_local_conf_file: 'local.conf'
+devstack_requirements_dir: '{{ devstack_dest_dir }}/requirements'
+devstack_tobiko_dir: '{{ devstack_dest_dir }}/tobiko'
+
+devstack_src_dir: '{{ devstack_workspace_dir }}/devstack'
+
+sudo_secure_path: '/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'

@@ -1,0 +1,16 @@
+---
+
+- name: run stack.sh
+  become: yes
+  become_user: stack
+  command:
+    cmd: /bin/bash ./stack.sh
+    chdir: '{{ devstack_dir }}'
+    executable: '/bin/bash'
+  register: run_stack
+  ignore_errors: yes
+
+
+- name: show stack.sh output
+  debug: var=run_stack.stderr_lines
+  failed_when: yes

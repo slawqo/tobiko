@@ -1,0 +1,45 @@
+---
+
+- name: ensure /usr/local/bin is in sudo secure path
+  become: yes
+  lineinfile:
+    path: /etc/sudoers
+    regexp: 'secure_path'
+    line: 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
+    validate: '/usr/sbin/visudo -cf %s'
+
+
+- name: ensure stack group exists
+  become: yes
+  group:
+    name: stack
+    state: present
+
+
+- name: ensure stack user exists
+  become: yes
+  user:
+    name: stack
+    home: '{{ devstack_dest_dir }}'
+    comment: DevStack user
+    group: stack
+    shell: /bin/bash
+
+
+- name: ensure stack user has sudo privileges
+  become: yes
+  copy:
+    dest: /etc/sudoers.d/stack
+    content: |
+      stack ALL=(ALL) NOPASSWD: ALL
+
+
+- name: ensure stack user home exists
+  become: yes
+  become_user: root
+  file:
+    path: '{{ devstack_dest_dir | realpath }}'
+    state: directory
+    mode: '0755'
+    owner: stack
+    group: stack

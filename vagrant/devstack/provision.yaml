@@ -1,0 +1,24 @@
+---
+
+- hosts: all
+  vars:
+    tobiko_src_dir: "{{ playbook_dir | realpath | dirname | dirname }}"
+
+  pre_tasks:
+    - debug: var=tobiko_src_dir
+
+    - name: "update APT database"
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      become: yes
+      when:
+        - ansible_os_family == 'Debian'
+
+  roles:
+
+    - tobiko-copy-resolv-conf
+    - tobiko-redhat-subscription
+    - tobiko-ensure-ssh-keys
+    - tobiko-ensure-python3
+    - tobiko-devstack

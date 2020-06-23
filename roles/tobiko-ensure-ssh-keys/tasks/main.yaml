@@ -1,0 +1,22 @@
+---
+
+- name: "generate local SSH key '{{ ssh_key_file }}'"
+  openssh_keypair:
+    path: '{{ ssh_key_file }}'
+    type: rsa
+    size: 4096
+    state: present
+    force: no
+  delegate_to: localhost
+
+
+- name: "copy '{{ ssh_key_file }}' file to host"
+  copy:
+    src: '{{ ssh_key_file }}{{ item }}'
+    dest: '/home/vagrant/.ssh/id_rsa{{ item }}'
+    owner: vagrant
+    group: vagrant
+    mode: '0600'
+  loop:
+    - ''
+    - '.pub'
