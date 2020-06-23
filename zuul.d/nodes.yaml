@@ -12,25 +12,12 @@
 
 
 - nodeset:
-    name: fedora-31-2-node
+    name: fedora-latest-2-node
     nodes:
       - name: primary
         label: fedora-31
       - name: secondary
         label: fedora-31
-    groups:
-      - name: subnodes
-        nodes:
-          - secondary
-
-
-- nodeset:
-    name: fedora-32-2-node
-    nodes:
-      - name: primary
-        label: fedora-32
-      - name: secondary
-        label: fedora-32
     groups:
       - name: subnodes
         nodes:

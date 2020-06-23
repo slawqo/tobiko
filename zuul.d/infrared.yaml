@@ -59,21 +59,12 @@
 
 
 - job:
-    name: tobiko-tox-infrared-fedora-31
+    name: tobiko-tox-infrared-fedora-latest
     parent: tobiko-tox-infrared
-    nodeset: fedora-31-2-node
+    nodeset: fedora-latest-2-node
     voting: false
     description: |
-      Run test cases using tobiko infrared plugin on Fedora 31
-
-
-- job:
-    name: tobiko-tox-infrared-fedora-32
-    parent: tobiko-tox-infrared
-    nodeset: fedora-32-2-node
-    voting: false
-    description: |
-      Run test cases using tobiko infrared plugin on Fedora 32
+      Run test cases using tobiko infrared plugin on latest Fedora
 
 
 - job:
