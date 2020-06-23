@@ -188,20 +188,26 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
     def test_setup_with_wait_interval_from_class(self):
         self.test_setup(fixture_class=MyStackWithWaitInterval)
 
+    def test_setup_when_none(self):
+        self.test_setup(stacks=[None,
+                                mock_stack('CREATE_IN_PROGRESS')])
+
     def test_setup_when_delete_completed(self):
         self.test_setup(stacks=[mock_stack('DELETE_COMPLETE'),
+                                None,
                                 mock_stack('CREATE_IN_PROGRESS')])
 
     def test_setup_when_delete_failed(self):
         self.test_setup(stacks=[mock_stack('DELETE_FAILED'),
                                 mock_stack('DELETE_IN_PROGRESS'),
                                 mock_stack('DELETE_COMPLETE'),
+                                None,
                                 mock_stack('CREATE_IN_PROGRESS')],
                         call_delete=True, call_sleep=True)
 
     def test_setup_when_delete_failed_fast_delete(self):
         self.test_setup(stacks=[mock_stack('DELETE_FAILED'),
-                                mock_stack('DELETE_COMPLETE'),
+                                None,
                                 mock_stack('CREATE_IN_PROGRESS')],
                         call_delete=True)
 
@@ -213,12 +219,13 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
         self.test_setup(stacks=[mock_stack('CREATE_FAILED'),
                                 mock_stack('DELETE_IN_PROGRESS'),
                                 mock_stack('DELETE_COMPLETE'),
+                                None,
                                 mock_stack('CREATE_IN_PROGRESS')],
                         call_delete=True, call_sleep=True)
 
     def test_setup_when_create_failed_fast_delete(self):
         self.test_setup(stacks=[mock_stack('CREATE_FAILED'),
-                                mock_stack('DELETE_COMPLETE'),
+                                None,
                                 mock_stack('CREATE_IN_PROGRESS')],
                         call_delete=True)
 
@@ -229,6 +236,7 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
     def test_setup_when_delete_in_progress_then_complete(self):
         self.test_setup(stacks=[mock_stack('DELETE_IN_PROGRESS'),
                                 mock_stack('DELETE_COMPLETE'),
+                                None,
                                 mock_stack('CREATE_IN_PROGRESS')],
                         call_sleep=True)
 
@@ -236,6 +244,7 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
         self.test_setup(stacks=[mock_stack('DELETE_IN_PROGRESS'),
                                 mock_stack('DELETE_FAILED'),
                                 mock_stack('DELETE_COMPLETE'),
+                                None,
                                 mock_stack('CREATE_IN_PROGRESS')],
                         call_sleep=True, call_delete=True)
 
