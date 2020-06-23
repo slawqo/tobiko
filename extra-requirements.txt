@@ -1,1 +1,2 @@
-validations-libs>=1.0
+pandas              # BSD
+validations-libs    # APACHE-2.0

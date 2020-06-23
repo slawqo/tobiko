@@ -12,7 +12,6 @@ neutron-lib==1.25.0
 os-testr==1.0.0
 oslo.config==5.2.0
 oslo.log==3.36.0
-pandas==0.24.2
 paramiko==2.4.0
 pbr==4.0.4
 podman==1.6.0
