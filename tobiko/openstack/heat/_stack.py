@@ -158,16 +158,16 @@ class HeatStackFixture(tobiko.SharedFixture):
         if stack_status in {CREATE_IN_PROGRESS, CREATE_COMPLETE}:
             LOG.debug('Stack created: %r (id=%r)', self.stack_name, stack.id)
             return stack
-
         if stack_status.endswith('_FAILED'):
             LOG.debug('Delete existing failed stack: %r (id=%r)',
                       self.stack_name, stack.id)
             self.delete_stack(stack_id=stack.id)
-            stack = self.wait_for_stack_status(
-                expected_status={DELETE_COMPLETE})
 
         # Cleanup cached objects
-        self.stack = self._outputs = self._resources = None
+        if stack:
+            self.wait_until_stack_deleted()
+        assert self.stack is None
+        self._outputs = self._resources = None
 
         # Compile template parameters
         parameters = self.get_stack_parameters()
@@ -248,6 +248,20 @@ class HeatStackFixture(tobiko.SharedFixture):
     def wait_for_delete_complete(self, check=True):
         return self.wait_for_stack_status(expected_status={DELETE_COMPLETE},
                                           check=check)
+
+    def wait_until_stack_deleted(self, check=True, timeout=60.):
+        # check stack has been completely deleted
+        stack = self.wait_for_delete_complete(check=check)
+        start = time.time()
+        while stack:
+            if time.time() - start > timeout:
+                raise HeatStackDeletionFailed(name=self.stack_name,
+                                              timeout=timeout)
+            LOG.debug("Waiting for deleted stack to disappear: '%s'",
+                      self.stack_name)
+            time.sleep(self.wait_interval)
+            stack = self.get_stack()
+        LOG.debug("Deleted stack %s disappeared", self.stack_name)
 
     def wait_for_stack_status(self, expected_status, check=True):
         """Waits for the stack to reach the given status."""
