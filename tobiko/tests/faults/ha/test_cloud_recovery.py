@@ -66,6 +66,9 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.reset_all_compute_nodes(hard_reset=True)
         # verify VM status is updated after reboot
         nova.wait_for_all_instances_status('SHUTOFF')
+        # start all VM instance
+        # otherwise sidecar containers will not run after computes reboot
+        nova.start_all_instances()
         overcloud_health_checks(passive_checks_only=True)
 
     def test_reboot_controller_main_vip(self):
