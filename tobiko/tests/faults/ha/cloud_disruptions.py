@@ -243,7 +243,7 @@ def check_iha_evacuation(failover_type=None, vm_type=None):
     for iteration in range(2):
         LOG.info(f'Beign IHA tests iteration {iteration}')
         LOG.info('creatr 4 vms')
-        nova.create_multiple_unique_vms(n_vms=4)
+        nova.create_multiple_unique_vms(n_vms=2)
         compute_host = nova.get_random_compute_with_vms_name()
         vms_starting_state_df = nova.get_compute_vms_df(compute_host)
         if vm_type == 'shutoff':
@@ -282,5 +282,5 @@ def check_iha_evacuation_network_disruption():
     check_iha_evacuation(failover_type=network_disruption)
 
 
-def check_iha_evacuation_hard_reset_shutfoff_inatance():
+def check_iha_evacuation_hard_reset_shutoff_instance():
     check_iha_evacuation(failover_type=hard_reset_method, vm_type='shutoff')
