@@ -241,8 +241,8 @@ def check_iha_evacuation(failover_type=None, vm_type=None):
     """check vms on compute host,disrupt compute host,
     check all vms evacuated and pingable"""
     for iteration in range(2):
-        LOG.info(f'Beign IHA tests iteration {iteration}')
-        LOG.info('creatr 4 vms')
+        LOG.info(f'Begin IHA tests iteration {iteration}')
+        LOG.info('create 2 vms')
         nova.create_multiple_unique_vms(n_vms=2)
         compute_host = nova.get_random_compute_with_vms_name()
         vms_starting_state_df = nova.get_compute_vms_df(compute_host)

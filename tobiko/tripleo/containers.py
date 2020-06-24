@@ -320,15 +320,44 @@ def get_container_states_list(containers_list,
     return container_states_list
 
 
+pcs_resource_list = ['haproxy', 'galera', 'redis', 'ovn-dbs', 'cinder',
+                     'rabbitmq']
+
+
+def remove_containers_if_pacemaker_resources(comparable_containers_df):
+    """remove any containers in
+    param: comparable_containers_df that are pacemaker resources
+    i.e if they contain tha names of resources defined in
+    pcs_resources_list"""
+
+    for row in comparable_containers_df.iterrows():
+        for pcs_resource in pcs_resource_list:
+            if pcs_resource in str(row):
+                LOG.info(f'pcs resource {pcs_resource} has changed state, '
+                         f'but that\'s ok since pcs resources can change '
+                         f'state/host: {str(row)}')
+                # if a pcs resource is found , we drop that row
+                comparable_containers_df.drop(row[0], inplace=True)
+    return comparable_containers_df
+
+
 def dataframe_difference(df1, df2, which=None):
     """Find rows which are different between two DataFrames."""
     comparison_df = df1.merge(df2,
                               indicator='same_state',
                               how='outer')
+    # return only non identical rows
     if which is None:
         diff_df = comparison_df[comparison_df['same_state'] != 'both']
+
     else:
         diff_df = comparison_df[comparison_df['same_state'] == which]
+
+    # if the list of diffrent state container are pacemaker resources ignore
+    # the error since we are checking pacemaker also.
+
+    remove_containers_if_pacemaker_resources(diff_df)
+
     return diff_df
 
 
@@ -393,7 +422,5 @@ def assert_equal_containers_state(expected_containers_list=None,
                      " OK, all containers are on the same state")
             return
     if failures:
-        LOG.info('container states mismatched:\n{!s}', '\n'.join(
+        tobiko.fail('container states mismatched:\n{!s}', '\n'.join(
             failures))
-        # tobiko.fail('container states mismatched:\n{!s}', '\n'.join(
-        #     failures))
