@@ -45,7 +45,7 @@ Make sure setuptools, virtualenv and wheel are installed and up to date::
 
     sudo $PIP install --upgrade setuptools virtualenv wheel
 
-Get Tobiko source code using Git and enter into Tobiko soruce folder::
+Get Tobiko source code using Git and enter into Tobiko source folder::
 
     git clone https://opendev.org/x/tobiko.git
     cd tobiko
