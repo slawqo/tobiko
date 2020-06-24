@@ -6,7 +6,7 @@ test_default_conf:
     log_dir: "{{ test_log_file | dirname }}"
     log_file: "{{ test_log_file | basename }}"
 
-test_log_debug: true
+test_log_debug: false
 
 # OpenStack client credentials
 stackrc_file: '{{ ansible_user_dir }}/overcloudrc'
