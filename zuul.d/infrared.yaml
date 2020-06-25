@@ -43,6 +43,7 @@
     description: |
       Run test cases using tobiko infrared plugin on CentOS 7
     vars:
+      tox_install_siblings: no
       tox_environment:
         # This patchset is required to workaround missing SE Linux Python 3 bindings
         IR_DEPS: "git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/15/493715/5"
