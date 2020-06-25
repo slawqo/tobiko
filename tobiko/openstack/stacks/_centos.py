@@ -25,7 +25,7 @@ CONF = config.CONF
 
 CENTOS_IMAGE_URL = (
     'http://cloud.centos.org/centos/8/x86_64/images/'
-    'CentOS-8-GenericCloud-8.1.1911-20200113.3.x86_64.qcow2')
+    'CentOS-8-GenericCloud-8.2.2004-20200611.2.x86_64.qcow2')
 
 
 class CentosImageFixture(glance.URLGlanceImageFixture):
