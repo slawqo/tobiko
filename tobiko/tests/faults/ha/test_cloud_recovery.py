@@ -1,12 +1,14 @@
 from __future__ import absolute_import
 
 import testtools
+
+from tobiko.openstack import neutron
 from tobiko.tests.faults.ha import cloud_disruptions
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import processes
 from tobiko.tripleo import containers
 from tobiko.tripleo import nova
-from tobiko.tripleo import neutron
+from tobiko.tripleo import neutron as neutron_ooo
 from tobiko.tripleo import undercloud
 from tobiko.tripleo import validations
 
@@ -16,7 +18,7 @@ def overcloud_health_checks(passive_checks_only=False):
     check_pacemaker_resources_health()
     check_overcloud_processes_health()
     nova.check_nova_services_health()
-    neutron.check_neutron_agents_health()
+    neutron_ooo.check_neutron_agents_health()
     if not passive_checks_only:
         # create a uniq stack
         check_vm_create()
@@ -93,11 +95,13 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         overcloud_health_checks()
         cloud_disruptions.network_undisrupt_controllers_non_main_vip()
 
+    @neutron.skip_if_missing_networking_agents(binary='ovn-controller')
     def test_reset_ovndb_master_resource(self):
         overcloud_health_checks()
         cloud_disruptions.reset_ovndb_master_resource()
         overcloud_health_checks()
 
+    @neutron.skip_if_missing_networking_agents(binary='ovn-controller')
     def test_reset_ovndb_master_container(self):
         overcloud_health_checks()
         cloud_disruptions.reset_ovndb_master_container()
