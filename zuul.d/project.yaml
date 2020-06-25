@@ -14,10 +14,12 @@
 
     check:
       jobs:
-        - tobiko-tox-py38-centos-8
         - tobiko-devstack-functional-centos-8
         - tobiko-devstack-functional-ubuntu-bionic
+        - tobiko-devstack-functional-ubuntu-focal
         - tobiko-devstack-faults-centos-8
+        - tobiko-devstack-faults-ubuntu-bionic
+        - tobiko-devstack-faults-ubuntu-focal
         - tobiko-tox-infrared-centos-7
         - tobiko-tox-infrared-centos-8
         - tobiko-tox-infrared-fedora-latest
@@ -26,11 +28,16 @@
 
     gate:
       jobs:
-        - tobiko-devstack-functional
+        - tobiko-devstack-functional-centos-8
         - tobiko-tox-infrared-centos-8
 
     periodic:
       jobs:
+        - tobiko-devstack-functional-centos-8
+        - tobiko-devstack-functional-ubuntu-bionic
+        - tobiko-devstack-functional-ubuntu-focal
+        - tobiko-devstack-faults-centos-8
         - tobiko-devstack-faults-ubuntu-bionic
+        - tobiko-devstack-faults-ubuntu-focal
         - tobiko-tripleo-functional
         - tobiko-tripleo-faults
