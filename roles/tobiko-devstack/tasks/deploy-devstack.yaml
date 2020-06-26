@@ -45,7 +45,11 @@
         version: '{{ devstack_git_version }}'
       when: copy_devstack_src_dir is skipped
 
-    - name: copy local.conf file
-      copy:
-        src: '{{ devstack_local_conf_file }}'
-        dest: '{{ devstack_dir }}/local.conf'
+
+- name: copy local.conf file
+  become: yes
+  copy:
+    owner: stack
+    group: stack
+    src: '{{ devstack_local_conf_file }}'
+    dest: '{{ devstack_dir }}/local.conf'
