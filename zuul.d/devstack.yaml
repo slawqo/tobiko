@@ -216,7 +216,7 @@
 - job:
     name: tobiko-devstack-faults-centos-8
     parent: tobiko-devstack-faults
-    nodeset: openstack-three-node-centos-8
+    nodeset: tobiko-three-node-centos-8
     voting: false
 
 
@@ -237,7 +237,7 @@
 - job:
     name: tobiko-devstack-faults-ubuntu-focal
     parent: tobiko-devstack-faults
-    nodeset: openstack-three-node-focal
+    nodeset: tobiko-three-node-focal
     voting: false
     vars:
       devstack_services:

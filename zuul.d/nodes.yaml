@@ -38,7 +38,7 @@
 
 
 - nodeset:
-    name: openstack-three-node-centos-8
+    name: tobiko-three-node-centos-8
     nodes:
       - name: controller
         label: centos-8
@@ -74,7 +74,7 @@
 
 
 - nodeset:
-    name: openstack-three-node-focal
+    name: tobiko-three-node-focal
     nodes:
       - name: controller
         label: ubuntu-focal
