@@ -3,14 +3,18 @@
 - name: run stack.sh
   become: yes
   become_user: stack
-  command:
-    cmd: /bin/bash ./stack.sh
+  shell:
+    cmd: |
+      source /etc/profile
+      ./stack.sh 2>&1
+      rc=$?
+      echo "*** FINISHED ***"
+      exit $rc
     chdir: '{{ devstack_dir }}'
-    executable: '/bin/bash'
   register: run_stack
   ignore_errors: yes
 
 
 - name: show stack.sh output
-  debug: var=run_stack.stderr_lines
-  failed_when: yes
+  debug: var=run_stack.stdout_lines
+  failed_when: run_stack is failed

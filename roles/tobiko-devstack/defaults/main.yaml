@@ -10,4 +10,4 @@ devstack_tobiko_dir: '{{ devstack_dest_dir }}/tobiko'
 
 devstack_src_dir: '{{ devstack_workspace_dir }}/devstack'
 
-sudo_secure_path: '/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+sudo_secure_path: ''

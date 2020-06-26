@@ -1,13 +1,5 @@
 ---
 
-- name: ensure /usr/local/bin is in sudo secure path
-  become: yes
-  lineinfile:
-    path: /etc/sudoers
-    regexp: 'secure_path'
-    line: 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
-    validate: '/usr/sbin/visudo -cf %s'
-
 
 - name: ensure stack group exists
   become: yes
