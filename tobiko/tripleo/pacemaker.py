@@ -64,7 +64,7 @@ def get_pcs_resources_table():
     # prevent pcs table read failure while pacemaker is starting
     while True:
         try:
-            output = sh.execute("sudo pcs status | grep ocf",
+            output = sh.execute("sudo pcs status | grep 'ocf\\|fence'",
                                 ssh_client=ssh_client,
                                 expect_exit_status=None).stdout
             # remove the first column when it only includes '*' characters
@@ -288,9 +288,9 @@ def get_overcloud_resource(resource_type=None,
         return pcs_df_query_resource_type['resource'].unique().tolist()
 
 
-def instanceha_delpoyed():
+def instanceha_deployed():
     """check IHA deployment
-    checks for existance of the nova-evacuate resource"""
+    checks for existence of the nova-evacuate resource"""
     if overcloud.has_overcloud():
         return get_overcloud_nodes_running_pcs_resource(
             resource='nova-evacuate')
@@ -299,4 +299,18 @@ def instanceha_delpoyed():
 
 
 skip_if_instanceha_not_delpoyed = tobiko.skip_unless(
-    'instanceha not delpoyed', instanceha_delpoyed())
+    'instanceha not delpoyed', instanceha_deployed())
+
+
+def fencing_deployed():
+    """check fencing deployment
+    checks for existence of the stonith-fence type resources"""
+    if overcloud.has_overcloud():
+        return get_overcloud_nodes_running_pcs_resource(
+            resource_type='(stonith:fence_ipmilan):')
+    else:
+        return False
+
+
+skip_if_fencing_not_deployed = tobiko.skip_unless(
+    'fencing not delpoyed', fencing_deployed())
