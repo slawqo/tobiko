@@ -12,12 +12,10 @@
   become_user: stack
   shell:
     cmd: |
-      source /etc/profile
-      ./unstack.sh 2>&1
+      sudo su -l stack -c "cd '{{ devstack_dir }}' && ./unstack.sh" 2>&1
       rc=$?
       echo "*** FINISHED ***"
       exit $rc
-    chdir: '{{ devstack_dir }}'
   register: run_unstack
   ignore_errors: yes
   when:
