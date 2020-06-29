@@ -13,3 +13,4 @@ sphinx_rtd_theme>=0.4.2,< 1   # Apache-2.0
 # one single requirements file for a project, we need to have one such file
 # which will include all project requirements
 -r ../requirements.txt
+-r ../extra-requirements.txt
