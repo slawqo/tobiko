@@ -232,6 +232,7 @@ class HeatStackFixture(tobiko.SharedFixture):
 
     def get_stack(self, resolve_outputs=False):
         """Returns stack ID."""
+        self.setup_client()
         try:
             self.stack = stack = self.client.stacks.get(
                 self.stack_name, resolve_outputs=resolve_outputs)
