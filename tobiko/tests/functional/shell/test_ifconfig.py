@@ -20,6 +20,7 @@ import testtools
 
 import tobiko
 from tobiko.shell import ifconfig
+from tobiko.shell import sh
 from tobiko.shell import ssh
 from tobiko.openstack import stacks
 
@@ -33,6 +34,11 @@ class IfconfigTest(testtools.TestCase):
         stacks.UbuntuServerStackFixture)
 
     def test_list_ip_addresses(self, ip_version=None, **execute_params):
+        result = sh.execute(command='ls /sbin/ifconfig',
+                            expect_exit_status=None, **execute_params)
+        if result.exit_status != 0:
+            self.skip(f"{result.stderr}")
+
         ips = ifconfig.list_ip_addresses(ip_version=ip_version,
                                          **execute_params)
         self.assertIsInstance(ips, tobiko.Selection)
