@@ -74,6 +74,13 @@ class GetFixtureTest(unit.TobikoUnitTest):
         fixture.setup_fixture.assert_not_called()
         fixture.cleanup_fixture.assert_not_called()
 
+        for fixture_id in range(2):
+            other = tobiko.get_fixture(obj, fixture_id=fixture_id)
+            if isinstance(obj, fixtures.Fixture) or not fixture_id:
+                self.assertIs(fixture, other)
+            else:
+                self.assertIsNot(fixture, other)
+
 
 class GetFixtureNameTest(unit.TobikoUnitTest):
 
@@ -129,11 +136,18 @@ class RemoveFixtureTest(unit.TobikoUnitTest):
     def test_with_type(self):
         self._test_remove_fixture(MyFixture)
 
-    def _test_remove_fixture(self, obj):
-        fixture = tobiko.get_fixture(obj)
-        result = tobiko.remove_fixture(obj)
+    def test_with_name_and_fixture_id(self):
+        self._test_remove_fixture(canonical_name(MyFixture), fixture_id=5)
+
+    def test_with_type_and_fixture_id(self):
+        self._test_remove_fixture(MyFixture, fixture_id=6)
+
+    def _test_remove_fixture(self, obj, fixture_id=None):
+        fixture = tobiko.get_fixture(obj, fixture_id=fixture_id)
+        result = tobiko.remove_fixture(obj, fixture_id=fixture_id)
         self.assertIs(fixture, result)
-        self.assertIsNot(fixture, tobiko.get_fixture(obj))
+        self.assertIsNot(fixture, tobiko.get_fixture(obj,
+                                                     fixture_id=fixture_id))
         fixture.setup_fixture.assert_not_called()
         fixture.cleanup_fixture.assert_not_called()
 
@@ -149,9 +163,18 @@ class SetupFixtureTest(unit.TobikoUnitTest):
     def test_with_instance(self):
         self._test_setup_fixture(MyFixture2())
 
-    def _test_setup_fixture(self, obj):
-        result = tobiko.setup_fixture(obj)
-        self.assertIs(tobiko.get_fixture(obj), result)
+    def test_with_name_and_fixture_id(self):
+        self._test_setup_fixture(canonical_name(MyFixture), fixture_id=5)
+
+    def test_with_type_and_fixture_id(self):
+        self._test_setup_fixture(MyFixture, fixture_id=6)
+
+    def test_with_instance_and_fixture_id(self):
+        self._test_setup_fixture(MyFixture2(), fixture_id=7)
+
+    def _test_setup_fixture(self, obj, fixture_id=None):
+        result = tobiko.setup_fixture(obj, fixture_id=fixture_id)
+        self.assertIs(tobiko.get_fixture(obj, fixture_id=fixture_id), result)
         result.setup_fixture.assert_called_once_with()
         result.cleanup_fixture.assert_not_called()
 
@@ -167,6 +190,15 @@ class ResetFixtureTest(unit.TobikoUnitTest):
     def test_with_instance(self):
         self._test_reset_fixture(MyFixture2())
 
+    def test_with_name_and_fixture_id(self):
+        self._test_reset_fixture(canonical_name(MyFixture), fixture_id=5)
+
+    def test_with_type_and_fixture_id(self):
+        self._test_reset_fixture(MyFixture, fixture_id=6)
+
+    def test_with_instance_and_fixture_id(self):
+        self._test_reset_fixture(MyFixture(), fixture_id=7)
+
     def test_after_setup(self):
         fixture = MyFixture2()
         fixture.setUp()
@@ -178,9 +210,9 @@ class ResetFixtureTest(unit.TobikoUnitTest):
         fixture.cleanUp()
         self._test_reset_fixture(fixture)
 
-    def _test_reset_fixture(self, obj, should_clean=True):
-        result = tobiko.reset_fixture(obj)
-        self.assertIs(tobiko.get_fixture(obj), result)
+    def _test_reset_fixture(self, obj, fixture_id=None, should_clean=True):
+        result = tobiko.reset_fixture(obj, fixture_id=fixture_id)
+        self.assertIs(tobiko.get_fixture(obj, fixture_id=fixture_id), result)
         result.setup_fixture.assert_called_once_with()
         if should_clean:
             result.cleanup_fixture.assert_called_once_with()
@@ -208,8 +240,18 @@ class FailingSetupFixtureWhenFailingTest(unit.TobikoUnitTest):
     def test_with_instance(self):
         self._test_setup_fixture(FailingFixture())
 
-    def _test_setup_fixture(self, obj):
-        ex = self.assertRaises(RuntimeError, tobiko.setup_fixture, obj)
+    def test_with_name_and_fixture_id(self):
+        self._test_setup_fixture(canonical_name(FailingFixture), fixture_id=5)
+
+    def test_with_type_and_fixture_id(self):
+        self._test_setup_fixture(FailingFixture, fixture_id=6)
+
+    def test_with_instance_and_fixture_id(self):
+        self._test_setup_fixture(FailingFixture(), fixture_id=7)
+
+    def _test_setup_fixture(self, obj, fixture_id=None):
+        ex = self.assertRaises(
+            RuntimeError, tobiko.setup_fixture, obj, fixture_id=fixture_id)
         self.assertEqual('raised by setup_fixture', str(ex))
 
 
@@ -224,9 +266,18 @@ class CleanupFixtureTest(unit.TobikoUnitTest):
     def test_with_instance(self):
         self._test_cleanup_fixture(MyFixture())
 
-    def _test_cleanup_fixture(self, obj):
-        result = tobiko.cleanup_fixture(obj)
-        self.assertIs(tobiko.get_fixture(obj), result)
+    def test_with_name_and_fixture_id(self):
+        self._test_cleanup_fixture(canonical_name(MyFixture), fixture_id=5)
+
+    def test_with_type_and_fixture_id(self):
+        self._test_cleanup_fixture(MyFixture, fixture_id=6)
+
+    def test_with_instance_and_fixture_id(self):
+        self._test_cleanup_fixture(MyFixture(), fixture_id=7)
+
+    def _test_cleanup_fixture(self, obj, fixture_id=None):
+        result = tobiko.cleanup_fixture(obj, fixture_id=fixture_id)
+        self.assertIs(tobiko.get_fixture(obj, fixture_id=fixture_id), result)
         result.setup_fixture.assert_not_called()
         result.cleanup_fixture.assert_called_once_with()
 

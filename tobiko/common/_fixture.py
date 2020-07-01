@@ -36,7 +36,7 @@ def is_fixture(obj):
             (inspect.isclass(obj) and issubclass(obj, fixtures.Fixture)))
 
 
-def get_fixture(obj, manager=None):
+def get_fixture(obj, fixture_id=None, manager=None):
     '''Returns a fixture identified by given :param obj:
 
     It returns registered fixture for given :param obj:. If none has been
@@ -58,7 +58,7 @@ def get_fixture(obj, manager=None):
         return obj
     else:
         manager = manager or FIXTURES
-        return manager.get_fixture(obj)
+        return manager.get_fixture(obj, fixture_id=fixture_id)
 
 
 def get_fixture_name(obj):
@@ -90,31 +90,31 @@ def get_fixture_dir(obj):
     return os.path.dirname(inspect.getfile(get_fixture_class(obj)))
 
 
-def remove_fixture(obj, manager=None):
+def remove_fixture(obj, fixture_id=None, manager=None):
     '''Unregister fixture identified by given :param obj: if any'''
     manager = manager or FIXTURES
-    return manager.remove_fixture(obj)
+    return manager.remove_fixture(obj, fixture_id=fixture_id)
 
 
-def setup_fixture(obj, manager=None):
+def setup_fixture(obj, fixture_id=None, manager=None):
     '''Get registered fixture and setup it up'''
-    fixture = get_fixture(obj, manager=manager)
+    fixture = get_fixture(obj, fixture_id=fixture_id, manager=manager)
     with _exception.handle_multiple_exceptions():
         fixture.setUp()
     return fixture
 
 
-def reset_fixture(obj, manager=None):
+def reset_fixture(obj, fixture_id=None, manager=None):
     '''Get registered fixture and reset it'''
-    fixture = get_fixture(obj, manager=manager)
+    fixture = get_fixture(obj, fixture_id=fixture_id, manager=manager)
     with _exception.handle_multiple_exceptions():
         fixture.reset()
     return fixture
 
 
-def cleanup_fixture(obj, manager=None):
+def cleanup_fixture(obj, fixture_id=None, manager=None):
     '''Get registered fixture and clean it up'''
-    fixture = get_fixture(obj, manager=manager)
+    fixture = get_fixture(obj, fixture_id=fixture_id, manager=manager)
     with _exception.handle_multiple_exceptions():
         fixture.cleanUp()
     return fixture
@@ -302,8 +302,10 @@ class FixtureManager(object):
     def __init__(self):
         self.fixtures = {}
 
-    def get_fixture(self, obj, init=None):
+    def get_fixture(self, obj, fixture_id=None, init=None):
         name, obj = get_name_and_object(obj)
+        if fixture_id:
+            name += '-' + str(fixture_id)
         fixture = self.fixtures.get(name)
         if fixture is None:
             init = init or self.init_fixture
@@ -314,8 +316,10 @@ class FixtureManager(object):
     def init_fixture(self, obj, name):
         return init_fixture(obj=obj, name=name)
 
-    def remove_fixture(self, obj):
+    def remove_fixture(self, obj, fixture_id=None):
         name = get_object_name(obj)
+        if fixture_id:
+            name += '-' + str(fixture_id)
         return self.fixtures.pop(name, None)
 
 
