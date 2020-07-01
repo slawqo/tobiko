@@ -84,7 +84,8 @@ class HasUndercloudFixture(tobiko.SharedFixture):
                                connection_attempts=1,
                                timeout=15.)
         except Exception as ex:
-            LOG.debug('Unable to connect to undercloud host: %s', ex)
+            LOG.debug('Unable to connect to undercloud host: %s', ex,
+                      exc_info=1)
             self.has_undercloud = False
         else:
             self.has_undercloud = True

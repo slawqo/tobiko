@@ -47,6 +47,7 @@ class SSHClientFixtureTest(unit.TobikoUnitTest):
         self.assertIs(self.expected_host, fixture.host)
         self.assertIs(self.expected_proxy_client, fixture.proxy_client)
         self.assertIsNone(fixture.host_config)
+        self.assertIsNone(fixture.global_host_config)
         self.assertIsNone(fixture.connect_parameters)
 
     def test_setup(self):
@@ -64,6 +65,6 @@ class SSHClientFixtureTest(unit.TobikoUnitTest):
                     ssh_config.parse(f)
         expected_host_config = ssh_config.lookup(fixture.host)
         expected_host_config.pop('include', None)
-        self.assertEqual(fixture.host, fixture.host_config.host)
+        self.assertEqual(fixture.host, fixture.global_host_config.host)
         self.assertEqual(expected_host_config,
-                         fixture.host_config.host_config)
+                         fixture.global_host_config.host_config)

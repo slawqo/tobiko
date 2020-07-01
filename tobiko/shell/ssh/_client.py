@@ -222,6 +222,7 @@ class SSHClientFixture(tobiko.SharedFixture):
     default = tobiko.required_setup_fixture(_config.SSHDefaultConfigFixture)
     config_files = None
     host_config = None
+    global_host_config = None
 
     proxy_client = None
     proxy_sock = None
@@ -249,11 +250,10 @@ class SSHClientFixture(tobiko.SharedFixture):
         self.setup_connect_parameters()
         self.setup_ssh_client()
 
-    def setup_host_config(self):
-        if not self.host_config:
-            self.host_config = _config.ssh_host_config(
-                host=self.host, config_files=self.config_files)
-        return self.host_config
+    def setup_global_host_config(self):
+        self.global_host_config = config = _config.ssh_host_config(
+            host=self.host, config_files=self.config_files)
+        return config
 
     def setup_connect_parameters(self):
         """Fill connect parameters dict
@@ -263,29 +263,37 @@ class SSHClientFixture(tobiko.SharedFixture):
         - parameters got from ~/.ssh/config and tobiko.conf
         - parameters got from fixture object attributes
         """
-        self.setup_host_config()
-        if not self.connect_parameters:
-            self.connect_parameters = self.get_connect_parameters()
-        return self.connect_parameters
+        self.setup_global_host_config()
+        self.connect_parameters = parameters = self.get_connect_parameters()
+        return parameters
 
     def get_connect_parameters(self, schema=None):
         schema = dict(schema or self.schema)
         parameters = {}
-        for gather_parameters in [self.gather_initial_connect_parameters,
-                                  self.gather_host_config_connect_parameters,
-                                  self.gather_default_connect_parameters]:
-            gather_parameters(destination=parameters,
-                              schema=schema,
-                              remove_from_schema=True)
+        self.gather_initial_connect_parameters(
+            destination=parameters, schema=schema, remove_from_schema=True)
+        self.gather_global_host_config_connect_parameters(
+            destination=parameters, schema=schema, remove_from_schema=True)
+        self.gather_host_config_connect_parameters(
+            destination=parameters, schema=schema, remove_from_schema=True)
+        self.gather_default_connect_parameters(
+            destination=parameters, schema=schema, remove_from_schema=True)
         return parameters
 
     def gather_initial_connect_parameters(self, **kwargs):
-        return gather_ssh_connect_parameters(
-            source=self._connect_parameters, **kwargs)
+        if self._connect_parameters:
+            gather_ssh_connect_parameters(
+                source=self._connect_parameters, **kwargs)
 
     def gather_host_config_connect_parameters(self, **kwargs):
-        return gather_ssh_connect_parameters(
-            source=self.host_config.connect_parameters, **kwargs)
+        if self.host_config:
+            gather_ssh_connect_parameters(
+                source=self.host_config.connect_parameters, **kwargs)
+
+    def gather_global_host_config_connect_parameters(self, **kwargs):
+        if self.global_host_config:
+            gather_ssh_connect_parameters(
+                source=self.global_host_config.connect_parameters, **kwargs)
 
     def gather_default_connect_parameters(self, **kwargs):
         return gather_ssh_connect_parameters(source=self, **kwargs)
@@ -393,7 +401,7 @@ class SSHClientFixture(tobiko.SharedFixture):
         port = port or connect_parameters.get('port')
         config_files = config_files or connect_parameters.get('config_files')
         if not host_config:
-            _host_config = self.setup_host_config()
+            _host_config = self.setup_global_host_config()
             if hasattr(_host_config, 'host_config'):
                 _host_config = host_config
         key_filename = key_filename or connect_parameters.get('key_filename')
@@ -442,16 +450,23 @@ class SSHClientManager(object):
     def __init__(self):
         self.clients = {}
 
-    def get_client(self, host, username=None, port=None, proxy_jump=None,
-                   host_config=None, config_files=None, proxy_client=None,
-                   **connect_parameters):
+    def get_client(self, host, hostname=None, username=None, port=None,
+                   proxy_jump=None, host_config=None, config_files=None,
+                   proxy_client=None, **connect_parameters):
         if isinstance(host, netaddr.IPAddress):
             host = str(host)
-        host_config = host_config or _config.ssh_host_config(
-            host=host, config_files=config_files)
-        hostname = host_config.hostname
-        port = port or host_config.port
-        username = username or host_config.username
+
+        global_host_config = _config.ssh_host_config(host=host,
+                                                     config_files=config_files)
+        hostname = hostname or global_host_config.hostname
+        port = port or global_host_config.port
+        username = username or global_host_config.username
+
+        if host_config:
+            hostname = hostname or host_config.hostname
+            port = port or host_config.port
+            username = username or host_config.username
+
         host_key = hostname, port, username, proxy_jump
         client = self.clients.get(host_key, UNDEFINED_CLIENT)
         if client is UNDEFINED_CLIENT:
