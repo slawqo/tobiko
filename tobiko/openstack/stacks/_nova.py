@@ -93,6 +93,11 @@ class ServerStackFixture(heat.HeatStackFixture):
     #: Glance image used to create a Nova server instance
     image_fixture = None
 
+    def delete_stack(self, stack_id=None):
+        if self._outputs:
+            tobiko.cleanup_fixture(self.ssh_client)
+        super(ServerStackFixture, self).delete_stack(stack_id=stack_id)
+
     @property
     def image(self):
         return self.image_fixture.image_id
