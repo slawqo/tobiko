@@ -21,7 +21,6 @@ import time
 from oslo_log import log
 
 import tobiko
-
 from tobiko.shell.sh import _command
 from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _io

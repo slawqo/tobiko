@@ -16,7 +16,6 @@ from __future__ import absolute_import
 import logging
 
 from oslo_log import log
-
 import testtools
 from testtools import content
 

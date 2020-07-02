@@ -18,10 +18,10 @@ import os
 import sys
 
 from oslo_log import log
+import testtools
 import yaml
 
 import tobiko
-import testtools
 
 
 LOG = log.getLogger(__name__)

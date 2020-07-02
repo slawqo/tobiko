@@ -14,8 +14,9 @@
 #    under the License.
 from __future__ import absolute_import
 
-import tobiko
 import testtools
+
+import tobiko
 from tobiko.openstack import stacks
 from tobiko.openstack import neutron
 from tobiko.openstack import nova

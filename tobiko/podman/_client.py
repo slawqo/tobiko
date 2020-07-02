@@ -15,10 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import six
-
 import podman
-
 
 import tobiko
 from tobiko.podman import _exception
@@ -56,9 +53,6 @@ class PodmanClientFixture(tobiko.SharedFixture):
     ssh_client = None
 
     def __init__(self, ssh_client=None):
-        if six.PY2:
-            raise _exception.PodmanError(
-                "Podman isn't compatible with python 2.7")
         super(PodmanClientFixture, self).__init__()
         if ssh_client:
             self.ssh_client = ssh_client

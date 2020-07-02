@@ -16,7 +16,6 @@
 from __future__ import absolute_import
 
 import collections
-
 import getpass
 import os
 import socket

@@ -15,74 +15,62 @@ from __future__ import absolute_import
 
 import mock
 
-import six
+from tobiko import podman
+from tobiko.tests import unit
 
-# We need to ignore this code under py2
-# it's not compatible and parser will failed even if we use
-# the `unittest.skipIf` decorator, because during the test discovery
-# stestr and unittest will load this test
-# module before running it and it will load podman
-# too which isn't compatible in version leather than python 3
-# Also the varlink mock module isn't compatible with py27, is using
-# annotations syntaxe to generate varlink interface for the mocked service
-# and it will raise related exceptions too.
-# For all these reasons we can't run podman tests under a python 2 environment
-if six.PY3:
-    from tobiko import podman
-    from tobiko.tests import unit
 
-    class TestShell(unit.TobikoUnitTest):
+class TestShell(unit.TobikoUnitTest):
 
-        @mock.patch('tobiko.shell.sh.execute')
-        def test_discover_podman_socket(self, mock_execute):
-            class FakeProcess:
-                exit_status = 0
-                stdout = '/run/podman/io.podman'
-                stderr = ''
-            mock_execute.return_value = FakeProcess()
-            self.assertEqual(
-                podman.discover_podman_socket(),
-                '/run/podman/io.podman'
-            )
+    @mock.patch('tobiko.shell.sh.execute')
+    def test_discover_podman_socket(self, mock_execute):
+        class FakeProcess:
+            exit_status = 0
+            stdout = '/run/podman/io.podman'
+            stderr = ''
+        mock_execute.return_value = FakeProcess()
+        self.assertEqual(
+            podman.discover_podman_socket(),
+            '/run/podman/io.podman'
+        )
 
-        @mock.patch('tobiko.shell.sh.execute')
-        def test_discover_podman_socket_none_result(self, mock_execute):
-            class FakeProcess:
-                exit_status = 1
-                stdout = ''
-                stderr = 'boom'
-            mock_execute.return_value = FakeProcess()
-            self.assertRaises(
-                podman.PodmanSocketNotFoundError,
-                podman.discover_podman_socket
-            )
+    @mock.patch('tobiko.shell.sh.execute')
+    def test_discover_podman_socket_none_result(self, mock_execute):
+        class FakeProcess:
+            exit_status = 1
+            stdout = ''
+            stderr = 'boom'
+        mock_execute.return_value = FakeProcess()
+        self.assertRaises(
+            podman.PodmanSocketNotFoundError,
+            podman.discover_podman_socket
+        )
 
-        @mock.patch('tobiko.shell.sh.execute')
-        def test_discover_podman_socket_with_exit_code(self, mock_execute):
-            class FakeProcess:
-                exit_status = 0
-                stdout = ''
-                stderr = 'boom'
-            mock_execute.return_value = FakeProcess()
-            self.assertRaises(
-                podman.PodmanSocketNotFoundError,
-                podman.discover_podman_socket
-            )
+    @mock.patch('tobiko.shell.sh.execute')
+    def test_discover_podman_socket_with_exit_code(self, mock_execute):
+        class FakeProcess:
+            exit_status = 0
+            stdout = ''
+            stderr = 'boom'
+        mock_execute.return_value = FakeProcess()
+        self.assertRaises(
+            podman.PodmanSocketNotFoundError,
+            podman.discover_podman_socket
+        )
 
-        @mock.patch('tobiko.shell.sh.execute')
-        def test_is_podman_running(self, mock_execute):
-            class FakeProcess:
-                exit_status = 0
-                stdout = '/run/podman/io.podman'
-                stderr = ''
-            mock_execute.return_value = FakeProcess()
-            self.assertEqual(podman.is_podman_running(), True)
+    @mock.patch('tobiko.shell.sh.execute')
+    def test_is_podman_running(self, mock_execute):
+        class FakeProcess:
+            exit_status = 0
+            stdout = '/run/podman/io.podman'
+            stderr = ''
+        mock_execute.return_value = FakeProcess()
+        self.assertEqual(podman.is_podman_running(), True)
 
-        @mock.patch('tobiko.shell.sh.execute')
-        def test_is_podman_running_without_socket(self, mock_execute):
-            class FakeProcess:
-                exit_status = 1
-                stdout = ''
-                stderr = 'boom'
-            mock_execute.return_value = FakeProcess()
-            self.assertEqual(podman.is_podman_running(), False)
+    @mock.patch('tobiko.shell.sh.execute')
+    def test_is_podman_running_without_socket(self, mock_execute):
+        class FakeProcess:
+            exit_status = 1
+            stdout = ''
+            stderr = 'boom'
+        mock_execute.return_value = FakeProcess()
+        self.assertEqual(podman.is_podman_running(), False)

@@ -19,7 +19,6 @@ import io
 import select
 
 from oslo_log import log
-
 import six
 
 LOG = log.getLogger(__name__)

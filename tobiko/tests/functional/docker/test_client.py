@@ -15,10 +15,9 @@
 #    under the License.
 from __future__ import absolute_import
 
-import testtools
-
 from docker import client as docker_client
 from docker.models import containers
+import testtools
 
 import tobiko
 from tobiko import docker

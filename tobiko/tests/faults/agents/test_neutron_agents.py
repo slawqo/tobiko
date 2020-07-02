@@ -16,9 +16,8 @@ from __future__ import absolute_import
 
 import time
 
-import testtools
-
 from oslo_log import log
+import testtools
 
 import tobiko
 from tobiko.openstack import neutron
@@ -27,6 +26,7 @@ from tobiko.openstack import stacks
 from tobiko.openstack import topology
 from tobiko.shell import ping
 from tobiko.shell import sh
+
 
 LOG = log.getLogger(__name__)
 

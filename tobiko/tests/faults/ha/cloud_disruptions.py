@@ -3,6 +3,8 @@ from __future__ import absolute_import
 
 import re
 
+from oslo_log import log
+
 import tobiko
 from tobiko.shell import sh
 from tobiko.openstack import topology
@@ -11,7 +13,6 @@ from tobiko.openstack import keystone
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import containers
 from tobiko.tripleo import nova
-from oslo_log import log
 from tobiko.tests.faults.ha import test_cloud_recovery
 
 

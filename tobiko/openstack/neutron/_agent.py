@@ -14,7 +14,6 @@
 from __future__ import absolute_import
 
 import tobiko
-
 from tobiko.openstack.neutron import _client
 
 

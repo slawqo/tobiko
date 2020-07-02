@@ -15,9 +15,10 @@ from __future__ import absolute_import
 
 import sys
 
+import testtools
+
 import tobiko
 from tobiko.tests import unit
-import testtools
 
 
 class SomeException(tobiko.TobikoException):

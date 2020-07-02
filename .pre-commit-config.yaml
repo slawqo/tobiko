@@ -18,6 +18,13 @@ repos:
         args: [requirements.txt, test-requirements.txt, extra-requirements.txt, linters-requirements.txt, doc/requirements.txt, infrared_plugin/requirements.txt]
       - id: trailing-whitespace
 
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: '3.8.3'  # pick a git hash / tag to point to
+    hooks:
+      - id: flake8
+        additional_dependencies: [flake8-import-order]
+        files: ^tobiko/
+
 #  - repo: https://github.com/adrienverge/yamllint.git
 #    rev: v1.23.0
 #    hooks:
