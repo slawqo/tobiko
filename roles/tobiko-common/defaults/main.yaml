@@ -65,4 +65,3 @@ test_collect_dir: '{{ test_src_dir | realpath }}/{{ test_report_name }}'
 
 upper_constraints_file:
   'https://opendev.org/openstack/requirements/raw/branch/master/upper-constraints.txt'
-

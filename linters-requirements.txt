@@ -4,4 +4,5 @@ ansible-lint==4.2.0        # MIT
 flake8>=3.8.1              # MIT
 flake8-import-order==0.12  # LGPLv3
 mypy>=0.740                # MIT
+pre-commit >= 2.6.0        # MIT
 pylint>=2.5.2              # GPLv2

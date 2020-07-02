@@ -26,4 +26,3 @@ six==1.11.0
 sshtunnel==0.1.5
 stestr==3.0.0
 testtools==2.2.0
-
