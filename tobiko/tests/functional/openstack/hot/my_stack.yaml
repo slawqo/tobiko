@@ -1,0 +1,26 @@
+heat_template_version: 2015-04-30
+
+
+description: Simple template to test creating a stack with tobiko
+
+
+parameters:
+  input_text:
+    type: string
+    label: some text
+    description: some input text
+
+
+resources:
+  text:
+    type: OS::Heat::Value
+    description: some resource text
+    properties:
+      type: string
+      value: { get_param: input_text }
+
+
+outputs:
+  output_text:
+    description: some output text
+    value: { get_attr: [text, value] }

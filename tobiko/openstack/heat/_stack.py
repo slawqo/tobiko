@@ -64,17 +64,16 @@ class HeatStackFixture(tobiko.SharedFixture):
     client = None
     retry_create_stack = 1
     wait_interval = 5
-    stack_name = None  # type: str
     template = None  # type: _template.HeatTemplateFixture
     stack = None
+    _stack_name = None
     parameters = None  # type: HeatStackParametersFixture
 
     def __init__(self, stack_name=None, template=None, parameters=None,
                  wait_interval=None, client=None):
         super(HeatStackFixture, self).__init__()
-        self.stack_name = stack_name = (stack_name or
-                                        self.stack_name or
-                                        self.fixture_name)
+        if stack_name:
+            self._stack_name = str(stack_name)
 
         self.template = _template.heat_template(template or self.template)
         self.parameters = heat_stack_parameters(
@@ -85,6 +84,15 @@ class HeatStackFixture(tobiko.SharedFixture):
 
         if wait_interval:
             self.wait_interval = wait_interval
+
+    @property
+    def stack_name(self):
+        """Lazily assign stack name
+        """
+        stack_name = self._stack_name
+        if not stack_name:
+            self._stack_name = stack_name = self.fixture_name
+        return stack_name
 
     def _get_retry_value(self, retry):
         if retry is None:

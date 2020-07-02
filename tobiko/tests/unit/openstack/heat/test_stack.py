@@ -65,9 +65,12 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
                               parameters=parameters,
                               wait_interval=wait_interval, client=client)
 
-        self.assertEqual(stack_name or fixture_class.stack_name or
-                         tobiko.get_fixture_name(stack),
-                         stack.stack_name)
+        if stack_name:
+            self.assertEqual(stack_name, stack.stack_name)
+        elif isinstance(fixture_class.stack_name, property):
+            self.assertEqual(tobiko.get_fixture_name(stack), stack.stack_name)
+        else:
+            self.assertEqual(fixture_class.stack_name, stack.stack_name)
 
         self.check_stack_template(stack=stack, template=template)
 
