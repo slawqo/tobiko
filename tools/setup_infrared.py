@@ -28,26 +28,46 @@ LOG = common.get_logger(__name__)
 
 def main():
     common.setup_logging()
-    add_tobiko_plugin()
+    show_infrared_version()
+
+    plugin_path = os.environ.get('IR_TOBIKO_PLUGIN')
+    if plugin_path:
+        add_tobiko_plugin(path=plugin_path)
+
+    show_infrared_workspaces()
     ensure_workspace()
     copy_inventory()
 
 
+def show_infrared_version():
+    return common.execute('ir --version || ir --version', capture_stdout=False)
+
+
+def show_infrared_plugins():
+    return common.execute('ir plugin list', capture_stdout=False)
+
+
+def has_plugin(name):
+    try:
+        common.execute("ir plugin list | awk '( $4 == \"{}\" )'", name,
+                       capture_stdout=False)
+    except subprocess.CalledProcessError as ex:
+        LOG.debug("tobiko plugin not found ({})", ex)
+        return False
+    else:
+        LOG.info("tobiko plugin found")
+        return True
+
+
+def show_infrared_workspaces():
+    return common.execute('ir workspace list', capture_stdout=False)
+
+
 def add_tobiko_plugin(path=None):
-    path = path or os.environ.get('IR_TOBIKO_PLUGIN')
-    if path:
-        add_plugin('tobiko', path)
-
-
-def add_plugin(name, path):
-    path = common.normalize_path(path)
-    if not os.path.isdir(path):
-        message = ("invalid plug-in '{}' directory: '{}'").format(name, path)
-        raise RuntimeError(message)
-
-    remove_plugin(name)
-    common.execute('ir plugin add "{}"', path)
-    LOG.info("plug-in '%s' added from path '%s'", name, path)
+    if has_plugin('tobiko'):
+        remove_plugin('tobiko')
+    add_plugin(path)
+    show_infrared_plugins()
 
 
 def remove_plugin(name):
@@ -59,6 +79,16 @@ def remove_plugin(name):
     else:
         LOG.info("plug-in '%s' removed", name)
         return True
+
+
+def add_plugin(path):
+    path = common.normalize_path(path)
+    if not os.path.isdir(path):
+        message = ("invalid plug-in directory: '{}'").format(path)
+        raise RuntimeError(message)
+
+    common.execute('ir plugin add "{}"', path)
+    LOG.info("plug-in added from path '%s'", path)
 
 
 def ensure_workspace(filename=None):
