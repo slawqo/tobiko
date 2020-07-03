@@ -1,13 +1,10 @@
 ---
 
-#TODO: disable mounting /tmp on a tempfs:
-# sudo systemctl mask tmp.mount
-
 - hosts: all
   tasks:
     - name: 'disable tempfs on Fedora'
       become: yes
-      command: systemctl mask tmp.mount
+      command: systemctl mask tmp.mount  # noqa 303
       when: ansible_distribution == 'Fedora'
       ignore_errors: yes
 
@@ -20,7 +17,7 @@
         auto_attach: yes
       when:
       - rh_username is defined
-      - rh_username != ''
+      - (rh_username | length) > 0
 
 
 - hosts: primary
