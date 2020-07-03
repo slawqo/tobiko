@@ -27,7 +27,6 @@
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/
-      - ^infrared_plugin/
       - ^releasenotes/
       - ^report/
       - ^tobiko/tests/functional/
