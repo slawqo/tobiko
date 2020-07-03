@@ -53,11 +53,6 @@ class DisruptTripleoNodesTest(testtools.TestCase):
     def test_overcloud_health_check(self):
         overcloud_health_checks()
 
-    def test_reboot_controllers_recovery(self):
-        overcloud_health_checks()
-        cloud_disruptions.disrupt_all_controller_nodes()
-        overcloud_health_checks()
-
     def test_hard_reboot_controllers_recovery(self):
         overcloud_health_checks()
         cloud_disruptions.reset_all_controller_nodes()
