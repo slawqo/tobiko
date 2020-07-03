@@ -34,6 +34,15 @@ repos:
         pass_filenames: false
         # args: [--ignore-missing-imports]
 
+  - repo: local
+    hooks:
+      - id: pylint
+        files: ^tobiko/
+        name: pylint
+        entry: pylint -j0 --max-line-length=80 -E -e W,E -d unused-import,broad-except,fixme
+        language: system
+        types: [python]
+
 
 #  - repo: https://github.com/adrienverge/yamllint.git
 #    rev: v1.23.0
