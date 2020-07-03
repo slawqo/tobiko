@@ -45,7 +45,7 @@ repos:
       - id: pylint
         files: ^tobiko/
         name: pylint
-        entry: pylint -j0 --max-line-length=80 -E -e W,E -d unused-import,broad-except,fixme
+        entry: .tox/pep8/bin/pylint -j0 --max-line-length=80 -E -e W,E -d unused-import,broad-except,fixme
         language: system
         types: [python]
 
