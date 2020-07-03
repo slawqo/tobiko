@@ -40,7 +40,7 @@ OPTIONS = [
                help="Size in bytes of ICMP messages (including "
                     "headers and payload)"),
     cfg.IntOpt('timeout',
-               default=90.,
+               default=300.,
                help="Maximum time in seconds a sequence of ICMP "
                     "messages is sent to a destination host before "
                     "reporting as a failure")]
