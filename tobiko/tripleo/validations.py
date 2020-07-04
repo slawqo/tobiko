@@ -15,7 +15,6 @@ from __future__ import absolute_import
 
 from oslo_log import log
 from validations_libs import validation_actions
-from validations_libs import constants as v_consts
 
 from tobiko.tripleo import overcloud
 from tobiko.openstack import topology
@@ -23,8 +22,6 @@ from tobiko.shell import sh
 
 
 LOG = log.getLogger(__name__)
-
-v_consts.DEFAULT_VALIDATIONS_BASEDIR = '/home/stack/tripleo-validations'
 
 
 def prepare_ansible_hosts_inventory():
@@ -44,8 +41,7 @@ def run_post_deployment_validations():
     if overcloud.has_overcloud():
         prepare_ansible_hosts_inventory()
         failures = []
-        validates_object = validation_actions.ValidationActions(
-            validation_path='/home/stack/tripleo-validations/playbooks')
+        validates_object = validation_actions.ValidationActions()
         validations_result = validates_object.run_validations(
                                          group='post-deployment',
                                          quiet=False,
