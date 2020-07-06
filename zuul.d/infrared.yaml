@@ -48,7 +48,7 @@
 - job:
     name: tobiko-tox-infrared-centos-8
     parent: tobiko-tox-infrared
-    nodeset: centos-8-2-node
+    nodeset: tobiko-centos-8-2-node
     voting: true
     description: |
       Run test cases using tobiko infrared plugin on CentOS 8
@@ -57,7 +57,7 @@
 - job:
     name: tobiko-tox-infrared-fedora-latest
     parent: tobiko-tox-infrared
-    nodeset: fedora-latest-2-node
+    nodeset: tobiko-fedora-latest-2-node
     voting: false
     description: |
       Run test cases using tobiko infrared plugin on latest Fedora
@@ -75,7 +75,7 @@
 - job:
     name: tobiko-tox-infrared-ubuntu-focal
     parent: tobiko-tox-infrared
-    nodeset: ubuntu-focal-2-node
+    nodeset: tobiko-ubuntu-focal-2-node
     voting: false
     description: |
       Run test cases using tobiko infrared plugin on Ubuntu Focal
