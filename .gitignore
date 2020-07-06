@@ -46,3 +46,6 @@ tobiko.conf*
 # Infrared things
 .infrared
 workspace.tgz
+
+# Tripleo files
+tripleo-hosts.yaml
