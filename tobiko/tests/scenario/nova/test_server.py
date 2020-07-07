@@ -17,9 +17,11 @@ from __future__ import absolute_import
 import testtools
 
 import tobiko
+from tobiko import config
 from tobiko.openstack import stacks
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
+from tobiko.openstack import tests
 
 
 class ServerStackResourcesTest(testtools.TestCase):
@@ -42,3 +44,23 @@ class ServerStackResourcesTest(testtools.TestCase):
         # Verify actual port status (is alive, etc.)
         port_data = neutron.get_port(port.physical_resource_id)
         self.assertEqual(port.physical_resource_id, port_data['id'])
+
+
+class ServerCreationTest(testtools.TestCase):
+
+    def setUp(self):
+        testtools.TestCase.setUp(self)
+        if config.get_bool_env('TOBIKO_PREVENT_CREATE'):
+            self.skip('TOBIKO_PREVENT_CREATE is true')
+
+    def test_server_creation(self):
+        tests.test_server_creation()
+
+    def test_evacuable_server_creation(self):
+        tests.test_evacuable_server_creation()
+
+    def test_server_creation_and_shutoff(self):
+        tests.test_server_creation_and_shutoff()
+
+    def test_servers_creation(self):
+        tests.test_servers_creation()
