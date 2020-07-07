@@ -59,6 +59,8 @@ def test_server_creation_and_shutoff(stack=TestServerCreationStack):
 def test_servers_creation(stack=TestServerCreationStack,
                           number_of_servers=2) -> \
         typing.List[_nova.ServerStackFixture]:
+
+    initial_servers_ids = {server.id for server in nova.list_servers()}
     pid = os.getpid()
     fixture_obj = tobiko.get_fixture_class(stack)
 
@@ -67,11 +69,11 @@ def test_servers_creation(stack=TestServerCreationStack,
         tobiko.get_fixture(fixture_obj, fixture_id=f'{pid}-{i}')
         for i in range(number_of_servers or 1))
 
-    testcase = tobiko.get_test_case()
+    test_case = tobiko.get_test_case()
 
     # Check fixtures types
     for fixture in fixtures:
-        testcase.assertIsInstance(fixture, _nova.ServerStackFixture)
+        test_case.assertIsInstance(fixture, _nova.ServerStackFixture)
 
     # Delete all servers stacks
     for fixture in fixtures:
@@ -79,17 +81,19 @@ def test_servers_creation(stack=TestServerCreationStack,
 
     # Create all servers stacks
     for fixture in fixtures:
-        testcase.useFixture(fixture)
+        test_case.useFixture(fixture)
+
+    # Check every server ID is unique and new
+    server_ids = {fixture.server_id for fixture in fixtures}
+    test_case.assertEqual(number_of_servers or 1, len(server_ids))
+    test_case.assertFalse(server_ids & initial_servers_ids)
 
     # sleep for 20 sec , ensure no race condition with ssh
     time.sleep(20)
 
     # Test SSH connectivity to floating IP address
-    testcase.assertEqual(
-        {fixture.server_id: fixture.server_name
-         for fixture in fixtures},
-        {fixture.server_id: sh.get_hostname(ssh_client=fixture.ssh_client)
-         for fixture in fixtures})
+    for fixture in fixtures:
+        test_case.assertTrue(sh.get_hostname(ssh_client=fixture.ssh_client))
 
     # Test pinging to floating IP address
     ping.assert_reachable_hosts(fixture.floating_ip_address
