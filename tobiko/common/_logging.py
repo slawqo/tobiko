@@ -16,11 +16,11 @@ from __future__ import absolute_import
 import logging
 
 from oslo_log import log
-import testtools
 from testtools import content
 
 from tobiko.common import _detail
 from tobiko.common import _fixture
+from tobiko.common import _testcase
 
 
 LOG = log.getLogger(__name__)
@@ -80,7 +80,7 @@ class CaptureLogHandler(logging.Handler):
             yield self.format(record) + '\n'
 
 
-class CaptureLogTest(testtools.TestCase):
+class CaptureLogTest(_testcase.TobikoTestCase):
 
     capture_log_level = logging.DEBUG
     capture_log_logger = logging.root

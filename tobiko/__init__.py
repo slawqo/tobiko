@@ -26,6 +26,7 @@ from tobiko.common import _operation
 from tobiko.common import _os
 from tobiko.common import _select
 from tobiko.common import _skip
+from tobiko.common import _testcase
 from tobiko.common import _utils
 
 
@@ -94,8 +95,12 @@ skip = _skip.skip
 skip_if = _skip.skip_if
 skip_unless = _skip.skip_unless
 
-get_short_hostname = _utils.get_short_hostname
+get_test_case = _testcase.get_test_case
+pop_test_case = _testcase.pop_test_case
+push_test_case = _testcase.push_test_case
+TobikoTestCase = _testcase.TobikoTestCase
 
+get_short_hostname = _utils.get_short_hostname
 
 from tobiko import config  # noqa
 config.init_config()
