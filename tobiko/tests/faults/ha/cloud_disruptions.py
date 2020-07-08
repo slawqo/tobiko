@@ -258,16 +258,18 @@ def check_iha_evacuation(failover_type=None, vm_type=None):
         LOG.info(f'perform a failover on {compute_host}')
         evac_failover_compute(compute_host, failover_type=failover_type)
         test_cloud_recovery.overcloud_health_checks(passive_checks_only=True)
-        vms_new_state_df = nova.get_compute_vms_df(compute_host)
         if vm_type == 'evac_image_vm':
             nova.check_vm_evacuations(vms_df_old=org_nova_evac_df,
-                                      vms_df_new=vms_new_state_df,
+                                      compute_host=compute_host,
+                                      timeout=600,
                                       check_no_evacuation=True)
             new_nova_evac_df = nova.vm_df(evac_vm_id, nova.get_vms_table())
             nova.check_vm_evacuations(org_nova_evac_df, new_nova_evac_df)
+        else:
+            nova.check_vm_evacuations(vms_df_old=vms_starting_state_df,
+                                      compute_host=compute_host,
+                                      timeout=600)
         LOG.info('check evac is Done')
-        nova.check_vm_evacuations(vms_df_old=vms_starting_state_df,
-                                  vms_df_new=vms_new_state_df)
         nova.check_df_vms_ping(vms_starting_state_df)
 
 

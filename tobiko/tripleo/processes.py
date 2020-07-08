@@ -113,7 +113,7 @@ class OvercloudProcessesStatus(object):
         :return: Bool
         """
 
-        for attempt_number in range(120):
+        for attempt_number in range(600):
 
             try:
 
