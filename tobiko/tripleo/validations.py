@@ -55,6 +55,8 @@ def run_post_deployment_validations():
             if validation['Status'] == 'FAILED':
                 failures.append(
                     'failed validation: {}\n\n'.format(validation))
+            elif validation['Status'] == 'PASSED':
+                LOG.info('passed validation: {}\n\n'.format(validation))
         if failures:
             LOG.info('Failed tripleo validations:\n {}'.format(failures))
             # We should not fail over validations in the beginning we have to
