@@ -19,50 +19,29 @@ class PcsResourceException(tobiko.TobikoException):
     message = "pcs cluster is not in a healthy state"
 
 
-def get_pcs_resources_table():
+def get_pcs_resources_table(timeout=120, interval=2):
     """
     get pcs status from a controller and parse it
     to have it's resources states in check
        returns :
        rabbitmq-bundle-0    (ocf::heartbeat:rabbitmq-cluster):      Started con
        troller-0
-       rabbitmq-bundle-1    (ocf::heartbeat:rabbitmq-cluster):      Started con
-       troller-1
-       rabbitmq-bundle-2    (ocf::heartbeat:rabbitmq-cluster):      Started con
-       troller-2
-       galera-bundle-0      (ocf::heartbeat:galera):        Master controller-0
-       galera-bundle-1      (ocf::heartbeat:galera):        Master controller-1
-       galera-bundle-2      (ocf::heartbeat:galera):        Master controller-2
-       redis-bundle-0       (ocf::heartbeat:redis): Master controller-0
-       redis-bundle-1       (ocf::heartbeat:redis): Slave controller-1
-       redis-bundle-2       (ocf::heartbeat:redis): Slave controller-2
-     ip-192.168.24.6        (ocf::heartbeat:IPaddr2):       Started controller-
-     0
      ip-10.0.0.101  (ocf::heartbeat:IPaddr2):       Started controller-1
-     ip-172.17.1.12 (ocf::heartbeat:IPaddr2):       Started controller-2
-     ip-172.17.1.22 (ocf::heartbeat:IPaddr2):       Started controller-0
-     ip-172.17.3.22 (ocf::heartbeat:IPaddr2):       Started controller-1
-     ip-172.17.4.30 (ocf::heartbeat:IPaddr2):       Started controller-2
-       haproxy-bundle-docker-0      (ocf::heartbeat:docker):        Started con
-       troller-0
-       haproxy-bundle-docker-1      (ocf::heartbeat:docker):        Started con
-       troller-1
-       haproxy-bundle-docker-2      (ocf::heartbeat:docker):        Started con
-       troller-2
        openstack-cinder-volume-docker-0     (ocf::heartbeat:docker):        Sta
        rted controller-0
 
     :return: dataframe of pcs resources stats table
     """
-    # TODO make more robust(done, need other methods to be too)
-    # TODO make table.columns retry without exception
+    failures = []
+    start = time.time()
 
     nodes = topology.list_openstack_nodes(group='controller')
     controller_node = nodes[0].name
     ssh_client = overcloud.overcloud_ssh_client(controller_node)
 
     # prevent pcs table read failure while pacemaker is starting
-    while True:
+    while time.time() - start < timeout:
+        failures = []
         try:
             output = sh.execute("sudo pcs status | grep 'ocf\\|fence'",
                                 ssh_client=ssh_client,
@@ -74,9 +53,21 @@ def get_pcs_resources_table():
             table.columns = ['resource', 'resource_type', 'resource_state',
                              'overcloud_node']
         except ValueError:
-            pass
+            pcs_status_raw = sh.execute("sudo pcs status ",
+                                        ssh_client=ssh_client,
+                                        expect_exit_status=None).stdout
+            failures.append(f'pcs status table import failed : '
+                            f'pcs status stdout:\n {pcs_status_raw}')
+            LOG.info('Retrying , timeout at: {}'
+                     .format(timeout-(time.time() - start)))
+            time.sleep(interval)
         else:
             break
+    # exhausted all retries
+    if failures:
+        tobiko.fail(
+            'pcs status table import error\n{!s}', '\n'.join(failures))
+
     LOG.debug("Got pcs status :\n%s", table)
     return table
 
