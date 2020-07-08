@@ -7,6 +7,7 @@ from oslo_log import log
 
 import tobiko
 from tobiko.shell import sh
+from tobiko.openstack import tests
 from tobiko.openstack import topology
 from tobiko.tripleo import topology as tripleo_topology
 from tobiko.openstack import keystone
@@ -244,13 +245,13 @@ def check_iha_evacuation(failover_type=None, vm_type=None):
     for iteration in range(2):
         LOG.info(f'Begin IHA tests iteration {iteration}')
         LOG.info('create 2 vms')
-        nova.create_multiple_unique_vms(n_vms=2)
+        tests.test_servers_creation(number_of_servers=2)
         compute_host = nova.get_random_compute_with_vms_name()
         vms_starting_state_df = nova.get_compute_vms_df(compute_host)
         if vm_type == 'shutoff':
             nova.stop_all_instances()
         if vm_type == 'evac_image_vm':
-            evac_vm_stack = nova.random_vm_create_evacuable_image_tag()
+            evac_vm_stack = tests.test_evacuable_server_creation()
             evac_vm_id = nova.get_stack_server_id(evac_vm_stack)
             org_nova_evac_df = nova.vm_df(evac_vm_id, nova.get_vms_table())
         nova.check_df_vms_ping(vms_starting_state_df)

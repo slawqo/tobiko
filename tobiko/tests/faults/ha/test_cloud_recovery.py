@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import testtools
 
 from tobiko.openstack import neutron
+from tobiko.openstack import tests
 from tobiko.tests.faults.ha import cloud_disruptions
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import processes
@@ -31,7 +32,7 @@ def overcloud_health_checks(passive_checks_only=False):
 
 # check vm create with ssh and ping checks
 def check_vm_create():
-    nova.random_vm_create()
+    tests.test_server_creation()
 
 
 # check cluster failed statuses
