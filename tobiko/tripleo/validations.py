@@ -42,10 +42,15 @@ def run_post_deployment_validations():
         prepare_ansible_hosts_inventory()
         failures = []
         validates_object = validation_actions.ValidationActions()
-        validations_result = validates_object.run_validations(
-                                         group='post-deployment',
-                                         quiet=False,
-                                         inventory='/home/stack/hosts.yaml')
+        try:
+            validations_result = validates_object.run_validations(
+                group='post-deployment',
+                quiet=False,
+                inventory='/home/stack/hosts.yaml')
+        except Exception:
+            LOG.exception('Validation lib unhandled errors')
+            return
+
         for validation in validations_result:
             if validation['Status'] == 'FAILED':
                 failures.append(
