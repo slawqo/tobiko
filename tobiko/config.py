@@ -226,10 +226,7 @@ def setup_tobiko_config(conf):
         warnings_logger.logger.setLevel(log.ERROR)
 
     tobiko.setup_fixture(HttpProxyFixture)
-    if conf.logging.capture_log:
-        monkey.patch(testtools, 'TestCase', tobiko.CaptureLogTest)
-    else:
-        monkey.patch(testtools, 'TestCase', tobiko.TobikoTestCase)
+    monkey.patch(testtools, 'TestCase', tobiko.BaseTestCase)
 
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)

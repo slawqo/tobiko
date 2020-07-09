@@ -20,7 +20,6 @@ from testtools import content
 
 from tobiko.common import _detail
 from tobiko.common import _fixture
-from tobiko.common import _testcase
 
 
 LOG = log.getLogger(__name__)
@@ -78,15 +77,3 @@ class CaptureLogHandler(logging.Handler):
     def format_all(self):
         for record in self.records:
             yield self.format(record) + '\n'
-
-
-class CaptureLogTest(_testcase.TobikoTestCase):
-
-    capture_log_level = logging.DEBUG
-    capture_log_logger = logging.root
-
-    def setUp(self):
-        self.useFixture(CaptureLogFixture(test_case_id=self.id(),
-                                          level=self.capture_log_level,
-                                          logger=self.capture_log_logger))
-        super(CaptureLogTest, self).setUp()
