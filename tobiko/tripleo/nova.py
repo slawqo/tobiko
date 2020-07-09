@@ -14,7 +14,7 @@ from tobiko.openstack import nova
 LOG = log.getLogger(__name__)
 
 
-def check_nova_services_health(timeout=120, interval=2):
+def check_nova_services_health(timeout=600, interval=2):
     failures = []
     start = time.time()
 
@@ -154,7 +154,7 @@ def vm_location(vm_id, vms_df):
             index=False)
 
 
-def check_vm_evacuations(vms_df_old=None, vms_df_new=None, timeout=120,
+def check_vm_evacuations(vms_df_old=None, compute_host=None, timeout=600,
                          interval=2, check_no_evacuation=False):
     """check evacuation of vms
     input: old and new vms_state_tables dfs"""
@@ -163,6 +163,7 @@ def check_vm_evacuations(vms_df_old=None, vms_df_new=None, timeout=120,
 
     while time.time() - start < timeout:
         failures = []
+        vms_df_new = get_compute_vms_df(compute_host)
         for vm_id in vms_df_old.vm_id.to_list():
             old_bm_host = vm_location(vm_id, vms_df_old)
             new_vm_host = vm_location(vm_id, vms_df_new)
