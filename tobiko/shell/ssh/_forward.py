@@ -127,7 +127,7 @@ class SSHTunnelForwarderFixture(tobiko.SharedFixture):
                 remote_bind_addresses=remote_bind_addresses)
             self.addCleanup(self.cleanup_forwarder)
             forwarder.start()
-            self.ssh_client.addCleanup(self)
+            self.ssh_client.addCleanup(self.cleanup_forwarder)
         return forwarder
 
     def cleanup_forwarder(self):
