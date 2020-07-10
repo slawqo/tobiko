@@ -20,7 +20,6 @@ from tobiko.common import _detail
 from tobiko.common import _exception
 from tobiko.common import _fixture
 from tobiko.common import _logging
-from tobiko.common.managers import testcase as testcase_manager
 from tobiko.common.managers import loader as loader_manager
 from tobiko.common import _operation
 from tobiko.common import _os
@@ -64,7 +63,6 @@ list_required_fixtures = _fixture.list_required_fixtures
 SharedFixture = _fixture.SharedFixture
 FixtureManager = _fixture.FixtureManager
 
-CaptureLogTest = _logging.CaptureLogTest
 CaptureLogFixture = _logging.CaptureLogFixture
 
 load_object = loader_manager.load_object
@@ -83,8 +81,6 @@ get_operation = _operation.get_operation
 get_operation_name = _operation.get_operation_name
 operation_config = _operation.operation_config
 
-discover_testcases = testcase_manager.discover_testcases
-
 Selection = _select.Selection
 select = _select.select
 ObjectNotFound = _select.ObjectNotFound
@@ -95,10 +91,12 @@ skip = _skip.skip
 skip_if = _skip.skip_if
 skip_unless = _skip.skip_unless
 
+BaseTestCase = _testcase.BaseTestCase
+discover_test_cases = _testcase.discover_test_cases
 get_test_case = _testcase.get_test_case
 pop_test_case = _testcase.pop_test_case
 push_test_case = _testcase.push_test_case
-TobikoTestCase = _testcase.TobikoTestCase
+TestCasesManager = _testcase.TestCasesManager
 
 get_short_hostname = _utils.get_short_hostname
 

@@ -114,7 +114,7 @@ class FixtureUtil(base.TobikoCMD):
 
     def discover_testcases(self):
         args = self.args
-        return tobiko.discover_testcases(
+        return tobiko.discover_test_cases(
             config=args.config,
             repo_type=args.repo_type,
             repo_url=args.repo_url,

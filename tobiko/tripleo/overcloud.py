@@ -46,8 +46,12 @@ skip_if_missing_overcloud = tobiko.skip_unless(
 
 class OvercloudKeystoneCredentialsFixture(
         keystone.EnvironKeystoneCredentialsFixture):
+
     def get_environ(self):
-        return load_overcloud_rcfile()
+        if has_overcloud():
+            return load_overcloud_rcfile()
+        else:
+            return {}
 
 
 def list_overcloud_nodes(**params):
@@ -161,9 +165,8 @@ class OvercloudHostConfig(tobiko.SharedFixture):
 
 
 def setup_overcloud_keystone_crederntials():
-    if has_overcloud():
-        keystone.DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES.append(
-            OvercloudKeystoneCredentialsFixture)
+    keystone.DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES.append(
+        OvercloudKeystoneCredentialsFixture)
 
 
 def get_overcloud_nodes_dataframe(oc_node_df_function):
