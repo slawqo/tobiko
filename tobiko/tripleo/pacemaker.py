@@ -19,7 +19,14 @@ class PcsResourceException(tobiko.TobikoException):
     message = "pcs cluster is not in a healthy state"
 
 
-def get_pcs_resources_table(timeout=120, interval=2):
+def get_random_controller_ssh_client():
+    """get a random controler's ssh client """
+    nodes = topology.list_openstack_nodes(group='controller')
+    controller_node = nodes[0]
+    return controller_node.ssh_client
+
+
+def get_pcs_resources_table(timeout=360, interval=2):
     """
     get pcs status from a controller and parse it
     to have it's resources states in check
@@ -35,15 +42,13 @@ def get_pcs_resources_table(timeout=120, interval=2):
     failures = []
     start = time.time()
 
-    nodes = topology.list_openstack_nodes(group='controller')
-    controller_node = nodes[0].name
-    ssh_client = overcloud.overcloud_ssh_client(controller_node)
+    ssh_client = get_random_controller_ssh_client()
 
     # prevent pcs table read failure while pacemaker is starting
     while time.time() - start < timeout:
         failures = []
         try:
-            output = sh.execute("sudo pcs status | grep 'ocf\\|fence'",
+            output = sh.execute("sudo pcs status resources |grep ocf",
                                 ssh_client=ssh_client,
                                 expect_exit_status=None).stdout
             # remove the first column when it only includes '*' characters
@@ -253,7 +258,7 @@ def get_resource_master_node(resource_type=None):
 
 
 def get_ovn_db_master_node():
-    get_overcloud_nodes_running_pcs_resource(
+    return get_overcloud_nodes_running_pcs_resource(
         resource_type='(ocf::ovn:ovndb-servers):', resource_state='Master')
 
 
@@ -296,9 +301,14 @@ skip_if_instanceha_not_delpoyed = tobiko.skip_unless(
 def fencing_deployed():
     """check fencing deployment
     checks for existence of the stonith-fence type resources"""
-    if overcloud.has_overcloud():
-        return get_overcloud_nodes_running_pcs_resource(
-            resource_type='(stonith:fence_ipmilan):')
+    ssh_client = get_random_controller_ssh_client()
+    fencing_output = sh.execute("sudo pcs status |grep "
+                                "'stonith:fence_ipmilan'",
+                                ssh_client=ssh_client,
+                                expect_exit_status=None)
+
+    if fencing_output.exit_status == 0:
+        return True
     else:
         return False
 
