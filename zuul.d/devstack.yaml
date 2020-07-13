@@ -69,6 +69,7 @@
         log: true
         yaml: true
         yml: true
+      test_log_debug: true
       tobiko_dir: '/opt/stack/tobiko'
       upper_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/openstack/requirements/upper-constraints.txt'
 
