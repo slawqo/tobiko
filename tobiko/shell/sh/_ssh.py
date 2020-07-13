@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import time
+
 from oslo_log import log
 import paramiko
 
@@ -73,6 +75,9 @@ class SSHShellProcessParameters(_process.ShellProcessParameters):
 
 class SSHShellProcessFixture(_process.ShellProcessFixture):
 
+    retry_create_process_count = 3
+    retry_create_process_intervall = 1.
+
     def init_parameters(self, **kwargs):
         return SSHShellProcessParameters(**kwargs)
 
@@ -80,36 +85,52 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
         """Execute command on a remote host using SSH client"""
         command = str(self.command)
         ssh_client = self.ssh_client
-        timeout = self.timeout and float(self.timeout)
         parameters = self.parameters
 
         tobiko.check_valid_type(ssh_client, ssh.SSHClientFixture)
         tobiko.check_valid_type(parameters, SSHShellProcessParameters)
+        environment = parameters.environment
 
-        LOG.debug("Executing remote command: %r (login=%r, timeout=%r)...",
-                  command, ssh_client.login, timeout)
+        retry_count = self.retry_create_process_count
+        for retry_number in range(1, retry_count + 1):
+            timeout = self.timeout and float(self.timeout)
+            LOG.debug("Executing remote command: %r (login=%r, timeout=%r, "
+                      "environment=%r)...",
+                      command, ssh_client.login, timeout, environment or {})
+            try:
+                return self._try_create_process(command=command,
+                                                environment=environment,
+                                                ssh_client=ssh_client,
+                                                timeout=timeout)
+            except paramiko.SSHException as ex:
+                try:
+                    # Before doing anything else cleanup SSH connection
+                    tobiko.cleanup_fixture(ssh_client)
+                except Exception:
+                    LOG.exception('Failed closing SSH connection')
+                if "timeout" in str(ex).lower():
+                    LOG.debug('Timed out executing command %r (timeout=%s)',
+                              command, timeout, exc_info=1)
+                    raise _exception.ShellTimeoutExpired(command=command,
+                                                         stdin=None,
+                                                         stdout=None,
+                                                         stderr=None,
+                                                         timeout=timeout)
 
-        # Connect to SSH server
+                LOG.debug('Error creating SSH process (attempt %d of %d)',
+                          retry_number, retry_count, exc_info=1)
+                if retry_number >= retry_count:
+                    # Last attempt has failed!
+                    raise
+                else:
+                    # Be patient, this could help things getting better
+                    time.sleep(self.retry_create_process_intervall)
+
+    def _try_create_process(self, command, environment, ssh_client, timeout):
         client = ssh_client.connect()
-
-        # Open a new SSH session
-        try:
-            process = client.get_transport().open_session(
-                timeout=timeout)
-        except paramiko.SSHException as ex:
-            LOG.debug('Error executing command %r', command, exc_info=1)
-            error = str(ex)
-            if "Timeout opening channel." == error:
-                raise _exception.ShellTimeoutExpired(command=command,
-                                                     stdin=None,
-                                                     stdout=None,
-                                                     stderr=None,
-                                                     timeout=timeout)
-            else:
-                raise _exception.ShellError(error)
-
-        if parameters.environment:
-            process.update_environment(parameters.environment)
+        process = client.get_transport().open_session(timeout=timeout)
+        if environment:
+            process.update_environment(environment)
         process.exec_command(command)
         return process
 
