@@ -315,7 +315,13 @@ class SSHClientFixture(tobiko.SharedFixture):
                 LOG.exception('Error closing proxy socket (%r)', self)
 
     def connect(self):
-        return tobiko.setup_fixture(self).client
+        client = tobiko.setup_fixture(self).client
+        if not client:
+            # For some unknown reason at this point client could be None:
+            # try reconnecting to it
+            LOG.error('SSH Paramiko client found None, reconnecting...')
+            client = tobiko.reset_fixture(self).client
+        return client
 
     def close(self):
         tobiko.cleanup_fixture(self)
