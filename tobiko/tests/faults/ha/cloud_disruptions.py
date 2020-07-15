@@ -7,6 +7,7 @@ from oslo_log import log
 
 import tobiko
 from tobiko.shell import sh
+from tobiko.openstack import glance
 from tobiko.openstack import tests
 from tobiko.openstack import topology
 from tobiko.tripleo import topology as tripleo_topology
@@ -146,6 +147,14 @@ def get_main_vip_controller(main_vip):
     return main_vim_controller
 
 
+def delete_evacuable_tagged_image():
+    # delete evacuable tagged image because it prevents
+    # non tagged evacuations if exists
+    for img in glance.list_images():
+        if 'evacuable' in img['tags']:
+            glance.delete_image(img.id)
+
+
 def disrupt_controller_main_vip(disrupt_method=hard_reset_method,
                                 inverse=False):
 
@@ -263,6 +272,9 @@ def check_iha_evacuation(failover_type=None, vm_type=None):
                                       compute_host=compute_host,
                                       timeout=600,
                                       check_no_evacuation=True)
+            # delete evacuable tagged image because it prevents
+            # non tagged evacuations if exists
+            delete_evacuable_tagged_image()
             new_nova_evac_df = nova.vm_df(evac_vm_id, nova.get_vms_table())
             nova.check_vm_evacuations(org_nova_evac_df, new_nova_evac_df)
         else:
