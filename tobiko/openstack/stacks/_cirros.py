@@ -22,7 +22,7 @@ from tobiko.shell import sh
 
 CONF = config.CONF
 
-CIRROS_IMAGE_VERSION = '0.5.1'
+CIRROS_IMAGE_VERSION = '0.4.0'
 
 CIRROS_IMAGE_URL = (
     'http://download.cirros-cloud.net/{version}/'
@@ -37,7 +37,7 @@ class CirrosImageFixture(glance.URLGlanceImageFixture):
     container_format = CONF.tobiko.cirros.container_format or "bare"
     disk_format = CONF.tobiko.cirros.disk_format or "raw"
     username = CONF.tobiko.cirros.username or 'cirros'
-    password = CONF.tobiko.cirros.password or 'gocubsgo'
+    password = CONF.tobiko.cirros.password or 'cubswin:)'
 
 
 class CirrosFlavorStackFixture(_nova.FlavorStackFixture):
