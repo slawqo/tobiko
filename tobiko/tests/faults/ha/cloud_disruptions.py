@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import re
+import time
 
 from oslo_log import log
 
@@ -186,6 +187,8 @@ def reset_controllers_non_main_vip():
 
 def network_disrupt_controller_main_vip():
     disrupt_controller_main_vip(disrupt_method=network_disruption)
+    LOG.info('waiting 60s to avoid race conditions...')
+    time.sleep(60.0)
 
 
 def network_undisrupt_controller_main_vip():
