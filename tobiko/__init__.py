@@ -26,6 +26,7 @@ from tobiko.common import _os
 from tobiko.common import _select
 from tobiko.common import _skip
 from tobiko.common import _testcase
+from tobiko.common import _time
 from tobiko.common import _utils
 
 
@@ -97,6 +98,13 @@ get_test_case = _testcase.get_test_case
 pop_test_case = _testcase.pop_test_case
 push_test_case = _testcase.push_test_case
 TestCasesManager = _testcase.TestCasesManager
+
+Seconds = _time.Seconds
+SecondsValueError = _time.SecondsValueError
+sleep = _time.sleep
+time = _time.time
+to_seconds = _time.to_seconds
+to_seconds_float = _time.to_seconds_float
 
 get_short_hostname = _utils.get_short_hostname
 

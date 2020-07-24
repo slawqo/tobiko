@@ -13,17 +13,16 @@
 #    under the License.
 from __future__ import absolute_import
 
-import six
-
 from tobiko.tests.unit import _case
 from tobiko.tests.unit import _patch
+from tobiko.tests.unit.podman import _mocked_service
 
 
 TobikoUnitTest = _case.TobikoUnitTest
 
-if six.PY3:
-    from tobiko.tests.unit.podman import _mocked_service
-    mocked_service = _mocked_service
+mocked_service = _mocked_service
 
 PatchFixture = _patch.PatchFixture
 PatchMixin = _patch.PatchMixin
+
+PatchTimeFixture = _patch.PatchTimeFixture

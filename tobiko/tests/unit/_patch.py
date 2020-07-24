@@ -13,9 +13,12 @@
 #    under the License.
 from __future__ import absolute_import
 
+import time
+
 import mock
 
 import tobiko
+from tobiko import common
 
 
 class PatchMixin(object):
@@ -33,6 +36,45 @@ class PatchMixin(object):
         self.addCleanup(context.stop)
         return mocked
 
+    def patch_time(self, current_time=None, time_increment=None):
+        if not hasattr(self, 'mock_time'):
+            self.mock_time = PatchTimeFixture(current_time=current_time,
+                                              time_increment=time_increment)
+        else:
+            self.mock_time.patch_time(current_time=current_time,
+                                      time_increment=time_increment)
+        return self.useFixture(self.mock_time)
+
 
 class PatchFixture(PatchMixin, tobiko.SharedFixture):
     """Fixture class with mock method helpers"""
+
+
+class PatchTimeFixture(PatchFixture):
+
+    current_time = 0.
+    time_increment = 1.
+
+    def __init__(self, current_time=None, time_increment=.1):
+        self.time = mock.MagicMock(specs=time.time, side_effect=self._time)
+        self.sleep = mock.MagicMock(specs=time.sleep, side_effect=self._sleep)
+        self.patch_time(current_time=current_time,
+                        time_increment=time_increment)
+
+    def setup_fixture(self):
+        # pylint: disable=protected-access
+        self.patch(common._time, '_time', self)
+
+    def _time(self):
+        result = self.current_time
+        self.current_time += self.time_increment
+        return result
+
+    def _sleep(self, seconds):
+        self.current_time += seconds
+
+    def patch_time(self, current_time=0., time_increment=.1):
+        if current_time is not None:
+            self.current_time = current_time
+        if time_increment is not None:
+            self.time_increment = time_increment
