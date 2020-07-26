@@ -266,7 +266,8 @@ def check_iha_evacuation(failover_type=None, vm_type=None):
             evac_vm_stack = tests.test_evacuable_server_creation()
             evac_vm_id = nova.get_stack_server_id(evac_vm_stack)
             org_nova_evac_df = nova.vm_df(evac_vm_id, nova.get_vms_table())
-        nova.check_df_vms_ping(vms_starting_state_df)
+        if not vm_type == 'shutoff':
+            nova.check_df_vms_ping(vms_starting_state_df)
         LOG.info(f'perform a failover on {compute_host}')
         evac_failover_compute(compute_host, failover_type=failover_type)
         test_cloud_recovery.overcloud_health_checks(passive_checks_only=True)
@@ -285,7 +286,8 @@ def check_iha_evacuation(failover_type=None, vm_type=None):
                                       compute_host=compute_host,
                                       timeout=600)
         LOG.info('check evac is Done')
-        nova.check_df_vms_ping(vms_starting_state_df)
+        if not vm_type == 'shutoff':
+            nova.check_df_vms_ping(vms_starting_state_df)
 
 
 def check_iha_evacuation_evac_image_vm():
