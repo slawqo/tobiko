@@ -160,7 +160,7 @@ def assert_all_tripleo_containers_running():
     sets in computes or controllers"""
 
     common_controller_tripleo_containers = ['cinder_api', 'cinder_api_cron',
-                                            'cinder_scheduler', 'clustercheck',
+                                            'cinder_scheduler',
                                             'glance_api', 'heat_api',
                                             'heat_api_cfn',
                                             'heat_api_cron', 'heat_engine',
