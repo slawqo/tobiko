@@ -81,8 +81,8 @@ def test_servers_creation(stack=TestServerCreationStack,
     for fixture in fixtures:
         testcase.useFixture(fixture)
 
-    # sleep for 5 sec , ensure no race condition with ssh
-    time.sleep(5)
+    # sleep for 20 sec , ensure no race condition with ssh
+    time.sleep(20)
 
     # Test SSH connectivity to floating IP address
     testcase.assertEqual(
