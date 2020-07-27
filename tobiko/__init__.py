@@ -23,6 +23,7 @@ from tobiko.common import _logging
 from tobiko.common.managers import loader as loader_manager
 from tobiko.common import _operation
 from tobiko.common import _os
+from tobiko.common import _retry
 from tobiko.common import _select
 from tobiko.common import _skip
 from tobiko.common import _testcase
@@ -81,6 +82,14 @@ Operation = _operation.Operation
 get_operation = _operation.get_operation
 get_operation_name = _operation.get_operation_name
 operation_config = _operation.operation_config
+
+retry = _retry.retry
+retry_attempt = _retry.retry_attempt
+retry_on_exception = _retry.retry_on_exception
+RetryAttempt = _retry.RetryAttempt
+RetryCountLimitError = _retry.RetryCountLimitError
+RetryLimitError = _retry.RetryLimitError
+RetryTimeLimitError = _retry.RetryTimeLimitError
 
 Selection = _select.Selection
 select = _select.select

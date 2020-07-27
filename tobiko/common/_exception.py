@@ -18,7 +18,6 @@ import collections
 import sys
 
 from oslo_log import log
-import six
 import testtools
 
 
@@ -98,14 +97,27 @@ class ExceptionInfo(collections.namedtuple('ExceptionInfo',
             if _type is not None:
                 LOG.exception("Exception occurred while handling %s(%s) "
                               "exception.", self.type, self.value)
-            self.reraise()
+                self.reraise()
 
     def reraise(self):
         if self.type is not None:
-            six.reraise(*self)
+            reraise(*self)
+
+
+def reraise(tp, value, tb=None):
+    try:
+        if value is None:
+            value = tp()
+        if value.__traceback__ is not tb:
+            raise value.with_traceback(tb)
+        raise value
+    finally:
+        value = None
+        tb = None
 
 
 def exc_info(reraise=True):
+    # pylint: disable=redefined-outer-name
     info = ExceptionInfo(*sys.exc_info())
     info.reraise_on_exit = reraise
     return info
@@ -120,7 +132,7 @@ def handle_multiple_exceptions():
         if exc_infos:
             for info in exc_infos[1:]:
                 LOG.exception("Unhandled exception:", exc_info=info)
-            six.reraise(*exc_infos[0])
+            reraise(*exc_infos[0])
         else:
             LOG.debug('empty MultipleExceptions: %s', str(exc))
 

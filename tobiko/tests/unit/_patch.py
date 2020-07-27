@@ -52,6 +52,7 @@ class PatchFixture(PatchMixin, tobiko.SharedFixture):
 
 class PatchTimeFixture(PatchFixture):
 
+    start_time = 0.
     current_time = 0.
     time_increment = 1.
 
@@ -75,6 +76,6 @@ class PatchTimeFixture(PatchFixture):
 
     def patch_time(self, current_time=0., time_increment=.1):
         if current_time is not None:
-            self.current_time = current_time
+            self.start_time = self.current_time = current_time
         if time_increment is not None:
             self.time_increment = time_increment
