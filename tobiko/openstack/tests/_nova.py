@@ -17,6 +17,7 @@ from __future__ import absolute_import
 
 import os
 import typing  # noqa
+import time
 
 # import testtools
 
@@ -79,6 +80,9 @@ def test_servers_creation(stack=TestServerCreationStack,
     # Create all servers stacks
     for fixture in fixtures:
         testcase.useFixture(fixture)
+
+    # sleep for 5 sec , ensure no race condition with ssh
+    time.sleep(5)
 
     # Test SSH connectivity to floating IP address
     testcase.assertEqual(
