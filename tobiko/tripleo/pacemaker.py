@@ -26,7 +26,7 @@ def get_random_controller_ssh_client():
     return controller_node.ssh_client
 
 
-def get_pcs_resources_table(timeout=360, interval=2):
+def get_pcs_resources_table(timeout=720, interval=2):
     """
     get pcs status from a controller and parse it
     to have it's resources states in check
