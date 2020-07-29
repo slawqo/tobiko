@@ -94,6 +94,20 @@ def find_server(client=None, unique=False, **params):
         return servers.first
 
 
+def list_services(client=None, **params) -> tobiko.Selection:
+    client = nova_client(client)
+    services = client.services.list()
+    return tobiko.select(services).with_attributes(**params)
+
+
+def find_service(client=None, unique=False, **params):
+    services = list_services(client=client, **params)
+    if unique:
+        return services.unique
+    else:
+        return services.first
+
+
 def get_server(server, client=None, **params):
     return nova_client(client).servers.get(server, **params)
 

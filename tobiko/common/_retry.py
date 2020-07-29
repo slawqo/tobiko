@@ -117,8 +117,7 @@ class Retry(object):
                  count: typing.Optional[int] = None,
                  timeout: _time.Seconds = None,
                  interval: _time.Seconds = None):
-        if count:
-            self.count = count
+        self.count = count
         self.timeout = _time.to_seconds(timeout)
         self.interval = _time.to_seconds(interval)
 
@@ -151,12 +150,17 @@ class Retry(object):
                         elapsed_time = _time.time() - start_time
 
 
-def retry(count: typing.Optional[int] = None,
+def retry(other: typing.Optional[Retry] = None,
+          count: typing.Optional[int] = None,
           timeout: _time.Seconds = None,
           interval: _time.Seconds = None) -> Retry:
-    return Retry(count=count,
-                 timeout=timeout,
-                 interval=interval)
+    if other is not None:
+        _exception.check_valid_type(other, Retry)
+        count = count or other.count
+        timeout = timeout or other.timeout
+        interval = interval or other.interval
+
+    return Retry(count=count, timeout=timeout, interval=interval)
 
 
 def retry_on_exception(exception: Exception,

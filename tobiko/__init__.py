@@ -84,6 +84,7 @@ get_operation_name = _operation.get_operation_name
 operation_config = _operation.operation_config
 
 retry = _retry.retry
+Retry = _retry.Retry
 retry_attempt = _retry.retry_attempt
 retry_on_exception = _retry.retry_on_exception
 RetryAttempt = _retry.RetryAttempt

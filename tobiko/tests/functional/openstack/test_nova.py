@@ -150,3 +150,9 @@ class HypervisorTest(testtools.TestCase):
     def test_skip_if_missing_hypervisors_with_big_count(self):
         self.test_skip_if_missing_hypervisors(count=1000000,
                                               should_skip=True)
+
+
+class ServiceTest(testtools.TestCase):
+
+    def test_wait_for_services_up(self):
+        nova.wait_for_services_up()
