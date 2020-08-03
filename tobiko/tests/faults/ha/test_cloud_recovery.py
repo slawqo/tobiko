@@ -51,7 +51,7 @@ class DisruptTripleoNodesTest(testtools.TestCase):
     """ HA Tests: run health check -> disruptive action -> health check
     disruptive_action: a function that runs some
     disruptive scenarion on a overcloud"""
-    def test_overcloud_health_check(self):
+    def test_0vercloud_health_check(self):
         overcloud_health_checks()
 
     def test_hard_reboot_controllers_recovery(self):
