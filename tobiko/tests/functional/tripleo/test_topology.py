@@ -17,32 +17,30 @@ from __future__ import absolute_import
 
 import tobiko
 from tobiko.shell import sh
-from tobiko.tripleo import overcloud
-from tobiko.tripleo import topology
-from tobiko.tripleo import undercloud
+from tobiko import tripleo
 from tobiko.tests.functional.openstack import test_topology
 
 
 class TripleoTopologyTest(test_topology.OpenStackTopologyTest):
 
-    topology = tobiko.required_setup_fixture(topology.TripleoTopology)
+    topology = tobiko.required_setup_fixture(tripleo.TripleoTopology)
 
-    @undercloud.skip_if_missing_undercloud
+    @tripleo.skip_if_missing_undercloud
     def test_undercloud_group(self):
-        ssh_client = undercloud.undercloud_ssh_client()
+        ssh_client = tripleo.undercloud_ssh_client()
         name = sh.get_hostname(ssh_client=ssh_client).split('.')[0]
         node = self.topology.get_node(name)
         self.assertIs(node.ssh_client, ssh_client)
         self.assertEqual(name, node.name)
         nodes = self.topology.get_group('undercloud')
         self.assertEqual([node], nodes)
-        host_config = undercloud.undercloud_host_config()
+        host_config = tripleo.undercloud_host_config()
         self.assertEqual(host_config.hostname, str(node.public_ip))
 
-    @overcloud.skip_if_missing_overcloud
+    @tripleo.skip_if_missing_overcloud
     def test_overcloud_group(self):
-        for server in overcloud.list_overcloud_nodes():
-            ssh_client = overcloud.overcloud_ssh_client(server.name)
+        for server in tripleo.list_overcloud_nodes():
+            ssh_client = tripleo.overcloud_ssh_client(server.name)
             name = sh.get_hostname(ssh_client=ssh_client).split('.')[0]
             node = self.topology.get_node(name)
             self.assertIs(node.ssh_client, ssh_client)
@@ -55,6 +53,6 @@ class TripleoTopologyTest(test_topology.OpenStackTopologyTest):
                 nodes = self.topology.get_group(group)
                 self.assertIn(node, nodes)
                 self.assertIn(group, node.groups)
-            host_config = overcloud.overcloud_host_config(name)
+            host_config = tripleo.overcloud_host_config(name)
             self.assertEqual(host_config.hostname,
                              str(node.public_ip))

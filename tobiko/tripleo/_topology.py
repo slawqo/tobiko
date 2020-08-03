@@ -14,13 +14,13 @@
 from __future__ import absolute_import
 
 import re
-import typing
+import typing  # noqa
 
 from oslo_log import log
 
 from tobiko.openstack import topology
-from tobiko.tripleo import overcloud
-from tobiko.tripleo import undercloud
+from tobiko.tripleo import _overcloud
+from tobiko.tripleo import _undercloud
 
 
 LOG = log.getLogger(__name__)
@@ -44,18 +44,18 @@ class TripleoTopology(topology.OpenStackTopology):
         self.discover_overcloud_nodes()
 
     def discover_undercloud_nodes(self):
-        if undercloud.has_undercloud():
-            config = undercloud.undercloud_host_config()
-            ssh_client = undercloud.undercloud_ssh_client()
+        if _undercloud.has_undercloud():
+            config = _undercloud.undercloud_host_config()
+            ssh_client = _undercloud.undercloud_ssh_client()
             self.add_node(address=config.hostname,
                           group='undercloud',
                           ssh_client=ssh_client)
 
     def discover_overcloud_nodes(self):
-        if overcloud.has_overcloud():
-            for server in overcloud.list_overcloud_nodes():
-                config = overcloud.overcloud_host_config(server.name)
-                ssh_client = overcloud.overcloud_ssh_client(server.name)
+        if _overcloud.has_overcloud():
+            for server in _overcloud.list_overcloud_nodes():
+                config = _overcloud.overcloud_host_config(server.name)
+                ssh_client = _overcloud.overcloud_ssh_client(server.name)
                 node = self.add_node(address=config.hostname,
                                      group='overcloud',
                                      ssh_client=ssh_client)
@@ -111,7 +111,7 @@ def is_number(text: str):
 
 
 def setup_tripleo_topology():
-    if undercloud.has_undercloud() or overcloud.has_overcloud():
+    if _undercloud.has_undercloud() or _overcloud.has_overcloud():
         topology.set_default_openstack_topology_class(
             'tobiko.tripleo.topology.TripleoTopology')
 
