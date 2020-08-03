@@ -48,8 +48,8 @@ class UndercloudConfigTest(unit.TobikoUnitTest):
                               six.string_types)
 
     def test_undercloud_rcfile(self):
-        self.assertIsInstance(TIPLEO_CONF.undercloud_rcfile,
-                              six.string_types)
+        for rcfile in TIPLEO_CONF.undercloud_rcfile:
+            self.assertIsInstance(rcfile, six.string_types)
 
 
 class OvercloudConfigTest(unit.TobikoUnitTest):
@@ -65,5 +65,5 @@ class OvercloudConfigTest(unit.TobikoUnitTest):
                               six.string_types)
 
     def test_overcloud_rcfile(self):
-        self.assertIsInstance(TIPLEO_CONF.overcloud_rcfile,
-                              six.string_types)
+        for rcfile in TIPLEO_CONF.overcloud_rcfile:
+            self.assertIsInstance(rcfile, six.string_types)

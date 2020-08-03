@@ -35,18 +35,36 @@ def undercloud_host_config():
     return tobiko.setup_fixture(UndecloudHostConfig)
 
 
-def fetch_os_env(rcfile):
-    command = ". {rcfile}; env | grep '^OS_'".format(rcfile=rcfile)
-    result = sh.execute(command, ssh_client=undercloud_ssh_client())
-    env = {}
-    for line in result.stdout.splitlines():
-        name, value = line.split('=')
-        env[name] = value
-    return env
+class InvalidRCFile(tobiko.TobikoException):
+    message = "Invalid RC file: {rcfile}"
+
+
+def fetch_os_env(rcfile, *rcfiles):
+    rcfiles = (rcfile,) + rcfiles
+    errors = []
+    for rcfile in rcfiles:
+        try:
+            result = sh.execute(f". {rcfile}; env | grep '^OS_'",
+                                ssh_client=undercloud_ssh_client())
+        except sh.ShellCommandFailed as ex:
+            LOG.debug(f"Unable to get overcloud RC file '{rcfile}' content "
+                      f"({ex})")
+            errors.append(tobiko.exc_info)
+        else:
+            env = {}
+            for line in result.stdout.splitlines():
+                name, value = line.split('=')
+                env[name] = value
+            if env:
+                return env
+    for error in errors:
+        LOG.exception(f"Unable to get overcloud RC file '{rcfile}' "
+                      "content", exc_info=error)
+    raise InvalidRCFile(rcfile=", ".join(rcfiles))
 
 
 def load_undercloud_rcfile():
-    return fetch_os_env(rcfile=CONF.tobiko.tripleo.undercloud_rcfile)
+    return fetch_os_env(*CONF.tobiko.tripleo.undercloud_rcfile)
 
 
 class UndercloudKeystoneCredentialsFixture(

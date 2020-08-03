@@ -33,9 +33,9 @@ OPTIONS = [
     cfg.StrOpt('undercloud_ssh_key_filename',
                default='~/.ssh/id_rsa',
                help="SSH key filename used to login to Undercloud node"),
-    cfg.StrOpt('undercloud_rcfile',
-               default='~/stackrc',
-               help="Undercloud RC filename"),
+    cfg.ListOpt('undercloud_rcfile',
+                default=['~/stackrc'],
+                help="Undercloud RC filename"),
 
     # Overcloud options
     cfg.IntOpt('overcloud_ssh_port',
@@ -47,9 +47,9 @@ OPTIONS = [
     cfg.StrOpt('overcloud_ssh_key_filename',
                default='~/.ssh/id_overcloud',
                help="SSH key filename used to login to Overcloud nodes"),
-    cfg.StrOpt('overcloud_rcfile',
-               default='~/overcloudrc',
-               help="Overcloud RC filename"),
+    cfg.ListOpt('overcloud_rcfile',
+                default=['~/overcloudrc', '~/qe-Cloud-0rc'],
+                help="Overcloud RC filenames"),
     cfg.IntOpt('overcloud_ip_version',
                help=("Default IP address version to be used to connect to "
                      "overcloud nodes ")),

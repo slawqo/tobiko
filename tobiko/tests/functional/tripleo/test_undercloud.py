@@ -19,24 +19,24 @@ from tobiko import config
 from tobiko.shell import sh
 from tobiko.openstack import keystone
 from tobiko.openstack import nova
-from tobiko.tripleo import undercloud
+from tobiko import tripleo
 
 
 CONF = config.CONF
 
 
-@undercloud.skip_if_missing_undercloud
+@tripleo.skip_if_missing_undercloud
 class UndercloudSshConnectionTest(testtools.TestCase):
 
     def setUp(self):
         super(UndercloudSshConnectionTest, self).setUp()
-        self.ssh_client = undercloud.undercloud_ssh_client()
+        self.ssh_client = tripleo.undercloud_ssh_client()
 
     def test_connect_to_undercloud(self):
         self.ssh_client.connect()
 
     def test_fetch_undercloud_credentials(self):
-        env = undercloud.load_undercloud_rcfile()
+        env = tripleo.load_undercloud_rcfile()
         self.assertTrue(env['OS_AUTH_URL'])
         self.assertTrue(env.get('OS_USERNAME') or env.get('OS_USER_ID'))
         self.assertTrue(env['OS_PASSWORD'])
@@ -50,21 +50,21 @@ class UndercloudSshConnectionTest(testtools.TestCase):
         self.assertTrue(result.stdout.startswith('undercloud-0'))
 
 
-@undercloud.skip_if_missing_undercloud
+@tripleo.skip_if_missing_undercloud
 class UndercloudKeystoneClientTest(testtools.TestCase):
 
     def test_undercloud_keystone_credentials(self):
-        credentials = undercloud.undercloud_keystone_credentials()
+        credentials = tripleo.undercloud_keystone_credentials()
         self.assertIsInstance(credentials, keystone.KeystoneCredentials)
         credentials.validate()
 
     def test_undercloud_keystone_session(self):
-        session = undercloud.undercloud_keystone_session()
+        session = tripleo.undercloud_keystone_session()
         client = nova.get_nova_client(session=session)
         overcloud_nodes = nova.list_servers(client=client)
         self.assertTrue(overcloud_nodes)
 
     def test_undercloud_keystone_client(self):
-        client = undercloud.undercloud_keystone_client()
+        client = tripleo.undercloud_keystone_client()
         services = keystone.list_services(client=client)
         self.assertTrue(services)

@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import io
 import os
 
+from oslo_log import log
 import pandas
 import six
 
@@ -25,19 +26,20 @@ from tobiko.openstack import keystone
 from tobiko.openstack import nova
 from tobiko.shell import sh
 from tobiko.shell import ssh
-from tobiko.tripleo import undercloud
+from tobiko.tripleo import _undercloud
 
 
 CONF = config.CONF
+LOG = log.getLogger(__name__)
 
 
 def has_overcloud():
     # rewrite this function
-    return undercloud.has_undercloud()
+    return _undercloud.has_undercloud()
 
 
 def load_overcloud_rcfile():
-    return undercloud.fetch_os_env(rcfile=CONF.tobiko.tripleo.overcloud_rcfile)
+    return _undercloud.fetch_os_env(*CONF.tobiko.tripleo.overcloud_rcfile)
 
 
 skip_if_missing_overcloud = tobiko.skip_unless(
@@ -55,13 +57,13 @@ class OvercloudKeystoneCredentialsFixture(
 
 
 def list_overcloud_nodes(**params):
-    session = undercloud.undercloud_keystone_session()
+    session = _undercloud.undercloud_keystone_session()
     client = nova.get_nova_client(session=session)
     return nova.list_servers(client=client, **params)
 
 
 def find_overcloud_node(**params):
-    session = undercloud.undercloud_keystone_session()
+    session = _undercloud.undercloud_keystone_session()
     client = nova.get_nova_client(session=session)
     return nova.find_server(client=client, **params)
 
@@ -107,7 +109,7 @@ class OvercloudSshKeyFileFixture(tobiko.SharedFixture):
         key_dirname = os.path.dirname(key_filename)
         tobiko.makedirs(key_dirname, mode=0o700)
 
-        ssh_client = undercloud.undercloud_ssh_client()
+        ssh_client = _undercloud.undercloud_ssh_client()
         _get_undercloud_file(ssh_client=ssh_client,
                              source='~/.ssh/id_rsa',
                              destination=key_filename,
