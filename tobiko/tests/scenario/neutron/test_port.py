@@ -46,6 +46,7 @@ class PortTest(testtools.TestCase):
         network_subnets = self.stack.network_stack.network_details['subnets']
         self.assertEqual(set(network_subnets), set(port_subnets))
 
+    @tobiko.retry_test_case(interval=30.)
     def test_ping_subnet_gateways(self):
         network_id = self.stack.network_stack.network_id
         subnets = neutron.list_subnets(network_id=network_id)
@@ -67,6 +68,7 @@ class PortTest(testtools.TestCase):
         ping.assert_reachable_hosts(port_ips,
                                     ssh_client=self.stack.ssh_client)
 
+    @tobiko.retry_test_case(interval=30.)
     def test_ping_inner_gateway_ip(self):
         if not self.stack.network_stack.has_gateway:
             self.skip('Server network has no gateway router')

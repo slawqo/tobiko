@@ -68,10 +68,12 @@ class RouterTest(testtools.TestCase):
                               self.ipv6_subnet_gateway_ip] +
                              self.external_gateway_ips)
 
+    @tobiko.retry_test_case(interval=30.)
     def test_internal_router_ipv4_interface_is_reachable(self):
         ping.assert_reachable_hosts([self.ipv4_subnet_gateway_ip],
                                     ssh_client=self.stack.ssh_client)
 
+    @tobiko.retry_test_case(interval=30.)
     def test_internal_router_ipv6_interface_is_reachable(self):
         ping.assert_reachable_hosts([self.ipv6_subnet_gateway_ip],
                                     ssh_client=self.stack.ssh_client)
