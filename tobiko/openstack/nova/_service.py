@@ -44,14 +44,16 @@ def services_details(services: typing.List):
 
 
 def wait_for_services_up(retry: typing.Optional[tobiko.Retry] = None,
-                         **kwargs):
-    retry = retry or tobiko.retry(timeout=30., interval=5.)
-    for attempt in retry:
-        services = _client.list_services(**kwargs)
+                         **list_services_params):
+    for attempt in tobiko.retry(other_retry=retry,
+                                default_timeout=30.,
+                                default_interval=5.):
+        services = _client.list_services(**list_services_params)
         LOG.debug(f"Found {len(services)} Nova services")
         try:
             if not services:
-                raise NovaServicesNotfound(attributes=json.dumps(kwargs))
+                raise NovaServicesNotfound(
+                    attributes=json.dumps(list_services_params))
 
             heathy_services = services.with_attributes(state='up')
             LOG.debug(f"Found {len(heathy_services)} healthy Nova services")

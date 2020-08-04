@@ -13,13 +13,13 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
 import functools
 import itertools
 import typing
 
 from oslo_log import log
 
+from tobiko.common import _asserts
 from tobiko.common import _exception
 from tobiko.common import _time
 
@@ -43,10 +43,33 @@ class RetryTimeLimitError(RetryLimitError):
     message = ("Retry time limit exceeded ({attempt.details})")
 
 
-class RetryAttempt(
-        collections.namedtuple('RetryAttempt', ['number', 'count',
-                                                'start_time', 'elapsed_time',
-                                                'timeout', 'interval'])):
+class RetryAttempt(object):
+
+    def __init__(self,
+                 number: int,
+                 start_time: float,
+                 elapsed_time: float,
+                 count: typing.Optional[int] = None,
+                 timeout: _time.Seconds = None,
+                 interval: _time.Seconds = None):
+        self.number = number
+        self.start_time = start_time
+        self.elapsed_time = elapsed_time
+        self.count = count
+        self.timeout = _time.to_seconds(timeout)
+        self.interval = _time.to_seconds(interval)
+
+    def __eq__(self, other):
+        return (other.number == self.number and
+                other.start_time == self.start_time and
+                other.elapsed_time == self.elapsed_time and
+                other.count == self.count and
+                other.timeout == self.timeout and
+                other.interval == self.interval)
+
+    def __hash__(self):
+        raise NotImplementedError
+
     @property
     def count_left(self) -> typing.Optional[int]:
         if self.count is None:
@@ -109,10 +132,6 @@ def retry_attempt(number: int,
 
 class Retry(object):
 
-    count: typing.Optional[int] = None
-    timeout: _time.Seconds = None
-    interval: _time.Seconds = None
-
     def __init__(self,
                  count: typing.Optional[int] = None,
                  timeout: _time.Seconds = None,
@@ -120,6 +139,14 @@ class Retry(object):
         self.count = count
         self.timeout = _time.to_seconds(timeout)
         self.interval = _time.to_seconds(interval)
+
+    def __eq__(self, other):
+        return (other.count == self.count and
+                other.timeout == self.timeout and
+                other.interval == self.interval)
+
+    def __hash__(self):
+        raise NotImplementedError
 
     def __iter__(self) -> typing.Iterator[RetryAttempt]:
         start_time = _time.time()
@@ -149,42 +176,100 @@ class Retry(object):
                         _time.sleep(sleep_time)
                         elapsed_time = _time.time() - start_time
 
+    @property
+    def details(self) -> str:
+        details = []
+        if self.count is not None:
+            details.append(f"count={self.count}")
+        if self.timeout is not None:
+            details.append(f"timeout={self.timeout}")
+        if self.interval is not None:
+            details.append(f"interval={self.interval}")
+        return ', '.join(details)
 
-def retry(other: typing.Optional[Retry] = None,
+    def __repr__(self):
+        return f"retry({self.details})"
+
+
+def retry(other_retry: typing.Optional[Retry] = None,
           count: typing.Optional[int] = None,
           timeout: _time.Seconds = None,
-          interval: _time.Seconds = None) -> Retry:
-    if other is not None:
-        _exception.check_valid_type(other, Retry)
-        count = count or other.count
-        timeout = timeout or other.timeout
-        interval = interval or other.interval
+          interval: _time.Seconds = None,
+          default_count: typing.Optional[int] = None,
+          default_timeout: _time.Seconds = None,
+          default_interval: _time.Seconds = None) -> Retry:
+
+    if other_retry is not None:
+        # Apply default values from the other Retry object
+        _exception.check_valid_type(other_retry, Retry)
+        count = count or other_retry.count
+        timeout = timeout or other_retry.timeout
+        interval = interval or other_retry.interval
+
+    # Apply default values
+    count = count or default_count
+    timeout = timeout or default_timeout
+    interval = interval or default_interval
 
     return Retry(count=count, timeout=timeout, interval=interval)
 
 
 def retry_on_exception(exception: Exception,
-                       *exceptions: typing.Tuple[Exception],
+                       *exceptions: Exception,
+                       other_retry: typing.Optional[Retry] = None,
                        count: typing.Optional[int] = None,
                        timeout: _time.Seconds = None,
-                       interval: _time.Seconds = None):
+                       interval: _time.Seconds = None,
+                       default_count: typing.Optional[int] = None,
+                       default_timeout: _time.Seconds = None,
+                       default_interval: _time.Seconds = None) -> \
+        typing.Callable[[typing.Callable], typing.Callable]:
 
-    failures = (exception,) + exceptions
+    retry_object = retry(other_retry=other_retry,
+                         count=count,
+                         timeout=timeout,
+                         interval=interval,
+                         default_count=default_count,
+                         default_timeout=default_timeout,
+                         default_interval=default_interval)
+    exceptions = (exception,) + exceptions
 
     def decorator(func):
         if typing.TYPE_CHECKING:
+            # Don't neet to wrap the function when going to check argument
+            # types
             return func
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             # pylint: disable=catching-non-exception
-            for attempt in retry(count=count,
-                                 timeout=timeout,
-                                 interval=interval):
+            for attempt in retry_object:
                 try:
                     return func(*args, **kwargs)
-                except failures:
+                except exceptions:
                     attempt.check_limits()
         return wrapper
 
     return decorator
+
+
+def retry_test_case(*exceptions: Exception,
+                    other_retry: typing.Optional[Retry] = None,
+                    count: typing.Optional[int] = None,
+                    timeout: _time.Seconds = None,
+                    interval: _time.Seconds = None,
+                    default_count: typing.Optional[int] = None,
+                    default_timeout: _time.Seconds = None,
+                    default_interval: _time.Seconds = None) \
+        -> typing.Callable[[typing.Callable], typing.Callable]:
+    """Re-run test case method in case it fails
+    """
+    exceptions = exceptions or (_asserts.FailureException,)
+    return retry_on_exception(*exceptions,
+                              other_retry=other_retry,
+                              count=count,
+                              timeout=timeout,
+                              interval=interval,
+                              default_count=default_count or 3,
+                              default_timeout=default_timeout or 30.,
+                              default_interval=default_interval)

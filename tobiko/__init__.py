@@ -87,6 +87,7 @@ retry = _retry.retry
 Retry = _retry.Retry
 retry_attempt = _retry.retry_attempt
 retry_on_exception = _retry.retry_on_exception
+retry_test_case = _retry.retry_test_case
 RetryAttempt = _retry.RetryAttempt
 RetryCountLimitError = _retry.RetryCountLimitError
 RetryLimitError = _retry.RetryLimitError

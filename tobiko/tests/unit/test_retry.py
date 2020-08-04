@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import itertools
 
 import mock
+import testtools
 
 import tobiko
 from tobiko.tests import unit
@@ -247,3 +248,113 @@ class RetryTest(unit.TobikoUnitTest):
         mock_time.sleep.assert_has_calls([mock.call(4.),
                                           mock.call(3.),
                                           mock.call(3.)])
+
+    def test_retry_test_case_when_succeed(self):
+
+        class MyTest(testtools.TestCase):
+
+            @tobiko.retry_test_case()
+            def test_success(self):
+                pass
+
+        result = testtools.TestResult()
+        test_case = MyTest('test_success')
+        test_case.run(result)
+
+        self.assertEqual(1, result.testsRun)
+        self.assertEqual([], result.failures)
+        self.assertEqual([], result.errors)
+        self.assertEqual({}, result.skip_reasons)
+
+    def test_retry_test_case_when_fails(self):
+
+        class MyTest(testtools.TestCase):
+
+            @tobiko.retry_test_case()
+            def test_failure(self):
+                try:
+                    self.fail("this is failing")
+                except tobiko.FailureException as ex:
+                    failures.append(ex)
+                    raise
+
+        failures = []
+        result = testtools.TestResult()
+        test_case = MyTest('test_failure')
+        test_case.run(result)
+
+        self.assertEqual(1, result.testsRun)
+        self.assertEqual([], result.errors)
+        self.assertEqual({}, result.skip_reasons)
+
+        self.assertEqual(3, len(failures))
+        self.assertEqual(1, len(result.failures))
+        failed_test_case, traceback = result.failures[0]
+        self.assertIs(test_case, failed_test_case)
+        self.assertIn(str(failures[-1]), traceback)
+
+    def test_retry_test_case_when_fails_once(self):
+
+        class MyTest(testtools.TestCase):
+
+            @tobiko.retry_test_case()
+            def test_one_failure(self):
+                count = next(count_calls)
+                self.assertNotEqual(0, count)
+
+        count_calls = itertools.count()
+        result = testtools.TestResult()
+        test_case = MyTest('test_one_failure')
+        test_case.run(result)
+
+        self.assertEqual(2, next(count_calls))
+        self.assertEqual(1, result.testsRun)
+        self.assertEqual([], result.failures)
+        self.assertEqual([], result.errors)
+        self.assertEqual({}, result.skip_reasons)
+
+    def test_retry_test_case_when_raises_errors(self):
+
+        class MyTest(testtools.TestCase):
+
+            @tobiko.retry_test_case()
+            def test_errors(self):
+                ex = ValueError('pippo')
+                errors.append(ex)
+                raise ex
+
+        errors = []
+        result = testtools.TestResult()
+        test_case = MyTest('test_errors')
+        test_case.run(result)
+
+        self.assertEqual(1, result.testsRun)
+        self.assertEqual([], result.failures)
+        self.assertEqual({}, result.skip_reasons)
+
+        self.assertEqual(1, len(errors))
+        self.assertEqual(1, len(result.errors))
+        failed_test_case, traceback = result.errors[0]
+        self.assertIs(test_case, failed_test_case)
+        self.assertIn(str(errors[-1]), traceback)
+
+    def test_retry_test_case_when_skip(self):
+
+        class MyTest(testtools.TestCase):
+
+            @tobiko.retry_test_case()
+            def test_skip(self):
+                next(count_calls)
+                self.skip("Not the right day!")
+
+        count_calls = itertools.count()
+        result = testtools.TestResult()
+        test_case = MyTest('test_skip')
+        test_case.run(result)
+
+        self.assertEqual(1, next(count_calls))
+        self.assertEqual(1, result.testsRun)
+        self.assertEqual([], result.failures)
+        self.assertEqual([], result.errors)
+        self.assertEqual({"Not the right day!": [test_case]},
+                         result.skip_reasons)
