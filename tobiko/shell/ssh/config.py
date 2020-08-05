@@ -47,16 +47,20 @@ OPTIONS = [
                 default=False,
                 help="Set to True to turn on compression"),
     cfg.FloatOpt('timeout',
-                 default=10.,
+                 default=15.,
                  help="SSH connect timeout in seconds"),
     cfg.IntOpt('connection_attempts',
-               default=100,
+               default=120,
                help=("Maximum number of connection attempts to be tried "
                      "before timeout")),
     cfg.FloatOpt('connection_interval',
-                 default=10.,
+                 default=5.,
                  help=("Minimal seconds to wait between every "
                        "failed SSH connection attempt")),
+    cfg.IntOpt('connection_timeout',
+               default=600.,
+               help=("Time before stopping retrying establishing an SSH "
+                     "connection")),
     cfg.StrOpt('proxy_jump',
                default=None,
                help="Default SSH proxy server"),

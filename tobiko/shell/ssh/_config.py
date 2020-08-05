@@ -161,8 +161,11 @@ class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
 
     @property
     def connection_interval(self):
-        return (self.host_config.get('connetcttimeout') or
-                self.default.connection_interval)
+        return self.default.connection_interval
+
+    @property
+    def connection_timeout(self):
+        return self.default.connection_timeout
 
     @property
     def connect_parameters(self):
@@ -174,7 +177,8 @@ class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
                     timeout=self.timeout,
                     allow_agent=self.allow_agent,
                     connection_attempts=self.connection_attempts,
-                    connection_interval=self.connection_interval)
+                    connection_interval=self.connection_interval,
+                    connection_timeout=self.connection_timeout)
 
 
 def is_yes(value):

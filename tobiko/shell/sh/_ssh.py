@@ -15,8 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import time
-
 from oslo_log import log
 import paramiko
 
@@ -76,7 +74,8 @@ class SSHShellProcessParameters(_process.ShellProcessParameters):
 class SSHShellProcessFixture(_process.ShellProcessFixture):
 
     retry_create_process_count = 3
-    retry_create_process_intervall = 1.
+    retry_create_process_intervall = 5.
+    retry_create_process_timeout = 120.
 
     def init_parameters(self, **kwargs):
         return SSHShellProcessParameters(**kwargs)
@@ -91,48 +90,41 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
         tobiko.check_valid_type(parameters, SSHShellProcessParameters)
         environment = parameters.environment
 
-        retry_count = self.retry_create_process_count
-        for retry_number in range(1, retry_count + 1):
-            timeout = self.timeout and float(self.timeout)
-            LOG.debug("Executing remote command: %r (login=%r, timeout=%r, "
-                      "environment=%r)...",
-                      command, ssh_client.login, timeout, environment or {})
+        for attempt in tobiko.retry(
+                timeout=self.parameters.timeout,
+                default_count=self.retry_create_process_count,
+                default_interval=self.retry_create_process_intervall,
+                default_timeout=self.retry_create_process_timeout):
+
+            timeout = attempt.time_left
+            details = (f"command='{command}', "
+                       f"login={ssh_client.login}, "
+                       f"timeout={timeout}, "
+                       f"attempt={attempt}, "
+                       f"environment={environment}")
+            LOG.debug(f"Create remote process... ({details})")
             try:
-                return self._try_create_process(command=command,
-                                                environment=environment,
-                                                ssh_client=ssh_client,
-                                                timeout=timeout)
-            except paramiko.SSHException as ex:
-                try:
-                    # Before doing anything else cleanup SSH connection
-                    tobiko.cleanup_fixture(ssh_client)
-                except Exception:
-                    LOG.exception('Failed closing SSH connection')
-                if "timeout" in str(ex).lower():
-                    LOG.debug('Timed out executing command %r (timeout=%s)',
-                              command, timeout, exc_info=1)
-                    raise _exception.ShellTimeoutExpired(command=command,
-                                                         stdin=None,
-                                                         stdout=None,
-                                                         stderr=None,
-                                                         timeout=timeout)
-
-                LOG.debug('Error creating SSH process (attempt %d of %d)',
-                          retry_number, retry_count, exc_info=1)
-                if retry_number >= retry_count:
-                    # Last attempt has failed!
-                    raise
-                else:
-                    # Be patient, this could help things getting better
-                    time.sleep(self.retry_create_process_intervall)
-
-    def _try_create_process(self, command, environment, ssh_client, timeout):
-        client = ssh_client.connect()
-        process = client.get_transport().open_session(timeout=timeout)
-        if environment:
-            process.update_environment(environment)
-        process.exec_command(command)
-        return process
+                client = ssh_client.connect(timeout=timeout)
+                process = client.get_transport().open_session(timeout=timeout)
+                if environment:
+                    process.update_environment(environment)
+                process.exec_command(command)
+                LOG.debug(f"Remote process created. ({details})")
+                return process
+            except Exception:
+                # Before doing anything else cleanup SSH connection
+                ssh_client.close()
+                LOG.debug(f"Error creating remote process. ({details})",
+                          exc_info=1)
+            try:
+                attempt.check_limits()
+            except tobiko.RetryTimeLimitError:
+                LOG.debug(f"Timed out creating remote process. ({details})")
+                raise _exception.ShellTimeoutExpired(command=command,
+                                                     stdin=None,
+                                                     stdout=None,
+                                                     stderr=None,
+                                                     timeout=timeout)
 
     def setup_stdin(self):
         self.stdin = _io.ShellStdin(

@@ -16,10 +16,10 @@
 from __future__ import absolute_import
 
 import collections
+import contextlib
 import getpass
 import os
 import socket
-import time
 import subprocess
 
 import netaddr
@@ -142,6 +142,9 @@ SSH_CONNECT_PARAMETERS = {
 
     #: Minimum amount of time to wait between two connection attempts
     'connection_interval': positive_float,
+
+    #: Amount of time before timing our connection attempt
+    'connection_timeout': positive_float,
 
     #: Command to be executed to open proxy sock
     'proxy_command': str,
@@ -300,31 +303,80 @@ class SSHClientFixture(tobiko.SharedFixture):
         client = self.client
         self.client = None
         if client:
+            LOG.debug(f"Closing SSH connection... ({self.details})")
             try:
                 client.close()
             except Exception:
-                LOG.exception('Error closing client (%r)', self)
+                LOG.exception("Error closing SSH connection. "
+                              f"({self.details})")
+            else:
+                LOG.debug(f"SSH connection closed. ({self.details})")
 
     def cleanup_proxy_sock(self):
         proxy_sock = self.proxy_sock
         self.proxy_sock = None
         if proxy_sock:
+            LOG.debug(f"Closing SSH proxy sock... ({self.details})")
             try:
                 proxy_sock.close()
             except Exception:
-                LOG.exception('Error closing proxy socket (%r)', self)
+                LOG.exception("Error closing proxy socket. "
+                              f"({self.details})")
+            else:
+                LOG.debug(f"SSH proxy sock closed. ({self.details})")
 
-    def connect(self):
-        client = tobiko.setup_fixture(self).client
-        if not client:
-            # For some unknown reason at this point client could be None:
-            # try reconnecting to it
-            LOG.error('SSH Paramiko client found None, reconnecting...')
-            client = tobiko.reset_fixture(self).client
-        return client
+    @contextlib.contextmanager
+    def use_connect_parameters(self, **parameters):
+        if parameters:
+            restore_parameters = self._connect_parameters
+            self._connect_parameters = dict(self._connect_parameters,
+                                            **parameters)
+        else:
+            restore_parameters = None
+        try:
+            yield
+        finally:
+            if restore_parameters is not None:
+                self._connect_parameters = restore_parameters
+
+    def connect(self, timeout: tobiko.Seconds = None, **parameters):
+        """Ensures it is connected to remote SSH server
+        """
+        with self.use_connect_parameters(**parameters):
+            # This retry is mostly intended to ensure connection is
+            # reestablished in case it is lost
+            for attempt in tobiko.retry(timeout=timeout,
+                                        default_count=2,
+                                        default_interval=5.):
+                LOG.debug(f"Ensuring SSH connection (attempt={attempt})")
+                connected = False
+                try:
+                    client = tobiko.setup_fixture(self).client
+                    # For any reason at this point client could
+                    # be None: force fixture cleanup
+                    if check_ssh_connection(client):
+                        LOG.debug("SSH connection is safe to use "
+                                  f"(attempt={attempt})")
+                        connected = True
+                        return client
+                    else:
+                        LOG.warning("SSH connection is not safe to use "
+                                    f"(attempt={attempt})")
+                except Exception:
+                    attempt.check_limits()
+                    LOG.exception(f"Failed connecting to '{self.login}' "
+                                  "(attempt={attempt})")
+                finally:
+                    if not connected:
+                        self.close()
 
     def close(self):
-        tobiko.cleanup_fixture(self)
+        """Ensures it is disconnected from remote SSH server
+        """
+        try:
+            tobiko.cleanup_fixture(self)
+        except Exception:
+            LOG.exception(f"Failed closing SSH connection to '{self.login}'")
 
     def get_ssh_command(self, host=None, username=None, port=None,
                         command=None, config_files=None, host_config=None,
@@ -365,6 +417,13 @@ class SSHClientFixture(tobiko.SharedFixture):
     def hostname(self):
         parameters = self.setup_connect_parameters()
         return parameters['hostname']
+
+    @property
+    def details(self):
+        return f"login='{self.login}'"
+
+    def __repr__(self):
+        return f"SSHClientFixture <{self.details}>"
 
 
 UNDEFINED_CLIENT = 'UNDEFINED_CLIENT'
@@ -424,23 +483,28 @@ def ssh_client(host, port=None, username=None, proxy_jump=None,
 
 
 def ssh_connect(hostname, username=None, port=None, connection_interval=None,
-                connection_attempts=None, proxy_command=None,
-                proxy_client=None, **parameters):
+                connection_attempts=None, connection_timeout=None,
+                proxy_command=None, proxy_client=None, **parameters):
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.WarningPolicy())
-
     login = _command.ssh_login(hostname=hostname, username=username, port=port)
-    attempts = connection_attempts or 1
-    interval = connection_interval or 5.
-    for attempt in range(1, attempts + 1):
-        LOG.debug("Logging in to %r (%r)... attempt %d out of %d",
-                  login, parameters, attempt, attempts)
-        start_time = time.time()
-        proxy_sock = ssh_proxy_sock(hostname=hostname,
-                                    port=port,
-                                    command=proxy_command,
-                                    client=proxy_client)
+
+    for attempt in tobiko.retry(count=connection_attempts,
+                                timeout=connection_timeout,
+                                interval=connection_interval,
+                                default_count=60,
+                                default_timeout=300.,
+                                default_interval=5.):
+        LOG.debug(f"Logging in to '{login}'...\n"
+                  f"  - parameters: {parameters}\n"
+                  f"  - attempt: {attempt.details}\n")
+
         try:
+            proxy_sock = ssh_proxy_sock(hostname=hostname,
+                                        port=port,
+                                        command=proxy_command,
+                                        client=proxy_client,
+                                        timeout=attempt.time_left)
             client.connect(hostname=hostname,
                            username=username,
                            port=port,
@@ -448,21 +512,16 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
                            **parameters)
         except (EOFError, socket.error, socket.timeout,
                 paramiko.SSHException) as ex:
-            if attempt >= attempts:
-                raise
-
-            LOG.debug("Error logging in to %r: %s", login, ex)
-            sleep_time = start_time + interval - time.time()
-            if sleep_time > 0.:
-                time.sleep(sleep_time)
+            attempt.check_limits()
+            LOG.debug(f"Error logging in to '{login}': {ex}")
 
         else:
-            LOG.debug("Successfully logged in to %s", login)
+            LOG.debug(f"Successfully logged in to '{login}'")
             return client, proxy_sock
 
 
 def ssh_proxy_sock(hostname=None, port=None, command=None, client=None,
-                   source_address=None):
+                   source_address=None, timeout=None):
     if not command:
         if client:
             # I need a command to execute with proxy client
@@ -482,7 +541,7 @@ def ssh_proxy_sock(hostname=None, port=None, command=None, client=None,
     if client:
         if isinstance(client, SSHClientFixture):
             # Connect to proxy server
-            client = client.connect()
+            client = client.connect(retry=tobiko.retry(timeout=timeout))
         elif not isinstance(client, paramiko.SSHClient):
             message = "Object {!r} is not an SSHClient".format(client)
             raise TypeError(message)
@@ -490,7 +549,7 @@ def ssh_proxy_sock(hostname=None, port=None, command=None, client=None,
         # Open proxy channel
         LOG.debug("Execute proxy command with proxy client %r: %r",
                   client, command)
-        sock = client.get_transport().open_session()
+        sock = client.get_transport().open_session(timeout=timeout)
         sock.exec_command(command)
     else:
         LOG.debug("Execute proxy command on local host: %r", command)
@@ -505,3 +564,13 @@ def ssh_proxy_client(manager=None, host=None, host_config=None,
     return manager.get_proxy_client(host=host,
                                     host_config=host_config,
                                     config_files=config_files)
+
+
+def check_ssh_connection(client):
+    if client:
+        transport = client.get_transport()
+        if transport.is_authenticated():
+            # Send a keep-alive message
+            transport.send_ignore()
+            return True
+    return False
