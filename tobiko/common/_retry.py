@@ -15,9 +15,11 @@ from __future__ import absolute_import
 
 import functools
 import itertools
+import sys
 import typing
 
 from oslo_log import log
+import testtools
 
 from tobiko.common import _asserts
 from tobiko.common import _exception
@@ -214,15 +216,17 @@ def retry(other_retry: typing.Optional[Retry] = None,
     return Retry(count=count, timeout=timeout, interval=interval)
 
 
-def retry_on_exception(exception: Exception,
-                       *exceptions: Exception,
-                       other_retry: typing.Optional[Retry] = None,
-                       count: typing.Optional[int] = None,
-                       timeout: _time.Seconds = None,
-                       interval: _time.Seconds = None,
-                       default_count: typing.Optional[int] = None,
-                       default_timeout: _time.Seconds = None,
-                       default_interval: _time.Seconds = None) -> \
+def retry_on_exception(
+        exception: Exception,
+        *exceptions: Exception,
+        other_retry: typing.Optional[Retry] = None,
+        count: typing.Optional[int] = None,
+        timeout: _time.Seconds = None,
+        interval: _time.Seconds = None,
+        default_count: typing.Optional[int] = None,
+        default_timeout: _time.Seconds = None,
+        default_interval: _time.Seconds = None,
+        on_exception: typing.Optional[typing.Callable] = None) -> \
         typing.Callable[[typing.Callable], typing.Callable]:
 
     retry_object = retry(other_retry=other_retry,
@@ -248,28 +252,35 @@ def retry_on_exception(exception: Exception,
                     return func(*args, **kwargs)
                 except exceptions:
                     attempt.check_limits()
+                    if on_exception is not None:
+                        on_exception(attempt, *args, **kwargs)
         return wrapper
 
     return decorator
 
 
 def retry_test_case(*exceptions: Exception,
-                    other_retry: typing.Optional[Retry] = None,
                     count: typing.Optional[int] = None,
                     timeout: _time.Seconds = None,
-                    interval: _time.Seconds = None,
-                    default_count: typing.Optional[int] = None,
-                    default_timeout: _time.Seconds = None,
-                    default_interval: _time.Seconds = None) \
-        -> typing.Callable[[typing.Callable], typing.Callable]:
+                    interval: _time.Seconds = None) -> \
+                    typing.Callable[[typing.Callable], typing.Callable]:
     """Re-run test case method in case it fails
     """
     exceptions = exceptions or (_asserts.FailureException,)
     return retry_on_exception(*exceptions,
-                              other_retry=other_retry,
                               count=count,
                               timeout=timeout,
                               interval=interval,
-                              default_count=default_count or 3,
-                              default_timeout=default_timeout or 30.,
-                              default_interval=default_interval)
+                              default_count=3,
+                              on_exception=on_test_case_retry_exception)
+
+
+def on_test_case_retry_exception(attempt: RetryAttempt,
+                                 test_case: testtools.TestCase,
+                                 *_args, **_kwargs):
+    # pylint: disable=protected-access
+    _exception.check_valid_type(test_case, testtools.TestCase)
+    test_case._report_traceback(sys.exc_info(),
+                                f"traceback[attempt={attempt.number}]")
+    LOG.exception("Re-run test after failed attempt. "
+                  f"(attempt={attempt.number}, test='{test_case.id()}')")
