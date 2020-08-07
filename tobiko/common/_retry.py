@@ -80,9 +80,9 @@ class RetryAttempt(object):
             return max(0, self.count - self.number)
 
     def check_count_left(self) -> _time.Seconds:
-        with _exception.exc_info():
-            if self.count_left == 0:
-                raise RetryCountLimitError(attempt=self)
+        if self.count_left == 0:
+            _exception.exc_info().reraise()
+            raise RetryCountLimitError(attempt=self)
         return self.count_left
 
     @property
@@ -93,9 +93,9 @@ class RetryAttempt(object):
             return max(0., self.timeout - self.elapsed_time)
 
     def check_time_left(self) -> _time.Seconds:
-        with _exception.exc_info():
-            if self.time_left == 0.:
-                raise RetryTimeLimitError(attempt=self)
+        if self.time_left == 0.:
+            _exception.exc_info().reraise()
+            raise RetryTimeLimitError(attempt=self)
         return self.time_left
 
     def check_limits(self):
