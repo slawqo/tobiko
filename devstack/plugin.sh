@@ -63,7 +63,6 @@ function configure_tobiko_default {
   echo_summary "Write [DEFAULT] section to ${TOBIKO_CONF_FILE}"
   local tobiko_conf_file=$1
 
-  setup_logging "${tobiko_conf_file}"
   iniset ${tobiko_conf_file} DEFAULT debug "${TOBIKO_DEBUG}"
   iniset ${tobiko_conf_file} DEFAULT log_dir $(dirname "${TOBIKO_LOG_FILE}")
   iniset ${tobiko_conf_file} DEFAULT log_file $(basename "${TOBIKO_LOG_FILE}")
