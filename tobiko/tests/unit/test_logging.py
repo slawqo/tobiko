@@ -27,6 +27,13 @@ class CapureLogTest(unit.TobikoUnitTest):
 
     def test_capture_log_content(self):
         with tobiko.CaptureLogFixture(test_case_id=self.id()) as capture:
-            LOG.warning('Some debug line')
+            LOG.warning('< Some debug line>')
         logged_lines = capture.getDetails()['log'].as_text().splitlines()
-        self.assertIn('Some debug line', logged_lines)
+        expected = f" WARNING {__name__} | < Some debug line>"
+        for line in logged_lines:
+            if expected in line:
+                break
+        else:
+            lines = '\n'.join(logged_lines)
+            self.fail(f"log line not captured: '{expected}' not in \n"
+                      f"{lines}")
