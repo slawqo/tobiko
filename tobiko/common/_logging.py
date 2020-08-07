@@ -30,17 +30,22 @@ class CaptureLogFixture(_fixture.SharedFixture):
     level = None
     logger = logging.root
     handler = None
+    format = "%(asctime)-15s %(levelname)s %(name)s | %(message)s"
 
-    def __init__(self, test_case_id, logger=None, level=None):
+    def __init__(self, test_case_id, logger=None, level=None, fmt=None):
         super(CaptureLogFixture, self).__init__()
         self.test_case_id = test_case_id
         if logger:
             self.logger = logger
         if level:
             self.level = level
+        if fmt:
+            self.format = fmt
 
     def setup_fixture(self):
         self.handler = handler = CaptureLogHandler(level=self.level)
+        formatter = logging.Formatter(self.format)
+        handler.setFormatter(formatter)
         self.addCleanup(self.logger.removeHandler, handler)
         self.logger.addHandler(handler)
         LOG.debug('--- BEGIN %s ---', self.test_case_id)
