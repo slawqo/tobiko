@@ -103,7 +103,7 @@ skip = _skip.skip
 skip_if = _skip.skip_if
 skip_unless = _skip.skip_unless
 
-BaseTestCase = _testcase.BaseTestCase
+BaseTestCase = _testcase.TestCase
 discover_test_cases = _testcase.discover_test_cases
 get_test_case = _testcase.get_test_case
 pop_test_case = _testcase.pop_test_case

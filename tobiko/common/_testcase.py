@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import logging
 import os
 import sys
+import typing
 
 from oslo_log import log
 from stestr import config_file
@@ -128,41 +129,7 @@ def discover_test_cases(finder=FINDER, **kwargs):
     return finder.discover_test_cases(**kwargs)
 
 
-class TestCasesManager(object):
-
-    def __init__(self):
-        self._test_cases = []
-
-    def get_test_case(self) -> testtools.TestCase:
-        try:
-            return self._test_cases[-1]
-        except IndexError:
-            return DUMMY_TEST_CASE
-
-    def pop_test_case(self) -> testtools.TestCase:
-        return self._test_cases.pop()
-
-    def push_test_case(self, test_case: testtools.TestCase):
-        _exception.check_valid_type(test_case, testtools.TestCase)
-        self._test_cases.append(test_case)
-
-
-TEST_CASES = TestCasesManager()
-
-
-def push_test_case(test_case: testtools.TestCase, manager=TEST_CASES):
-    return manager.push_test_case(test_case=test_case)
-
-
-def pop_test_case(manager=TEST_CASES):
-    return manager.pop_test_case()
-
-
-def get_test_case(manager=TEST_CASES):
-    return manager.get_test_case()
-
-
-class BaseTestCase(testtools.TestCase):
+class TestCase(testtools.TestCase):
 
     _capture_log = False
     _capture_log_level = logging.DEBUG
@@ -170,12 +137,12 @@ class BaseTestCase(testtools.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(BaseTestCase, cls).setUpClass()
+        super(TestCase, cls).setUpClass()
         from tobiko import config
         cls._capture_log = config.CONF.tobiko.logging.capture_log
 
     def setUp(self):
-        super(BaseTestCase, self).setUp()
+        super(TestCase, self).setUp()
         self._push_test_case()
         self._setup_capture_log()
 
@@ -194,7 +161,44 @@ class BaseTestCase(testtools.TestCase):
         self.assertIs(self, pop_test_case())
 
 
-class DummyTestCase(BaseTestCase):
+class TestCasesManager(object):
+
+    def __init__(self):
+        self._test_cases: typing.List[TestCase] = []
+
+    def get_test_case(self) -> TestCase:
+        try:
+            return self._test_cases[-1]
+        except IndexError:
+            return DUMMY_TEST_CASE
+
+    def pop_test_case(self) -> TestCase:
+        return self._test_cases.pop()
+
+    def push_test_case(self, test_case: TestCase):
+        _exception.check_valid_type(test_case, TestCase)
+        self._test_cases.append(test_case)
+
+
+TEST_CASES = TestCasesManager()
+
+
+def push_test_case(test_case: testtools.TestCase,
+                   manager: TestCasesManager = TEST_CASES):
+    return manager.push_test_case(test_case=test_case)
+
+
+def pop_test_case(manager: TestCasesManager = TEST_CASES) -> \
+        testtools.TestCase:
+    return manager.pop_test_case()
+
+
+def get_test_case(manager: TestCasesManager = TEST_CASES) -> \
+        testtools.TestCase:
+    return manager.get_test_case()
+
+
+class DummyTestCase(TestCase):
 
     def runTest(self):
         pass
