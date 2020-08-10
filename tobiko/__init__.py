@@ -84,10 +84,10 @@ get_operation_name = _operation.get_operation_name
 operation_config = _operation.operation_config
 
 retry = _retry.retry
-Retry = _retry.Retry
 retry_attempt = _retry.retry_attempt
 retry_on_exception = _retry.retry_on_exception
 retry_test_case = _retry.retry_test_case
+Retry = _retry.Retry
 RetryAttempt = _retry.RetryAttempt
 RetryCountLimitError = _retry.RetryCountLimitError
 RetryLimitError = _retry.RetryLimitError
@@ -110,12 +110,15 @@ pop_test_case = _testcase.pop_test_case
 push_test_case = _testcase.push_test_case
 TestCasesManager = _testcase.TestCasesManager
 
+min_seconds = _time.min_seconds
+max_seconds = _time.max_seconds
 Seconds = _time.Seconds
 SecondsValueError = _time.SecondsValueError
 sleep = _time.sleep
 time = _time.time
 to_seconds = _time.to_seconds
 to_seconds_float = _time.to_seconds_float
+true_seconds = _time.true_seconds
 
 get_short_hostname = _utils.get_short_hostname
 

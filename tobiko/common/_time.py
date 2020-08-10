@@ -46,3 +46,28 @@ def time() -> float:
 
 def sleep(seconds: Seconds):
     _time.sleep(to_seconds_float(seconds))
+
+
+def true_seconds(*seconds: Seconds) -> typing.List[float]:
+    result = []
+    for value in seconds:
+        value = to_seconds(value)
+        if value is not None:
+            result.append(value)
+    return result
+
+
+def min_seconds(*seconds: Seconds) -> Seconds:
+    values = true_seconds(*seconds)
+    if values:
+        return min(values)
+    else:
+        return None
+
+
+def max_seconds(*seconds: Seconds) -> Seconds:
+    values = true_seconds(*seconds)
+    if values:
+        return max(values)
+    else:
+        return None

@@ -128,3 +128,23 @@ class TimeTest(unit.TobikoUnitTest):
         result = tobiko.to_seconds_float(seconds)
         expected = seconds and max(0., float(seconds)) or 0.
         self.assertEqual(expected, result)
+
+    def test_true_seconds(self):
+        self.assertEqual([], tobiko.true_seconds())
+        self.assertEqual([], tobiko.true_seconds(None))
+        self.assertEqual([], tobiko.true_seconds(None, None))
+        self.assertEqual([1., 2., 3., 4.],
+                         tobiko.true_seconds(None, 1, None, 2., '3', None, 4,
+                                             None))
+
+    def test_min_seconds(self):
+        self.assertIsNone(tobiko.min_seconds())
+        self.assertIsNone(tobiko.min_seconds(None))
+        self.assertIsNone(tobiko.min_seconds(None, None))
+        self.assertEqual(1.5, tobiko.min_seconds(3, 2., '1.5'))
+
+    def test_max_seconds(self):
+        self.assertIsNone(tobiko.max_seconds())
+        self.assertIsNone(tobiko.max_seconds(None))
+        self.assertIsNone(tobiko.max_seconds(None, None))
+        self.assertEqual(3., tobiko.max_seconds(2., 3, '1.5'))
