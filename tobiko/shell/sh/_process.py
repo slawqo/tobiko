@@ -16,7 +16,7 @@
 from __future__ import absolute_import
 
 import io
-import time
+import typing  # noqa
 
 from oslo_log import log
 
@@ -29,16 +29,12 @@ from tobiko.shell.sh import _io
 LOG = log.getLogger(__name__)
 
 
-MAX_TIMEOUT = 3600.  # 1 hour
-
-
-def process(command=None, environment=None, timeout=None, shell=None,
-            stdin=None, stdout=None, stderr=None, ssh_client=None, sudo=None,
-            **kwargs):
+def process(command=None, environment=None, timeout: tobiko.Seconds = None,
+            shell=None, stdin=None, stdout=None, stderr=None, ssh_client=None,
+            sudo=None, **kwargs):
     kwargs.update(command=command, environment=environment, timeout=timeout,
                   shell=shell, stdin=stdin, stdout=stdout, stderr=stderr,
                   sudo=sudo)
-    timeout = kwargs['timeout']
     if timeout is not None:
         if timeout < 0.:
             raise ValueError("Invalid timeout for executing process: "
@@ -75,7 +71,7 @@ class ShellProcessParameters(Parameters):
     command = None
     environment = None
     current_dir = None
-    timeout = None
+    timeout: tobiko.Seconds = None
     shell = None
     stdin = False
     stdout = True
@@ -84,14 +80,15 @@ class ShellProcessParameters(Parameters):
     poll_interval = 1.
     sudo = None
     network_namespace = None
+    retry_count: typing.Optional[int] = 3
+    retry_interval: tobiko.Seconds = 5.
+    retry_timeout: tobiko.Seconds = 120.
 
 
 class ShellProcessFixture(tobiko.SharedFixture):
 
-    parameters = None
     command = None
-    timeout = None
-    process = None
+    process: typing.Any = None
     stdin = None
     stdout = None
     stderr = None
@@ -102,7 +99,7 @@ class ShellProcessFixture(tobiko.SharedFixture):
         super(ShellProcessFixture, self).__init__()
         self.parameters = self.init_parameters(**kwargs)
 
-    def init_parameters(self, **kwargs):
+    def init_parameters(self, **kwargs) -> ShellProcessParameters:
         return ShellProcessParameters(**kwargs)
 
     def execute(self):
@@ -112,9 +109,6 @@ class ShellProcessFixture(tobiko.SharedFixture):
         parameters = self.parameters
 
         self.setup_command()
-        if parameters.timeout:
-            self.setup_timeout()
-
         self.setup_process()
 
         if parameters.stdin:
@@ -152,9 +146,6 @@ class ShellProcessFixture(tobiko.SharedFixture):
             command = sudo + command
 
         self.command = command
-
-    def setup_timeout(self):
-        self.timeout = shell_process_timeout(self.parameters.timeout)
 
     def setup_process(self):
         if self._exit_status:
@@ -198,7 +189,7 @@ class ShellProcessFixture(tobiko.SharedFixture):
             except Exception:
                 LOG.exception("Error closing STDERR stream: %r", self.stderr)
 
-    def close(self, timeout=None):
+    def close(self, timeout: tobiko.Seconds = None):
         self.close_stdin()
         try:
             # Drain all incoming data from STDOUT and STDERR
@@ -233,16 +224,16 @@ class ShellProcessFixture(tobiko.SharedFixture):
     def poll_exit_status(self):
         raise NotImplementedError
 
-    def get_exit_status(self, timeout=None):
-        time_left, timeout = get_time_left([self.timeout, timeout])
-        if time_left > 0.:
-            exit_status = self._get_exit_status(time_left=time_left)
-            if exit_status is not None:
-                return exit_status
+    def get_exit_status(self, timeout: tobiko.Seconds = None):
+        if timeout is None:
+            timeout = self.parameters.timeout
+        exit_status = self._get_exit_status(timeout=timeout)
+        if exit_status is not None:
+            return exit_status
 
         ex = _exception.ShellTimeoutExpired(
             command=str(self.command),
-            timeout=timeout and timeout.timeout or None,
+            timeout=timeout,
             stdin=str_from_stream(self.stdin),
             stdout=str_from_stream(self.stdout),
             stderr=str_from_stream(self.stderr))
@@ -250,7 +241,7 @@ class ShellProcessFixture(tobiko.SharedFixture):
                   self.command)
         raise ex
 
-    def _get_exit_status(self, time_left):
+    def _get_exit_status(self, timeout):
         raise NotImplementedError
 
     @property
@@ -291,24 +282,29 @@ class ShellProcessFixture(tobiko.SharedFixture):
     def receive_all(self, **kwargs):
         self.communicate(receive_all=True, **kwargs)
 
-    def wait(self, timeout=None, receive_all=True,
+    def wait(self, timeout: tobiko.Seconds = None, receive_all=True,
              **kwargs):
         self.communicate(timeout=timeout, receive_all=receive_all,
                          **kwargs)
 
-    def communicate(self, stdin=None, stdout=True, stderr=True, timeout=None,
+    def communicate(self, stdin=None, stdout=True, stderr=True,
+                    timeout: tobiko.Seconds = None,
                     receive_all=False, buffer_size=None):
-        timeout = shell_process_timeout(timeout=timeout)
+        timeout = tobiko.to_seconds(timeout)
 
         # Avoid waiting for data in the first loop
         poll_interval = 0.
         streams = _io.select_opened_files([stdin and self.stdin,
                                            stdout and self.stdout,
                                            stderr and self.stderr])
-        while self._is_communicating(streams=streams, send=stdin,
-                                     receive=receive_all):
+        for attempt in tobiko.retry(timeout=timeout):
+            if not self._is_communicating(streams=streams, send=stdin,
+                                          receive=receive_all):
+                break
+
             # Remove closed streams
             streams = _io.select_opened_files(streams)
+
             # Select ready streams
             read_ready, write_ready = _io.select_files(
                 files=streams, timeout=poll_interval)
@@ -331,11 +327,27 @@ class ShellProcessFixture(tobiko.SharedFixture):
                     if not stderr:
                         streams.remove(self.stderr)
             else:
+                self._check_communicate_timeout(attempt=attempt,
+                                                timeout=timeout)
                 # Wait for data in the following loops
-                poll_interval = min(self.poll_interval,
-                                    self.check_timeout(timeout=timeout))
-                LOG.debug('Waiting for process (%s): %r', self.command,
-                          streams)
+                poll_interval = self.parameters.poll_interval
+                LOG.debug(f"Waiting for process data {poll_interval} "
+                          f"seconds... \n"
+                          f"  command: '{self.command}'\n"
+                          f"  attempt: {attempt.details}\n"
+                          f"  streams: {streams}")
+
+    def _check_communicate_timeout(self, attempt: tobiko.RetryAttempt,
+                                   timeout: tobiko.Seconds):
+        try:
+            attempt.check_limits()
+        except tobiko.RetryTimeLimitError:
+            pass
+        else:
+            return
+        # Eventually raises ShellCommandTimeout exception
+        self.get_exit_status(timeout=timeout)
+        raise StopIteration
 
     def _is_communicating(self, streams, send, receive):
         if send and self.stdin in streams:
@@ -379,18 +391,6 @@ class ShellProcessFixture(tobiko.SharedFixture):
             self.stderr.close()
             return None
 
-    def check_timeout(self, timeout=None, now=None):
-        time_left, timeout = get_time_left([self.timeout, timeout], now=now)
-        if time_left <= 0.:
-            ex = _exception.ShellTimeoutExpired(
-                command=str(self.command),
-                timeout=timeout and timeout.timeout or None,
-                stdin=str_from_stream(self.stdin),
-                stdout=str_from_stream(self.stdout),
-                stderr=str_from_stream(self.stderr))
-            raise ex
-        return time_left
-
     def check_exit_status(self, expected_status=0):
         exit_status = self.poll_exit_status()
         if exit_status is None:
@@ -420,51 +420,6 @@ def merge_dictionaries(*dictionaries):
         if d:
             merged.update(d)
     return merged
-
-
-def shell_process_timeout(timeout):
-    if isinstance(timeout, ShellProcessTimeout):
-        return timeout
-    else:
-        return ShellProcessTimeout(timeout=timeout)
-
-
-def get_time_left(timeouts, now=None):
-    now = now or time.time()
-    min_time_left = float(MAX_TIMEOUT)
-    min_timeout = None
-    for timeout in timeouts:
-        if timeout is not None:
-            timeout = shell_process_timeout(timeout=timeout)
-            time_left = timeout.time_left(now=now)
-            if time_left < min_time_left:
-                min_time_left = time_left
-                min_timeout = timeout
-    return min_time_left, min_timeout
-
-
-class ShellProcessTimeout(object):
-
-    timeout = MAX_TIMEOUT
-
-    def __init__(self, timeout=None, start_time=None):
-        if timeout is None:
-            timeout = self.timeout
-        else:
-            self.timeout = float(timeout)
-        start_time = start_time and float(start_time) or time.time()
-        self.start_time = start_time
-        self.end_time = start_time + timeout
-
-    def __float__(self):
-        return self.timeout
-
-    def time_left(self, now=None):
-        now = now or time.time()
-        return self.end_time - now
-
-    def is_expired(self, now=None):
-        raise self.time_left(now=now) <= 0.
 
 
 def str_from_stream(stream):

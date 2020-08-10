@@ -19,7 +19,6 @@ import fcntl
 import os
 import subprocess
 import sys
-import time
 
 from oslo_log import log
 
@@ -33,12 +32,9 @@ from tobiko.shell.sh import _process
 LOG = log.getLogger(__name__)
 
 
-TimeoutExpired = getattr(subprocess, 'TimeoutExpired', None)
-
-
-def local_execute(command, environment=None, timeout=None, shell=None,
-                  stdin=None, stdout=None, stderr=None, expect_exit_status=0,
-                  **kwargs):
+def local_execute(command, environment=None, timeout: tobiko.Seconds = None,
+                  shell=None, stdin=None, stdout=None, stderr=None,
+                  expect_exit_status=0, **kwargs):
     """Execute command on local host using local shell"""
     process = local_process(command=command,
                             environment=environment,
@@ -53,9 +49,9 @@ def local_execute(command, environment=None, timeout=None, shell=None,
                                     expect_exit_status=expect_exit_status)
 
 
-def local_process(command, environment=None, current_dir=None, timeout=None,
-                  shell=None, stdin=None, stdout=None, stderr=True, sudo=None,
-                  network_namespace=None):
+def local_process(command, environment=None, current_dir=None,
+                  timeout: tobiko.Seconds = None, shell=None, stdin=None,
+                  stdout=None, stderr=True, sudo=None, network_namespace=None):
     return LocalShellProcessFixture(
         command=command, environment=environment, current_dir=current_dir,
         timeout=timeout, shell=shell, stdin=stdin, stdout=stdout,
@@ -107,27 +103,15 @@ class LocalShellProcessFixture(_process.ShellProcessFixture):
     def poll_exit_status(self):
         return self.process.poll()
 
-    if TimeoutExpired is None:
-        # Workaround for old Python versions
-        def _get_exit_status(self, time_left):
-            start_time = now = time.time()
-            end_time = start_time + time_left
-            exit_status = self.poll_exit_status()
-            while exit_status is None and now < end_time:
-                time.sleep(0.1)
-                exit_status = self.poll_exit_status()
-                now = time.time()
+    def _get_exit_status(self, timeout: tobiko.Seconds):
+        try:
+            exit_status = self.process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            LOG.exception("Failed waiting for subprocess termination")
+            return None
+        else:
+            assert exit_status is not None
             return exit_status
-    else:
-        def _get_exit_status(self, time_left):
-            try:
-                exit_status = self.process.wait(timeout=time_left)
-            except TimeoutExpired:
-                LOG.exception("Failed waiting for subprocess termination")
-                return None
-            else:
-                assert exit_status is not None
-                return exit_status
 
     def kill(self):
         process = self.process

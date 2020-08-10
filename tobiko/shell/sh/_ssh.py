@@ -25,14 +25,15 @@ from tobiko.shell.sh import _io
 from tobiko.shell.sh import _local
 from tobiko.shell.sh import _process
 from tobiko.shell import ssh
+import typing  # noqa
 
 
 LOG = log.getLogger(__name__)
 
 
-def ssh_execute(ssh_client, command, environment=None, timeout=None,
-                stdin=None, stdout=None, stderr=None, shell=None,
-                expect_exit_status=0, **kwargs):
+def ssh_execute(ssh_client, command, environment=None,
+                timeout: tobiko.Seconds = None, stdin=None, stdout=None,
+                stderr=None, shell=None, expect_exit_status=0, **kwargs):
     """Execute command on remote host using SSH client"""
     process = ssh_process(command=command,
                           environment=environment,
@@ -48,9 +49,10 @@ def ssh_execute(ssh_client, command, environment=None, timeout=None,
                                     expect_exit_status=expect_exit_status)
 
 
-def ssh_process(command, environment=None, current_dir=None, timeout=None,
-                shell=None, stdin=None, stdout=None, stderr=None,
-                ssh_client=None, sudo=None, network_namespace=None):
+def ssh_process(command, environment=None, current_dir=None,
+                timeout: tobiko.Seconds = None, shell=None, stdin=None,
+                stdout=None, stderr=None, ssh_client=None, sudo=None,
+                network_namespace=None):
     if ssh_client is None:
         ssh_client = ssh.ssh_proxy_client()
     if ssh_client:
@@ -73,11 +75,7 @@ class SSHShellProcessParameters(_process.ShellProcessParameters):
 
 class SSHShellProcessFixture(_process.ShellProcessFixture):
 
-    retry_create_process_count = 3
-    retry_create_process_intervall = 5.
-    retry_create_process_timeout = 120.
-
-    def init_parameters(self, **kwargs):
+    def init_parameters(self, **kwargs) -> SSHShellProcessParameters:
         return SSHShellProcessParameters(**kwargs)
 
     def create_process(self):
@@ -92,9 +90,9 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
 
         for attempt in tobiko.retry(
                 timeout=self.parameters.timeout,
-                default_count=self.retry_create_process_count,
-                default_interval=self.retry_create_process_intervall,
-                default_timeout=self.retry_create_process_timeout):
+                default_count=self.parameters.retry_count,
+                default_interval=self.parameters.retry_interval,
+                default_timeout=self.parameters.retry_timeout):
 
             timeout = attempt.time_left
             details = (f"command='{command}', "
@@ -147,17 +145,26 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
             exit_status = None
         return exit_status
 
-    def _get_exit_status(self, time_left=None):
+    def _get_exit_status(self, timeout: tobiko.Seconds = None):
         process = self.process
         if not process.exit_status_ready():
-            # workaround for paramiko timeout problem
-            time_left = min(time_left, 120.0)
+            # Workaround for Paramiko timeout problem
+            # CirrOS instances could close SSH channel without sending process
+            # exit status
+            if timeout is None:
+                timeout = 120.
+            else:
+                timeout = min(timeout, 120.0)
+            LOG.debug(f"Waiting for command '{self.command}' exit status "
+                      f"(timeout={timeout})")
             # recv_exit_status method doesn't accept timeout parameter
-            LOG.debug('Waiting for command (%s) exit status (time_left=%r)',
-                      self.command, time_left)
-            if not process.status_event.wait(timeout=time_left):
-                LOG.debug('Timed out before status event being set')
-
+            # therefore here we wait for next channel event expecting it is
+            # actually the exit status
+            # TODO (fressi): we could use an itimer to set a timeout for
+            # recv_exit_status
+            if not process.status_event.wait(timeout=timeout):
+                LOG.error("Timed out before status event being set "
+                          f"(timeout={timeout})")
         if process.exit_status >= 0:
             return process.exit_status
         else:
