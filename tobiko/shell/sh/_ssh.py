@@ -104,8 +104,8 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
                        f"environment={environment}")
             LOG.debug(f"Create remote process... ({details})")
             try:
-                client = ssh_client.connect(timeout=timeout)
-                process = client.get_transport().open_session(timeout=timeout)
+                client = ssh_client.connect()
+                process = client.get_transport().open_session()
                 if environment:
                     process.update_environment(environment)
                 process.exec_command(command)
