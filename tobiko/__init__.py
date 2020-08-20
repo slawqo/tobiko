@@ -19,6 +19,7 @@ from tobiko.common import _config
 from tobiko.common import _detail
 from tobiko.common import _exception
 from tobiko.common import _fixture
+from tobiko.common import _itimer
 from tobiko.common import _logging
 from tobiko.common.managers import loader as loader_manager
 from tobiko.common import _operation
@@ -64,6 +65,10 @@ cleanup_fixture = _fixture.cleanup_fixture
 list_required_fixtures = _fixture.list_required_fixtures
 SharedFixture = _fixture.SharedFixture
 FixtureManager = _fixture.FixtureManager
+
+itimer = _itimer.itimer
+ITimer = _itimer.ITimer
+ITimerExpired = _itimer.ITimerExpired
 
 CaptureLogFixture = _logging.CaptureLogFixture
 
