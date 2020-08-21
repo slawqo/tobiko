@@ -61,6 +61,15 @@ HTTP_OPTIONS = [
                help="Don't use proxy server to connect to listed hosts")]
 
 
+TESTCASE_CONF_GROUP_NAME = "testcase"
+
+TESTCASE_OPTIONS = [
+    cfg.FloatOpt('timeout',
+                 default=None,
+                 help=("Timeout (in seconds) used for interrupting test case "
+                       "execution"))]
+
+
 def workspace_config_files(project=None, prog=None):
     project = project or 'tobiko'
     filenames = []
@@ -191,6 +200,9 @@ def register_tobiko_options(conf):
     conf.register_opts(
         group=cfg.OptGroup(HTTP_CONF_GROUP_NAME), opts=HTTP_OPTIONS)
 
+    conf.register_opts(
+        group=cfg.OptGroup(TESTCASE_CONF_GROUP_NAME), opts=TESTCASE_OPTIONS)
+
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
         if hasattr(module, 'register_tobiko_options'):
@@ -203,8 +215,15 @@ def list_http_options():
     ]
 
 
+def list_testcase_options():
+    return [
+        (TESTCASE_CONF_GROUP_NAME, itertools.chain(TESTCASE_OPTIONS))
+    ]
+
+
 def list_tobiko_options():
-    all_options = list_http_options()
+    all_options = (list_http_options() +
+                   list_testcase_options())
 
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
