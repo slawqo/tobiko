@@ -45,17 +45,14 @@ class HTTPConnection(connection.HTTPConnection):
             conn = connection.connection.create_connection(
                 address, self.timeout, **extra_kw)
 
-        except connection.SocketTimeout:
+        except connection.SocketTimeout as ex:
             raise connection.ConnectTimeoutError(
-                self,
-                "Connection to %s timed out. (connect timeout=%s)"
-                % (self.host, self.timeout),
-            )
+                self, (f"Connection to {self.host} timed out. "
+                       f"(connect timeout={self.timeout})")) from ex
 
-        except connection.SocketError as e:
+        except connection.SocketError as ex:
             raise connection.NewConnectionError(
-                self, "Failed to establish a new connection: %s" % e
-            )
+                self, f"Failed to establish a new connection: {ex}") from ex
 
         return conn
 

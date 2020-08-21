@@ -65,9 +65,9 @@ class TobikoException(Exception):
     def __getattr__(self, name):
         try:
             return self._properties[name]
-        except KeyError:
-            msg = ("{!r} object has no attribute {!r}").format(self, name)
-            raise AttributeError(msg)
+        except KeyError as ex:
+            raise AttributeError(f"{self!r} object has no attribute "
+                                 f"'{name}'") from ex
 
     def __repr__(self):
         return "{class_name}({message!r})".format(

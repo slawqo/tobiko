@@ -223,9 +223,9 @@ class ShellProcessFixture(tobiko.SharedFixture):
         try:
             # Get attributes from parameters class
             return getattr(self.parameters, name)
-        except AttributeError:
+        except AttributeError as ex:
             message = "object {!r} has not attribute {!r}".format(self, name)
-            raise AttributeError(message)
+            raise AttributeError(message) from ex
 
     def kill(self):
         raise NotImplementedError

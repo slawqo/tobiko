@@ -28,8 +28,10 @@ def discover_podman_socket(ssh_client=None, **execute_params):
         raise _exception.PodmanSocketNotFoundError(details=result.stderr)
     try:
         socket = result.stdout.splitlines()[0]
-    except IndexError:
-        raise _exception.PodmanSocketNotFoundError(details=result.stderr)
+    except IndexError as ex:
+        podman_error = _exception.PodmanSocketNotFoundError(
+            details=result.stderr)
+        raise podman_error from ex
     if '0 sockets listed' in socket:
         raise _exception.PodmanSocketNotFoundError(details=socket)
     return socket

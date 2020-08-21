@@ -118,13 +118,13 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
                           exc_info=1)
             try:
                 attempt.check_limits()
-            except tobiko.RetryTimeLimitError:
+            except tobiko.RetryTimeLimitError as ex:
                 LOG.debug(f"Timed out creating remote process. ({details})")
                 raise _exception.ShellTimeoutExpired(command=command,
                                                      stdin=None,
                                                      stdout=None,
                                                      stderr=None,
-                                                     timeout=timeout)
+                                                     timeout=timeout) from ex
 
     def setup_stdin(self):
         self.stdin = _io.ShellStdin(

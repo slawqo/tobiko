@@ -15,7 +15,7 @@ from __future__ import absolute_import
 
 import collections
 import socket
-import typing
+import typing  # noqa
 import weakref
 
 
@@ -300,8 +300,9 @@ class OpenStackTopology(tobiko.SharedFixture):
     def get_group(self, group):
         try:
             return self._nodes_by_group[group]
-        except KeyError:
-            raise _exception.NoSuchOpenStackTopologyNodeGroup(group=group)
+        except KeyError as ex:
+            raise _exception.NoSuchOpenStackTopologyNodeGroup(
+                group=group) from ex
 
     def get_groups(self, groups):
         nodes = []

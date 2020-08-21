@@ -139,29 +139,29 @@ def get_network(network, client=None, **params):
     try:
         return neutron_client(client).show_network(network,
                                                    **params)['network']
-    except neutronclient.exceptions.NotFound:
-        raise NoSuchNetwork(id=network)
+    except neutronclient.exceptions.NotFound as ex:
+        raise NoSuchNetwork(id=network) from ex
 
 
 def get_port(port, client=None, **params):
     try:
         return neutron_client(client).show_port(port, **params)['port']
-    except neutronclient.exceptions.NotFound:
-        raise NoSuchPort(id=port)
+    except neutronclient.exceptions.NotFound as ex:
+        raise NoSuchPort(id=port) from ex
 
 
 def get_router(router, client=None, **params):
     try:
         return neutron_client(client).show_router(router, **params)['router']
-    except neutronclient.exceptions.NotFound:
-        raise NoSuchRouter(id=router)
+    except neutronclient.exceptions.NotFound as ex:
+        raise NoSuchRouter(id=router) from ex
 
 
 def get_subnet(subnet, client=None, **params):
     try:
         return neutron_client(client).show_subnet(subnet, **params)['subnet']
-    except neutronclient.exceptions.NotFound:
-        raise NoSuchSubnet(id=subnet)
+    except neutronclient.exceptions.NotFound as ex:
+        raise NoSuchSubnet(id=subnet) from ex
 
 
 def list_l3_agent_hosting_routers(router, client=None, **params):

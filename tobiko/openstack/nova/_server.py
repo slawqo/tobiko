@@ -60,10 +60,9 @@ def check_server_ip_address(address, ip_version=None, address_type=None):
         try:
             if address_type != address['OS-EXT-IPS:type']:
                 return False
-        except KeyError:
-            message = ("Unable to get IP type from server address {!r}"
-                       ).format(address)
-            raise ValueError(message)
+        except KeyError as ex:
+            raise ValueError("Unable to get IP type from server address "
+                             f"'{address}'") from ex
 
     return True
 

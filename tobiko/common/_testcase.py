@@ -16,7 +16,7 @@ from __future__ import absolute_import
 import logging
 import os
 import sys
-import typing
+import typing  # noqa
 
 from oslo_log import log
 from stestr import config_file
@@ -112,10 +112,9 @@ class TestCasesFinder(object):
                 ids = cmd.list_tests()
             else:
                 ids = cmd.test_ids
-        except SystemExit:
-            msg = ("Error discovering test cases IDs with parameters: "
-                   "{!r}").format(params)
-            raise RuntimeError(msg)
+        except SystemExit as ex:
+            raise RuntimeError("Error discovering test cases IDs with "
+                               f"parameters: {params}") from ex
         finally:
             cmd.cleanUp()
 

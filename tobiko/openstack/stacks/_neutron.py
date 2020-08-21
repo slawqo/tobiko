@@ -269,13 +269,12 @@ def find_external_network(name=None):
             params['name'] = name
         try:
             network = neutron.find_network(**params)
-        except tobiko.ObjectNotFound:
+        except tobiko.ObjectNotFound as ex:
             LOG.exception('No such network (%s):',
                           json.dumps(params, sort_keys=True))
             if name:
-                message = ('No such external network with name or ID '
-                           '{!r}').format(name)
-                raise ValueError(message)
+                raise ValueError("No such external network with name or ID "
+                                 f"'{name}'") from ex
 
     if network:
         LOG.debug('Found external network %r:\n%s',
