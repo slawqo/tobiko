@@ -70,6 +70,7 @@
         yaml: true
         yml: true
       test_log_debug: true
+      test_case_timeout: 1800
       tobiko_dir: '/opt/stack/tobiko'
       upper_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/openstack/requirements/upper-constraints.txt'
 

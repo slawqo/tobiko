@@ -6,7 +6,12 @@ test_default_conf:
     log_dir: "{{ test_log_file | dirname }}"
     log_file: "{{ test_log_file | basename }}"
 
+  testcase:
+    timeout: "{{ test_case_timeout }}"
+
 test_log_debug: false
+
+test_case_timeout: 7200.
 
 # OpenStack client credentials
 stackrc_file: '{{ ansible_user_dir }}/overcloudrc'
