@@ -18,6 +18,7 @@ from __future__ import absolute_import
 import time
 
 from oslo_log import log
+import paramiko
 import testtools
 
 import tobiko
@@ -29,20 +30,16 @@ from tobiko.openstack import stacks
 LOG = log.getLogger(__name__)
 
 
-class RebootableServer(stacks.CirrosServerStackFixture):
+class RebootHostStack(stacks.CirrosServerStackFixture):
     "Server to be rebooted"
 
 
-@tobiko.skip_if(
-    "This test is often failing because server endup in SHUTOFF "
-    "state", True)
 class RebootHostTest(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(RebootableServer)
+    stack = tobiko.required_setup_fixture(RebootHostStack)
 
     def test_reboot_host(self, **params):
-        server = nova.activate_server(self.stack.server_id)
-        self.assertEqual('ACTIVE', server.status)
+        self.stack.ensure_server_status('ACTIVE')
 
         ssh_client = self.stack.ssh_client
         uptime_0 = sh.get_uptime(ssh_client=ssh_client)
@@ -59,12 +56,7 @@ class RebootHostTest(testtools.TestCase):
 
         self.assertIs(ssh_client, reboot.ssh_client)
         self.assertEqual(ssh_client.hostname, reboot.hostname)
-        self.assertGreater(reboot.start_time, 0.)
-        self.assertEqual(params.get('timeout', sh.RebootHostOperation.timeout),
-                         reboot.timeout)
         self.assertIs(params.get('wait', True), reboot.wait)
-        self.assertEqual(params.get('sleep_interval', 1.),
-                         reboot.sleep_interval)
 
         if not reboot.wait:
             self.assertFalse(reboot.is_rebooted)
@@ -74,7 +66,7 @@ class RebootHostTest(testtools.TestCase):
         self.assertTrue(reboot.is_rebooted)
         self.assert_is_connected(ssh_client)
 
-        server = nova.wait_for_server_status(server, 'ACTIVE')
+        server = nova.wait_for_server_status(self.stack.server_id, 'ACTIVE')
         self.assertEqual('ACTIVE', server.status)
 
         uptime_1 = sh.get_uptime(ssh_client=ssh_client)
@@ -89,18 +81,15 @@ class RebootHostTest(testtools.TestCase):
     def test_reboot_host_with_no_wait(self):
         self.test_reboot_host(wait=False)
 
-    def test_reboot_server_after_shutoff(self):
-        server = nova.activate_server(self.stack.server_id)
-        self.assertEqual('ACTIVE', server.status)
+    def test_reboot_server_when_shutoff(self):
+        self.stack.ensure_server_status('SHUTOFF')
+
         ssh_client = self.stack.ssh_client
-        ssh_client.connect()
-        self.assert_is_connected(ssh_client)
-
-        server = nova.shutoff_server(self.stack.server_id)
-        self.assertEqual('SHUTOFF', server.status)
-
-        self.assertRaises(sh.ShellTimeoutExpired, sh.reboot_host,
-                          ssh_client=ssh_client, timeout=5.0)
+        self.assert_is_not_connected(ssh_client)
+        errors = (paramiko.ssh_exception.NoValidConnectionsError,
+                  paramiko.SSHException)
+        self.assertRaises(errors, sh.reboot_host, ssh_client=ssh_client,
+                          timeout=5.0)
         self.assert_is_not_connected(ssh_client)
         server = nova.wait_for_server_status(self.stack.server_id, 'SHUTOFF')
         self.assertEqual('SHUTOFF', server.status)

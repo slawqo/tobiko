@@ -262,6 +262,16 @@ class ServerStackFixture(heat.HeatStackFixture):
     def user_data(self):
         return nova.user_data(self.cloud_config)
 
+    def ensure_server_status(self, status):
+        tobiko.setup_fixture(self)
+        server = nova.get_server(self.server_id)
+        if server.status != status:
+            if status == "ACTIVE":
+                tobiko.reset_fixture(self)
+            else:
+                tobiko.skip(f"{type(self).__name__}.ensure_server_status "
+                            "method not implemented")
+
 
 class PeerServerStackFixture(ServerStackFixture):
     """Server witch networking access requires passing by a peer Nova server
