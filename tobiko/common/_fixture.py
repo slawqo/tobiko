@@ -229,14 +229,17 @@ def get_required_fixture_properties(cls):
 
 def init_fixture(obj, name):
     if (inspect.isclass(obj) and issubclass(obj, fixtures.Fixture)):
-        obj = obj()
-
+        try:
+            obj = obj()
+        except Exception as ex:
+            raise TypeError(f"Error creating fixture '{name}' from class "
+                            f"{obj!r}.") from ex
     if isinstance(obj, fixtures.Fixture):
         obj.__tobiko_fixture__ = True
         obj.__tobiko_fixture_name__ = name
         return obj
 
-    raise TypeError("Invalid fixture object type: {!r}".format(obj))
+    raise TypeError(f"Invalid fixture object type: '{obj!r}'")
 
 
 def fixture_property(*args, **kwargs):
