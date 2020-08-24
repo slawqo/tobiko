@@ -13,11 +13,12 @@
 #    under the License.
 from __future__ import absolute_import
 
-import time
+import typing  # noqa
 
 from oslo_log import log
 
 import tobiko
+from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _uptime
 from tobiko.shell import ssh
@@ -26,126 +27,127 @@ from tobiko.shell import ssh
 LOG = log.getLogger(__name__)
 
 
-class RebootHostTimeoutError(tobiko.TobikoException):
+class RebootHostError(tobiko.TobikoException):
+    message = "host {hostname!r} not rebooted: {cause}"
+
+
+class RebootHostTimeoutError(RebootHostError):
     message = "host {hostname!r} not rebooted after {timeout!s} seconds"
 
 
-def reboot_host(ssh_client, wait=True, timeout=None, sleep_interval=None):
-    reboot = RebootHostOperation(ssh_client=ssh_client,
-                                 wait=wait,
-                                 timeout=timeout,
-                                 sleep_interval=sleep_interval)
+def reboot_host(ssh_client, wait: bool = True, timeout: tobiko.Seconds = None):
+    reboot = RebootHostOperation(ssh_client=ssh_client, wait=wait,
+                                 timeout=timeout)
     return tobiko.setup_fixture(reboot)
 
 
 class RebootHostOperation(tobiko.Operation):
 
-    wait = True
-    start_time = None
     hostname = None
-    timeout = 600.
-    ssh_client = None
-    sleep_interval = 1.
-    is_rebooted = False
+    is_rebooted: typing.Optional[bool] = None
+    start_time: tobiko.Seconds = None
 
-    def __init__(self, ssh_client=None, timeout=None, wait=None,
-                 sleep_interval=None):
+    default_wait_timeout = 300.
+    default_wait_interval = 5.
+    default_wait_count = 60
+
+    @property
+    def ssh_client(self) -> ssh.SSHClientFixture:
+        return self._ssh_client
+
+    def __init__(self,
+                 ssh_client: typing.Optional[ssh.SSHClientFixture] = None,
+                 wait=True,
+                 timeout: tobiko.Seconds = None):
         super(RebootHostOperation, self).__init__()
-        if ssh_client:
-            self.ssh_client = ssh_client
+        if ssh_client is not None:
+            self._ssh_client = ssh_client
         tobiko.check_valid_type(self.ssh_client, ssh.SSHClientFixture)
-
-        if timeout is not None:
-            self.timeout = float(timeout)
-        assert self.timeout > 0.
-
-        if wait is not None:
-            self.wait = bool(wait)
-
-        if sleep_interval is not None:
-            self.sleep_interval = float(sleep_interval)
-        assert self.sleep_interval >= 0.
+        self.wait = bool(wait)
+        self.timeout = tobiko.to_seconds(timeout)
 
     def run_operation(self):
-        self.start_time = time.time()
         ssh_client = self.ssh_client
+        ssh_client.connect(connection_timeout=self.timeout)
         with ssh_client:
+            self.hostname = ssh_client.hostname
+            LOG.debug(f"Rebooting host '{self.hostname}'... ")
             self.is_rebooted = False
-            self.hostname = hostname = ssh_client.hostname
-            LOG.debug('Rebooting host %r...', hostname)
-            _execute.execute('sudo /sbin/reboot', timeout=self.timeout,
-                             stdout=False, ssh_client=ssh_client)
+            self.start_time = tobiko.time()
+            try:
+                _execute.execute('sudo /sbin/reboot',
+                                 stdout=False,
+                                 ssh_client=ssh_client,
+                                 timeout=30.)
+            except _exception.ShellTimeoutExpired as ex:
+                LOG.debug(f"Reboot command timeout expired: {ex}")
         if self.wait:
             self.wait_for_operation()
 
     def cleanup_fixture(self):
-        if self.hostname is not None:
-            del self.hostname
-        if self.start_time is not None:
-            del self.start_time
-        self.is_rebooted = False
+        self.is_rebooted = None
+        self.hostname = None
+        self.start_time = None
 
-    def wait_for_operation(self):
-        sleep_interval = self.sleep_interval
-        while not self.check_is_rebooted():
-            if sleep_interval > 0.:
-                time.sleep(sleep_interval)
+    @property
+    def elapsed_time(self) -> tobiko.Seconds:
+        if self.start_time is None:
+            return None
+        else:
+            return tobiko.time() - self.start_time
 
-    def check_is_rebooted(self):
+    @property
+    def time_left(self) -> tobiko.Seconds:
+        if self.timeout is None or self.elapsed_time is None:
+            return None
+        else:
+            return self.timeout - self.elapsed_time
+
+    def wait_for_operation(self, timeout: tobiko.Seconds = None):
         if self.is_rebooted:
-            return True
-
-        # ensure SSH connection is closed before retrying connecting
-        ssh_client = self.ssh_client
-        tobiko.cleanup_fixture(ssh_client)
-        assert ssh_client.client is None
-
-        elapsed_time = self.check_elapsed_time()
-        LOG.debug("Reconnecting to host %r %s seconds after reboot...",
-                  self.hostname, elapsed_time)
-        if elapsed_time is None:
-            raise RuntimeError("Reboot operation didn't started")
-
+            return
         try:
-            uptime = _uptime.get_uptime(ssh_client=ssh_client,
-                                        timeout=(self.timeout-elapsed_time))
-        except Exception:
-            # if disconnected while getting uptime we assume the VM is just
-            # rebooting. These are good news!
-            tobiko.cleanup_fixture(ssh_client)
-            assert ssh_client.client is None
-            LOG.debug("Unable to get uptime from host %r", self.hostname,
-                      exc_info=1)
-            return False
+            for attempt in tobiko.retry(
+                    timeout=tobiko.min_seconds(timeout, self.time_left),
+                    default_timeout=self.default_wait_timeout,
+                    default_count=self.default_wait_count,
+                    default_interval=self.default_wait_interval):
+                # ensure SSH connection is closed before retrying connecting
+                tobiko.cleanup_fixture(self.ssh_client)
+                assert self.ssh_client.client is None
+                LOG.debug(f"Getting uptime after reboot '{self.hostname}' "
+                          "after reboot... ")
+                try:
+                    up_time = _uptime.get_uptime(ssh_client=self.ssh_client,
+                                                 timeout=30.)
 
-        # verify that reboot actually happened by comparing elapsed time with
-        # uptime
-        elapsed_time = self.get_elapsed_time()
-        if uptime >= elapsed_time:
-            tobiko.cleanup_fixture(ssh_client)
-            assert ssh_client.client is None
-            LOG.warning("Host %r still not restarted %s seconds after "
-                        "reboot operation (uptime=%r)", self.hostname,
-                        elapsed_time, uptime)
-            return False
+                except Exception:
+                    # if disconnected while getting up time we assume the VM is
+                    # just rebooting. These are good news!
+                    LOG.debug("Unable to get uptime from host "
+                              f"'{self.hostname}'", exc_info=1)
+                    attempt.check_limits()
+                else:
 
-        self.is_rebooted = True
-        LOG.debug("Host %r resterted %s seconds after reboot operation"
-                  "(uptime=%r)", self.hostname, elapsed_time - uptime, uptime)
-        assert ssh_client.client is not None
-        return True
-
-    def check_elapsed_time(self):
-        elapsed_time = self.get_elapsed_time()
-        if elapsed_time is None:
-            return None
-        if elapsed_time >= self.timeout:
-            raise RebootHostTimeoutError(hostname=self.hostname,
-                                         timeout=self.timeout)
-        return elapsed_time
-
-    def get_elapsed_time(self):
-        start_time = self.start_time
-        if start_time is None:
-            return None
-        return time.time() - start_time
+                    # verify that reboot actually happened by comparing elapsed
+                    # time with up_time
+                    elapsed_time = self.elapsed_time
+                    if up_time < elapsed_time:
+                        assert self.ssh_client.client is not None
+                        self.is_rebooted = True
+                        LOG.debug(f"Host '{self.hostname}' restarted "
+                                  f"{elapsed_time} seconds after "
+                                  f"reboot operation (up_time={up_time})")
+                        break
+                    else:
+                        LOG.debug(f"Host '{self.hostname}' still not "
+                                  f"restarted {elapsed_time} seconds after "
+                                  f"reboot operation (up_time={up_time!r})")
+                        attempt.check_limits()
+        finally:
+            if not self.is_rebooted:
+                try:
+                    tobiko.cleanup_fixture(self.ssh_client)
+                except Exception:
+                    LOG.exception("Error closing SSH connection to "
+                                  f"'{self.hostname}'")

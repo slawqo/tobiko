@@ -62,7 +62,9 @@ list_processes = _ps.list_processes
 wait_for_processes = _ps.wait_for_processes
 
 reboot_host = _reboot.reboot_host
+RebootHostError = _reboot.RebootHostError
 RebootHostOperation = _reboot.RebootHostOperation
+RebootHostTimeoutError = _reboot.RebootHostTimeoutError
 
 ssh_process = _ssh.ssh_process
 ssh_execute = _ssh.ssh_execute
