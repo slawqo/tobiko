@@ -1,0 +1,6 @@
+---
+
+test_workflow_steps:
+  - tox_description: 'run disruptive test cases'
+    tox_envlist: instanceha
+    tox_step_name: instanceha
