@@ -17,6 +17,7 @@
       command: >
         '{{ bindep_executable }}' -b -f '{{ bindep_file }}' {{ bindep_profile }}
       when:
+        - check_bindep_file.stat.exists
         - check_bindep_file.stat.readable
       register: run_bindep
       changed_when: no

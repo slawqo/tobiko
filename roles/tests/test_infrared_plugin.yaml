@@ -5,6 +5,9 @@
     test_collect_dir: '{{ test_dir }}/test_results'
 
   roles:
+    - role: tobiko-bindep
+      vars:
+        bindep_file: '{{ test_dir }}/bindep.txt'
     - tobiko-ensure-tox
 
   tasks:
