@@ -1,5 +1,4 @@
-# Copyright (c) 2020 Red Hat, Inc.
-#
+# Copyright (c) 2020 Red Hat
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,15 +14,12 @@
 #    under the License.
 from __future__ import absolute_import
 
+import testtools
 
-from tobiko.openstack.tests import _neutron
-from tobiko.openstack.tests import _nova
+from tobiko.openstack import tests
 
-test_neutron_agents_are_alive = _neutron.test_neutron_agents_are_alive
 
-test_evacuable_server_creation = _nova.test_evacuable_server_creation
-test_server_creation = _nova.test_server_creation
-test_servers_creation = _nova.test_servers_creation
-test_server_creation_and_shutoff = _nova.test_server_creation_and_shutoff
-TestServerCreationStack = _nova.TestServerCreationStack
-TestEvacuableServerCreationStack = _nova.TestEvacuableServerCreationStack
+class NeutronAgentTest(testtools.TestCase):
+
+    def test_agents_are_alive(self):
+        tests.test_neutron_agents_are_alive()

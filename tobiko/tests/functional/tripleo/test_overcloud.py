@@ -26,7 +26,6 @@ from tobiko import tripleo
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import services
 from tobiko.tripleo import processes
-from tobiko.tripleo import neutron
 import tobiko
 
 CONF = config.CONF
@@ -144,14 +143,3 @@ class OvercloudProcessesTest(testtools.TestCase):
     def test_overcloud_processes(self):
         ops = processes.OvercloudProcessesStatus()
         self.assertTrue(ops.basic_overcloud_processes_running)
-
-
-@tripleo.skip_if_missing_overcloud
-class OvercloudNeutronAgentsTest(testtools.TestCase):
-    """
-    Assert that a the neutron agents are healthy
-    across the overcloud nodes
-    """
-
-    def test_neutron_agents_health(self):
-        neutron.check_neutron_agents_health()

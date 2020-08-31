@@ -22,6 +22,9 @@ import tobiko
 from tobiko.openstack import _client
 
 
+ServiceUnavailable = neutronclient.exceptions.ServiceUnavailable
+
+
 class NeutronClientFixture(_client.OpenstackClientFixture):
 
     def init_client(self, session):

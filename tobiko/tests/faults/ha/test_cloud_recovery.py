@@ -9,7 +9,6 @@ from tobiko.tripleo import pacemaker
 from tobiko.tripleo import processes
 from tobiko.tripleo import containers
 from tobiko.tripleo import nova
-from tobiko.tripleo import neutron as neutron_ooo
 from tobiko.tripleo import undercloud
 from tobiko.tripleo import validations
 
@@ -19,7 +18,7 @@ def overcloud_health_checks(passive_checks_only=False):
     check_pacemaker_resources_health()
     check_overcloud_processes_health()
     nova.check_nova_services_health()
-    neutron_ooo.check_neutron_agents_health()
+    tests.test_neutron_agents_are_alive()
     if not passive_checks_only:
         # create a uniq stack
         check_vm_create()

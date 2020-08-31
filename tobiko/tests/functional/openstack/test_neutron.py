@@ -23,6 +23,7 @@ from tobiko import config
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
+from tobiko.openstack import tests
 
 
 CONF = config.CONF
@@ -190,3 +191,12 @@ class AgentTest(testtools.TestCase):
     def test_skip_if_missing_agents_with_big_count(self):
         self.test_skip_if_missing_agents(count=1000000,
                                          should_skip=True)
+
+
+class NeutronAgentTest(testtools.TestCase):
+
+    def test_neutron_agents_are_alive(self):
+        agents = tests.test_neutron_agents_are_alive()
+        # check has agents and they are all alive
+        self.assertNotEqual([], agents)
+        self.assertNotEqual([], agents.with_items(alive=True))

@@ -20,9 +20,10 @@ from tobiko.openstack.neutron import _extension
 from tobiko.openstack.neutron import _port
 
 
+NeutronClientFixture = _client.NeutronClientFixture
+ServiceUnavailable = _client.ServiceUnavailable
 neutron_client = _client.neutron_client
 get_neutron_client = _client.get_neutron_client
-NeutronClientFixture = _client.NeutronClientFixture
 find_network = _client.find_network
 list_networks = _client.list_networks
 find_subnet = _client.find_subnet
