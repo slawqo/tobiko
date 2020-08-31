@@ -295,7 +295,7 @@ def instanceha_deployed():
 
 
 skip_if_instanceha_not_delpoyed = tobiko.skip_unless(
-    'instanceha not delpoyed', instanceha_deployed())
+    'instanceha not delpoyed', instanceha_deployed)
 
 
 def fencing_deployed():
@@ -314,4 +314,4 @@ def fencing_deployed():
 
 
 skip_if_fencing_not_deployed = tobiko.skip_unless(
-    'fencing not delpoyed', fencing_deployed())
+    'fencing not delpoyed', fencing_deployed)
