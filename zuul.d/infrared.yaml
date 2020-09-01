@@ -49,7 +49,7 @@
     name: tobiko-tox-infrared-centos-8
     parent: tobiko-tox-infrared
     nodeset: tobiko-centos-8-2-node
-    voting: true
+    voting: false
     description: |
       Run test cases using tobiko infrared plugin on CentOS 8
 
