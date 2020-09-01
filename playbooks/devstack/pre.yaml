@@ -8,10 +8,5 @@
 
 - hosts: all
   roles:
-    - role: copy-build-sshkey
-      vars:
-        copy_sshkey_target_user: zuul
-
     - role: multi-node-setup
-
     - role: orchestrate-devstack
