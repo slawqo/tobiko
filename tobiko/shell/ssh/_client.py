@@ -506,11 +506,14 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
                   f"  - attempt: {attempt.details}\n")
 
         try:
-            proxy_sock = ssh_proxy_sock(hostname=hostname,
-                                        port=port,
-                                        command=proxy_command,
-                                        client=proxy_client,
-                                        timeout=connection_timeout)
+            proxy_sock = ssh_proxy_sock(
+                hostname=hostname,
+                port=port,
+                command=proxy_command,
+                client=proxy_client,
+                timeout=connection_timeout,
+                connection_attempts=1,
+                connection_interval=connection_interval)
             client.connect(hostname=hostname,
                            username=username,
                            port=port,
@@ -526,7 +529,8 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
 
 
 def ssh_proxy_sock(hostname=None, port=None, command=None, client=None,
-                   source_address=None, timeout=None):
+                   source_address=None, timeout=None,
+                   connection_attempts=None, connection_interval=None):
     if not command:
         if client:
             # I need a command to execute with proxy client
@@ -546,7 +550,9 @@ def ssh_proxy_sock(hostname=None, port=None, command=None, client=None,
     if client:
         if isinstance(client, SSHClientFixture):
             # Connect to proxy server
-            client = client.connect(connection_timeout=timeout)
+            client = client.connect(connection_timeout=timeout,
+                                    connection_attempts=connection_attempts,
+                                    connection_interval=connection_interval)
         elif not isinstance(client, paramiko.SSHClient):
             message = "Object {!r} is not an SSHClient".format(client)
             raise TypeError(message)

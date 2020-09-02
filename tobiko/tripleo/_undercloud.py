@@ -80,7 +80,9 @@ class HasUndercloudFixture(tobiko.SharedFixture):
     def setup_fixture(self):
         ssh_client = undercloud_ssh_client()
         try:
-            ssh_client.connect(connection_attempts=1, timeout=15.)
+            ssh_client.connect(retry_count=1,
+                               connection_attempts=1,
+                               timeout=15.)
         except Exception as ex:
             LOG.debug('Unable to connect to undercloud host: %s', ex)
             self.has_undercloud = False
