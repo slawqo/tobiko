@@ -237,3 +237,36 @@ class DummyTestCase(TestCase):
 
 
 DUMMY_TEST_CASE = DummyTestCase()
+
+
+def run_test(test_case: testtools.TestCase,
+             test_result: testtools.TestResult = None) -> testtools.TestResult:
+    test_result = test_result or testtools.TestResult()
+    test_case.run(test_result)
+    return test_result
+
+
+def assert_in(needle, haystack, message: typing.Optional[str] = None,
+              manager: TestCasesManager = TEST_CASES):
+    get_test_case(manager=manager).assertIn(needle, haystack, message)
+
+
+def get_skipped_test_cases(test_result: testtools.TestResult,
+                           skip_reason: typing.Optional[str] = None):
+    if skip_reason is not None:
+        assert_in(skip_reason, test_result.skip_reasons)
+        return test_result.skip_reasons[skip_reason]
+    else:
+        skipped_test_cases = list()
+        for cases in test_result.skip_reasons.values():
+            skipped_test_cases.extend(cases)
+        return skipped_test_cases
+
+
+def assert_test_case_was_skipped(test_case: testtools.TestCase,
+                                 test_result: testtools.TestResult,
+                                 skip_reason: str = None,
+                                 manager: TestCasesManager = TEST_CASES):
+    skipped_tests = get_skipped_test_cases(test_result=test_result,
+                                           skip_reason=skip_reason)
+    assert_in(test_case, skipped_tests, manager=manager)

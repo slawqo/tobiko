@@ -31,9 +31,14 @@ KeystoneClientFixture = _client.KeystoneClientFixture
 CloudsFileKeystoneCredentialsFixture = (
     _clouds_file.CloudsFileKeystoneCredentialsFixture)
 
-keystone_credentials = _credentials.keystone_credentials
-get_keystone_credentials = _credentials.get_keystone_credentials
 default_keystone_credentials = _credentials.default_keystone_credentials
+get_keystone_credentials = _credentials.get_keystone_credentials
+has_keystone_credentials = _credentials.has_keystone_credentials
+keystone_credentials = _credentials.keystone_credentials
+skip_unless_has_keystone_credentials = (
+    _credentials.skip_unless_has_keystone_credentials)
+DefaultKeystoneCredentialsFixture = (
+    _credentials.DefaultKeystoneCredentialsFixture)
 KeystoneCredentials = _credentials.KeystoneCredentials
 KeystoneCredentialsFixture = _credentials.KeystoneCredentialsFixture
 EnvironKeystoneCredentialsFixture = \

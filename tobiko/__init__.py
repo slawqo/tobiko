@@ -109,10 +109,12 @@ skip_if = _skip.skip_if
 skip_unless = _skip.skip_unless
 
 BaseTestCase = _testcase.TestCase
+assert_test_case_was_skipped = _testcase.assert_test_case_was_skipped
 discover_test_cases = _testcase.discover_test_cases
 get_test_case = _testcase.get_test_case
 pop_test_case = _testcase.pop_test_case
 push_test_case = _testcase.push_test_case
+run_test = _testcase.run_test
 TestCasesManager = _testcase.TestCasesManager
 
 min_seconds = _time.min_seconds

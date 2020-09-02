@@ -19,6 +19,7 @@ import testtools
 
 import tobiko
 from tobiko import config
+from tobiko.openstack import keystone
 from tobiko.openstack import stacks
 from tobiko.shell import sh
 
@@ -170,6 +171,7 @@ class LocalExecuteTest(ExecuteTest):
         return sh.local_execute(**kwargs)
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class SSHExecuteTest(ExecuteTest):
 
     server_stack = tobiko.required_setup_fixture(

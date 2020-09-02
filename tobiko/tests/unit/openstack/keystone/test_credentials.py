@@ -16,6 +16,8 @@ from __future__ import absolute_import
 
 import os
 
+import testtools
+
 import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
@@ -128,6 +130,11 @@ class EnvironKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
         fixture = _credentials.EnvironKeystoneCredentialsFixture()
         self.assertIsNone(fixture.credentials)
 
+    def test_setup_with_no_credentials(self):
+        fixture = _credentials.EnvironKeystoneCredentialsFixture()
+        fixture.setUp()
+        self.assertIsNone(fixture.credentials)
+
     def test_setup_v2(self):
         self.patch(os, 'environ', V2_ENVIRON)
         fixture = _credentials.EnvironKeystoneCredentialsFixture()
@@ -217,19 +224,19 @@ class DefaultKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
         return self.patch(config.CONF.tobiko, 'keystone', credentials)
 
     def test_init(self):
-        fixture = _credentials.DefaultKeystoneCredentialsFixture()
+        fixture = keystone.DefaultKeystoneCredentialsFixture()
         self.assertIsNone(fixture.credentials)
 
     def test_setup_from_environ(self):
         self.patch(os, 'environ', V2_ENVIRON)
-        fixture = _credentials.DefaultKeystoneCredentialsFixture()
+        fixture = keystone.DefaultKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_from_config(self):
         self.patch_config(V2_PARAMS)
-        fixture = _credentials.DefaultKeystoneCredentialsFixture()
+        fixture = keystone.DefaultKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
@@ -237,7 +244,72 @@ class DefaultKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
     def test_setup_from_environ_and_confif(self):
         self.patch(os, 'environ', V3_ENVIRON)
         self.patch_config(V2_PARAMS)
-        fixture = _credentials.DefaultKeystoneCredentialsFixture()
+        fixture = keystone.DefaultKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V3_PARAMS, fixture.credentials.to_dict())
+
+
+class SkipUnlessHasKeystoneCredentialsTest(openstack.OpenstackTest):
+
+    def setUp(self):
+        super(SkipUnlessHasKeystoneCredentialsTest, self).setUp()
+        self.default_credentials = tobiko.setup_fixture(
+            keystone.DefaultKeystoneCredentialsFixture)
+
+    def test_skip_method_unless_has_keystone_credentials_without_creds(self):
+        self.patch(self.default_credentials, 'credentials', None)
+
+        @keystone.skip_unless_has_keystone_credentials()
+        def decorated_func():
+            self.fail('Not skipped')
+
+        self.assertFalse(keystone.has_keystone_credentials())
+        self.assertRaises(self.skipException, decorated_func)
+
+    def test_skip_class_unless_has_keystone_credentials_without_creds(self):
+        self.patch(self.default_credentials, 'credentials', None)
+
+        @keystone.skip_unless_has_keystone_credentials()
+        class SkipTest(testtools.TestCase):
+
+            def test_skip(self):
+                super(SkipTest, self).setUp()
+                self.fail('Not skipped')
+
+        self.assertFalse(keystone.has_keystone_credentials())
+
+        test_case = SkipTest('test_skip')
+        test_result = tobiko.run_test(test_case)
+        tobiko.assert_test_case_was_skipped(
+            test_case, test_result, skip_reason='Missing Keystone credentials')
+
+    def test_skip_method_unless_has_keystone_credentials_with_creds(self):
+        credentials = make_credentials({})
+        self.patch(self.default_credentials, 'credentials', credentials)
+
+        call_args = []
+
+        @keystone.skip_unless_has_keystone_credentials()
+        def decorated_func(*args, **kwargs):
+            call_args.append([args, kwargs])
+
+        self.assertEqual(credentials, keystone.get_keystone_credentials())
+        decorated_func(1, 2, a=1, b=2)
+        self.assertEqual(call_args, [[(1, 2), {'a': 1, 'b': 2}]])
+
+    def test_skip_class_unless_has_keystone_credentials_with_creds(self):
+        credentials = make_credentials({})
+        self.patch(self.default_credentials, 'credentials', credentials)
+
+        calls = []
+
+        @keystone.skip_unless_has_keystone_credentials()
+        class SkipTest(testtools.TestCase):
+
+            def test_skip(self):
+                calls.append(True)
+
+        self.assertEqual(credentials, keystone.get_keystone_credentials())
+        tobiko.run_test(SkipTest('test_skip'))
+        self.assertEqual(calls, [True])
