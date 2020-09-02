@@ -148,7 +148,7 @@
     name: tobiko-devstack-functional-centos-8
     parent: tobiko-devstack-functional
     nodeset: devstack-single-node-centos-8
-    voting: false
+    voting: true
 
 
 - job:
