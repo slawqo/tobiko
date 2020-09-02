@@ -39,7 +39,8 @@ class RebootHostTest(testtools.TestCase):
     stack = tobiko.required_setup_fixture(RebootHostStack)
 
     def test_reboot_host(self, **params):
-        self.stack.ensure_server_status('ACTIVE')
+        server = self.stack.ensure_server_status('ACTIVE')
+        self.assertEqual('ACTIVE', server.status)
 
         ssh_client = self.stack.ssh_client
         uptime_0 = sh.get_uptime(ssh_client=ssh_client)
@@ -82,7 +83,8 @@ class RebootHostTest(testtools.TestCase):
         self.test_reboot_host(wait=False)
 
     def test_reboot_server_when_shutoff(self):
-        self.stack.ensure_server_status('SHUTOFF')
+        server = self.stack.ensure_server_status('SHUTOFF')
+        self.assertEqual('SHUTOFF', server.status)
 
         ssh_client = self.stack.ssh_client
         self.assert_is_not_connected(ssh_client)

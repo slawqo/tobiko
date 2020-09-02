@@ -264,13 +264,18 @@ class ServerStackFixture(heat.HeatStackFixture):
 
     def ensure_server_status(self, status):
         tobiko.setup_fixture(self)
-        server = nova.get_server(self.server_id)
-        if server.status != status:
-            if status == "ACTIVE":
-                tobiko.reset_fixture(self)
-            else:
-                tobiko.skip(f"{type(self).__name__}.ensure_server_status "
-                            "method not implemented")
+        try:
+            server = nova.wait_for_server_status(self.server_id, status)
+        except nova.ServerStatusTimeout:
+            server = nova.get_server(self.server_id)
+        if server.status == status:
+            return server
+        elif status == "ACTIVE":
+            tobiko.reset_fixture(self)
+            return nova.wait_for_server_status(self.server_id, 'ACTIVE')
+        else:
+            tobiko.skip(f"{type(self).__name__}.ensure_server_status "
+                        "method not implemented")
 
 
 class PeerServerStackFixture(ServerStackFixture):
