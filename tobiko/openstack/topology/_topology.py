@@ -161,6 +161,7 @@ class OpenStackTopology(tobiko.SharedFixture):
         'neutron-dhcp-agent': 'devstack@q-dhcp',
         'neutron-l3-agent': 'devstack@q-l3',
         'neutron-ovs-agent': 'devstack@q-agt',
+        'neutron-metadata-agent': 'devstack@q-meta',
     }
 
     has_containers = False

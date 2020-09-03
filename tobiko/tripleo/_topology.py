@@ -32,6 +32,7 @@ class TripleoTopology(topology.OpenStackTopology):
         'neutron-dhcp-agent': 'tripleo_neutron_dhcp',
         'neutron-l3-agent': 'tripleo_neutron_l3_agent',
         'neutron-ovs-agent': 'tripleo_neutron_ovs_agent',
+        'neutron-metadata-agent': 'tripleo_neutron_metadata_agent',
     }
 
     has_containers = True
