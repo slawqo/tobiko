@@ -11,7 +11,7 @@ from tobiko.openstack import neutron
 LOG = log.getLogger(__name__)
 
 
-def check_neutron_agents_health(timeout=60, interval=5):
+def check_neutron_agents_health(timeout=300, interval=5):
     failures = []
     neutron_client = neutron.get_neutron_client()
     start = time.time()
