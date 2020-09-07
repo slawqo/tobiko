@@ -105,27 +105,6 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.reset_ovndb_master_container()
         overcloud_health_checks()
 
-    @pacemaker.skip_if_instanceha_not_delpoyed
-    def test_instanceha_evacuation_hard_reset(self):
-        overcloud_health_checks(passive_checks_only=True)
-        cloud_disruptions.check_iha_evacuation_hard_reset()
-
-    @pacemaker.skip_if_instanceha_not_delpoyed
-    def test_instanceha_evacuation_network_disruption(self):
-        overcloud_health_checks(passive_checks_only=True)
-        cloud_disruptions.check_iha_evacuation_network_disruption()
-
-    @pacemaker.skip_if_instanceha_not_delpoyed
-    def test_instanceha_evacuation_hard_reset_shutoff_instance(self):
-        overcloud_health_checks(passive_checks_only=True)
-        cloud_disruptions.check_iha_evacuation_hard_reset_shutoff_instance()
-
-    # @pacemaker.skip_if_instanceha_not_delpoyed
-    # def test_check_instanceha_evacuation_evac_image_vm(self):
-    #     overcloud_health_checks(passive_checks_only=True)
-    #     cloud_disruptions.check_iha_evacuation_evac_image_vm()
-
-
 # [..]
 # more tests to follow
 # run health checks
