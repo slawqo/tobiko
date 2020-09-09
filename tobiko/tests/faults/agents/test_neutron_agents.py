@@ -365,3 +365,64 @@ class OvsAgentTest(testtools.TestCase, AgentTestMixin):
         ping.ping_until_received(
             self.stack.floating_ip_address).assert_replied()
         self.start_service_on_agents(self.agent_service_name, [agent])
+
+
+class MetadataAgentTest(testtools.TestCase, AgentTestMixin):
+
+    #: Resources stack with Nova server to send messages to
+    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+
+    def setUp(self):
+        super(MetadataAgentTest, self).setUp()
+        os_topology = topology.get_openstack_topology()
+        self.agent_service_name = os_topology.get_agent_service_name(
+            "neutron-metadata-agent")
+        if not self.agent_service_name:
+            self.skip("Neutron metadata agent's service name not defined for "
+                      "the topology %s" % os_topology)
+        self.agents = neutron.list_agents(agent_type='Metadata agent')
+        self.stopped_agents = []
+
+    def tearDown(self):
+        super(MetadataAgentTest, self).tearDown()
+        # Try to start all agents which may be down during the tests
+        self.start_service_on_agents(
+            self.agent_service_name, self.stopped_agents)
+
+    def is_metadata_reachable(self):
+        """Test if metadata agent is acting as proxy to nova metadata
+
+        Expected resonse code from metadata agent is "HTTP/1.1 200 OK"
+        if the agent is working. "HTTP/1.0 503 Service Unavailable" otherwise.
+        All other response codes are not expected.
+        """
+        curl_output = sh.execute(
+                'curl http://169.254.169.254/latest/meta-data/ -I',
+                ssh_client=self.stack.ssh_client,
+                expect_exit_status=None).stdout.strip()
+        LOG.debug(f'Metadata return: \n{curl_output}')
+        http_status = curl_output.split('\n')[0].split(' ')[1]
+        if http_status == '200':
+            return True
+        elif http_status == '503':
+            return False
+        else:
+            self.fail(f'Unexpected HTTP status {http_status}')
+
+    def wait_metadata_reachable(self, timeout=60, interval=2):
+        retry = tobiko.retry(timeout=timeout, interval=interval)
+        for _ in retry:
+            if self.is_metadata_reachable():
+                return True
+
+    def test_metadata_restart(self):
+        LOG.debug('Test if metadata agent is reachable before the test')
+        self.assertTrue(self.is_metadata_reachable())
+        LOG.debug('Try to stop metadata agent on all the nodes')
+        self.stop_service_on_agents(self.agent_service_name, self.agents)
+        LOG.debug('Test if metadata agent is not reachable after it stopped')
+        self.assertFalse(self.is_metadata_reachable())
+        LOG.debug('Try to start metadata agent on all the nodes')
+        self.start_service_on_agents(self.agent_service_name, self.agents)
+        LOG.debug('Test if metadata agent is reachable after restart')
+        self.assertTrue(self.wait_metadata_reachable())
