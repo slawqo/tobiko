@@ -34,8 +34,6 @@ class TripleoTopologyTest(test_topology.OpenStackTopologyTest):
         self.assertEqual(name, node.name)
         nodes = self.topology.get_group('undercloud')
         self.assertEqual([node], nodes)
-        host_config = tripleo.undercloud_host_config()
-        self.assertEqual(host_config.hostname, str(node.public_ip))
 
     @tripleo.skip_if_missing_overcloud
     def test_overcloud_group(self):
