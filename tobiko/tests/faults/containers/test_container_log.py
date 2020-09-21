@@ -31,13 +31,45 @@ class LogFilesTest(testtools.TestCase):
         for node in neutron_nodes:
             containers = container_ops.get_node_neutron_containers(node)
             for container in containers:
-                l_file = container_ops.get_container_logfile(node, container)
-                if not l_file:
+                logfile = container_ops.get_container_logfile(node, container)
+                if not logfile:
                     LOG.warning(f'No logfile has been found in {container} '
                                 f'container of {node.name} node')
                     continue
-                log_msg = container_ops.log_random_msg(node, container, l_file)
-                l_node = f'/var/log/containers/neutron/{l_file.split("/")[-1]}'
+                log_msg = container_ops.log_random_msg(node,
+                                                       container,
+                                                       logfile)
+                node_logfile = '/var/log/containers/neutron/'\
+                               f'{logfile.split("/")[-1]}'
                 self.assertTrue(container_ops.find_msg_in_file(node,
-                                                               l_node,
+                                                               node_logfile,
                                                                log_msg))
+
+    def test_neutron_logs_rotate(self):
+        groups = ['controller', 'compute', 'networker']
+        neutron_nodes = container_ops.get_nodes_for_groups(groups)
+        msg = ''
+        for node in neutron_nodes:
+            logfiles = []
+            containers = container_ops.get_node_neutron_containers(node)
+            for container in containers:
+                logfile = container_ops.get_container_logfile(node, container)
+                if not logfile:
+                    LOG.warning(f'No logfile has been found in {container} '
+                                f'container of {node.name} node')
+                    continue
+                logfiles.append(logfile)
+                if not msg:
+                    msg = container_ops.log_random_msg(node,
+                                                       container,
+                                                       logfile)
+                else:
+                    container_ops.log_msg(node, container, logfile, msg)
+            container_ops.rotate_logs(node)
+            for logfile in logfiles:
+                node_logfile = '/var/log/containers/neutron/'\
+                               f'{logfile.split("/")[-1]}'
+                self.assertTrue(container_ops.find_msg_in_file(node,
+                                                               node_logfile,
+                                                               msg,
+                                                               rotated=True))

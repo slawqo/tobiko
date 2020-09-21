@@ -19,7 +19,7 @@ import re
 
 from oslo_log import log
 
-from tobiko import fail
+import tobiko
 from tobiko.openstack import topology
 from tobiko.shell import sh
 
@@ -195,17 +195,32 @@ def log_random_msg(node, container, logfile):
     random_msg = ''.join(random.choice(symbols) for i in range(30))
     LOG.debug(f'Trying to print {random_msg} string to {logfile} log file '
               f'in {container} container on {node.name} node')
-    cmd = f"sh -c 'echo {random_msg} >> {logfile}'"
+    log_msg(node, container, logfile, random_msg)
+    return random_msg
+
+
+def log_msg(node, container, logfile, msg):
+    """Print random message to the container log file
+
+    :param node: Node the container is running on
+    :type node: class: tobiko.openstack.topology.OpenStackTopologyNode
+    :param container: Name of the container
+    :type container: string
+    :param logfile: Path to the logfile on the container
+    :type logfile: string
+    :param msg: Message to log
+    :type msg: string
+    """
+    cmd = f"sh -c 'echo {msg} >> {logfile}'"
     error = sh.execute(f'sudo podman exec -it -u root {container} {cmd}',
                        ssh_client=node.ssh_client,
                        expect_exit_status=None).stderr
     if error:
-        fail(f'Cannot edit {logfile} in {container} on {node.name} '
-             f'got the following error:\n{error}')
-    return random_msg
+        tobiko.fail(f'Cannot edit {logfile} in {container} on {node.name} '
+                    f'got the following error:\n{error}')
 
 
-def find_msg_in_file(node, logfile, message):
+def find_msg_in_file(node, logfile, message, rotated=False):
     """Search for the message in the logfile
 
     :param node: Node the container is running on
@@ -214,16 +229,43 @@ def find_msg_in_file(node, logfile, message):
     :type logfile: string
     :param message: Message to search for
     :type message: string
+    :param rotated: Variable to flag that log file has to be rotated
+        so the name will be ended by '.1'
+    :type rotated: bool
     :return: True if message exists in file or False otherwise
     :rtype: bool
     """
-    LOG.debug(f'Searching for {message} in {logfile} on {node.name}')
-    result = sh.execute(f'sudo grep -h {message} {logfile}{{,.1}}',
+    if rotated:
+        suffix = ".1"
+    else:
+        suffix = "{,.1}"
+    LOG.debug(f'Searching for {message} in {logfile}{suffix} on {node.name}')
+    result = sh.execute(f'sudo grep -h {message} {logfile}{suffix}',
                         ssh_client=node.ssh_client,
                         expect_exit_status=None)
     if result.stderr:
-        fail(f'Failed reading {logfile} on {node.name}:\n{result.stderr}')
+        tobiko.fail(f'Failed to read {logfile} on {node.name}:\n'
+                    f'{result.stderr}')
     elif result.stdout.strip() == message:
         return True
     else:
         return False
+
+
+def rotate_logs(node):
+    """Rotate all the container logs using 'logrotate'
+
+    :param node: Node to rotate logs on
+    :type node: class: tobiko.openstack.topology.OpenStackTopologyNode
+    """
+    containers = get_filtered_node_containers(node, ['logrotate.*', ])
+    if not containers:
+        tobiko.skip('No logrotate container has been found')
+    else:
+        container = containers[0]
+    rotate = sh.execute(f'sudo podman exec -it -u root {container} logrotate '
+                        '-f /etc/logrotate-crond.conf',
+                        ssh_client=node.ssh_client,
+                        expect_exit_status=None)
+    if rotate.stderr:
+        tobiko.fail(f'Failed rotate logs on {node.name} node')
