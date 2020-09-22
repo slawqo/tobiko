@@ -6,8 +6,26 @@ from oslo_log import log
 
 import tobiko
 from tobiko.openstack import neutron
+from tobiko.shell import sh
 
 LOG = log.getLogger(__name__)
+
+
+def get_osp_version():
+    from tobiko.tripleo import undercloud_ssh_client
+    try:
+        result = sh.execute("awk '{print $6}' /etc/rhosp-release",
+                            ssh_client=undercloud_ssh_client())
+    except (sh.ShellCommandFailed, sh.ShellTimeoutExpired):
+        LOG.debug("File /etc/rhosp-release not found")
+        return None
+    else:
+        return result.stdout.splitlines()[0]
+
+
+def is_ovn_configured():
+    from tobiko.tripleo import containers
+    return containers.ovn_used_on_overcloud()
 
 
 def test_neutron_agents_are_alive(timeout=300., interval=5.):
@@ -23,6 +41,18 @@ def test_neutron_agents_are_alive(timeout=300., interval=5.):
             # a disruption
             LOG.debug(f"Waiting for neutron service... ({ex})")
             continue  # Let retry
+
+        rhosp_version = get_osp_version()
+        rhosp_major_release = (int(rhosp_version.split('.')[0])
+                               if rhosp_version
+                               else None)
+
+        if (rhosp_major_release and rhosp_major_release <= 13 and
+                is_ovn_configured()):
+            LOG.debug("Neutron list agents should return an empty list with"
+                      "OVN and RHOSP releases 13 or earlier")
+            test_case.assertEqual([], agents)
+            return agents
 
         if not agents:
             test_case.fail("Neutron has no agents")
