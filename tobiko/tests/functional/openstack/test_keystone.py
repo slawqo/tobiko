@@ -31,6 +31,7 @@ LOG = log.getLogger(__name__)
 CIENT_CLASSSES = v2_client.Client, v3_client.Client
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class TobikoKeystoneCredentialsCommandTest(testtools.TestCase):
 
     def test_execute(self):
@@ -41,6 +42,7 @@ class TobikoKeystoneCredentialsCommandTest(testtools.TestCase):
         self.assertEqual(expected, actual)
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class KeystoneClientAPITest(testtools.TestCase):
 
     def test_get_keystone_client(self):

@@ -23,9 +23,11 @@ import testtools
 import tobiko
 from tobiko.shell import sh
 from tobiko.shell import ssh
+from tobiko.openstack import keystone
 from tobiko.openstack import stacks
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class HostnameTest(testtools.TestCase):
 
     server_stack = tobiko.required_setup_fixture(

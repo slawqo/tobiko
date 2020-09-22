@@ -18,7 +18,7 @@ import io
 import os
 import tempfile
 import time
-import typing
+import typing  # noqa
 
 from oslo_log import log
 import requests
@@ -27,6 +27,7 @@ import tobiko
 from tobiko.config import get_bool_env
 from tobiko.openstack.glance import _client
 from tobiko.openstack.glance import _io
+from tobiko.openstack import keystone
 
 
 LOG = log.getLogger(__name__)
@@ -79,15 +80,19 @@ class GlanceImageStatus(object):
     IMPORTING = u'importing'
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class GlanceImageFixture(_client.HasGlanceClientMixin, tobiko.SharedFixture):
 
-    image_name = None  # type: str
-    username = None  # type: str
-    password = None  # type: str
+    image_name: typing.Optional[str] = None
+    username: typing.Optional[str] = None
+    password: typing.Optional[str] = None
     image = None
     wait_interval = 5.
 
-    def __init__(self, image_name=None, username=None, password=None):
+    def __init__(self,
+                 image_name: typing.Optional[str] = None,
+                 username: typing.Optional[str] = None, password:
+                 typing.Optional[str] = None):
         super(GlanceImageFixture, self).__init__()
 
         if image_name:
@@ -333,7 +338,7 @@ class FileGlanceImageFixture(UploadGranceImageFixture):
 
 class URLGlanceImageFixture(FileGlanceImageFixture):
 
-    image_url = None  # type: str
+    image_url: typing.Optional[str] = None
 
     def __init__(self, image_url=None, **kwargs):
         super(URLGlanceImageFixture, self).__init__(**kwargs)

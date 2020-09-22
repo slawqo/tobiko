@@ -15,8 +15,9 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
+
 import netaddr
-import six
 import testtools
 
 import tobiko
@@ -41,6 +42,8 @@ class IpTest(testtools.TestCase):
 
     def test_list_ip_addresses(self, ip_version=None, scope=None,
                                **execute_params):
+        if not os.path.isfile('/bin/ip'):
+            self.skip("'bin/ip' command not found")
         ips = ip.list_ip_addresses(ip_version=ip_version, scope=scope,
                                    **execute_params)
         self.assertIsInstance(ips, tobiko.Selection)
@@ -125,10 +128,12 @@ class IpTest(testtools.TestCase):
                                     **execute_params)
 
     def test_list_namespaces(self, **execute_params):
+        if not os.path.isfile('/bin/ip'):
+            self.skip("'bin/ip' command not found")
         namespaces = ip.list_network_namespaces(**execute_params)
         self.assertIsInstance(namespaces, list)
         for namespace in namespaces:
-            self.assertIsInstance(namespace, six.string_types)
+            self.assertIsInstance(namespace, str)
             self.test_list_ip_addresses(network_namespace=namespace)
 
     def test_list_namespaces_with_centos_server(self):

@@ -18,11 +18,13 @@ from __future__ import absolute_import
 import testtools
 
 import tobiko
+from tobiko.openstack import keystone
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 
 
-class NetworkTestCase(testtools.TestCase):
+@keystone.skip_unless_has_keystone_credentials()
+class NetworkTest(testtools.TestCase):
     """Tests network creation"""
 
     #: Stack of resources with a network with a gateway router
@@ -78,8 +80,9 @@ class NetworkTestCase(testtools.TestCase):
             self.stack.ipv6_gateway_addresses)
 
 
+@keystone.skip_unless_has_keystone_credentials()
 @neutron.skip_if_missing_networking_extensions('net-mtu-write')
-class NetworkWithNetMtuWriteTestCase(NetworkTestCase):
+class NetworkWithNetMtuWriteTest(NetworkTest):
 
     #: Stack of resources with a network with a gateway router
     stack = tobiko.required_setup_fixture(
@@ -89,15 +92,17 @@ class NetworkWithNetMtuWriteTestCase(NetworkTestCase):
         self.assertEqual(self.stack.mtu, self.stack.outputs.mtu)
 
 
+@keystone.skip_unless_has_keystone_credentials()
 @neutron.skip_if_missing_networking_extensions('l3-ha')
 @neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent',
                                            count=2)
-class L3HaNetworkTestCase(NetworkTestCase):
+class L3HaNetworkTest(NetworkTest):
 
     #: Stack of resources with a network with a gateway router
     stack = tobiko.required_setup_fixture(stacks.L3haNetworkStackFixture)
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class FloatingNetworkStackTest(testtools.TestCase):
 
     @stacks.skip_if_missing_floating_network

@@ -20,11 +20,13 @@ import yaml
 
 import tobiko
 from tobiko.shell import sh
+from tobiko.openstack import keystone
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
 from tobiko.tests.functional.openstack.stacks import test_cirros
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class CentosServerStackTest(test_cirros.CirrosServerStackTest):
     """Tests connectivity to Nova instances via floating IPs"""
 

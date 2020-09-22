@@ -21,6 +21,7 @@ import netaddr
 import testtools
 
 import tobiko
+from tobiko.openstack import keystone
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
 
@@ -34,6 +35,7 @@ class KeyPairTest(testtools.TestCase):
         self.assertTrue(os.path.isfile(self.stack.key_file + '.pub'))
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class ClientTest(testtools.TestCase):
 
     #: Stack of resources with a server attached to a floating IP
@@ -117,6 +119,7 @@ class ClientTest(testtools.TestCase):
         self.assertEqual('ACTIVE', server.status)
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class HypervisorTest(testtools.TestCase):
 
     def test_skip_if_missing_hypervisors(self, count=1, should_skip=False,
@@ -152,6 +155,7 @@ class HypervisorTest(testtools.TestCase):
                                               should_skip=True)
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class ServiceTest(testtools.TestCase):
 
     def test_wait_for_services_up(self):

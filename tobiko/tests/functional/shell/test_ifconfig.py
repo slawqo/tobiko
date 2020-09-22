@@ -22,6 +22,7 @@ import tobiko
 from tobiko.shell import ifconfig
 from tobiko.shell import sh
 from tobiko.shell import ssh
+from tobiko.openstack import keystone
 from tobiko.openstack import stacks
 
 
@@ -53,9 +54,11 @@ class IfconfigTest(testtools.TestCase):
     def test_list_ip_addresses_with_ipv6(self):
         self.test_list_ip_addresses(ip_version=6)
 
+    @keystone.skip_unless_has_keystone_credentials()
     def test_list_ip_addresses_with_cirros_server(self):
         self.test_list_ip_addresses(ssh_client=self.cirros_stack.ssh_client)
 
+    @keystone.skip_unless_has_keystone_credentials()
     def test_list_ip_addresses_with_ubuntu_server(self):
         self.test_list_ip_addresses(ssh_client=self.ubuntu_stack.ssh_client)
 

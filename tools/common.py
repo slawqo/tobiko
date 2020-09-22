@@ -51,18 +51,20 @@ def normalize_path(path):
 def execute(command, *args, **kwargs):
     capture_stdout = kwargs.pop('capture_stdout', True)
     universal_newlines = kwargs.pop('universal_newlines', True)
+    check = kwargs.pop('check', True)
 
     if args or kwargs:
         command = command.format(*args, **kwargs)
     command = command.strip()
 
-    if capture_stdout:
-        execute_func = subprocess.check_output
-    else:
-        execute_func = subprocess.check_call
+    stdout = capture_stdout and subprocess.PIPE or None
 
-    return execute_func(['/bin/bash', '-x', '-c', command],
-                        shell=False, universal_newlines=universal_newlines)
+    result = subprocess.run(['/bin/bash', '-x', '-c', command],
+                            stdout=stdout, shell=False,
+                            universal_newlines=universal_newlines)
+    if check:
+        result.check_returncode()
+    return result.stdout
 
 
 def get_posargs(args=None):

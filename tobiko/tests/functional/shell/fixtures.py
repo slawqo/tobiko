@@ -1,10 +1,12 @@
 from __future__ import absolute_import
 
 import tobiko
+from tobiko.openstack import keystone
 from tobiko.openstack import topology
 from tobiko.shell import ip
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class NetworkNamespaceFixture(tobiko.SharedFixture):
 
     network_namespace = None

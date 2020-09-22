@@ -21,6 +21,7 @@ import testtools
 
 import tobiko
 from tobiko import docker
+from tobiko.openstack import keystone
 from tobiko.openstack import topology
 
 
@@ -41,6 +42,7 @@ class DockerNodeFixture(tobiko.SharedFixture):
                         ' '.join(node.name for node in nodes))
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class DockerClientTest(testtools.TestCase):
 
     node = tobiko.required_setup_fixture(DockerNodeFixture)
