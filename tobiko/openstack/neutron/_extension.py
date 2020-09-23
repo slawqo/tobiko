@@ -16,9 +16,11 @@ from __future__ import absolute_import
 import collections
 
 import tobiko
+from tobiko.openstack import keystone
 from tobiko.openstack.neutron import _client
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class NetworkingExtensionsFixture(tobiko.SharedFixture):
 
     client = None

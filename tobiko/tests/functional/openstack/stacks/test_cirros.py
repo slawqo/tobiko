@@ -18,11 +18,13 @@ from __future__ import absolute_import
 import testtools
 
 import tobiko
+from tobiko.openstack import keystone
 from tobiko.openstack import stacks
 from tobiko.shell import ping
 from tobiko.shell import sh
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class CirrosServerStackTest(testtools.TestCase):
     """Tests connectivity to Nova instances via floating IPs"""
 

@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
+
 import netaddr
 import testtools
 
@@ -98,6 +100,8 @@ class PingTest(testtools.TestCase):
 
     def test_ping_hosts(self, ssh_client=None, network_namespace=None,
                         **params):
+        if not os.path.isfile('/sbin/ip'):
+            self.skip("'/sbin/ip' command not found")
         ips = ip.list_ip_addresses(ssh_client=ssh_client,
                                    network_namespace=network_namespace)
         reachable_ips, unrecheable_ips = ping.ping_hosts(

@@ -21,6 +21,7 @@ from tobiko.openstack import keystone
 from tobiko.openstack import octavia
 
 
+@keystone.skip_unless_has_keystone_credentials()
 @keystone.skip_if_missing_service(name='octavia')
 class OctaviaClientAPITest(testtools.TestCase):
 

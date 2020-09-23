@@ -292,35 +292,51 @@ def handle_ping_command_error(error):
             prefix = 'ping: '
             if error.startswith('ping: '):
                 text = error[len(prefix):]
-
-                prefix = 'bad address '
-                if text.startswith(prefix):
-                    address = text[len(prefix):].replace("'", '').strip()
-                    raise _exception.BadAddressPingError(address=address)
-
-                prefix = 'local error: '
-                if text.startswith(prefix):
-                    details = text[len(prefix):].strip()
-                    raise _exception.LocalPingError(details=details)
-
-                prefix = 'sendto: '
-                if text.startswith(prefix):
-                    details = text[len(prefix):].strip()
-                    raise _exception.SendToPingError(details=details)
-
-                prefix = 'unknown host'
-                if text.startswith(prefix):
-                    details = text[len(prefix):].strip()
-                    raise _exception.UnknowHostError(details=details)
-
-                suffix = ': Name or service not known'
-                if text.endswith(suffix):
-                    details = text[:-len(suffix)].strip()
-                    raise _exception.UnknowHostError(details=details)
-
-                suffix = ': No route to host'
-                if text.endswith(suffix):
-                    details = text[:-len(suffix)].strip()
-                    raise _exception.UnknowHostError(details=details)
-
+                handle_ping_bad_address_error(text)
+                handle_ping_local_error(text)
+                handle_ping_send_to_error(text)
+                handle_ping_unknow_host_error(text)
                 raise _exception.PingError(details=text)
+
+
+def handle_ping_bad_address_error(text):
+    prefix = 'bad address '
+    if text.startswith(prefix):
+        address = text[len(prefix):].replace("'", '').strip()
+        raise _exception.BadAddressPingError(address=address)
+
+
+def handle_ping_local_error(text):
+    prefix = 'local error: '
+    if text.startswith(prefix):
+        details = text[len(prefix):].strip()
+        raise _exception.LocalPingError(details=details)
+
+
+def handle_ping_send_to_error(text):
+    prefix = 'sendto: '
+    if text.startswith(prefix):
+        details = text[len(prefix):].strip()
+        raise _exception.SendToPingError(details=details)
+
+
+def handle_ping_unknow_host_error(text):
+    prefix = 'unknown host'
+    if text.startswith(prefix):
+        details = text[len(prefix):].strip()
+        raise _exception.UnknowHostError(details=details)
+
+    suffix = ': Name or service not known'
+    if text.endswith(suffix):
+        details = text[:-len(suffix)].strip()
+        raise _exception.UnknowHostError(details=details)
+
+    suffix = ': No route to host'
+    if text.endswith(suffix):
+        details = text[:-len(suffix)].strip()
+        raise _exception.UnknowHostError(details=details)
+
+    suffix = ': Unknown host'
+    if text.endswith(suffix):
+        details = text[:-len(suffix)].strip().split()[-1]
+        raise _exception.UnknowHostError(details=details)

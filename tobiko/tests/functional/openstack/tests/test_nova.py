@@ -19,6 +19,7 @@ import testtools
 
 import tobiko
 from tobiko.openstack import glance
+from tobiko.openstack import keystone
 from tobiko.openstack import nova
 from tobiko.openstack import tests
 
@@ -27,6 +28,7 @@ class MyServerStack(tests.TestServerCreationStack):
     pass
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class ServerCreationTest(testtools.TestCase):
 
     def test_server_creation(self):

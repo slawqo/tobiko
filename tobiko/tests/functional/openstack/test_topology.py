@@ -18,12 +18,14 @@ from __future__ import absolute_import
 import testtools
 
 import tobiko
+from tobiko.openstack import keystone
 from tobiko.openstack import nova
 from tobiko.openstack import topology
 from tobiko.shell import ping
 from tobiko.shell import sh
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class OpenStackTopologyTest(testtools.TestCase):
 
     topology = tobiko.required_setup_fixture(topology.OpenStackTopology)

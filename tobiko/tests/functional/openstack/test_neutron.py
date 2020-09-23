@@ -20,6 +20,7 @@ import testtools
 
 import tobiko
 from tobiko import config
+from tobiko.openstack import keystone
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
@@ -29,6 +30,7 @@ from tobiko.openstack import tests
 CONF = config.CONF
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class NeutronApiTestCase(testtools.TestCase):
     """Tests network creation"""
 
@@ -112,6 +114,7 @@ class NeutronApiTestCase(testtools.TestCase):
         self.assertIn(agent['id'], {a['id'] for a in agents})
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class PortTest(testtools.TestCase):
 
     #: Stack of resources with a network with a gateway router
@@ -159,6 +162,7 @@ class PortTest(testtools.TestCase):
             self.assertIn(port_address, cidr)
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class AgentTest(testtools.TestCase):
 
     def test_skip_if_missing_agents(self, count=1, should_skip=False,
@@ -191,9 +195,6 @@ class AgentTest(testtools.TestCase):
     def test_skip_if_missing_agents_with_big_count(self):
         self.test_skip_if_missing_agents(count=1000000,
                                          should_skip=True)
-
-
-class NeutronAgentTest(testtools.TestCase):
 
     def test_neutron_agents_are_alive(self):
         agents = tests.test_neutron_agents_are_alive()

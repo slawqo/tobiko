@@ -106,7 +106,8 @@ def log_environ():
 def log_tests_results():
     common.execute('stestr last --all-attachments >> "{log_file}"',
                    log_file=TOX_REPORT_LOG,
-                   capture_stdout=False)
+                   capture_stdout=False,
+                   check=False)
 
 
 def run_test_cases():

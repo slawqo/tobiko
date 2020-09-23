@@ -72,7 +72,9 @@ class PingInterfaceManager(tobiko.SharedFixture):
         usage = get_ping_usage(ssh_client)
         interface = find_ping_interface(usage=usage,
                                         interfaces=self.interfaces)
-        interface = interface or self.default_interface
+        if not interface:
+            LOG.error('Ping interface not found: using the default one')
+            interface = self.default_interface
         LOG.debug('Assign Ping interface %r to SSH client %r',
                   interface, ssh_client)
         self.client_interfaces[ssh_client] = interface
@@ -349,3 +351,38 @@ class InetToolsPingInterface(PingInterface):
         else:
             return ['-w', parameters.deadline,
                     '-W', parameters.deadline]
+
+
+IPUTILS_PING_USAGE = """
+ping: invalid option -- '-'
+Usage: ping [-aAbBdDfhLnOqrRUvV] [-c count] [-i interval] [-I interface]
+            [-m mark] [-M pmtudisc_option] [-l preload] [-p pattern] [-Q tos]
+            [-s packetsize] [-S sndbuf] [-t ttl] [-T timestamp_option]
+            [-w deadline] [-W timeout] [hop1 ...] destination
+""".strip()
+
+
+@ping_interface
+class BsdPingInterface(PingInterface):
+
+    def match_ping_usage(self, usage):
+        return usage.startswith(BSD_PING_USAGE)
+
+    has_fragment_option = False
+
+    def get_deadline_option(self, parameters):
+        return ['-t', parameters.deadline]
+
+
+BSD_PING_USAGE = """
+ping: unrecognized option `--help'
+usage: ping [-AaDdfnoQqRrv] [-c count] [-G sweepmaxsize]
+            [-g sweepminsize] [-h sweepincrsize] [-i wait]
+            [-l preload] [-M mask | time] [-m ttl] [-p pattern]
+            [-S src_addr] [-s packetsize] [-t timeout][-W waittime]
+            [-z tos] host
+       ping [-AaDdfLnoQqRrv] [-c count] [-I iface] [-i wait]
+            [-l preload] [-M mask | time] [-m ttl] [-p pattern] [-S src_addr]
+            [-s packetsize] [-T ttl] [-t timeout] [-W waittime]
+            [-z tos] mcast-group
+""".strip()

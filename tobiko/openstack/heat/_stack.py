@@ -25,6 +25,7 @@ import tobiko
 from tobiko import config
 from tobiko.openstack.heat import _client
 from tobiko.openstack.heat import _template
+from tobiko.openstack import keystone
 
 
 LOG = log.getLogger(__name__)
@@ -58,6 +59,7 @@ def heat_stack_parameters(obj, stack=None):
     return parameters
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class HeatStackFixture(tobiko.SharedFixture):
     """Manages Heat stacks."""
 
