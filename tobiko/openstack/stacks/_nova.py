@@ -19,6 +19,7 @@ import os
 import typing  # noqa
 
 import six
+from oslo_log import log
 
 import tobiko
 from tobiko import config
@@ -32,6 +33,7 @@ from tobiko.shell import sh
 
 
 CONF = config.CONF
+LOG = log.getLogger(__name__)
 
 
 class KeyPairStackFixture(heat.HeatStackFixture):
@@ -266,8 +268,10 @@ class ServerStackFixture(heat.HeatStackFixture):
         tobiko.setup_fixture(self)
         try:
             server = nova.wait_for_server_status(self.server_id, status)
-        except nova.ServerStatusTimeout:
+        except nova.WaitForServerStatusError:
             server = nova.get_server(self.server_id)
+            LOG.debug(f"Server {server.id} status is {server.status} instead "
+                      f"of {status}", exc_info=1)
         if server.status == status:
             return server
         elif status == "ACTIVE":

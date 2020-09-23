@@ -54,8 +54,8 @@ def skip_if_missing_hypervisors(count=1, **params):
                           **params)
 
 
-def get_same_host_hypervisors(server_ids, hypervisor):
-    host_hypervisors = get_servers_hypervisors(server_ids)
+def get_same_host_hypervisors(servers, hypervisor):
+    host_hypervisors = get_servers_hypervisors(servers)
     same_host_server_ids = host_hypervisors.pop(hypervisor, None)
     if same_host_server_ids:
         return {hypervisor: same_host_server_ids}
@@ -63,17 +63,27 @@ def get_same_host_hypervisors(server_ids, hypervisor):
         return {}
 
 
-def get_different_host_hypervisors(server_ids, hypervisor):
-    host_hypervisors = get_servers_hypervisors(server_ids)
+def get_different_host_hypervisors(servers, hypervisor):
+    host_hypervisors = get_servers_hypervisors(servers)
     host_hypervisors.pop(hypervisor, None)
     return host_hypervisors
 
 
-def get_servers_hypervisors(server_ids):
+def get_servers_hypervisors(servers, client=None):
     hypervisors = collections.defaultdict(list)
-    if server_ids:
-        for server_id in (server_ids or list()):
-            server = _client.get_server(server_id)
-            hypervisor = getattr(server, 'OS-EXT-SRV-ATTR:host')
-            hypervisors[hypervisor].append(server_id)
+    for server in (servers or list()):
+        client = _client.nova_client(client)
+        if isinstance(server, str):
+            server_id = server
+            server = _client.get_server(server_id, client=client)
+        else:
+            server_id = server.id
+        hypervisor = get_server_hypervisor(server)
+        hypervisors[hypervisor].append(server_id)
     return hypervisors
+
+
+def get_server_hypervisor(server, client=None):
+    if isinstance(server, str):
+        server = _client.get_server(server, client=client)
+    return getattr(server, 'OS-EXT-SRV-ATTR:host')

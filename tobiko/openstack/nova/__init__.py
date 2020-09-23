@@ -34,9 +34,12 @@ list_services = _client.list_services
 nova_client = _client.nova_client
 NovaClientFixture = _client.NovaClientFixture
 wait_for_server_status = _client.wait_for_server_status
-ServerStatusTimeout = _client.ServerStatusTimeout
+WaitForServerStatusError = _client.WaitForServerStatusError
+WaitForServerStatusTimeout = _client.WaitForServerStatusTimeout
 shutoff_server = _client.shutoff_server
 activate_server = _client.activate_server
+migrate_server = _client.migrate_server
+confirm_resize = _client.confirm_resize
 
 WaitForCloudInitTimeoutError = _cloud_init.WaitForCloudInitTimeoutError
 cloud_config = _cloud_init.cloud_config
@@ -48,6 +51,8 @@ wait_for_cloud_init_status = _cloud_init.wait_for_cloud_init_status
 skip_if_missing_hypervisors = _hypervisor.skip_if_missing_hypervisors
 get_same_host_hypervisors = _hypervisor.get_same_host_hypervisors
 get_different_host_hypervisors = _hypervisor.get_different_host_hypervisors
+get_server_hypervisor = _hypervisor.get_server_hypervisor
+get_servers_hypervisors = _hypervisor.get_servers_hypervisors
 
 find_server_ip_address = _server.find_server_ip_address
 HasServerMixin = _server.HasServerMixin

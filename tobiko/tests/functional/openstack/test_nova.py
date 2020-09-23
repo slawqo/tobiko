@@ -21,8 +21,10 @@ import netaddr
 import testtools
 
 import tobiko
+from tobiko.openstack import keystone
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
+from tobiko.shell import ping
 
 
 class KeyPairTest(testtools.TestCase):
@@ -156,3 +158,63 @@ class ServiceTest(testtools.TestCase):
 
     def test_wait_for_services_up(self):
         nova.wait_for_services_up()
+
+
+class MigrateServerStack(stacks.CirrosServerStackFixture):
+    pass
+
+
+@keystone.skip_unless_has_keystone_credentials()
+@nova.skip_if_missing_hypervisors(count=2)
+class MigrateServerTest(testtools.TestCase):
+
+    stack = tobiko.required_setup_fixture(MigrateServerStack)
+
+    def test_migrate_server(self):
+        """Tests cold migration actually changes hypervisor
+        """
+        server = self.setup_server()
+        initial_hypervisor = nova.get_server_hypervisor(server)
+
+        server = self.migrate_server(server)
+
+        final_hypervisor = nova.get_server_hypervisor(server)
+        self.assertNotEqual(initial_hypervisor, final_hypervisor)
+
+    def test_migrate_server_with_host(self):
+        """Tests cold migration actually ends on target hypervisor
+        """
+        server = self.setup_server()
+        initial_hypervisor = nova.get_server_hypervisor(server)
+        for hypervisor in nova.list_hypervisors(status='enabled', state='up'):
+            if initial_hypervisor != hypervisor.hypervisor_hostname:
+                target_hypervisor = hypervisor.hypervisor_hostname
+                break
+        else:
+            self.skip("Cannot find a valid hypervisor host to migrate server "
+                      "to")
+
+        server = self.migrate_server(server=server, host=target_hypervisor)
+
+        final_hypervisor = nova.get_server_hypervisor(server)
+        self.assertEqual(target_hypervisor, final_hypervisor)
+
+    def setup_server(self):
+        server = self.stack.ensure_server_status('ACTIVE')
+        self.assertEqual('ACTIVE', server.status)
+        return server
+
+    def migrate_server(self, server, **params):
+        self.assertEqual('ACTIVE', server.status)
+        nova.migrate_server(server, **params)
+
+        server = nova.wait_for_server_status(server, 'VERIFY_RESIZE')
+        self.assertEqual('VERIFY_RESIZE', server.status)
+        nova.confirm_resize(server)
+
+        server = nova.wait_for_server_status(
+            server, 'ACTIVE', transient_status={'VERIFY_RESIZE'})
+        self.assertEqual('ACTIVE', server.status)
+
+        ping.assert_reachable_hosts([self.stack.ip_address])
+        return server

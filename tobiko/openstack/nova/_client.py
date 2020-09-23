@@ -108,8 +108,32 @@ def find_service(client=None, unique=False, **params):
         return services.first
 
 
+def get_server_id(server):
+    if isinstance(server, str):
+        return server
+    else:
+        return server.id
+
+
 def get_server(server, client=None, **params):
-    return nova_client(client).servers.get(server, **params)
+    server_id = get_server_id(server)
+    return nova_client(client).servers.get(server_id, **params)
+
+
+def migrate_server(server, client=None, **params):
+    # pylint: disable=protected-access
+    server_id = get_server_id(server)
+    LOG.debug(f"Start server migration (server_id='{server_id}', "
+              f"info={params})")
+    return nova_client(client).servers._action('migrate', server_id,
+                                               info=params)
+
+
+def confirm_resize(server, client=None, **params):
+    server_id = get_server_id(server)
+    LOG.debug(f"Confirm server resize (server_id='{server_id}', "
+              f"info={params})")
+    return nova_client(client).servers.confirm_resize(server_id, **params)
 
 
 MAX_SERVER_CONSOLE_OUTPUT_LENGTH = 1024 * 256
@@ -159,30 +183,52 @@ class HasNovaClientMixin(object):
                                   **params)
 
 
-class ServerStatusTimeout(tobiko.TobikoException):
-    message = ("Server {server_id} didn't change its status to {status} "
-               "status after {timeout} seconds")
+class WaitForServerStatusError(tobiko.TobikoException):
+    message = ("Server {server_id} not changing status from {server_status} "
+               "to {status}")
+
+
+class WaitForServerStatusTimeout(WaitForServerStatusError):
+    message = ("Server {server_id} didn't change its status from "
+               "{server_status} to {status} status after {timeout} seconds")
+
+
+NOVA_SERVER_TRANSIENT_STATUS = {
+    'ACTIVE': ('BUILD', 'SHUTOFF'),
+    'SHUTOFF': ('ACTIVE'),
+    'VERIFY_RESIZE': ('RESIZE'),
+}
 
 
 def wait_for_server_status(server, status, client=None, timeout=None,
-                           sleep_time=None):
+                           sleep_time=None, transient_status=None):
     if timeout is None:
         timeout = 300.
     if sleep_time is None:
         sleep_time = 5.
     start_time = time.time()
+    if transient_status is None:
+        transient_status = NOVA_SERVER_TRANSIENT_STATUS.get(status) or tuple()
     while True:
         server = get_server(server=server, client=client)
         if server.status == status:
             break
 
-        if time.time() - start_time >= timeout:
-            raise ServerStatusTimeout(server_id=server.id,
-                                      status=status,
-                                      timeout=timeout)
+        if server.status not in transient_status:
+            raise WaitForServerStatusError(server_id=server.id,
+                                           server_status=server.status,
+                                           status=status)
 
-        LOG.debug('Waiting for server %r status to get from %r to %r',
-                  server.id, server.status, status)
+        if time.time() - start_time >= timeout:
+            raise WaitForServerStatusTimeout(server_id=server.id,
+                                             server_status=server.status,
+                                             status=status,
+                                             timeout=timeout)
+
+        progress = getattr(server, 'progress', None)
+        LOG.debug(f"Waiting for server {server.id} status to get from "
+                  f"{server.status} to {status} "
+                  f"(progress={progress}%)")
         time.sleep(sleep_time)
     return server
 
@@ -207,6 +253,13 @@ def activate_server(server, client=None, timeout=None, sleep_time=None):
 
     if server.status == 'SHUTOFF':
         client.servers.start(server.id)
+    elif server.status == 'RESIZE':
+        wait_for_server_status(server=server.id, status='VERIFY_RESIZE',
+                               client=client, timeout=timeout,
+                               sleep_time=sleep_time)
+        client.servers.confirm_resize(server)
+    elif server.status == 'VERIFY_RESIZE':
+        client.servers.confirm_resize(server)
     else:
         client.servers.reboot(server.id, reboot_type='HARD')
 
