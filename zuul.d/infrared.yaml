@@ -64,15 +64,6 @@
 
 
 - job:
-    name: tobiko-tox-infrared-ubuntu-bionic
-    parent: tobiko-tox-infrared
-    nodeset: ubuntu-bionic-2-node
-    voting: false
-    description: |
-      Run test cases using tobiko infrared plugin on Ubuntu Bionic
-
-
-- job:
     name: tobiko-tox-infrared-ubuntu-focal
     parent: tobiko-tox-infrared
     nodeset: tobiko-ubuntu-focal-2-node

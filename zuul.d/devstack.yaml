@@ -152,13 +152,6 @@
 
 
 - job:
-    name: tobiko-devstack-functional-ubuntu-bionic
-    parent: tobiko-devstack-functional
-    nodeset: openstack-single-node-bionic
-    voting: false
-
-
-- job:
     name: tobiko-devstack-functional-ubuntu-focal
     parent: tobiko-devstack-functional
     nodeset: openstack-single-node-focal
@@ -221,20 +214,6 @@
     parent: tobiko-devstack-faults
     nodeset: tobiko-three-node-centos-8
     voting: false
-
-
-- job:
-    name: tobiko-devstack-faults-ubuntu-bionic
-    parent: tobiko-devstack-faults
-    nodeset: openstack-three-node-bionic
-    voting: false
-    vars:
-      devstack_services:
-        tls-proxy: true
-    group-vars:
-      subnode:
-        devstack_services:
-          tls-proxy: true
 
 
 - job:
