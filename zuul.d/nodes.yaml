@@ -15,9 +15,9 @@
     name: tobiko-fedora-latest-2-node
     nodes:
       - name: primary
-        label: fedora-31
+        label: fedora-32
       - name: secondary
-        label: fedora-31
+        label: fedora-32
     groups:
       - name: subnodes
         nodes:
