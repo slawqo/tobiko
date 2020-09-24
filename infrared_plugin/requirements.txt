@@ -1,4 +1,4 @@
 # git+https://github.com/redhat-openstack/infrared.git ; python_version < '3.8'
 # git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/23/493623/12 ; python_version >= '3.8'
 
-git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/07/501507/1
+git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/07/501507/3
