@@ -195,7 +195,7 @@ class UploadGranceImageFixture(GlanceImageFixture):
         super(UploadGranceImageFixture, self).__init__(**kwargs)
 
         if container_format:
-            self.container_format = disk_format
+            self.container_format = container_format
         tobiko.check_valid_type(self.container_format, str)
 
         if disk_format:
