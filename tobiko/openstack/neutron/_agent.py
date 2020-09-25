@@ -17,6 +17,10 @@ import tobiko
 from tobiko.openstack.neutron import _client
 
 
+class AgentNotFoundOnHost(tobiko.TobikoException):
+    message = ("Agent {agent_type!s} not found on the host {host!s}")
+
+
 class NetworkingAgentFixture(tobiko.SharedFixture):
 
     client = None

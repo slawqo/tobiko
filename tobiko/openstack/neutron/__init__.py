@@ -45,6 +45,7 @@ NoSuchNetwork = _client.NoSuchNetwork
 NoSuchPort = _client.NoSuchPort
 NoSuchRouter = _client.NoSuchRouter
 NoSuchSubnet = _client.NoSuchSubnet
+AgentNotFoundOnHost = _agent.AgentNotFoundOnHost
 
 new_ipv4_cidr = _cidr.new_ipv4_cidr
 new_ipv6_cidr = _cidr.new_ipv6_cidr
