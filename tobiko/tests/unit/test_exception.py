@@ -210,6 +210,28 @@ class TestHandleMultipleExceptions(unit.TobikoUnitTest):
         ex = self.assertRaises(RuntimeError, run)
         self.assertEqual(a[1], ex)
 
+    def test_handle_multiple_exceptions_with_handle_exceptions(self):
+        a = make_exception(RuntimeError, 'a')
+        b = make_exception(ValueError, 'b')
+        c = make_exception(TypeError, 'c')
+        d = make_exception(IndexError, 'd')
+        inner = make_exception(testtools.MultipleExceptions, b, c)
+
+        handled_exceptions = []
+
+        def handle_exception(ex_type, ex_value, ex_tb):
+            self.assertIsInstance(ex_value, ex_type)
+            handled_exceptions.append((ex_type, ex_value, ex_tb))
+
+        def run():
+            with tobiko.handle_multiple_exceptions(
+                    handle_exception=handle_exception):
+                raise testtools.MultipleExceptions(a, inner, d)
+
+        ex = self.assertRaises(RuntimeError, run)
+        self.assertIs(a[1], ex)
+        self.assertEqual([b, c, d], handled_exceptions)
+
 
 def make_exception(cls, *args, **kwargs):
     try:

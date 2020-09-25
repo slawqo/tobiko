@@ -19,6 +19,7 @@ import sys
 import fixtures
 import mock
 import testtools
+from testtools import content
 
 import tobiko
 from tobiko.tests import unit
@@ -227,6 +228,13 @@ class FailingFixture(tobiko.SharedFixture):
 
     def cleanup_fixture(self):
         raise RuntimeError('raised by cleanup_fixture')
+
+    def getDetails(self):
+        content_object = tobiko.details_content(
+            content_type=content.UTF8_TEXT,
+            content_id=self.fixture_name,
+            get_text=lambda: 'My failure details')
+        return {'failing fixture': content_object}
 
 
 class FailingSetupFixtureWhenFailingTest(unit.TobikoUnitTest):

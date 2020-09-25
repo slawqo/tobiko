@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import json
 import os
 import inspect
 
@@ -99,9 +100,22 @@ def remove_fixture(obj, fixture_id=None, manager=None):
 def setup_fixture(obj, fixture_id=None, manager=None):
     '''Get registered fixture and setup it up'''
     fixture = get_fixture(obj, fixture_id=fixture_id, manager=manager)
-    with _exception.handle_multiple_exceptions():
+    with _exception.handle_multiple_exceptions(
+            handle_exception=handle_setup_error):
         fixture.setUp()
     return fixture
+
+
+def handle_setup_error(ex_type, ex_value, ex_tb):
+    if issubclass(ex_type, fixtures.SetupError):
+        details = ex_value.args[0]
+        if details:
+            details = {k: v.as_text() for k, v in details.items()}
+            pretty_details = json.dumps(details, indent=4, sort_keys=True)
+            LOG.debug(f"Fixture setup error details:\n{pretty_details}\n")
+    else:
+        LOG.exception("Unhandled setup exception",
+                      exc_info=(ex_type, ex_value, ex_tb))
 
 
 def reset_fixture(obj, fixture_id=None, manager=None):

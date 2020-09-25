@@ -123,18 +123,23 @@ def exc_info(reraise=True):
     return info
 
 
+def log_unhandled_exception(exc_type, exc_value, ex_tb):
+    LOG.exception("Unhandled exception",
+                  exc_info=(exc_type, exc_value, ex_tb))
+
+
 @contextlib.contextmanager
-def handle_multiple_exceptions():
+def handle_multiple_exceptions(handle_exception=log_unhandled_exception):
     try:
         yield
-    except testtools.MultipleExceptions as exc:
+    except testtools.MultipleExceptions as ex:
         exc_infos = list_exc_infos()
         if exc_infos:
             for info in exc_infos[1:]:
-                LOG.exception("Unhandled exception:", exc_info=info)
+                handle_exception(*info)
             reraise(*exc_infos[0])
         else:
-            LOG.debug('empty MultipleExceptions: %s', str(exc))
+            LOG.debug(f"Empty MultipleExceptions: '{ex}'")
 
 
 def list_exc_infos(exc_info=None):
