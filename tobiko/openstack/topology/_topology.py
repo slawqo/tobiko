@@ -202,7 +202,11 @@ class OpenStackTopology(tobiko.SharedFixture):
         addresses = set(parse.urlparse(endpoint.url).hostname
                         for endpoint in endpoints)
         for address in addresses:
-            self.add_node(address=address, group='controller')
+            try:
+                self.add_node(address=address, group='controller')
+            except _connection.UreachableSSHServer as ex:
+                LOG.debug(f"Unable to SSH to end point address '{address}'. "
+                          f"{ex}")
 
     def discover_compute_nodes(self):
         for hypervisor in nova.list_hypervisors():

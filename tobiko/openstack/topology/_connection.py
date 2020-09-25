@@ -36,9 +36,11 @@ class SSHConnection(object):
     def __init__(self,
                  address: netaddr.IPAddress,
                  ssh_client: typing.Optional[ssh.SSHClientFixture] = None,
+                 proxy_client: typing.Optional[ssh.SSHClientFixture] = None,
                  failure: typing.Optional[Exception] = None):
         self.address = address
         self.ssh_client = ssh_client
+        self.proxy_client = proxy_client
         self.failure = failure
 
     def __repr__(self) -> str:
@@ -50,6 +52,8 @@ class SSHConnection(object):
         yield 'address', self.address
         if self.ssh_client is not None:
             yield 'ssh_client', self.ssh_client
+        if self.proxy_client is not None:
+            yield 'proxy_client', self.proxy_client
         if self.failure is not None:
             yield 'failure', self.failure
 
@@ -76,11 +80,13 @@ class SSHConnectionManager(tobiko.SharedFixture):
 
     def connect(self,
                 addresses: typing.List[netaddr.IPAddress],
+                proxy_client: typing.Optional[ssh.SSHClientFixture] = None,
                 **connect_parameters) -> ssh.SSHClientFixture:
         if not addresses:
             raise ValueError(f"'addresses' list is empty: {addresses}")
 
-        connections = tobiko.select(self.list_connections(addresses))
+        connections = tobiko.select(
+            self.list_connections(addresses, proxy_client=proxy_client))
         try:
             return connections.with_attributes(is_valid=True).first.ssh_client
         except tobiko.ObjectNotFound:
@@ -89,14 +95,15 @@ class SSHConnectionManager(tobiko.SharedFixture):
         for connection in connections.with_attributes(failure=None):
             # connection not tried yet
             LOG.debug("Establishing SSH connection to "
-                      f"'{connection.address}'")
+                      f"'{connection.address}' (proxy_client={proxy_client})")
             try:
                 ssh_client = self.ssh_client(connection.address,
+                                             proxy_client=proxy_client,
                                              **connect_parameters)
                 ssh_client.connect(retry_count=1, connection_attempts=1)
             except Exception as ex:
                 LOG.debug("Failed establishing SSH connect to "
-                          f"'{connection.address}'.", exc_info=1)
+                          f"'{connection.address}': {ex}")
                 # avoid re-checking again later the same address
                 connection.failure = ex
                 continue
@@ -111,17 +118,27 @@ class SSHConnectionManager(tobiko.SharedFixture):
         raise UreachableSSHServer(addresses=addresses,
                                   failures=failures)
 
-    def list_connections(self, addresses: typing.List[netaddr.IPAddress]) -> \
-            typing.List[SSHConnection]:
+    def list_connections(
+                self, addresses: typing.List[netaddr.IPAddress],
+                proxy_client: typing.Optional[ssh.SSHClientFixture] = None
+            ) -> typing.List[SSHConnection]:
         connections = []
         for address in addresses:
-            connections.append(self.get_connection(address))
+            connection = self.get_connection(address,
+                                             proxy_client=proxy_client)
+            connections.append(connection)
         return connections
 
-    def get_connection(self, address: netaddr.IPAddress):
+    def get_connection(
+                self, address: netaddr.IPAddress,
+                proxy_client: typing.Optional[ssh.SSHClientFixture] = None
+            ) -> SSHConnection:
         tobiko.check_valid_type(address, netaddr.IPAddress)
-        return self._connections.setdefault(address,
-                                            SSHConnection(address))
+        if proxy_client is not None:
+            tobiko.check_valid_type(proxy_client, ssh.SSHClientFixture)
+        connection = SSHConnection(address, proxy_client=proxy_client)
+        return self._connections.setdefault((address, proxy_client),
+                                            connection)
 
     def ssh_client(self, address, username=None, port=None,
                    key_filename=None, **ssh_parameters):
