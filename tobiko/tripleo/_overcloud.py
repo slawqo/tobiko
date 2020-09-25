@@ -149,7 +149,7 @@ class OvercloudHostConfig(tobiko.SharedFixture):
         self._connect_parameters = ssh.gather_ssh_connect_parameters(**kwargs)
 
     def setup_fixture(self):
-        self.hostname = self.hostname or str(overcloud_node_ip_address(
+        self.hostname = str(overcloud_node_ip_address(
             name=self.host, ip_version=self.ip_version,
             network_name=self.network_name))
         self.port = self.port or CONF.tobiko.tripleo.overcloud_ssh_port

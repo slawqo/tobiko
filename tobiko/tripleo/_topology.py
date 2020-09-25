@@ -58,6 +58,7 @@ class TripleoTopology(topology.OpenStackTopology):
                 config = _overcloud.overcloud_host_config(server.name)
                 ssh_client = _overcloud.overcloud_ssh_client(server.name)
                 node = self.add_node(address=config.hostname,
+                                     hostname=server.name,
                                      group='overcloud',
                                      ssh_client=ssh_client)
                 self.discover_overcloud_node_subgroups(node)

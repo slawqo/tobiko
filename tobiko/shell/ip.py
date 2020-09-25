@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 import netaddr
 from oslo_log import log
 
@@ -37,7 +39,9 @@ INETS = {
 }
 
 
-def list_ip_addresses(ip_version=None, scope=None, **execute_params):
+def list_ip_addresses(ip_version: typing.Optional[int] = None,
+                      scope: str = None, **execute_params) -> \
+        typing.List[netaddr.IPAddress]:
     inets = INETS.get(ip_version)
     if inets is None:
         error = "invalid IP version: {!r}".format(ip_version)
@@ -61,12 +65,23 @@ def list_ip_addresses(ip_version=None, scope=None, **execute_params):
                 except (IndexError, ValueError):
                     continue
 
-            address = fields[3]
-            if '/' in address:
-                # Remove netmask prefix length
-                address, _ = address.split('/', 1)
-            ips.append(netaddr.IPAddress(address))
+            address, prefix_len = parse_ip_address(fields[3])
+            if prefix_len >= address.netmask_bits():
+                LOG.warning("Ignore suspicious IP address: "
+                            f"{address}/{prefix_len} ({fields})")
+            else:
+                ips.append(address)
     return ips
+
+
+def parse_ip_address(text: str) -> typing.Tuple[netaddr.IPAddress, int]:
+    if '/' in text:
+        # Remove netmask prefix length
+        address, prefix_len_text = text.split('/', 1)
+        prefix_len = int(prefix_len_text)
+    else:
+        prefix_len = 0
+    return netaddr.IPAddress(address), prefix_len
 
 
 def list_network_namespaces(**execute_params):
