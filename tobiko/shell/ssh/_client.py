@@ -456,16 +456,16 @@ class SSHClientManager(object):
         if isinstance(host, netaddr.IPAddress):
             host = str(host)
 
+        if host_config:
+            hostname = hostname or host_config.hostname
+            port = port or host_config.port
+            username = username or host_config.username
+
         global_host_config = _config.ssh_host_config(host=host,
                                                      config_files=config_files)
         hostname = hostname or global_host_config.hostname
         port = port or global_host_config.port
         username = username or global_host_config.username
-
-        if host_config:
-            hostname = hostname or host_config.hostname
-            port = port or host_config.port
-            username = username or host_config.username
 
         host_key = hostname, port, username, proxy_jump
         client = self.clients.get(host_key, UNDEFINED_CLIENT)
