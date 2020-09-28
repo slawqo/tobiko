@@ -70,8 +70,9 @@
         yaml: true
         yml: true
       test_log_debug: true
-      test_case_timeout: 1800
+      test_case_timeout: 1200
       tobiko_dir: '/opt/stack/tobiko'
+      tox_run_tests_timeout: 3600
       upper_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/openstack/requirements/upper-constraints.txt'
 
     pre-run: playbooks/devstack/pre.yaml

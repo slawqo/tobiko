@@ -15,12 +15,15 @@ tox_step_index: 0
 tox_report_name:
   "{{ test_report_name }}{% if tox_step_index %}_{{ '{:02d}'.format(tox_step_index | int) }}{% endif %}{% if tox_step_name %}_{{ tox_step_name }}{% endif %}{% if tox_envlist %}_{{ tox_envlist }}{% endif %}"
 
+tox_run_tests_timeout: 14400  # 4 hours
+
 tox_constraints_file: '{{ remote_constraints_file }}'
 
 tox_constrain_env:
   TOX_REPORT_DIR: '{{ tox_report_dir }}'
   TOX_REPORT_NAME: '{{ tox_report_name }}'
   TOX_CONSTRAINTS_FILE: '{{ tox_constraints_file }}'
+  TOX_RUN_TESTS_TIMEOUT: '{{ tox_run_tests_timeout | float }}'
 
 tox_succeeded_rc: 0
 tox_failed_rc: 1

@@ -4,5 +4,6 @@ coverage>=4.5.0        # Apache-2.0
 junitxml>=0.7.0        # LGPL-3
 mock>=2.0.0            # BSD
 os-testr>=1.0.0        # Apache-2.0
+psutil>=5.7.2          # BSD
 python-subunit>=1.4.0  # Apache-2.0
 stestr>=3.0.0          # Apache-2.0
