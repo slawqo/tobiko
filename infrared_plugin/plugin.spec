@@ -160,6 +160,10 @@ subparsers:
             type: Value
             help: Python interpreter to be used for executing test cases
             ansible_variable: tox_python
+          run-tests-timeout:
+            type: Value
+            help: Timeout (in seconds) to interrupt test cases execution
+            ansible_variable: tox_run_tests_timeout
           test-report-dir:
             type: Value
             help: directory where to store test report files

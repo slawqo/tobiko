@@ -15,8 +15,12 @@
 from __future__ import absolute_import
 
 import os
+import psutil
+import signal
 import sys
 import subprocess
+
+
 
 
 TOP_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -47,6 +51,8 @@ TOX_REPORT_HTML = os.environ.get(
 TOX_REPORT_XML = os.environ.get(
     'TOX_REPORT_XML', TOX_REPORT_PREFIX + '.xml')
 
+TOX_RUN_TESTS_TIMEOUT = float(os.environ.get('TOX_RUN_TESTS_TIMEOUT') or 0.)
+
 
 def main():
     common.setup_logging()
@@ -65,13 +71,17 @@ def main():
 
 
 def run_tests():
+    setup_timeout()
     cleanup_report_dir()
     log_environ()
 
     succeeded = True
     try:
         run_test_cases()
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError,
+            subprocess.TimeoutExpired,
+            ProcessLookupError) as ex:
+        LOG.error(f"Error while running test cases.\n{ex}")
         succeeded = False
 
     try:
@@ -89,6 +99,35 @@ def run_tests():
             raise
 
     return succeeded
+
+
+def setup_timeout():
+
+    if TOX_RUN_TESTS_TIMEOUT > 0.:
+
+        def handle_timeout(_signum, _frame):
+            LOG.error(
+                f"run_tests.py timeout out after {TOX_RUN_TESTS_TIMEOUT} "
+                "seconds")
+            terminate_childs()
+            raise subprocess.TimeoutExpired("run_tests.py",
+                                            TOX_RUN_TESTS_TIMEOUT)
+
+        signal.setitimer(signal.ITIMER_REAL, TOX_RUN_TESTS_TIMEOUT)
+        signal.signal(signal.SIGALRM, handle_timeout)
+        LOG.debug(f'Run tests timeout set as {TOX_RUN_TESTS_TIMEOUT} seconds')
+
+
+def terminate_childs():
+    current_process = psutil.Process()
+    children = current_process.children(recursive=False)
+    for child in children:
+        LOG.debug(f"Interrupt child process execution (pid={child.pid})")
+        os.kill(child.pid, signal.SIGINT)
+    for child in children:
+        LOG.debug("Wait for top-child process termination "
+                  f"(pid={child.pid})...")
+        os.waitpid(child.pid, 0)
 
 
 def cleanup_report_dir():
