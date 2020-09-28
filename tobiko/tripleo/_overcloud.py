@@ -87,8 +87,13 @@ def overcloud_node_ip_address(ip_version=None, network_name=None, server=None,
     server = server or find_overcloud_node(**params)
     ip_version = ip_version or CONF.tobiko.tripleo.overcloud_ip_version
     network_name = network_name or CONF.tobiko.tripleo.overcloud_network_name
-    return nova.find_server_ip_address(server=server, ip_version=ip_version,
-                                       network_name=network_name)
+    address = nova.find_server_ip_address(server=server,
+                                          ip_version=ip_version,
+                                          network_name=network_name)
+    LOG.debug(f"Got Overcloud node address '{address}' from Undercloud "
+              f"(ip_version={ip_version}, network_name={network_name}, "
+              f"server={server})")
+    return address
 
 
 class OvercloudSshKeyFileFixture(tobiko.SharedFixture):
