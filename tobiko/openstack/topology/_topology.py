@@ -104,12 +104,13 @@ class OpenStackTopologyNode(object):
     _podman_client = None
 
     def __init__(self, topology, name: str, ssh_client: ssh.SSHClientFixture,
-                 addresses: typing.List[netaddr.IPAddress]):
+                 addresses: typing.List[netaddr.IPAddress], hostname: str):
         self._topology = weakref.ref(topology)
         self.name = name
         self.ssh_client = ssh_client
         self.groups: typing.Set[str] = set()
         self.addresses: typing.List[netaddr.IPAddress] = list(addresses)
+        self.hostname: str = hostname
 
     @property
     def topology(self):
@@ -220,10 +221,15 @@ class OpenStackTopology(tobiko.SharedFixture):
                  group: typing.Optional[str] = None,
                  ssh_client: typing.Optional[ssh.SSHClientFixture] = None) \
             -> OpenStackTopologyNode:
-        if hostname:
-            name = node_name_from_hostname(hostname)
-        else:
-            name = None
+        if ssh_client is not None:
+            # detect all global addresses from remote server
+            try:
+                hostname = sh.get_hostname(ssh_client=ssh_client)
+            except Exception:
+                LOG.exception("Unable to get node hostname from "
+                              f"{ssh_client}")
+                ssh_client = None
+        name = hostname and node_name_from_hostname(hostname) or None
 
         addresses: typing.List[netaddr.IPAddress] = []
         if address:
@@ -232,10 +238,6 @@ class OpenStackTopology(tobiko.SharedFixture):
         if hostname:
             # detect more addresses from the hostname
             addresses.extend(self._list_addresses(hostname))
-        if ssh_client is not None:
-            # detect all global addresses from remote server
-            addresses.extend(self._list_addresses_from_host(
-                ssh_client=ssh_client))
         addresses = tobiko.select(remove_duplications(addresses))
 
         try:
@@ -264,15 +266,21 @@ class OpenStackTopology(tobiko.SharedFixture):
             ssh_client = self._ssh_connect(addresses=addresses)
         addresses.extend(self._list_addresses_from_host(ssh_client=ssh_client))
         addresses = tobiko.select(remove_duplications(addresses))
-
         hostname = hostname or sh.get_hostname(ssh_client=ssh_client)
         name = node_name_from_hostname(hostname)
         try:
             node = self._names[name]
         except KeyError:
+            LOG.debug("Add topology node:\n"
+                      f" - name: {name}\n"
+                      f" - hostname: {hostname}\n"
+                      f" - login: {ssh_client.login}\n"
+                      f" - addresses: {addresses}\n")
             self._names[name] = node = self.create_node(name=name,
+                                                        hostname=hostname,
                                                         ssh_client=ssh_client,
                                                         addresses=addresses)
+
         for address in addresses:
             address_node = self._addresses.setdefault(address, node)
             if address_node is not node:

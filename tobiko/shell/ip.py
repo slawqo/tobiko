@@ -65,12 +65,8 @@ def list_ip_addresses(ip_version: typing.Optional[int] = None,
                 except (IndexError, ValueError):
                     continue
 
-            address, prefix_len = parse_ip_address(fields[3])
-            if prefix_len >= address.netmask_bits():
-                LOG.warning("Ignore suspicious IP address: "
-                            f"{address}/{prefix_len} ({fields})")
-            else:
-                ips.append(address)
+            address, _ = parse_ip_address(fields[3])
+            ips.append(address)
     return ips
 
 
