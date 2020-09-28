@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import contextlib
 import collections
 import sys
+import typing  # noqa
 
 from oslo_log import log
 import testtools
@@ -130,16 +131,23 @@ def log_unhandled_exception(exc_type, exc_value, ex_tb):
 
 @contextlib.contextmanager
 def handle_multiple_exceptions(handle_exception=log_unhandled_exception):
+    exception: typing.Optional[typing.Tuple] = None
     try:
         yield
     except testtools.MultipleExceptions as ex:
         exc_infos = list_exc_infos()
         if exc_infos:
+            exception = exc_infos[0]
             for info in exc_infos[1:]:
-                handle_exception(*info)
-            reraise(*exc_infos[0])
+                try:
+                    handle_exception(*info)
+                except Exception:
+                    LOG.exception("Error handling multiple exceptions")
         else:
             LOG.debug(f"Empty MultipleExceptions: '{ex}'")
+
+    if exception is not None:
+        reraise(*exception)
 
 
 def list_exc_infos(exc_info=None):
