@@ -2,5 +2,5 @@
 
 tobiko_dir: "{{ ansible_user_dir }}/{{ zuul.projects['opendev.org/x/tobiko'].src_dir }}"
 
-test_dir: '{{ ansible_user_dir }}/{{ zuul.project.src_dir }}'
+test_dir: '{{ tobiko_dir }}'
 test_collect_dir: '{{ zuul.executor.log_root }}'

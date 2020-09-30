@@ -1,6 +1,0 @@
----
-
-- hosts: tempest
-  roles:
-    - tobiko-zuul
-    - tobiko-collect
