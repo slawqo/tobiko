@@ -23,52 +23,80 @@ from tobiko.tests.faults.containers import container_ops
 LOG = log.getLogger(__name__)
 
 
+@container_ops.skip_unless_has_docker
 class LogFilesTest(testtools.TestCase):
 
     def test_neutron_logs_exist(self):
         groups = ['controller', 'compute', 'networker']
         neutron_nodes = container_ops.get_nodes_for_groups(groups)
         for node in neutron_nodes:
-            containers = container_ops.get_node_neutron_containers(node)
+            # set is used to remove duplicated containers
+            containers = set(container_ops.get_node_neutron_containers(node) +
+                             container_ops.get_node_ovn_containers(node))
             for container in containers:
-                logfile = container_ops.get_container_logfile(node, container)
-                if not logfile:
-                    LOG.warning(f'No logfile has been found in {container} '
+                logfiles = (container_ops.
+                            get_container_logfiles(node, container))
+                if not logfiles:
+                    LOG.warning(f'No logfiles have been found in {container} '
                                 f'container of {node.name} node')
                     continue
-                log_msg = container_ops.log_random_msg(node,
-                                                       container,
-                                                       logfile)
-                node_logfile = '/var/log/containers/neutron/'\
-                               f'{logfile.split("/")[-1]}'
-                self.assertTrue(container_ops.find_msg_in_file(node,
-                                                               node_logfile,
-                                                               log_msg))
+                # logdir is obtained differently for pcs resources
+                pcs_logdir = (container_ops.
+                              get_node_logdir_from_pcs(node, container))
+
+                for logfile in logfiles:
+                    log_msg = container_ops.log_random_msg(node,
+                                                           container,
+                                                           logfile)
+                    if pcs_logdir:
+                        node_logfile = (pcs_logdir +
+                                        f'/{logfile.split("/")[-1]}')
+                    else:
+                        node_logfile = '/var/log/containers/'\
+                                       f'{logfile.split("/")[-2]}/'\
+                                       f'{logfile.split("/")[-1]}'
+                    self.assertTrue(container_ops.find_msg_in_file(
+                        node, node_logfile, log_msg))
 
     def test_neutron_logs_rotate(self):
         groups = ['controller', 'compute', 'networker']
         neutron_nodes = container_ops.get_nodes_for_groups(groups)
         msg = ''
         for node in neutron_nodes:
-            logfiles = []
-            containers = container_ops.get_node_neutron_containers(node)
+            node_logfiles = []
+            # set is used to remove duplicated containers
+            containers = set(container_ops.get_node_neutron_containers(node) +
+                             container_ops.get_node_ovn_containers(node))
+            pcs_logdir_dict = {}
             for container in containers:
-                logfile = container_ops.get_container_logfile(node, container)
-                if not logfile:
-                    LOG.warning(f'No logfile has been found in {container} '
+                cont_logfiles = (container_ops.
+                                 get_container_logfiles(node, container))
+                if not cont_logfiles:
+                    LOG.warning(f'No logfiles have been found in {container} '
                                 f'container of {node.name} node')
                     continue
-                logfiles.append(logfile)
-                if not msg:
-                    msg = container_ops.log_random_msg(node,
-                                                       container,
-                                                       logfile)
-                else:
-                    container_ops.log_msg(node, container, logfile, msg)
+                node_logfiles += cont_logfiles
+                # logdir is obtained differently for pcs resources
+                pcs_logdir = (container_ops.
+                              get_node_logdir_from_pcs(node, container))
+
+                for logfile in cont_logfiles:
+                    pcs_logdir_dict[logfile] = pcs_logdir
+                    if not msg:
+                        msg = container_ops.log_random_msg(node,
+                                                           container,
+                                                           logfile)
+                    else:
+                        container_ops.log_msg(node, container, logfile, msg)
             container_ops.rotate_logs(node)
-            for logfile in logfiles:
-                node_logfile = '/var/log/containers/neutron/'\
-                               f'{logfile.split("/")[-1]}'
+            for logfile in set(node_logfiles):
+                if pcs_logdir_dict.get(logfile):
+                    node_logfile = (pcs_logdir_dict[logfile] +
+                                    f'/{logfile.split("/")[-1]}')
+                else:
+                    node_logfile = '/var/log/containers/'\
+                                   f'{logfile.split("/")[-2]}/'\
+                                   f'{logfile.split("/")[-1]}'
                 self.assertTrue(container_ops.find_msg_in_file(node,
                                                                node_logfile,
                                                                msg,

@@ -24,6 +24,7 @@ from tobiko.tests.faults.containers import container_ops
 LOG = log.getLogger(__name__)
 
 
+@container_ops.skip_unless_has_docker
 class ConfigurationFilesTest(testtools.TestCase):
 
     def check_config(self, node, containers, file_list, service):
@@ -36,6 +37,7 @@ class ConfigurationFilesTest(testtools.TestCase):
         original_dir = f'/var/lib/config-data/{service}'
         changed_dir = f'/var/lib/config-data/puppet-generated/{service}'
         verified = True
+        skip_container_list = ['ovn-dbs-bundle']
         for fname in file_list:
             flink = sh.execute(
                     f'sudo readlink {changed_dir}{fname} || '
@@ -43,10 +45,10 @@ class ConfigurationFilesTest(testtools.TestCase):
                     ssh_client=node.ssh_client,
                     expect_exit_status=None).stdout.strip() or fname
             md5_output = sh.execute(
-                    f'sudo md5sum {changed_dir}{fname} || '
                     f'sudo md5sum {changed_dir}{flink} || '
-                    f'sudo md5sum {original_dir}{fname} || '
-                    f'sudo md5sum {original_dir}{flink}',
+                    f'sudo md5sum {changed_dir}{fname} || '
+                    f'sudo md5sum {original_dir}{flink} ||'
+                    f'sudo md5sum {original_dir}{fname}',
                     ssh_client=node.ssh_client,
                     expect_exit_status=None).stdout.strip().split(' ')
             if md5_output:
@@ -55,14 +57,23 @@ class ConfigurationFilesTest(testtools.TestCase):
             else:
                 md5 = ''
                 verified = False
-                LOG.error(f'{node.name}: {fname} doesn\'t exist in '
+                LOG.error(f'{node.name}: {fname} does not exist in '
                           f'{original_dir} or {changed_dir}')
             for container in containers:
-                container_md5 = sh.execute(
-                        f'sudo podman exec -it -u root {container} md5sum '
-                        f'-z {fname} | awk \'{{print $1}}\'',
-                        ssh_client=node.ssh_client,
-                        expect_exit_status=None).stdout.strip()
+                skip_this_container = False
+                for skip_container in skip_container_list:
+                    if skip_container in container:
+                        skip_this_container = True
+                if skip_this_container:
+                    continue
+                # 'docker' is used here in order to be compatible with old OSP
+                # versions. On versions with podman, 'docker' command is
+                # linked to 'podman'
+                result = sh.execute(
+                        f"sudo docker exec -u root {container} md5sum "
+                        f"{fname} | awk '{{print $1}}'",
+                        ssh_client=node.ssh_client)
+                container_md5 = result.stdout.strip()
                 LOG.debug(f'{fname} in {container} container '
                           f'has {container_md5} md5 hash')
                 if container_md5 != md5:
@@ -76,7 +87,14 @@ class ConfigurationFilesTest(testtools.TestCase):
         groups = ['controller', 'compute', 'networker']
         neutron_nodes = container_ops.get_nodes_for_groups(groups)
         for node in neutron_nodes:
-            containers = container_ops.get_node_neutron_containers(node)
-            config = container_ops.get_node_neutron_config_files(node)
+            containers_neutron = (container_ops.
+                                  get_node_neutron_containers(node))
+            config_neutron = container_ops.get_node_neutron_config_files(node)
             self.assertTrue(
-                    self.check_config(node, containers, config, 'neutron'))
+                    self.check_config(node, containers_neutron,
+                                      config_neutron, 'neutron'))
+            containers_ovn = container_ops.get_node_ovn_containers(node)
+            config_ovn = container_ops.get_node_ovn_config_files()
+            self.assertTrue(
+                    self.check_config(node, containers_ovn,
+                                      config_ovn, 'ovn_controller'))

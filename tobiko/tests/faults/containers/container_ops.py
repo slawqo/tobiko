@@ -38,11 +38,12 @@ def get_filtered_node_containers(node, containers_regex):
     :rtype: list of strings
     """
     filtered_containers = []
-    all_node_containers = sh.execute(
-            'sudo podman ps --format "{{.Names}}"',
-            ssh_client=node.ssh_client,
-            expect_exit_status=None
-            ).stdout.strip().split('\n')
+    # 'docker' is used here in order to be compatible with old OSP versions.
+    # On versions with podman, 'docker' command is linked to 'podman'
+    result = sh.execute(
+            'sudo docker ps --format "{{.Names}}"',
+            ssh_client=node.ssh_client)
+    all_node_containers = result.stdout.strip().split('\n')
     for container in all_node_containers:
         container = container.strip('"')
         if any(re.fullmatch(reg, container) for reg in containers_regex):
@@ -83,28 +84,29 @@ def get_config_files(node, kolla_jsons, conf_ignorelist, scripts_to_check):
     :param conf_ignorelist: Configuration files to ignore
     :type conf_ignorelist: list
     :param scripts_to_check: Sripts to look for configuration files in if those
-        scripts will be found in kolla json files. Dictionary contains script
-        path on the container as the key and the path on the overcloud node
-        as the value.
-    :type scripts_to_check: dict
+        scripts will be found in kolla json files.
+    :type scripts_to_check: list
     :return: List of config files paths within containers
     :rtype: list
     """
     cmds = sh.execute(
-            f'sudo jq \'.command\' {" ".join(kolla_jsons)}',
+            f"sudo jq '.command' {' '.join(kolla_jsons)}",
             ssh_client=node.ssh_client,
             expect_exit_status=None).stdout.strip().split('\n')
     LOG.debug(f'{node.name} run containers with commands {cmds}')
     config_files = set()
     for cmd in cmds:
-        if cmd in scripts_to_check.keys():
+        cmd = cmd.strip('"')
+        if cmd in scripts_to_check:
             LOG.debug(f'{cmd} is recognized as script to search '
                       'for config files in')
+            oc_script_location = sh.execute(
+                    f'sudo find /var/lib | grep {cmd} | grep -v overlay',
+                    ssh_client=node.ssh_client).stdout.strip().split('\n')[0]
             cmd = sh.execute(
-                    f'sudo cat {scripts_to_check[cmd]}',
-                    ssh_client=node.ssh_client,
-                    expect_exit_status=None).stdout.strip()
-        cmd = cmd.strip('"')
+                    f'sudo cat {oc_script_location}',
+                    ssh_client=node.ssh_client).stdout.strip()
+            cmd = cmd.strip('"')
         temp_conf_files = re.findall('--config-file [^ \n]*', cmd)
         for conf_file in temp_conf_files:
             conf_file = conf_file.split(' ')[1]
@@ -124,8 +126,20 @@ def get_node_neutron_containers(node):
     :return: List of neutron containers names
     :rtype: list of strings
     """
+    neutron_containers = ['neutron_((ovs|metadata|l3)_agent|dhcp|api)',
+                          'ovn_metadata_agent']
+    return get_filtered_node_containers(node, neutron_containers)
+
+
+def get_node_ovn_containers(node):
+    """Return list of all ovn containers are available on the node
+
+    :param node: Node to search containers on
+    :type node: class: tobiko.openstack.topology.OpenStackTopologyNode
+    :return: List of neutron containers names
+    :rtype: list of strings
+    """
     neutron_containers = [
-            'neutron_((ovs|metadata|l3)_agent|dhcp|api)',
             'ovn_(controller|metadata_agent)',
             r'ovn-dbs-bundle-(podman|docker)-\d*']
     return get_filtered_node_containers(node, neutron_containers)
@@ -139,12 +153,9 @@ def get_node_neutron_config_files(node):
     :return: List of config files paths within neutron containers
     :rtype: list of strings
     """
-    kolla_jsons = ['/var/lib/kolla/config_files/neutron*',
-                   '/var/lib/kolla/config_files/ovn*']
+    kolla_jsons = ['/var/lib/kolla/config_files/neutron*']
     conf_ignorelist = ['/usr/share/neutron/neutron-dist.conf']
-    scripts_to_check = {'"/neutron_ovs_agent_launcher.sh"':
-                        '/var/lib/container-config-scripts/'
-                        'neutron_ovs_agent_launcher.sh'}
+    scripts_to_check = ['/neutron_ovs_agent_launcher.sh']
     config_files = get_config_files(node,
                                     kolla_jsons,
                                     conf_ignorelist,
@@ -152,8 +163,32 @@ def get_node_neutron_config_files(node):
     return config_files
 
 
-def get_container_logfile(node, container):
-    """ Return the logfile of the process that is executed on the container
+def get_node_ovn_config_files():
+    """Return all relevant ovn config files
+
+    :return: List of config files paths within ovn containers
+    :rtype: list of strings
+    """
+    return ['/etc/openvswitch/default.conf']
+
+
+def get_pacemaker_resource_from_container(container):
+    """Returns pacemaker resource name or None
+
+    :param container: Name of the container
+    :type container: string
+    :return: pacemaker resource name or None
+    :rtype: string
+    """
+    pcs_resource = None
+    resource_candidate = re.search(r'(.*)-(docker|podman)-\d', container)
+    if resource_candidate:
+        pcs_resource = resource_candidate.group(1)
+    return pcs_resource
+
+
+def get_node_logdir_from_pcs(node, container):
+    """ Return the logdir for a given pacemaker resource
 
     :param node: Node the container is running on
     :type node: class: tobiko.openstack.topology.OpenStackTopologyNode
@@ -162,21 +197,99 @@ def get_container_logfile(node, container):
     :return: Path to the logfiles on the container
     :rtype: string
     """
+    pcs_resource = get_pacemaker_resource_from_container(container)
+    if pcs_resource is None:
+        return
+    logdir = None
+    pcs_rsrc_cmd = f'sudo pcs resource show {pcs_resource}'
+    out_lines = sh.execute(pcs_rsrc_cmd,
+                           ssh_client=node.ssh_client).stdout.splitlines()
+    log_files_regex = re.compile(
+        r'^\s*options=.*source-dir=(.*) target-dir=.*-log-files\)$')
+    for line in out_lines:
+        log_files_match = log_files_regex.search(line)
+        if log_files_match:
+            logdir = log_files_match.group(1)
+            if line.endswith('-new-log-files)'):
+                break
+            else:
+                continue
+    return logdir
+
+
+def get_pacemaker_resource_logfiles(node, container):
+    logfiles = []
+    exclude_pid_files = 'ovn-controller.pid'
+    resource = get_pacemaker_resource_from_container(container)
+    pcs_rsrc_cmd = f'sudo pcs resource show {resource}'
+    out_lines = sh.execute(pcs_rsrc_cmd,
+                           ssh_client=node.ssh_client).stdout.splitlines()
+    run_files_regex = re.compile(
+        r'^\s*options=.*source-dir=(.*) target-dir=.*-run-files\)$')
+    for line in out_lines:
+        run_files_match = run_files_regex.search(line)
+        if run_files_match:
+            pid_files = (sh.execute(f'find {run_files_match.group(1)} '
+                                    f'-name *.pid ! -name {exclude_pid_files}',
+                                    ssh_client=node.ssh_client).
+                         stdout.splitlines())
+            break
+    pids = sh.execute(f'sudo cat {" ".join(pid_files)}',
+                      ssh_client=node.ssh_client).stdout.splitlines()
+    for pid in pids:
+        cmd_stdout = sh.execute(f'sudo docker exec -u root {container} '
+                                f'cat /proc/{pid}/cmdline',
+                                ssh_client=node.ssh_client).stdout
+        for log_file in re.findall('--log-file=[^ \n\x00]*', cmd_stdout):
+            logfiles.append(log_file.split('=')[1])
+    return logfiles
+
+
+def get_default_container_logfiles(container):
+    CONTAINER_LOGFILE_DICT_LIST = [
+        {'container_regex': 'ovn_controller',
+         'default_logfiles': ['/var/log/openvswitch/ovn-controller.log']}]
+    for cont_logfile_dict in CONTAINER_LOGFILE_DICT_LIST:
+        if re.fullmatch(cont_logfile_dict['container_regex'], container):
+            return cont_logfile_dict['default_logfiles']
+    raise RuntimeError(f'No default log file found for container {container}')
+
+
+def get_container_logfiles(node, container):
+    """ Return the logfiles of the processes that are executed on the container
+
+    :param node: Node the container is running on
+    :type node: class: tobiko.openstack.topology.OpenStackTopologyNode
+    :param container: Name of the container
+    :type container: string
+    :return: Path to the logfiles on the container
+    :rtype: list
+    """
     cmd = sh.execute(
-            f'sudo podman exec -it -u root {container} cat /run_command',
-            ssh_client=node.ssh_client,
-            expect_exit_status=None).stdout.strip()
-    if ' ' not in cmd:  # probably script as no space in the command
+            f'sudo docker exec -u root {container} cat /run_command',
+            ssh_client=node.ssh_client)
+    cmd_stdout = cmd.stdout.strip()
+    if 'pacemaker_remoted' in cmd_stdout:
+        return get_pacemaker_resource_logfiles(node, container)
+    if ' ' not in cmd_stdout:  # probably script as no space in the command
         cmd = sh.execute(
-                f'sudo podman exec -it -u root {container} cat {cmd}',
-                ssh_client=node.ssh_client,
-                expect_exit_status=None).stdout.strip()
+                f'sudo docker exec -u root {container} cat {cmd_stdout}',
+                ssh_client=node.ssh_client)
+        cmd_stdout = cmd.stdout.strip()
     LOG.debug(f'The following command is executed in {container} container '
-              f'on {node.name} node:\n{cmd}')
-    log_file = re.findall('--log-file=[^ \n]*', cmd)
-    if log_file:
-        log_file = log_file[0].split('=')[1]
-    return log_file
+              f'on {node.name} node:\n{cmd_stdout}')
+
+    log_files = []
+    for log_file in re.findall('--log-file=[^ \n]*', cmd_stdout):
+        log_files.append(log_file.split('=')[1])
+    if log_files:
+        return log_files
+
+    if re.findall(r'--log-file[^=]*$', cmd_stdout):
+        LOG.debug(f'Using default log file for the command: {cmd_stdout}')
+        return get_default_container_logfiles(container)
+    LOG.warning(f'No log found for the command: {cmd_stdout}')
+    return None
 
 
 def log_random_msg(node, container, logfile):
@@ -212,12 +325,8 @@ def log_msg(node, container, logfile, msg):
     :type msg: string
     """
     cmd = f"sh -c 'echo {msg} >> {logfile}'"
-    error = sh.execute(f'sudo podman exec -it -u root {container} {cmd}',
-                       ssh_client=node.ssh_client,
-                       expect_exit_status=None).stderr
-    if error:
-        tobiko.fail(f'Cannot edit {logfile} in {container} on {node.name} '
-                    f'got the following error:\n{error}')
+    sh.execute(f'sudo docker exec -u root {container} {cmd}',
+               ssh_client=node.ssh_client)
 
 
 def find_msg_in_file(node, logfile, message, rotated=False):
@@ -263,9 +372,35 @@ def rotate_logs(node):
         tobiko.skip('No logrotate container has been found')
     else:
         container = containers[0]
-    rotate = sh.execute(f'sudo podman exec -it -u root {container} logrotate '
-                        '-f /etc/logrotate-crond.conf',
-                        ssh_client=node.ssh_client,
-                        expect_exit_status=None)
-    if rotate.stderr:
-        tobiko.fail(f'Failed rotate logs on {node.name} node')
+    sh.execute(f'sudo docker exec -u root {container} logrotate '
+               '-f /etc/logrotate-crond.conf',
+               ssh_client=node.ssh_client)
+
+
+def has_docker():
+    return get_docker_version() is not None
+
+
+skip_unless_has_docker = tobiko.skip_unless(
+    "requires docker on controller nodes", has_docker)
+
+
+def get_docker_version():
+    # use a fixture to save the result
+    return tobiko.setup_fixture(
+        DockerVersionFixture).docker_version
+
+
+class DockerVersionFixture(tobiko.SharedFixture):
+
+    docker_version = None
+
+    def setup_fixture(self):
+        controller = topology.find_openstack_node(group='controller')
+        try:
+            result = sh.execute('docker --version',
+                                ssh_client=controller.ssh_client)
+        except sh.ShellCommandFailed:
+            pass
+        else:
+            self.docker_version = result.stdout
