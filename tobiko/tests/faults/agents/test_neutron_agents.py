@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import re
+import typing  # noqa
 
 from oslo_log import log
 import testtools
@@ -30,8 +31,20 @@ from tobiko.shell import sh
 
 LOG = log.getLogger(__name__)
 
+# typing hits
+AgentType = typing.Dict[str, typing.Any]
+AgentListType = typing.List[AgentType]
 
-class AgentTestMixin(object):
+
+class BaseAgentTest(testtools.TestCase):
+
+    def get_agent_service_name(self, agent_name: str) -> str:
+        os_topology = topology.get_openstack_topology()
+        value = os_topology.get_agent_service_name(agent_name)
+        if not value:
+            self.skip(f"Neutron agent {agent_name} service name not "
+                      f"defined for the topology {os_topology}")
+        return value
 
     def stop_service_on_hosts(self, service_name, hosts):
         '''Stop systemd service on hosts
@@ -44,10 +57,10 @@ class AgentTestMixin(object):
         for host in hosts:
             agent_host = topology.get_openstack_node(hostname=host)
             LOG.debug(f'Trying to stop {service_name} on {host}')
-            sh.execute(
-                "sudo systemctl stop %s" % service_name,
-                ssh_client=agent_host.ssh_client)
-            self.stopped_agent_hosts.append(host)
+            sh.execute(f"sudo systemctl stop {service_name}",
+                       ssh_client=agent_host.ssh_client)
+            self.addCleanup(sh.execute, f"sudo systemctl start {service_name}",
+                            ssh_client=agent_host.ssh_client)
 
     def start_service_on_hosts(self, service_name, hosts):
         '''Start systemd service on hosts
@@ -60,9 +73,8 @@ class AgentTestMixin(object):
         for host in hosts:
             agent_host = topology.get_openstack_node(hostname=host)
             LOG.debug(f'Trying to start {service_name} on {host}')
-            sh.execute(
-                "sudo systemctl start %s" % service_name,
-                ssh_client=agent_host.ssh_client)
+            sh.execute(f"sudo systemctl start {service_name}",
+                       ssh_client=agent_host.ssh_client)
 
     def get_cmd_pids(self, process_name, command_filter, hosts,
                      timeout=120, interval=2, min_pids_per_host=1):
@@ -202,26 +214,15 @@ class AgentTestMixin(object):
         return process_destroyed
 
 
-class DHCPAgentTest(testtools.TestCase, AgentTestMixin):
+class DHCPAgentTest(BaseAgentTest):
 
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
     def setUp(self):
         super(DHCPAgentTest, self).setUp()
-        os_topology = topology.get_openstack_topology()
-        self.agent_service_name = os_topology.get_agent_service_name(
+        self.agent_service_name = self.get_agent_service_name(
             "neutron-dhcp-agent")
-        if not self.agent_service_name:
-            self.skip("Neutron DHCP agent's service name not defined for "
-                      "the topology %s" % os_topology)
-        self.stopped_agent_hosts = []
-
-    def tearDown(self):
-        super(DHCPAgentTest, self).tearDown()
-        # Try to start all agents which may be down during the tests
-        self.start_service_on_hosts(
-            self.agent_service_name, self.stopped_agent_hosts)
 
     def test_stop_dhcp_agent(self):
         '''Test that dnsmasq processes are not broken after DHCP agent restart
@@ -272,7 +273,7 @@ class DHCPAgentTest(testtools.TestCase, AgentTestMixin):
         self.get_cmd_pids("dnsmasq", self.stack.network, dhcp_agents_hosts)
 
 
-class L3AgentTest(testtools.TestCase, AgentTestMixin):
+class L3AgentTest(BaseAgentTest):
 
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosPeerServerStackFixture)
@@ -280,20 +281,9 @@ class L3AgentTest(testtools.TestCase, AgentTestMixin):
 
     def setUp(self):
         super(L3AgentTest, self).setUp()
-        os_topology = topology.get_openstack_topology()
-        self.agent_service_name = os_topology.get_agent_service_name(
+        self.agent_service_name = self.get_agent_service_name(
             "neutron-l3-agent")
-        if not self.agent_service_name:
-            self.skip("Neutron L3 agent's service name not defined for "
-                      "the topology %s" % os_topology)
         self.router_id = self.stack.network_stack.gateway_id
-        self.stopped_agent_hosts = []
-
-    def tearDown(self):
-        super(L3AgentTest, self).tearDown()
-        # Try to start all agents which may be down during the tests
-        self.start_service_on_hosts(
-            self.agent_service_name, self.stopped_agent_hosts)
 
     def wait_for_active_ha_l3_agent(self):
         ha_router_id = self.ha_stack.network_stack.gateway_id
@@ -446,7 +436,7 @@ class L3AgentTest(testtools.TestCase, AgentTestMixin):
                                            l3_agents_hosts))
 
 
-class OvsAgentTest(testtools.TestCase, AgentTestMixin):
+class OvsAgentTest(BaseAgentTest):
 
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
@@ -455,24 +445,12 @@ class OvsAgentTest(testtools.TestCase, AgentTestMixin):
 
     def setUp(self):
         super(OvsAgentTest, self).setUp()
-        os_topology = topology.get_openstack_topology()
-        self.agent_service_name = os_topology.get_agent_service_name(
+        self.agent_service_name = self.get_agent_service_name(
             "neutron-ovs-agent")
-        if not self.agent_service_name:
-            self.skip("Neutron OVS agent's service name not defined for "
-                      "the topology %s" % os_topology)
 
         self.ovs_agents = neutron.list_agents(agent_type=self.agent_type)
         if not self.ovs_agents:
             self.skip("No Neutron OVS agents found in the cloud.")
-
-        self.stopped_agent_hosts = []
-
-    def tearDown(self):
-        super(OvsAgentTest, self).tearDown()
-        # Try to start all agents which may be down during the tests
-        self.start_service_on_hosts(
-            self.agent_service_name, self.stopped_agent_hosts)
 
     def _get_agent_from_host(self, host):
         host_shortname = tobiko.get_short_hostname(host.name)
@@ -495,63 +473,77 @@ class OvsAgentTest(testtools.TestCase, AgentTestMixin):
         self.start_service_on_hosts(self.agent_service_name, [agent['host']])
 
 
-class MetadataAgentTest(testtools.TestCase, AgentTestMixin):
+class MetadataAgentTest(BaseAgentTest):
 
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
     def setUp(self):
         super(MetadataAgentTest, self).setUp()
-        os_topology = topology.get_openstack_topology()
-        self.agent_service_name = os_topology.get_agent_service_name(
+        self.agent_service_name = self.get_agent_service_name(
             "neutron-metadata-agent")
-        if not self.agent_service_name:
-            self.skip("Neutron metadata agent's service name not defined for "
-                      "the topology %s" % os_topology)
-        self.stopped_agent_hosts = []
+        agents = neutron.list_agents(agent_type='Metadata agent')
+        self.hosts = [agent['host'] for agent in agents]
 
-    def tearDown(self):
-        super(MetadataAgentTest, self).tearDown()
-        # Try to start all agents which may be down during the tests
-        self.start_service_on_hosts(
-            self.agent_service_name, self.stopped_agent_hosts)
+    def wait_for_metadata_status(self, count=None, timeout=60.,
+                                 interval=2., **check_params):
+        for attempt in tobiko.retry(timeout=timeout, interval=interval,
+                                    count=count):
+            try:
+                self.assert_metadata_status(**check_params)
+            except self.failureException:
+                attempt.check_limits()
+            else:
+                break
 
-    def is_metadata_reachable(self):
+    def assert_metadata_status(self,
+                               is_reachable: typing.Optional[bool] = None):
+        if is_reachable is not None:
+            self.assert_metadata_is_reachable(is_reachable=is_reachable)
+
+    def assert_metadata_is_reachable(self, is_reachable: bool):
         """Test if metadata agent is acting as proxy to nova metadata
 
         Expected resonse code from metadata agent is "HTTP/1.1 200 OK"
         if the agent is working. "HTTP/1.0 503 Service Unavailable" otherwise.
         All other response codes are not expected.
         """
+        # TODO: fix hard coded IP address here
         curl_output = sh.execute(
-                'curl http://169.254.169.254/latest/meta-data/ -I',
-                ssh_client=self.stack.ssh_client,
-                expect_exit_status=None).stdout.strip()
+            'curl http://169.254.169.254/latest/meta-data/ -I',
+            ssh_client=self.stack.ssh_client,
+            expect_exit_status=None).stdout.strip()
         LOG.debug(f'Metadata return: \n{curl_output}')
         http_status = curl_output.split('\n')[0].split(' ')[1]
-        if http_status == '200':
-            return True
-        elif http_status == '503':
-            return False
+        if is_reachable is True:
+            self.assertEqual('200', http_status,
+                             "Metadata server hasn't been reach from Nova "
+                             f"{curl_output}")
+        elif is_reachable is False:
+            self.assertEqual('503', http_status,
+                             "Metadata server has been reach from Nova "
+                             f"server:\n{curl_output}")
         else:
-            self.fail(f'Unexpected HTTP status {http_status}')
+            raise TypeError("'is_reachable' parameter is not a bool: "
+                            f"{is_reachable!r}")
 
-    def wait_metadata_reachable(self, timeout=60, interval=2):
-        retry = tobiko.retry(timeout=timeout, interval=interval)
-        for _ in retry:
-            if self.is_metadata_reachable():
-                return True
+    def test_metadata_is_reachable_after_service_start(self):
+        self.start_service_on_hosts(self.agent_service_name, self.hosts)
+        self.wait_for_metadata_status(is_reachable=True)
 
-    def test_metadata_restart(self):
-        agents = neutron.list_agents(agent_type='Metadata agent')
-        hosts = [agent['host'] for agent in agents]
-        LOG.debug('Test if metadata agent is reachable before the test')
-        self.assertTrue(self.is_metadata_reachable())
-        LOG.debug('Try to stop metadata agent on all the nodes')
-        self.stop_service_on_hosts(self.agent_service_name, hosts)
-        LOG.debug('Test if metadata agent is not reachable after it stopped')
-        self.assertFalse(self.is_metadata_reachable())
-        LOG.debug('Try to start metadata agent on all the nodes')
-        self.start_service_on_hosts(self.agent_service_name, hosts)
-        LOG.debug('Test if metadata agent is reachable after restart')
-        self.assertTrue(self.wait_metadata_reachable())
+    def test_metadata_is_not_reachable_after_service_stop(self):
+        self.stop_service_on_hosts(self.agent_service_name, self.hosts)
+        self.wait_for_metadata_status(is_reachable=False)
+
+    def test_metadata_is_reachable_after_service_restart(self):
+        # Ensure service is up
+        self.start_service_on_hosts(self.agent_service_name, self.hosts)
+        self.wait_for_metadata_status(is_reachable=True)
+
+        # Ensure the servive gets down
+        self.stop_service_on_hosts(self.agent_service_name, self.hosts)
+        self.wait_for_metadata_status(is_reachable=False)
+
+        # Ensure service gets up
+        self.start_service_on_hosts(self.agent_service_name, self.hosts)
+        self.wait_for_metadata_status(is_reachable=True)
