@@ -238,7 +238,7 @@ def find_msg_in_file(node, logfile, message, rotated=False):
     if rotated:
         suffix = ".1"
     else:
-        suffix = "{,.1}"
+        suffix = ""
     LOG.debug(f'Searching for {message} in {logfile}{suffix} on {node.name}')
     result = sh.execute(f'sudo grep -h {message} {logfile}{suffix}',
                         ssh_client=node.ssh_client,
