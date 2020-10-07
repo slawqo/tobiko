@@ -38,46 +38,64 @@ AgentListType = typing.List[AgentType]
 
 class BaseAgentTest(testtools.TestCase):
 
-    def get_agent_service_name(self, agent_name: str) -> str:
-        os_topology = topology.get_openstack_topology()
-        value = os_topology.get_agent_service_name(agent_name)
-        if not value:
-            self.skip(f"Neutron agent {agent_name} service name not "
-                      f"defined for the topology {os_topology}")
-        return value
+    agent_name: str = '<undefined agent name>'
 
-    def stop_service_on_hosts(self, service_name, hosts):
+    @classmethod
+    def setUpClass(cls):
+        cls.service_name: str = topology.get_agent_service_name(cls.agent_name)
+        cls.agents: AgentListType = \
+            neutron.list_networking_agents(binary=cls.agent_name)
+
+    @property
+    def hosts(self) -> typing.List[str]:
+        return [agent['host'] for agent in self.agents]
+
+    def stop_service(self, hosts: typing.Optional[typing.List[str]] = None):
         '''Stop systemd service on hosts
 
-        :param service_name: Name of the systemd service
-        :type service_name: string
+        It ensures service service is stopped and register systemd service
+        restart as test case cleanup.
+
         :parm hosts: List of hostnames to stop service on
         :type hosts: list of strings
         '''
-        for host in hosts:
-            agent_host = topology.get_openstack_node(hostname=host)
-            LOG.debug(f'Trying to stop {service_name} on {host}')
-            sh.execute(f"sudo systemctl stop {service_name}",
-                       ssh_client=agent_host.ssh_client)
-            self.addCleanup(sh.execute, f"sudo systemctl start {service_name}",
-                            ssh_client=agent_host.ssh_client)
+        hosts = hosts or self.hosts
+        self.assertNotEqual([], hosts, "Host list is empty")
 
-    def start_service_on_hosts(self, service_name, hosts):
+        for host in hosts:
+            ssh_client = topology.get_openstack_node(hostname=host).ssh_client
+            LOG.debug(f"Stopping service '{self.service_name}' on "
+                      f"host '{host}'...")
+            sh.execute(f"systemctl stop {self.service_name}",
+                       ssh_client=ssh_client,
+                       sudo=True)
+            LOG.debug(f"Service '{self.service_name}' stopped on host "
+                      f"'{host}'.")
+            # Schedule auto-restart of service at the end of this test case
+            self.addCleanup(sh.execute, f"systemctl start {self.service_name}",
+                            ssh_client=ssh_client, sudo=True)
+
+    def start_service(self, hosts: typing.Optional[typing.List[str]] = None):
         '''Start systemd service on hosts
 
-        :param service_name: Name of the systemd service
-        :type service_name: string
+        It ensures system service is running.
+
         :parm hosts: List of hostnames to start service on
         :type hosts: list of strings
         '''
-        for host in hosts:
-            agent_host = topology.get_openstack_node(hostname=host)
-            LOG.debug(f'Trying to start {service_name} on {host}')
-            sh.execute(f"sudo systemctl start {service_name}",
-                       ssh_client=agent_host.ssh_client)
+        hosts = hosts or self.hosts
+        self.assertNotEqual([], hosts, "Host list is empty")
 
-    def get_cmd_pids(self, process_name, command_filter, hosts,
-                     timeout=120, interval=2, min_pids_per_host=1):
+        for host in hosts:
+            ssh_client = topology.get_openstack_node(hostname=host).ssh_client
+            LOG.debug(f"Starting service '{self.service_name}' on "
+                      f"host '{host}'...")
+            sh.execute(f"systemctl start {self.service_name}",
+                       ssh_client=ssh_client, sudo=True)
+
+    def get_cmd_pids(self, process_name, command_filter, hosts=None,
+                     timeout=120, interval=2, min_pids_per_host=1) -> \
+            typing.Dict[str, frozenset]:
         '''Search for PIDs that match creteria on requested hosts
 
         :param process_name: Name of the executable of the process
@@ -94,17 +112,19 @@ class BaseAgentTest(testtools.TestCase):
         :return: Dictionary with hostnames as a key and list of PIDs as value
         :rtype: dict
         '''
+        hosts = hosts or self.hosts
+        self.assertNotEqual([], hosts, "Host list is empty")
+
         pids_per_host = {}
-        LOG.debug(f'Search for {process_name} processes on {hosts}')
         for host in hosts:
             LOG.debug(f'Search for {process_name} process on {host}')
             retry = tobiko.retry(timeout=timeout, interval=interval)
             for _ in retry:
                 pids = self.list_pids(host, command_filter, process_name)
                 if len(pids) >= min_pids_per_host:
-                    pids_per_host[host] = pids
-                    LOG.debug(f'{process_name} process has {pids} PIDs list on'
-                              f' {host} host')
+                    pids_per_host[host] = frozenset(pids)
+                    LOG.debug(f"Process '{process_name}' is running "
+                              f"on host '{host}' (PIDs={pids!r})")
                     break
         return pids_per_host
 
@@ -217,13 +237,10 @@ class BaseAgentTest(testtools.TestCase):
 @neutron.skip_if_missing_networking_agents(neutron.DHCP_AGENT)
 class DHCPAgentTest(BaseAgentTest):
 
+    agent_name = neutron.DHCP_AGENT
+
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
-
-    def setUp(self):
-        super(DHCPAgentTest, self).setUp()
-        self.agent_service_name = self.get_agent_service_name(
-            neutron.DHCP_AGENT)
 
     def test_stop_dhcp_agent(self):
         '''Test that dnsmasq processes are not broken after DHCP agent restart
@@ -231,22 +248,21 @@ class DHCPAgentTest(BaseAgentTest):
         Dnsmasq processes should stay alive if DHCP agent is turned off and
         then restarted once DHCP agent is returned to active state.
         '''
-        network_dhcp_agents = neutron.list_dhcp_agent_hosting_network(
+        self.agents = neutron.list_dhcp_agent_hosting_network(
             self.stack.network)
-        dhcp_agents_hosts = [agent['host'] for agent in network_dhcp_agents]
-        network_dnsmasq_pids = self.get_cmd_pids("dnsmasq",
-                                                 self.stack.network,
-                                                 dhcp_agents_hosts)
+        self.assertNotEqual(
+            [], self.agents, "No DHCP agent found serving network "
+            f"'{self.stack.network}'")
+        pids = self.get_cmd_pids("dnsmasq", self.stack.network)
 
-        self.stop_service_on_hosts(self.agent_service_name, dhcp_agents_hosts)
-        self.assertEqual(network_dnsmasq_pids,
-                         self.get_cmd_pids("dnsmasq",
-                                           self.stack.network,
-                                           dhcp_agents_hosts))
+        self.stop_service()
+        self.assertEqual(pids, self.get_cmd_pids("dnsmasq",
+                                                 self.stack.network))
 
-        self.start_service_on_hosts(self.agent_service_name, dhcp_agents_hosts)
-        self.wait_processes_destroyed(self.stack.network, network_dnsmasq_pids)
-        self.get_cmd_pids("dnsmasq", self.stack.network, dhcp_agents_hosts)
+        self.start_service()
+        self.wait_processes_destroyed(self.stack.network, pids)
+        new_pids = self.get_cmd_pids("dnsmasq", self.stack.network)
+        self.assertNotEqual(pids, new_pids)
 
     def test_dhcp_lease_served_when_dhcp_agent_down(self):
         '''Test that DHCP lease is correctly served when DHCP agent is down
@@ -257,25 +273,28 @@ class DHCPAgentTest(BaseAgentTest):
         '''
         ping.ping_until_received(self.stack.ip_address).assert_replied()
 
-        network_dhcp_agents = neutron.list_dhcp_agent_hosting_network(
+        self.agents = neutron.list_dhcp_agent_hosting_network(
             self.stack.network)
-        dhcp_agents_hosts = [agent['host'] for agent in network_dhcp_agents]
-        network_dnsmasq_pids = self.get_cmd_pids("dnsmasq",
-                                                 self.stack.network,
-                                                 dhcp_agents_hosts)
-        self.stop_service_on_hosts(self.agent_service_name, dhcp_agents_hosts)
+        self.assertNotEqual(
+            [], self.agents, "No DHCP agent found serving network "
+            f"'{self.stack.network}'")
+        pids = self.get_cmd_pids("dnsmasq", self.stack.network)
+        self.stop_service()
 
-        nova.shutoff_server(self.stack.resources.server.physical_resource_id)
-        nova.activate_server(self.stack.resources.server.physical_resource_id)
+        nova.shutoff_server(self.stack.server_id)
+        nova.activate_server(self.stack.server_id)
         ping.ping_until_received(self.stack.ip_address).assert_replied()
 
-        self.start_service_on_hosts(self.agent_service_name, dhcp_agents_hosts)
-        self.wait_processes_destroyed(self.stack.network, network_dnsmasq_pids)
-        self.get_cmd_pids("dnsmasq", self.stack.network, dhcp_agents_hosts)
+        self.start_service()
+        self.wait_processes_destroyed(self.stack.network, pids)
+        new_pids = self.get_cmd_pids("dnsmasq", self.stack.network)
+        self.assertNotEqual(pids, new_pids)
 
 
 @neutron.skip_if_missing_networking_agents(neutron.L3_AGENT)
 class L3AgentTest(BaseAgentTest):
+
+    agent_name = neutron.L3_AGENT
 
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosPeerServerStackFixture)
@@ -283,17 +302,20 @@ class L3AgentTest(BaseAgentTest):
 
     def setUp(self):
         super(L3AgentTest, self).setUp()
-        self.agent_service_name = self.get_agent_service_name(
-            neutron.L3_AGENT)
         self.router_id = self.stack.network_stack.gateway_id
 
-    def wait_for_active_ha_l3_agent(self):
+    def wait_for_active_ha_l3_agent(self) -> AgentType:
         ha_router_id = self.ha_stack.network_stack.gateway_id
-        retry = tobiko.retry(timeout=60, interval=2)
-        for _ in retry:
-            l3_agents = neutron.list_l3_agent_hosting_routers(ha_router_id)
-            if len(l3_agents.with_items(ha_state='active')) == 1:
-                return l3_agents
+        for attempt in tobiko.retry(timeout=180., interval=5.):
+            agents = neutron.list_l3_agent_hosting_routers(ha_router_id)
+            try:
+                active_agent = agents.with_items(ha_state='active').unique
+                break
+            except (tobiko.MultipleObjectsFound, tobiko.ObjectNotFound):
+                attempt.check_limits()
+                continue
+
+        return active_agent
 
     @neutron.skip_if_missing_networking_extensions('l3-ha')
     @neutron.skip_if_missing_networking_extensions('l3_agent_scheduler')
@@ -303,91 +325,69 @@ class L3AgentTest(BaseAgentTest):
         Keepalived should keep the same process IDs after L3 agents have been
         restarted
         """
+        self.agents = [self.wait_for_active_ha_l3_agent()]
         ha_router_id = self.ha_stack.network_stack.gateway_id
-        l3_agents = self.wait_for_active_ha_l3_agent()
-        l3_agents_hosts = [agent['host'] for agent in l3_agents]
-        keepalived_pids = self.get_cmd_pids('keepalived',
-                                            ha_router_id,
-                                            l3_agents_hosts,
-                                            min_pids_per_host=2)
-        self.stop_service_on_hosts(self.agent_service_name, l3_agents_hosts)
-        self.start_service_on_hosts(self.agent_service_name, l3_agents_hosts)
-        new_agents = self.wait_for_active_ha_l3_agent()
-        new_agents_hosts = [agent['host'] for agent in new_agents]
-        self.assertEqual(keepalived_pids,
+        pids = self.get_cmd_pids('keepalived', ha_router_id,
+                                 min_pids_per_host=2)
+        self.stop_service()
+        self.start_service()
+        self.agents = [self.wait_for_active_ha_l3_agent()]
+        self.assertEqual(pids,
                          self.get_cmd_pids('keepalived',
                                            ha_router_id,
-                                           new_agents_hosts,
                                            min_pids_per_host=2))
 
     @neutron.skip_if_missing_networking_extensions('l3-ha')
     @neutron.skip_if_missing_networking_extensions('l3_agent_scheduler')
     def test_keepalived_failover(self):
         ha_router_id = self.ha_stack.network_stack.gateway_id
-        l3_agents = self.wait_for_active_ha_l3_agent()
-        l3_agents_hosts = [agent['host'] for agent in l3_agents]
+        self.agents = [self.wait_for_active_ha_l3_agent()]
         keepalived_pids = self.get_cmd_pids('keepalived',
                                             ha_router_id,
-                                            l3_agents_hosts,
                                             min_pids_per_host=2)
         ping.ping_until_received(self.ha_stack.ip_address).assert_replied()
-        active_agent_host = l3_agents.with_items(ha_state='active')[0]['host']
+        active_agent_host = self.agents[0]['host']
+
         # Need to make sure that 'keepalived-state-change' process is UP
         # before we will kill 'keepalived' process as it can break the agent
         # status otherwise. So will check that keepalived pids are equal for
         # two attemts of listing them
         ka_state_cmd = f'neutron-keepalived-state-change.*{ha_router_id}'
-        retry = tobiko.retry(timeout=120, interval=2)
         ka_state_pids = {}
-        for _ in retry:
-            equal = True
+        for _ in tobiko.retry(timeout=120., interval=5.):
             new_ka_state_pids = self.get_cmd_pids('/usr/bin/python',
                                                   ka_state_cmd,
-                                                  l3_agents_hosts,
                                                   min_pids_per_host=2)
-            for host, pids in new_ka_state_pids.items():
-                if host not in ka_state_pids:
-                    equal = False
-                else:
-                    if pids.sort() != ka_state_pids[host].sort():
-                        equal = False
-            if equal:
+            if ka_state_pids == new_ka_state_pids:
                 break
             else:
                 ka_state_pids = new_ka_state_pids
+
         self.kill_pids(active_agent_host, keepalived_pids[active_agent_host])
         ping.ping_until_received(self.ha_stack.ip_address).assert_replied()
+
         # Need to make sure that 'keepalived' is spawned back after it has
         # been killed
-        self.get_cmd_pids('keepalived',
-                          ha_router_id,
-                          l3_agents_hosts,
-                          min_pids_per_host=2)
+        self.assertNotEqual(keepalived_pids,
+                            self.get_cmd_pids('keepalived',
+                                              ha_router_id,
+                                              min_pids_per_host=2))
 
     @neutron.skip_if_missing_networking_extensions('l3_agent_scheduler')
     def test_metadata_haproxy_during_stop_L3_agent(self):
-        network_l3_agents = neutron.list_l3_agent_hosting_routers(
-            self.router_id)
-        l3_agents_hosts = [agent['host'] for agent in network_l3_agents]
-        router_haproxy_pids = self.get_cmd_pids("haproxy",
-                                                self.router_id,
-                                                l3_agents_hosts)
-        self.stop_service_on_hosts(self.agent_service_name, l3_agents_hosts)
+        self.agents = neutron.list_l3_agent_hosting_routers(self.router_id)
+        pids = self.get_cmd_pids("haproxy", self.router_id)
+        self.stop_service()
+
         # Now check if haproxy processes are still run and have got same pids
         # like before dhcp agent's stop
-        self.assertEqual(router_haproxy_pids,
-                         self.get_cmd_pids("haproxy",
-                                           self.router_id,
-                                           l3_agents_hosts))
+        self.assertEqual(pids, self.get_cmd_pids("haproxy", self.router_id))
 
-        self.start_service_on_hosts(self.agent_service_name, l3_agents_hosts)
+        self.start_service()
 
         # And finally check if haproxy processes are still run and have got
         # same pids like at the beginning of the test
-        self.assertEqual(router_haproxy_pids,
-                         self.get_cmd_pids("haproxy",
-                                           self.router_id,
-                                           l3_agents_hosts))
+        self.assertEqual(pids, self.get_cmd_pids("haproxy", self.router_id))
 
     def _is_radvd_process_expected(self):
         stateless_modes = ['slaac', 'dhcpv6-stateless']
@@ -414,140 +414,126 @@ class L3AgentTest(BaseAgentTest):
             self.skip("Radvd process is not expected to be run on router %s" %
                       self.router_id)
 
-        network_l3_agents = neutron.list_l3_agent_hosting_routers(
-            self.router_id)
-        l3_agents_hosts = [agent['host'] for agent in network_l3_agents]
-        router_radvd_pids = self.get_cmd_pids("radvd",
-                                              self.router_id,
-                                              l3_agents_hosts)
-        self.stop_service_on_hosts(self.agent_service_name, l3_agents_hosts)
+        self.agents = neutron.list_l3_agent_hosting_routers(self.router_id)
+        pids = self.get_cmd_pids("radvd", self.router_id)
+        self.stop_service()
         # Now check if radvd processes are still run and have got same pids
         # like before dhcp agent's stop
-        self.assertEqual(router_radvd_pids,
-                         self.get_cmd_pids("radvd",
-                                           self.router_id,
-                                           l3_agents_hosts))
+        self.assertEqual(pids, self.get_cmd_pids("radvd", self.router_id))
 
-        self.start_service_on_hosts(self.agent_service_name, l3_agents_hosts)
+        self.start_service()
 
         # And finally check if dnsmasq processes are still run and have got
         # same pids like at the beginning of the test
-        self.assertEqual(router_radvd_pids,
-                         self.get_cmd_pids("radvd",
-                                           self.router_id,
-                                           l3_agents_hosts))
+        self.assertEqual(pids, self.get_cmd_pids("radvd", self.router_id))
 
 
 @neutron.skip_if_missing_networking_agents(neutron.OPENVSWITCH_AGENT)
-class OvsAgentTest(BaseAgentTest):
+class OpenVSwitchAgentTest(BaseAgentTest):
+
+    agent_name = neutron.OPENVSWITCH_AGENT
 
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
-    agent_type = 'Open vSwitch agent'
-
-    def setUp(self):
-        super(OvsAgentTest, self).setUp()
-        self.agent_service_name = self.get_agent_service_name(
-            neutron.OPENVSWITCH_AGENT)
-
-        self.ovs_agents = neutron.list_agents(agent_type=self.agent_type)
-        if not self.ovs_agents:
-            self.skip("No Neutron OVS agents found in the cloud.")
-
-    def _get_agent_from_host(self, host):
-        host_shortname = tobiko.get_short_hostname(host.name)
-        for agent in self.ovs_agents:
-            if host_shortname == tobiko.get_short_hostname(agent['host']):
+    def get_agent_from_host(self, hypervisor_host):
+        # pylint: disable=not-an-iterable
+        short_name = tobiko.get_short_hostname(hypervisor_host)
+        for agent in self.agents:
+            if short_name == tobiko.get_short_hostname(agent['host']):
                 return agent
         raise neutron.AgentNotFoundOnHost(agent_type=neutron.OPENVSWITCH_AGENT,
-                                          host=host.name)
+                                          host=hypervisor_host)
 
     def test_vm_reachability_during_stop_ovs_agent(self):
-        # Check if vm is reachable before test
+        # Check if vm is reachable before stopping service
+        self.start_service()
         ping.ping_until_received(self.stack.ip_address).assert_replied()
 
-        vm_host = topology.get_openstack_node(
-            hostname=self.stack.hypervisor_host)
-        agent = self._get_agent_from_host(vm_host)
-        self.stop_service_on_hosts(self.agent_service_name, [agent['host']])
-        ping.ping_until_received(
-            self.stack.floating_ip_address).assert_replied()
-        self.start_service_on_hosts(self.agent_service_name, [agent['host']])
+        # Check if vm is reachable after stopping service
+        self.stop_service(hosts=[self.stack.hypervisor_host])
+        ping.ping_until_received(self.stack.ip_address).assert_replied()
 
 
 @neutron.skip_if_missing_networking_agents(neutron.METADATA_AGENT)
 class MetadataAgentTest(BaseAgentTest):
 
+    agent_name = neutron.METADATA_AGENT
+
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
-    def setUp(self):
-        super(MetadataAgentTest, self).setUp()
-        self.agent_service_name = self.get_agent_service_name(
-            neutron.METADATA_AGENT)
-        agents = neutron.list_agents(agent_type='Metadata agent')
-        self.hosts = [agent['host'] for agent in agents]
-
-    def wait_for_metadata_status(self, count=None, timeout=60.,
-                                 interval=2., **check_params):
+    def wait_for_metadata_status(self, count=None, timeout=60., interval=2.,
+                                 is_reachable: typing.Optional[bool] = None):
         for attempt in tobiko.retry(timeout=timeout, interval=interval,
                                     count=count):
-            try:
-                self.assert_metadata_status(**check_params)
-            except self.failureException:
-                attempt.check_limits()
-            else:
-                break
+            if is_reachable is not None:
+                try:
+                    self.assert_metadata_is_reachable(is_reachable)
+                except self.failureException:
+                    # re-raises failureException when reaching retry limits
+                    attempt.check_limits()
+                else:
+                    break
 
-    def assert_metadata_status(self,
-                               is_reachable: typing.Optional[bool] = None):
-        if is_reachable is not None:
-            self.assert_metadata_is_reachable(is_reachable=is_reachable)
-
-    def assert_metadata_is_reachable(self, is_reachable: bool):
+    def assert_metadata_is_reachable(self, is_reachable: bool,
+                                     metadata_url: str = None):
         """Test if metadata agent is acting as proxy to nova metadata
 
-        Expected resonse code from metadata agent is "HTTP/1.1 200 OK"
-        if the agent is working. "HTTP/1.0 503 Service Unavailable" otherwise.
-        All other response codes are not expected.
+        Expected response code from metadata agent is "HTTP/1.1 200 OK"
+        if the agent is working. "HTTP/1.0 503 Service Unavailable" or
+        exit_status=7 otherwise.
+        All other HTTP statuses and exit codes are considered failures.
         """
-        # TODO: fix hard coded IP address here
-        curl_output = sh.execute(
-            'curl http://169.254.169.254/latest/meta-data/ -I',
-            ssh_client=self.stack.ssh_client,
-            expect_exit_status=None).stdout.strip()
-        LOG.debug(f'Metadata return: \n{curl_output}')
-        http_status = curl_output.split('\n')[0].split(' ')[1]
-        if is_reachable is True:
-            self.assertEqual('200', http_status,
-                             "Metadata server hasn't been reach from Nova "
-                             f"{curl_output}")
-        elif is_reachable is False:
-            self.assertEqual('503', http_status,
-                             "Metadata server has been reach from Nova "
-                             f"server:\n{curl_output}")
-        else:
+        if is_reachable not in [True, False]:
             raise TypeError("'is_reachable' parameter is not a bool: "
                             f"{is_reachable!r}")
+        # TODO: fix hard coded IP address
+        metadata_url = (metadata_url or
+                        'http://169.254.169.254/latest/meta-data/')
 
-    def test_metadata_is_reachable_after_service_start(self):
-        self.start_service_on_hosts(self.agent_service_name, self.hosts)
-        self.wait_for_metadata_status(is_reachable=True)
+        try:
+            result = sh.execute(f"curl '{metadata_url}' -I",
+                                ssh_client=self.stack.ssh_client)
+        except sh.ShellCommandFailed as ex:
+            # Cant reach the server
+            self.assertFalse(is_reachable,
+                             "Metadata server not reached from Nova server:\n"
+                             f"exit_status={ex.exit_status}\n"
+                             f"{ex.stderr}")
+            self.assertEqual(7, ex.exit_status,
+                             f"Unexpected Curl exit status: {ex.exit_status}\n"
+                             f"{ex.stderr}")
+        else:
+            # Command has succeeded, let parse the HTTP status
+            curl_output = result.stdout.strip()
+            LOG.debug(f"Remote HTTP server replied:\n{curl_output}")
+            http_status = parse_http_status(curl_output=curl_output)
+            if is_reachable:
+                self.assertEqual(
+                    200, http_status,
+                    "Metadata server not reached from Nova server:\n"
+                    f"{curl_output}")
+            else:
+                self.assertEqual(
+                    503, http_status,
+                    "Metadata server reached from Nova server:\n"
+                    f"{curl_output}")
 
-    def test_metadata_is_not_reachable_after_service_stop(self):
-        self.stop_service_on_hosts(self.agent_service_name, self.hosts)
-        self.wait_for_metadata_status(is_reachable=False)
-
-    def test_metadata_is_reachable_after_service_restart(self):
+    def test_metadata_service_restart(self):
         # Ensure service is up
-        self.start_service_on_hosts(self.agent_service_name, self.hosts)
+        self.start_service()
         self.wait_for_metadata_status(is_reachable=True)
 
         # Ensure the servive gets down
-        self.stop_service_on_hosts(self.agent_service_name, self.hosts)
+        self.stop_service()
         self.wait_for_metadata_status(is_reachable=False)
 
-        # Ensure service gets up
-        self.start_service_on_hosts(self.agent_service_name, self.hosts)
+        # Ensure service gets up again
+        self.start_service()
         self.wait_for_metadata_status(is_reachable=True)
+
+
+def parse_http_status(curl_output: str) -> int:
+    http_head = curl_output.split('\n', 1)[0]
+    return int(http_head.split(' ', 2)[1])
