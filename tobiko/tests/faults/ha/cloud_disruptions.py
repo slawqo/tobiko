@@ -31,9 +31,9 @@ network_disruption = """
  sudo iptables -I INPUT 1 -m state --state RELATED,ESTABLISHED -j ACCEPT &&
  sudo iptables -I INPUT 2 -p tcp -m state --state NEW -m tcp --dport 22 -j \
  ACCEPT &&
- sudo iptables -I INPUT 3 ! -i lo -j REJECT --reject-with icmp-host-prohibited\
-  && sudo iptables -I OUTPUT 1 -p tcp --sport 22 -j ACCEPT &&
- sudo iptables -I OUTPUT 2 ! -o lo -j REJECT --reject-with icmp-host-prohibited
+ sudo iptables -I INPUT 3 ! -i lo -j DROP &&
+ sudo iptables -I OUTPUT 1 -p tcp --sport 22 -j ACCEPT &&
+ sudo iptables -I OUTPUT 2 ! -o lo -j DROP
 """
 
 undisrupt_network = """
