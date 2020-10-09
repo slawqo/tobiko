@@ -28,12 +28,12 @@ soft_reset_method = 'sudo reboot'
 
 network_disruption = """
  sudo iptables-save -f /root/working.iptables.rules &&
- sudo iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT &&
- sudo iptables -A INPUT -p tcp -m state --state NEW -m tcp --dport 22 -j \
+ sudo iptables -I INPUT 1 -m state --state RELATED,ESTABLISHED -j ACCEPT &&
+ sudo iptables -I INPUT 2 -p tcp -m state --state NEW -m tcp --dport 22 -j \
  ACCEPT &&
- sudo iptables -A INPUT ! -i lo -j REJECT --reject-with icmp-host-prohibited &&
- sudo iptables -A OUTPUT -p tcp --sport 22 -j ACCEPT &&
- sudo iptables -A OUTPUT ! -o lo -j REJECT --reject-with icmp-host-prohibited
+ sudo iptables -I INPUT 3 ! -i lo -j REJECT --reject-with icmp-host-prohibited\
+  && sudo iptables -I OUTPUT 1 -p tcp --sport 22 -j ACCEPT &&
+ sudo iptables -I OUTPUT 2 ! -o lo -j REJECT --reject-with icmp-host-prohibited
 """
 
 undisrupt_network = """
