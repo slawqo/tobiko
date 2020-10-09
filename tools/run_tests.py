@@ -21,8 +21,6 @@ import sys
 import subprocess
 
 
-
-
 TOP_DIR = os.path.dirname(os.path.dirname(__file__))
 if TOP_DIR not in sys.path:
     sys.path.insert(0, TOP_DIR)
@@ -53,6 +51,10 @@ TOX_REPORT_XML = os.environ.get(
 
 TOX_RUN_TESTS_TIMEOUT = float(os.environ.get('TOX_RUN_TESTS_TIMEOUT') or 0.)
 
+TOX_PYDEV_DEBUG = bool(
+    os.environ.get('TOX_PYDEV_DEBUG', 'false').lower() in
+    ['true', 'yes', '1'])
+
 
 def main():
     common.setup_logging()
@@ -74,6 +76,10 @@ def run_tests():
     setup_timeout()
     cleanup_report_dir()
     log_environ()
+
+    if TOX_PYDEV_DEBUG:
+        debug_test_cases()
+        return True
 
     succeeded = True
     try:
@@ -147,6 +153,12 @@ def log_tests_results():
                    log_file=TOX_REPORT_LOG,
                    capture_stdout=False,
                    check=False)
+
+
+def debug_test_cases():
+    common.execute_python('-m testtools.run {posargs}',
+                          posargs=common.get_posargs(),
+                          capture_stdout=False)
 
 
 def run_test_cases():

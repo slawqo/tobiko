@@ -22,6 +22,8 @@ import tempfile
 
 
 LOG = logging.getLogger(__name__)
+BASH_EXECUTABLE = '/bin/bash'
+PYTHON_EXECUTABLE = os.environ.get('PYTHON', sys.executable)
 
 
 def get_logger(name):
@@ -52,6 +54,7 @@ def execute(command, *args, **kwargs):
     capture_stdout = kwargs.pop('capture_stdout', True)
     universal_newlines = kwargs.pop('universal_newlines', True)
     check = kwargs.pop('check', True)
+    shell = kwargs.pop('shell', '/bin/bash')
 
     if args or kwargs:
         command = command.format(*args, **kwargs)
@@ -59,7 +62,34 @@ def execute(command, *args, **kwargs):
 
     stdout = capture_stdout and subprocess.PIPE or None
 
-    result = subprocess.run(['/bin/bash', '-x', '-c', command],
+    if shell:
+        command_line = [shell, '-x', '-c', command]
+    else:
+        command_line = shlex.split(command)
+
+    LOG.info(f"Execute: {command_line}")
+    result = subprocess.run(command_line,
+                            stdout=stdout, shell=False,
+                            universal_newlines=universal_newlines)
+    if check:
+        result.check_returncode()
+    return result.stdout
+
+
+def execute_python(command, *args, **kwargs):
+    capture_stdout = kwargs.pop('capture_stdout', True)
+    universal_newlines = kwargs.pop('universal_newlines', True)
+    check = kwargs.pop('check', True)
+    interpreter = kwargs.pop('interpreter', PYTHON_EXECUTABLE)
+
+    if args or kwargs:
+        command = command.format(*args, **kwargs)
+    command = command.strip()
+    command_line = [interpreter] + shlex.split(command)
+
+    stdout = capture_stdout and subprocess.PIPE or None
+    LOG.info(f"Execute: {command_line}")
+    result = subprocess.run(command_line,
                             stdout=stdout, shell=False,
                             universal_newlines=universal_newlines)
     if check:
