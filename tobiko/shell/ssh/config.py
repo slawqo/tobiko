@@ -14,9 +14,12 @@
 from __future__ import absolute_import
 
 import itertools
+import os
 
 from oslo_config import cfg
 from oslo_log import log
+
+LOG = log.getLogger(__name__)
 
 GROUP_NAME = 'ssh'
 OPTIONS = [
@@ -36,9 +39,9 @@ OPTIONS = [
     cfg.ListOpt('config_files',
                 default=['ssh_config'],
                 help="Default user SSH configuration files"),
-    cfg.StrOpt('key_file',
-               default='~/.ssh/id_rsa',
-               help="Default SSH private key file"),
+    cfg.ListOpt('key_file',
+                default=['~/.ssh/id_rsa'],
+                help="Default SSH private key file(s)"),
     cfg.BoolOpt('allow_agent',
                 default=False,
                 help=("Set to False to disable connecting to the "
@@ -79,6 +82,9 @@ def list_options():
 
 
 def setup_tobiko_config(conf):
+    from tobiko.shell.ssh import _client
+    from tobiko.shell.ssh import _ssh_key_file
+
     paramiko_logger = log.getLogger('paramiko')
     if conf.ssh.debug:
         if not paramiko_logger.isEnabledFor(log.DEBUG):
@@ -88,3 +94,10 @@ def setup_tobiko_config(conf):
         if paramiko_logger.isEnabledFor(log.ERROR):
             # Silence paramiko debugging messages
             paramiko_logger.logger.setLevel(log.FATAL)
+
+    ssh_proxy_client = _client.ssh_proxy_client()
+    if ssh_proxy_client:
+        key_file = _ssh_key_file.get_key_file(ssh_client=ssh_proxy_client)
+        if key_file and os.path.isfile(key_file):
+            LOG.info(f"Use SSH proxy server keyfile: {key_file}")
+            conf.ssh.key_file.append(key_file)

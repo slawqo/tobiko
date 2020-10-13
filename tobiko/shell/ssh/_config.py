@@ -17,6 +17,8 @@ from __future__ import absolute_import
 
 import collections
 import os
+import typing  # noqa
+import urllib
 
 from oslo_log import log
 import paramiko
@@ -77,13 +79,35 @@ class SSHConfigFixture(tobiko.SharedFixture):
                     self.config.parse(f)
                 LOG.debug("File %r parsed.", config_file)
 
-    def lookup(self, host=None):
-        host_config = host and self.config.lookup(host) or {}
+    def lookup(self,
+               host: typing.Optional[str] = None,
+               hostname: typing.Optional[str] = None,
+               username: typing.Optional[str] = None,
+               port: typing.Optional[int] = None):
+        if host and ('@' in host or ':' in host):
+            host_url = urllib.parse.urlparse(f"ssh://{host}")
+            hostname = hostname or host_url.hostname or None
+            username = username or host_url.username or None
+            port = port or host_url.port or None
+        else:
+            hostname = hostname or host
+
+        if hostname and self.config:
+            host_config: dict = self.config.lookup(hostname)
+        else:
+            host_config = {}
+
         # remove unsupported directive
         include_files = host_config.pop('include', None)
         if include_files:
             LOG.warning('Ignoring unsupported directive: Include %s',
                         include_files)
+        if hostname:
+            host_config.setdefault('hostname', hostname)
+        if username:
+            host_config.setdefault('user', username)
+        if port:
+            host_config.setdefault('port', port)
         return SSHHostConfig(host=host,
                              ssh_config=self,
                              host_config=host_config,
@@ -117,8 +141,20 @@ class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
 
     @property
     def key_filename(self):
-        return (self.host_config.get('identityfile') or
-                self.default.key_file)
+        key_filename = []
+        host_config_key_files = self.host_config.get('identityfile')
+        if host_config_key_files:
+            for filename in host_config_key_files:
+                if filename:
+                    key_filename.append(tobiko.tobiko_config_path(filename))
+
+        default_key_files = self.default.key_file
+        if default_key_files:
+            for filename in default_key_files:
+                if filename:
+                    key_filename.append(tobiko.tobiko_config_path(filename))
+
+        return key_filename
 
     @property
     def proxy_jump(self):

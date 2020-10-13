@@ -104,10 +104,7 @@ class OvercloudSshKeyFileFixture(tobiko.SharedFixture):
             CONF.tobiko.tripleo.overcloud_ssh_key_filename)
 
     def setup_fixture(self):
-        key_filename = self.key_filename
-        if not os.path.isfile(key_filename):
-            self.setup_key_file()
-            assert os.path.isfile(key_filename)
+        self.setup_key_file()
 
     def setup_key_file(self):
         key_filename = self.key_filename

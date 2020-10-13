@@ -486,8 +486,8 @@ class SSHClientManager(object):
             return proxy_jump
         host_config = host_config or _config.ssh_host_config(
             host=host, config_files=config_files)
-        proxy_host = host_config.proxy_jump
-        return proxy_host and self.get_client(proxy_host) or None
+        proxy_jump = host_config.proxy_jump
+        return proxy_jump and self.get_client(proxy_jump) or None
 
 
 CLIENTS = SSHClientManager()
@@ -505,10 +505,18 @@ def ssh_client(host, port=None, username=None, proxy_jump=None,
 
 def ssh_connect(hostname, username=None, port=None, connection_interval=None,
                 connection_attempts=None, connection_timeout=None,
-                proxy_command=None, proxy_client=None, **parameters):
+                proxy_command=None, proxy_client=None, key_filename=None,
+                **parameters):
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.WarningPolicy())
     login = _command.ssh_login(hostname=hostname, username=username, port=port)
+
+    if key_filename:
+        # Ensures we try enough times to try all keys
+        tobiko.check_valid_type(key_filename, list)
+        connection_attempts = max(connection_attempts or 1,
+                                  len(key_filename),
+                                  1)
 
     for attempt in tobiko.retry(count=connection_attempts,
                                 timeout=connection_timeout,
@@ -533,7 +541,17 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
                            username=username,
                            port=port,
                            sock=proxy_sock,
+                           key_filename=key_filename,
                            **parameters)
+        except ValueError as ex:
+            if (str(ex) == 'q must be exactly 160, 224, or 256 bits long' and
+                    key_filename):
+                # Must try without the first key
+                LOG.debug("Retry connecting with the next key")
+                key_filename = key_filename[1:] + [key_filename[0]]
+                continue
+            else:
+                raise
         except (EOFError, socket.error, socket.timeout,
                 paramiko.SSHException) as ex:
             attempt.check_limits()
