@@ -18,6 +18,7 @@ import typing  # noqa
 
 from oslo_log import log
 
+from tobiko.openstack import neutron
 from tobiko.openstack import topology
 from tobiko.tripleo import _overcloud
 from tobiko.tripleo import _undercloud
@@ -29,10 +30,10 @@ LOG = log.getLogger(__name__)
 class TripleoTopology(topology.OpenStackTopology):
 
     agent_to_service_name_mappings = {
-        'neutron-dhcp-agent': 'tripleo_neutron_dhcp',
-        'neutron-l3-agent': 'tripleo_neutron_l3_agent',
-        'neutron-ovs-agent': 'tripleo_neutron_ovs_agent',
-        'neutron-metadata-agent': 'tripleo_neutron_metadata_agent',
+        neutron.DHCP_AGENT: 'tripleo_neutron_dhcp',
+        neutron.L3_AGENT:  'tripleo_neutron_l3_agent',
+        neutron.OPENVSWITCH_AGENT: 'tripleo_neutron_ovs_agent',
+        neutron.METADATA_AGENT: 'tripleo_neutron_metadata_agent'
     }
 
     has_containers = True
@@ -114,8 +115,7 @@ def is_number(text: str):
 
 def setup_tripleo_topology():
     if _undercloud.has_undercloud() or _overcloud.has_overcloud():
-        topology.set_default_openstack_topology_class(
-            'tobiko.tripleo.topology.TripleoTopology')
+        topology.set_default_openstack_topology_class(TripleoTopology)
 
 
 def get_ip_to_nodes_dict(openstack_nodes=None):

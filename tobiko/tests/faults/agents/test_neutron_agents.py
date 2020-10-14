@@ -223,7 +223,7 @@ class DHCPAgentTest(BaseAgentTest):
     def setUp(self):
         super(DHCPAgentTest, self).setUp()
         self.agent_service_name = self.get_agent_service_name(
-            "neutron-dhcp-agent")
+            neutron.DHCP_AGENT)
 
     def test_stop_dhcp_agent(self):
         '''Test that dnsmasq processes are not broken after DHCP agent restart
@@ -284,7 +284,7 @@ class L3AgentTest(BaseAgentTest):
     def setUp(self):
         super(L3AgentTest, self).setUp()
         self.agent_service_name = self.get_agent_service_name(
-            "neutron-l3-agent")
+            neutron.L3_AGENT)
         self.router_id = self.stack.network_stack.gateway_id
 
     def wait_for_active_ha_l3_agent(self):
@@ -449,7 +449,7 @@ class OvsAgentTest(BaseAgentTest):
     def setUp(self):
         super(OvsAgentTest, self).setUp()
         self.agent_service_name = self.get_agent_service_name(
-            "neutron-ovs-agent")
+            neutron.OPENVSWITCH_AGENT)
 
         self.ovs_agents = neutron.list_agents(agent_type=self.agent_type)
         if not self.ovs_agents:
@@ -460,7 +460,7 @@ class OvsAgentTest(BaseAgentTest):
         for agent in self.ovs_agents:
             if host_shortname == tobiko.get_short_hostname(agent['host']):
                 return agent
-        raise neutron.AgentNotFoundOnHost(agent_type="neutron-ovs-agent",
+        raise neutron.AgentNotFoundOnHost(agent_type=neutron.OPENVSWITCH_AGENT,
                                           host=host.name)
 
     def test_vm_reachability_during_stop_ovs_agent(self):
@@ -485,7 +485,7 @@ class MetadataAgentTest(BaseAgentTest):
     def setUp(self):
         super(MetadataAgentTest, self).setUp()
         self.agent_service_name = self.get_agent_service_name(
-            "neutron-metadata-agent")
+            neutron.METADATA_AGENT)
         agents = neutron.list_agents(agent_type='Metadata agent')
         self.hosts = [agent['host'] for agent in agents]
 

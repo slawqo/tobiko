@@ -28,6 +28,7 @@ from tobiko import podman
 from tobiko.shell import ip
 from tobiko.shell import sh
 from tobiko.shell import ssh
+from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import keystone
 from tobiko.openstack.topology import _address
@@ -37,16 +38,6 @@ from tobiko.openstack.topology import _exception
 
 
 LOG = log.getLogger(__name__)
-
-
-DEFAULT_TOPOLOGY_CLASS = (
-    'tobiko.openstack.topology._topology.OpenStackTopology')
-
-
-def get_openstack_topology(topology_class=None):
-    # type: (typing.Any) -> OpenStackTopology
-    topology_class = topology_class or get_default_openstack_topology_class()
-    return tobiko.setup_fixture(topology_class)
 
 
 def list_openstack_nodes(topology=None, group=None, hostnames=None, **kwargs):
@@ -87,15 +78,27 @@ def list_openstack_node_groups(topology=None):
     return topology.groups
 
 
-def get_default_openstack_topology_class():
-    # type: () -> typing.Any
+def get_default_openstack_topology_class() -> typing.Type:
     return DEFAULT_TOPOLOGY_CLASS
 
 
-def set_default_openstack_topology_class(topology_class):
+def set_default_openstack_topology_class(topology_class: typing.Type):
     # pylint: disable=global-statement
+    if not issubclass(topology_class, OpenStackTopology):
+        raise TypeError(f"'{topology_class}' is not subclass of "
+                        f"'{OpenStackTopology}'")
     global DEFAULT_TOPOLOGY_CLASS
     DEFAULT_TOPOLOGY_CLASS = topology_class
+
+
+def get_agent_service_name(agent_name: str) -> str:
+    topology_class = get_default_openstack_topology_class()
+    return topology_class.get_agent_service_name(agent_name)
+
+
+class UnknowOpenStackServiceNameError(tobiko.TobikoException):
+    message = ("Unknown service name for agent name '{agent_name}' and "
+               "topology class '{topology_class}'")
 
 
 class OpenStackTopologyNode(object):
@@ -153,10 +156,10 @@ class OpenStackTopology(tobiko.SharedFixture):
     config = tobiko.required_setup_fixture(_config.OpenStackTopologyConfig)
 
     agent_to_service_name_mappings = {
-        'neutron-dhcp-agent': 'devstack@q-dhcp',
-        'neutron-l3-agent': 'devstack@q-l3',
-        'neutron-ovs-agent': 'devstack@q-agt',
-        'neutron-metadata-agent': 'devstack@q-meta',
+        neutron.DHCP_AGENT: 'devstack@q-dhcp',
+        neutron.L3_AGENT: 'devstack@q-l3',
+        neutron.OPENVSWITCH_AGENT: 'devstack@q-agt',
+        neutron.METADATA_AGENT: 'devstack@q-meta'
     }
 
     has_containers = False
@@ -183,11 +186,14 @@ class OpenStackTopology(tobiko.SharedFixture):
         self._groups.clear()
         self._addresses.clear()
 
-    def get_agent_service_name(self, agent_name):
+    @classmethod
+    def get_agent_service_name(cls, agent_name: str) -> str:
         try:
-            return self.agent_to_service_name_mappings[agent_name]
+            return cls.agent_to_service_name_mappings[agent_name]
         except KeyError:
-            return None
+            pass
+        raise UnknowOpenStackServiceNameError(agent_name=agent_name,
+                                              topology_class=cls)
 
     def discover_nodes(self):
         self.discover_configured_nodes()
@@ -389,6 +395,20 @@ class OpenStackTopology(tobiko.SharedFixture):
         return _address.list_addresses(obj,
                                        ip_version=self.ip_version,
                                        ssh_config=True)
+
+
+def get_openstack_topology(topology_class: typing.Type = None) -> \
+        OpenStackTopology:
+    if topology_class:
+        if not issubclass(topology_class, OpenStackTopology):
+            raise TypeError(f"'{topology_class}' is not subclass of "
+                            f"'{OpenStackTopology}'")
+    else:
+        topology_class = get_default_openstack_topology_class()
+    return tobiko.setup_fixture(topology_class)
+
+
+DEFAULT_TOPOLOGY_CLASS = OpenStackTopology
 
 
 def node_name_from_hostname(hostname):

@@ -20,6 +20,8 @@ from tobiko.openstack.topology import _topology
 NoSuchOpenStackTopologyNodeGroup = _exception.NoSuchOpenStackTopologyNodeGroup
 NoSuchOpenStackTopologyNode = _exception.NoSuchOpenStackTopologyNode
 
+UnknowOpenStackServiceNameError = _topology.UnknowOpenStackServiceNameError
+get_agent_service_name = _topology.get_agent_service_name
 get_openstack_topology = _topology.get_openstack_topology
 get_openstack_node = _topology.get_openstack_node
 find_openstack_node = _topology.find_openstack_node
