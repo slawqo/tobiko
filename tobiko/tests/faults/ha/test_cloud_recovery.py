@@ -92,13 +92,13 @@ class DisruptTripleoNodesTest(testtools.TestCase):
     #     overcloud_health_checks()
     #     cloud_disruptions.network_undisrupt_controllers_non_main_vip()
 
-    @neutron.skip_if_missing_networking_agents(binary='ovn-controller')
+    @neutron.skip_if_missing_networking_agents(neutron.OVN_CONTROLLER)
     def test_reset_ovndb_master_resource(self):
         overcloud_health_checks()
         cloud_disruptions.reset_ovndb_master_resource()
         overcloud_health_checks()
 
-    @neutron.skip_if_missing_networking_agents(binary='ovn-controller')
+    @neutron.skip_if_missing_networking_agents(neutron.OVN_CONTROLLER)
     def test_reset_ovndb_master_container(self):
         overcloud_health_checks()
         cloud_disruptions.reset_ovndb_master_container()

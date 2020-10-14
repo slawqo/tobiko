@@ -214,6 +214,7 @@ class BaseAgentTest(testtools.TestCase):
         return process_destroyed
 
 
+@neutron.skip_if_missing_networking_agents(neutron.DHCP_AGENT)
 class DHCPAgentTest(BaseAgentTest):
 
     #: Resources stack with Nova server to send messages to
@@ -273,6 +274,7 @@ class DHCPAgentTest(BaseAgentTest):
         self.get_cmd_pids("dnsmasq", self.stack.network, dhcp_agents_hosts)
 
 
+@neutron.skip_if_missing_networking_agents(neutron.L3_AGENT)
 class L3AgentTest(BaseAgentTest):
 
     #: Resources stack with Nova server to send messages to
@@ -436,6 +438,7 @@ class L3AgentTest(BaseAgentTest):
                                            l3_agents_hosts))
 
 
+@neutron.skip_if_missing_networking_agents(neutron.OPENVSWITCH_AGENT)
 class OvsAgentTest(BaseAgentTest):
 
     #: Resources stack with Nova server to send messages to
@@ -473,6 +476,7 @@ class OvsAgentTest(BaseAgentTest):
         self.start_service_on_hosts(self.agent_service_name, [agent['host']])
 
 
+@neutron.skip_if_missing_networking_agents(neutron.METADATA_AGENT)
 class MetadataAgentTest(BaseAgentTest):
 
     #: Resources stack with Nova server to send messages to

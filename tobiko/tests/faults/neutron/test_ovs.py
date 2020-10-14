@@ -27,8 +27,8 @@ from tobiko.shell import sh
 from tobiko.tripleo import undercloud
 
 
-@neutron.skip_if_missing_networking_agents(binary='neutron-openvswitch-agent')
-@neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent')
+@neutron.skip_if_missing_networking_agents(neutron.OPENVSWITCH_AGENT)
+@neutron.skip_if_missing_networking_agents(neutron.L3_AGENT)
 class OpenvswitchTest(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)

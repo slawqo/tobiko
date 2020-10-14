@@ -94,8 +94,7 @@ class NetworkWithNetMtuWriteTest(NetworkTest):
 
 @keystone.skip_unless_has_keystone_credentials()
 @neutron.skip_if_missing_networking_extensions('l3-ha')
-@neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent',
-                                           count=2)
+@neutron.skip_if_missing_networking_agents(neutron.L3_AGENT, 2)
 class L3HaNetworkTest(NetworkTest):
 
     #: Stack of resources with a network with a gateway router
