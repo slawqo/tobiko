@@ -58,14 +58,14 @@ def test_server_creation_and_shutoff(stack=TestServerCreationStack):
 
 def test_servers_creation(stack=TestServerCreationStack,
                           number_of_servers=2) -> \
-        typing.List[_nova.ServerStackFixture]:
+        tobiko.Selection[_nova.ServerStackFixture]:
 
     initial_servers_ids = {server.id for server in nova.list_servers()}
     pid = os.getpid()
     fixture_obj = tobiko.get_fixture_class(stack)
 
     # Get list of server stack instances
-    fixtures = tobiko.Selection(
+    fixtures: tobiko.Selection[_nova.ServerStackFixture] = tobiko.select(
         tobiko.get_fixture(fixture_obj, fixture_id=f'{pid}-{i}')
         for i in range(number_of_servers or 1))
 

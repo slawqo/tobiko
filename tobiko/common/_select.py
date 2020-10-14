@@ -13,10 +13,15 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing  # noqa
+
 from tobiko import _exception
 
 
-class Selection(list):
+T = typing.TypeVar('T')
+
+
+class Selection(list, typing.Generic[T]):
 
     def with_attributes(self, **attributes):
         return self.create(
@@ -33,18 +38,18 @@ class Selection(list):
         return self.create(filter_by_items(self, exclude=True, **items))
 
     @classmethod
-    def create(cls, objects):
+    def create(cls, objects: typing.Iterable[T]):
         return cls(objects)
 
     @property
-    def first(self):
+    def first(self) -> T:
         if self:
             return self[0]
         else:
             raise ObjectNotFound()
 
     @property
-    def unique(self):
+    def unique(self) -> T:
         if len(self) > 1:
             raise MultipleObjectsFound(list(self))
         else:
@@ -54,7 +59,7 @@ class Selection(list):
         return '{!s}({!r})'.format(type(self).__name__, list(self))
 
 
-def select(objects):
+def select(objects: typing.Iterable[T]) -> Selection[T]:
     return Selection.create(objects)
 
 

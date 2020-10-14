@@ -329,18 +329,19 @@ class OpenStackTopology(tobiko.SharedFixture):
             self._groups[group] = nodes = self.create_group()
             return nodes
 
-    def create_group(self) -> tobiko.Selection:
+    @staticmethod
+    def create_group() -> tobiko.Selection[OpenStackTopologyNode]:
         return tobiko.Selection()
 
-    def get_group(self, group) -> tobiko.Selection:
+    def get_group(self, group) -> tobiko.Selection[OpenStackTopologyNode]:
         try:
             return self._groups[group]
         except KeyError as ex:
             raise _exception.NoSuchOpenStackTopologyNodeGroup(
                 group=group) from ex
 
-    def get_groups(self, groups) -> tobiko.Selection:
-        nodes = tobiko.Selection()
+    def get_groups(self, groups) -> tobiko.Selection[OpenStackTopologyNode]:
+        nodes: tobiko.Selection[OpenStackTopologyNode] = tobiko.Selection()
         for group in groups:
             nodes.extend(self.get_group(group))
         return nodes
