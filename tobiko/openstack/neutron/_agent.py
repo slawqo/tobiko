@@ -13,8 +13,18 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing  # noqa
+
 import tobiko
 from tobiko.openstack.neutron import _client
+
+
+# Agent binary names
+DHCP_AGENT = 'neutron-dhcp-agent'
+L3_AGENT = 'neutron-l3-agent'
+METADATA_AGENT = 'neutron-metadata-agent'
+OPENVSWITCH_AGENT = 'neutron-openvswitch-agent'
+OVN_CONTROLLER = 'neutron-ovn-controller'
 
 
 class AgentNotFoundOnHost(tobiko.TobikoException):
@@ -23,27 +33,19 @@ class AgentNotFoundOnHost(tobiko.TobikoException):
 
 class NetworkingAgentFixture(tobiko.SharedFixture):
 
-    client = None
     agents = None
 
     def setup_fixture(self):
-        self.setup_client()
-        self.get_agents()
-
-    def setup_client(self):
-        self.client = _client.get_neutron_client()
-
-    def get_agents(self):
-        self.agents = _client.list_agents(client=self.client)
+        self.agents = _client.list_agents()
 
 
-def get_networking_agents(**attributes):
-    agents = tobiko.setup_fixture(NetworkingAgentFixture).agents
-    return agents.with_items(**attributes)
+def list_networking_agents(**attributes):
+    return tobiko.setup_fixture(
+        NetworkingAgentFixture).agents.with_items(**attributes)
 
 
 def missing_networking_agents(count=1, **params):
-    agents = get_networking_agents(**params)
+    agents = list_networking_agents(**params)
     return max(0, count - len(agents))
 
 
@@ -51,7 +53,15 @@ def has_networking_agents(count=1, **params):
     return not missing_networking_agents(count=count, **params)
 
 
-def skip_if_missing_networking_agents(count=1, **params):
+DecoratorType = typing.Callable[[typing.Union[typing.Callable, typing.Type]],
+                                typing.Union[typing.Callable, typing.Type]]
+
+
+def skip_if_missing_networking_agents(binary: typing.Optional[str] = None,
+                                      count: int = 1, **params) -> \
+        DecoratorType:
+    if binary is not None:
+        params['binary'] = binary
     message = "missing {return_value!r} agent(s)"
     if params:
         message += " with {!s}".format(

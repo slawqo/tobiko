@@ -20,6 +20,16 @@ from tobiko.openstack.neutron import _extension
 from tobiko.openstack.neutron import _port
 
 
+DHCP_AGENT = _agent.DHCP_AGENT
+L3_AGENT = _agent.L3_AGENT
+METADATA_AGENT = _agent.METADATA_AGENT
+OPENVSWITCH_AGENT = _agent.OPENVSWITCH_AGENT
+OVN_CONTROLLER = _agent.OVN_CONTROLLER
+AgentNotFoundOnHost = _agent.AgentNotFoundOnHost
+skip_if_missing_networking_agents = _agent.skip_if_missing_networking_agents
+list_networking_agents = _agent.list_networking_agents
+
+
 NeutronClientFixture = _client.NeutronClientFixture
 ServiceUnavailable = _client.ServiceUnavailable
 neutron_client = _client.neutron_client
@@ -45,7 +55,6 @@ NoSuchNetwork = _client.NoSuchNetwork
 NoSuchPort = _client.NoSuchPort
 NoSuchRouter = _client.NoSuchRouter
 NoSuchSubnet = _client.NoSuchSubnet
-AgentNotFoundOnHost = _agent.AgentNotFoundOnHost
 
 new_ipv4_cidr = _cidr.new_ipv4_cidr
 new_ipv6_cidr = _cidr.new_ipv6_cidr
@@ -56,8 +65,6 @@ has_networking_extensions = _extension.has_networking_extensions
 
 skip_if_missing_networking_extensions = (
     _extension.skip_if_missing_networking_extensions)
-skip_if_missing_networking_agents = _agent.skip_if_missing_networking_agents
-get_networking_agents = _agent.get_networking_agents
 
 find_port_ip_address = _port.find_port_ip_address
 list_port_ip_addresses = _port.list_port_ip_addresses
