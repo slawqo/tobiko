@@ -138,14 +138,21 @@ def assert_containers_running(group, expected_containers, full_name=True):
                     format(container, node.name))
             # if container exists, check it is running
             else:
-                container_state = \
-                    container_attrs.container_state.values.item()
-                if not container_state == 'running':
+                # only one running container is expected
+                container_running_attrs = container_attrs.query(
+                    'container_state=="running"')
+                if container_running_attrs.empty:
                     failures.append(
                         'expected container {} is not running on node {} , '
-                        'its state is {}! : \n\n'.format(container,
-                                                         node.name,
-                                                         container_state))
+                        'its state is {}! : \n\n'.format(
+                            container, node.name,
+                            container_attrs.container_state.values.item()))
+                elif len(container_running_attrs) > 1:
+                    failures.append(
+                        'only one running container {} was expected on '
+                        'node {}, but got {}! : \n\n'.format(
+                            container, node.name,
+                            len(container_running_attrs)))
 
     if failures:
         tobiko.fail('container states mismatched:\n{!s}', '\n'.join(failures))
