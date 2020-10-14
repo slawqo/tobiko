@@ -32,7 +32,7 @@ def list_addresses(obj,
                    ip_version: typing.Optional[int] = None,
                    port: typing.Union[int, str, None] = None,
                    ssh_config: bool = False) -> \
-        typing.List[netaddr.IPAddress]:
+        tobiko.Selection[netaddr.IPAddress]:
     if isinstance(obj, tobiko.Selection):
         addresses = obj
     elif isinstance(obj, netaddr.IPAddress):
@@ -58,7 +58,7 @@ def list_host_addresses(host: str,
                         ip_version: typing.Optional[int] = None,
                         port: typing.Union[int, str, None] = None,
                         ssh_config: bool = False) -> \
-        typing.List[netaddr.IPAddress]:
+        tobiko.Selection[netaddr.IPAddress]:
 
     if not port:
         if ssh_config:
@@ -66,7 +66,7 @@ def list_host_addresses(host: str,
         else:
             port = 0
 
-    addresses = []
+    addresses: tobiko.Selection[netaddr.IPAddress] = tobiko.Selection()
     hosts = [host]
     resolved = set()
     while hosts:

@@ -41,7 +41,7 @@ INETS = {
 
 def list_ip_addresses(ip_version: typing.Optional[int] = None,
                       scope: str = None, **execute_params) -> \
-        typing.List[netaddr.IPAddress]:
+        tobiko.Selection[netaddr.IPAddress]:
     inets = INETS.get(ip_version)
     if inets is None:
         error = "invalid IP version: {!r}".format(ip_version)
@@ -49,7 +49,7 @@ def list_ip_addresses(ip_version: typing.Optional[int] = None,
 
     output = execute_ip(['-o', 'address', 'list'], **execute_params)
 
-    ips = tobiko.Selection()
+    ips: tobiko.Selection[netaddr.IPAddress] = tobiko.Selection()
     if output:
         for line in output.splitlines():
             fields = line.strip().split()
