@@ -18,9 +18,11 @@ import netaddr
 import testtools
 
 import tobiko
+from tobiko.shell import files
 from tobiko.shell import ping
 from tobiko.shell import ip
 from tobiko.openstack import neutron
+from tobiko.openstack import nova
 from tobiko.openstack import stacks
 
 
@@ -98,3 +100,32 @@ class CentosServerL3HAPortTestWith(PortTest):
 class UbuntuServerL3HAPortTestWith(PortTest):
     #: Resources stack with floating IP and Nova server
     stack = tobiko.required_setup_fixture(stacks.L3haUbuntuServerStackFixture)
+
+
+class PortLogsStack(stacks.CirrosServerStackFixture):
+    pass
+
+
+@neutron.skip_unless_is_ovs()
+class PortLogs(testtools.TestCase):
+
+    stack = tobiko.required_setup_fixture(PortLogsStack)
+
+    def test_nova_port_notification(self):
+        expected_logfile = '/var/log/containers/neutron/server.log'
+        logfile = files.ClusterLogFile(expected_logfile)
+        try:
+            logfile.add_group('controller')
+        except files.LogFileNotFound as ex:
+            tobiko.skip(str(ex))
+        logfile.find(f'Nova.+event.+response.*{self.stack.server_id}')
+        nova.shutoff_server(self.stack.server_id)
+        nova.activate_server(self.stack.server_id)
+        new_events = logfile.find_new()
+        self.assertEqual(len(new_events), 2)
+        self.assertTrue(
+                any('network-vif-unplugged' in event for event in new_events))
+        self.assertTrue(
+                any('network-vif-plugged' in event for event in new_events))
+        self.assertTrue(
+                all(self.stack.port_id in event for event in new_events))

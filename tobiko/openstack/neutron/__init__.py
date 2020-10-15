@@ -28,6 +28,8 @@ OVN_CONTROLLER = _agent.OVN_CONTROLLER
 OVN_METADATA_AGENT = _agent.OVN_METADATA_AGENT
 AgentNotFoundOnHost = _agent.AgentNotFoundOnHost
 skip_if_missing_networking_agents = _agent.skip_if_missing_networking_agents
+skip_unless_is_ovn = _agent.skip_unless_is_ovn
+skip_unless_is_ovs = _agent.skip_unless_is_ovs
 list_networking_agents = _agent.list_networking_agents
 
 

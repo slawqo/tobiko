@@ -69,3 +69,13 @@ def skip_if_missing_networking_agents(binary: typing.Optional[str] = None,
             ', '.join("{!s}={!r}".format(k, v) for k, v in params.items()))
     return tobiko.skip_if(message, missing_networking_agents, count=count,
                           **params)
+
+
+def skip_unless_is_ovn():
+    '''Skip the test if ovn_controller agent does not exist'''
+    return skip_if_missing_networking_agents(OVN_CONTROLLER)
+
+
+def skip_unless_is_ovs():
+    '''Skip the test if openvswitch agent does not exist'''
+    return skip_if_missing_networking_agents(OPENVSWITCH_AGENT)
