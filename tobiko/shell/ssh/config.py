@@ -61,7 +61,7 @@ OPTIONS = [
                  help=("Minimal seconds to wait between every "
                        "failed SSH connection attempt")),
     cfg.IntOpt('connection_timeout',
-               default=600.,
+               default=200.,
                help=("Time before stopping retrying establishing an SSH "
                      "connection")),
     cfg.StrOpt('proxy_jump',
