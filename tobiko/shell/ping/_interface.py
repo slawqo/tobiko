@@ -89,8 +89,8 @@ def get_ping_usage(ssh_client):
     if usage:
         LOG.debug('Got ping usage text')
     else:
-        LOG.warning("Unable to get usage message from ping command:\n"
-                    "%s", result.details)
+        raise ValueError("Unable to get usage message from ping command:\n"
+                         "%s" % result.details)
     return usage
 
 

@@ -46,7 +46,6 @@ class PortTest(testtools.TestCase):
         network_subnets = self.stack.network_stack.network_details['subnets']
         self.assertEqual(set(network_subnets), set(port_subnets))
 
-    @tobiko.retry_test_case(interval=30.)
     def test_ping_subnet_gateways(self):
         network_id = self.stack.network_stack.network_id
         subnets = neutron.list_subnets(network_id=network_id)
