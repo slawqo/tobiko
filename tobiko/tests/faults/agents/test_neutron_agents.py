@@ -533,6 +533,13 @@ class MetadataAgentTest(BaseAgentTest):
         self.start_service()
         self.wait_for_metadata_status(is_reachable=True)
 
+    def test_vm_reachability_when_metadata_agent_is_down(self):
+        self.stop_service()
+        self.wait_for_metadata_status(is_reachable=False)
+        ping.ping_until_received(self.stack.ip_address).assert_replied()
+        self.start_service()
+        self.wait_for_metadata_status(is_reachable=True)
+
 
 def parse_http_status(curl_output: str) -> int:
     http_head = curl_output.split('\n', 1)[0]
