@@ -21,11 +21,6 @@ from tobiko.tests.faults.ha import test_cloud_recovery
 
 LOG = log.getLogger(__name__)
 
-hard_reset_method = 'sudo chmod o+w /proc/sysrq-trigger;' \
-               'sudo echo b > /proc/sysrq-trigger'
-
-soft_reset_method = 'sudo reboot'
-
 network_disruption = """
  sudo iptables-save -f /root/working.iptables.rules &&
  sudo iptables -I INPUT 1 -m state --state RELATED,ESTABLISHED -j ACCEPT &&
@@ -56,15 +51,12 @@ def network_undisrupt_node(node_name, disrupt_method=undisrupt_network):
     disrupt_node(node_name, disrupt_method=disrupt_method)
 
 
-def reset_node(node_name, disrupt_method=hard_reset_method):
-    disrupt_node(node_name, disrupt_method=disrupt_method)
-
-
-def disrupt_node(node_name, disrupt_method=hard_reset_method):
+def disrupt_node(node_name, disrupt_method=network_disruption):
 
     # reboot all controllers and wait for ssh Up on them
     # hard reset is simultaneous while soft is sequential
-    # method : method of disruptino to use : reset | network_disruption
+    # method : method of disruption to use : network_disruption |
+    # container_restart
 
     # using ssh_client.connect we use a fire and forget reboot method
     node = get_node(node_name)
@@ -72,6 +64,19 @@ def disrupt_node(node_name, disrupt_method=hard_reset_method):
     LOG.info('disrupt exec: {} on server: {}'.format(disrupt_method,
                                                      node.name))
     check_overcloud_node_responsive(node)
+
+
+def reboot_node(node_name, wait=True, reboot_method=sh.hard_reset_method):
+
+    # reboot a node and wait for ssh Up on them
+    # hard reset is simultaneous while soft is sequential
+    # method : method of disruption to use : reset | network_disruption
+
+    # using ssh_client.connect we use a fire and forget reboot method
+    node = get_node(node_name)
+    sh.reboot_host(ssh_client=node.ssh_client, wait=wait, method=reboot_method)
+    LOG.info('disrupt exec: {} on server: {}'.format(reboot_method,
+                                                     node.name))
 
 
 def check_overcloud_node_responsive(node):
@@ -89,21 +94,21 @@ def network_disrupt_all_controller_nodes(disrupt_method=network_disruption,
                                  exclude_list=exclude_list)
 
 
-def reset_all_controller_nodes(disrupt_method=hard_reset_method,
+def reset_all_controller_nodes(disrupt_method=sh.hard_reset_method,
                                exclude_list=None):
     disrupt_all_controller_nodes(disrupt_method=disrupt_method,
                                  exclude_list=exclude_list)
 
 
-def reset_all_controller_nodes_sequentially(disrupt_method=hard_reset_method,
-                                            sequentially=True,
-                                            exclude_list=None):
+def reset_all_controller_nodes_sequentially(
+        disrupt_method=sh.hard_reset_method,
+        sequentially=True, exclude_list=None):
     disrupt_all_controller_nodes(disrupt_method=disrupt_method,
                                  sequentially=sequentially,
                                  exclude_list=exclude_list)
 
 
-def disrupt_all_controller_nodes(disrupt_method=hard_reset_method,
+def disrupt_all_controller_nodes(disrupt_method=sh.hard_reset_method,
                                  sequentially=False, exclude_list=None):
     # reboot all controllers and wait for ssh Up on them
     # method : method of disruptino to use : reset | network_disruption
@@ -120,13 +125,44 @@ def disrupt_all_controller_nodes(disrupt_method=hard_reset_method,
         nodes = [node for node in nodes if node.name not in exclude_list]
 
     for controller in nodes:
-        # using ssh_client.connect we use a fire and forget reboot method
-        controller.ssh_client.connect().exec_command(disrupt_method)
-        LOG.info('disrupt exec: {} on server: {}'.format(disrupt_method,
-                                                         controller.name))
-        tobiko.cleanup_fixture(controller.ssh_client)
-        if sequentially:
+        if disrupt_method in (sh.hard_reset_method, sh.soft_reset_method):
+            reboot_node(controller.name, wait=sequentially,
+                        reboot_method=disrupt_method)
+        else:
+            # using ssh_client.connect we use a fire and forget reboot method
+            controller.ssh_client.connect().exec_command(disrupt_method)
+            LOG.info('disrupt exec: {} on server: {}'.format(disrupt_method,
+                                                             controller.name))
+            tobiko.cleanup_fixture(controller.ssh_client)
+            if sequentially:
+                check_overcloud_node_responsive(controller)
+    if not sequentially:
+        for controller in topology.list_openstack_nodes(group='controller'):
             check_overcloud_node_responsive(controller)
+
+
+def reboot_all_controller_nodes(reboot_method=sh.hard_reset_method,
+                                sequentially=False, exclude_list=None):
+    # reboot all controllers and wait for ssh Up on them
+    # method : method of disruptino to use : hard or soft reset
+    # hard reset is simultaneous while soft is sequential
+    # exclude_list = list of nodes to NOT reset
+
+    controlplane_groups = ['controller', 'messaging', 'database', 'networker']
+    actual_controlplane_groups = tripleo_topology.actual_node_groups(
+        controlplane_groups)
+    nodes = topology.list_openstack_nodes(group=actual_controlplane_groups)
+
+    # remove excluded nodes from reset list
+    if exclude_list:
+        nodes = [node for node in nodes if node.name not in exclude_list]
+
+    for controller in nodes:
+        sh.reboot_host(ssh_client=controller.ssh_client, wait=sequentially,
+                       method=reboot_method)
+        LOG.info('reboot exec: {} on server: {}'.format(reboot_method,
+                                                        controller.name))
+        tobiko.cleanup_fixture(controller.ssh_client)
     if not sequentially:
         for controller in topology.list_openstack_nodes(group='controller'):
             check_overcloud_node_responsive(controller)
@@ -156,7 +192,7 @@ def delete_evacuable_tagged_image():
             glance.delete_image(img.id)
 
 
-def disrupt_controller_main_vip(disrupt_method=hard_reset_method,
+def disrupt_controller_main_vip(disrupt_method=sh.hard_reset_method,
                                 inverse=False):
 
     # reset the controller holding the main vip (os_auth_url)
@@ -166,23 +202,31 @@ def disrupt_controller_main_vip(disrupt_method=hard_reset_method,
 
     # find the node holding that resource via :
 
-    main_vim_controller = get_main_vip_controller(main_vip)
+    main_vip_controller = get_main_vip_controller(main_vip)
 
-    if inverse:
-        # inverse the nodes reset selection
-        disrupt_all_controller_nodes(disrupt_method=disrupt_method,
-                                     exclude_list=[main_vim_controller])
+    if disrupt_method in (sh.hard_reset_method, sh.soft_reset_method):
+        if inverse:
+            reboot_all_controller_nodes(reboot_method=disrupt_method,
+                                        exclude_list=[main_vip_controller])
+        else:
+            reboot_node(main_vip_controller, reboot_method=disrupt_method)
     else:
-        # get that node's ssh_client and reset it
-        disrupt_node(main_vim_controller, disrupt_method=disrupt_method)
+        if inverse:
+            # inverse the nodes reset selection
+            disrupt_all_controller_nodes(disrupt_method=disrupt_method,
+                                         exclude_list=[main_vip_controller])
+        else:
+            # get that node's ssh_client and reset it
+            disrupt_node(main_vip_controller, disrupt_method=disrupt_method)
 
 
 def reset_controller_main_vip():
-    disrupt_controller_main_vip(disrupt_method=hard_reset_method)
+    disrupt_controller_main_vip(disrupt_method=sh.hard_reset_method)
 
 
 def reset_controllers_non_main_vip():
-    disrupt_controller_main_vip(disrupt_method=hard_reset_method, inverse=True)
+    disrupt_controller_main_vip(disrupt_method=sh.hard_reset_method,
+                                inverse=True)
 
 
 def network_disrupt_controller_main_vip():
@@ -210,12 +254,13 @@ def reset_all_compute_nodes(hard_reset=False):
     # reboot all computes and wait for ssh Up on them
     # hard reset is simultaneous while soft is sequential
     if hard_reset:
-        reset_method = hard_reset_method
+        reset_method = sh.hard_reset_method
     else:
-        reset_method = soft_reset_method
+        reset_method = sh.soft_reset_method
     for compute in topology.list_openstack_nodes(group='compute'):
         # using ssh_client.connect we use a fire and forget reboot method
-        compute.ssh_client.connect().exec_command(reset_method)
+        sh.reboot_host(ssh_client=compute.ssh_client, wait=False,
+                       method=reset_method)
         LOG.info('reboot exec:  {} on server: {}'.format(reset_method,
                                                          compute.name))
         tobiko.cleanup_fixture(compute.ssh_client)
@@ -228,7 +273,9 @@ def reset_all_compute_nodes(hard_reset=False):
 
 def reset_ovndb_master_resource():
     """restart ovndb pacemaker resource"""
-    disrupt_node('controller-0', disrupt_method=ovn_db_pcs_resource_restart)
+    node = pacemaker.get_overcloud_nodes_running_pcs_resource(
+        resource_type='(ocf::ovn:ovndb-servers):', resource_state='Master')[0]
+    disrupt_node(node, disrupt_method=ovn_db_pcs_resource_restart)
 
 
 def reset_ovndb_master_container():
@@ -245,10 +292,13 @@ def reset_ovndb_master_container():
                                    container_host=node)
 
 
-def evac_failover_compute(compute_host, failover_type=hard_reset_method):
+def evac_failover_compute(compute_host, failover_type=sh.hard_reset_method):
     """disrupt a compute, to trigger it's instance-HA evacuation
     failover_type=hard_reset_method etc.."""
-    reset_node(compute_host, disrupt_method=failover_type)
+    if failover_type in (sh.hard_reset_method, sh.soft_reset_method):
+        reboot_node(compute_host, reboot_method=failover_type)
+    else:
+        disrupt_node(compute_host, disrupt_method=failover_type)
 
 
 def check_iha_evacuation(failover_type=None, vm_type=None):
@@ -291,12 +341,12 @@ def check_iha_evacuation(failover_type=None, vm_type=None):
 
 
 def check_iha_evacuation_evac_image_vm():
-    check_iha_evacuation(failover_type=hard_reset_method,
+    check_iha_evacuation(failover_type=sh.hard_reset_method,
                          vm_type='evac_image_vm')
 
 
 def check_iha_evacuation_hard_reset():
-    check_iha_evacuation(failover_type=hard_reset_method)
+    check_iha_evacuation(failover_type=sh.hard_reset_method)
 
 
 def check_iha_evacuation_network_disruption():
@@ -304,4 +354,4 @@ def check_iha_evacuation_network_disruption():
 
 
 def check_iha_evacuation_hard_reset_shutoff_instance():
-    check_iha_evacuation(failover_type=hard_reset_method, vm_type='shutoff')
+    check_iha_evacuation(failover_type=sh.hard_reset_method, vm_type='shutoff')

@@ -19,12 +19,16 @@ from oslo_log import log
 
 import tobiko
 from tobiko.shell.sh import _exception
-from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _uptime
 from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
+
+hard_reset_method = 'sudo chmod o+w /proc/sysrq-trigger;' \
+               'sudo echo b > /proc/sysrq-trigger'
+
+soft_reset_method = 'sudo /sbin/reboot'
 
 
 class RebootHostError(tobiko.TobikoException):
@@ -35,9 +39,10 @@ class RebootHostTimeoutError(RebootHostError):
     message = "host {hostname!r} not rebooted after {timeout!s} seconds"
 
 
-def reboot_host(ssh_client, wait: bool = True, timeout: tobiko.Seconds = None):
+def reboot_host(ssh_client, wait: bool = True, timeout: tobiko.Seconds = None,
+                method=soft_reset_method):
     reboot = RebootHostOperation(ssh_client=ssh_client, wait=wait,
-                                 timeout=timeout)
+                                 timeout=timeout, method=method)
     return tobiko.setup_fixture(reboot)
 
 
@@ -58,27 +63,26 @@ class RebootHostOperation(tobiko.Operation):
     def __init__(self,
                  ssh_client: typing.Optional[ssh.SSHClientFixture] = None,
                  wait=True,
-                 timeout: tobiko.Seconds = None):
+                 timeout: tobiko.Seconds = None,
+                 method=soft_reset_method):
         super(RebootHostOperation, self).__init__()
         if ssh_client is not None:
             self._ssh_client = ssh_client
         tobiko.check_valid_type(self.ssh_client, ssh.SSHClientFixture)
         self.wait = bool(wait)
         self.timeout = tobiko.to_seconds(timeout)
+        self.method = method
 
     def run_operation(self):
         ssh_client = self.ssh_client
-        ssh_client.connect(connection_timeout=self.timeout)
         with ssh_client:
             self.hostname = ssh_client.hostname
             LOG.debug(f"Rebooting host '{self.hostname}'... ")
             self.is_rebooted = False
             self.start_time = tobiko.time()
             try:
-                _execute.execute('sudo /sbin/reboot',
-                                 stdout=False,
-                                 ssh_client=ssh_client,
-                                 timeout=30.)
+                ssh_client.connect(connection_timeout=self.timeout).\
+                    exec_command(self.method)
             except _exception.ShellTimeoutExpired as ex:
                 LOG.debug(f"Reboot command timeout expired: {ex}")
         if self.wait:
