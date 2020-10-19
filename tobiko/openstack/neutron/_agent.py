@@ -24,7 +24,8 @@ DHCP_AGENT = 'neutron-dhcp-agent'
 L3_AGENT = 'neutron-l3-agent'
 METADATA_AGENT = 'neutron-metadata-agent'
 OPENVSWITCH_AGENT = 'neutron-openvswitch-agent'
-OVN_CONTROLLER = 'neutron-ovn-controller'
+OVN_CONTROLLER = 'ovn-controller'
+OVN_METADATA_AGENT = 'networking-ovn-metadata-agent'
 
 
 class AgentNotFoundOnHost(tobiko.TobikoException):
