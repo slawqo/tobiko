@@ -36,6 +36,13 @@ class TripleoTopology(topology.OpenStackTopology):
         neutron.METADATA_AGENT: 'tripleo_neutron_metadata_agent'
     }
 
+    agent_to_container_name_mappings = {
+        neutron.DHCP_AGENT: 'neutron_dhcp',
+        neutron.L3_AGENT:  'neutron_l3_agent',
+        neutron.OPENVSWITCH_AGENT: 'neutron_ovs_agent',
+        neutron.METADATA_AGENT: 'neutron_metadata_agent'
+    }
+
     has_containers = True
 
     # TODO: add more known subgrups here
