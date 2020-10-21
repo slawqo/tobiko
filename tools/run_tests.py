@@ -162,7 +162,7 @@ def debug_test_cases():
 
 
 def run_test_cases():
-    common.execute('stestr run --slowest {posargs}',
+    common.execute('stestr run {posargs}',
                    posargs=common.get_posargs(),
                    capture_stdout=False)
 
