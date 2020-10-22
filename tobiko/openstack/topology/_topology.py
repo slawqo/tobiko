@@ -96,8 +96,30 @@ def get_agent_service_name(agent_name: str) -> str:
     return topology_class.get_agent_service_name(agent_name)
 
 
+def get_agent_container_name(agent_name: str) -> str:
+    topology_class = get_default_openstack_topology_class()
+    return topology_class.get_agent_container_name(agent_name)
+
+
+def check_systemd_monitors_agent(hostname: str, agent_name: str) -> bool:
+    ssh_client = get_openstack_node(hostname=hostname).ssh_client
+    services = sh.execute('systemctl list-units --type=service --all '
+                          '--no-pager --no-legend',
+                          ssh_client=ssh_client,
+                          sudo=True).stdout.split('\n')
+    for service in services:
+        if get_agent_service_name(agent_name) in service:
+            return True
+    return False
+
+
 class UnknowOpenStackServiceNameError(tobiko.TobikoException):
     message = ("Unknown service name for agent name '{agent_name}' and "
+               "topology class '{topology_class}'")
+
+
+class UnknowOpenStackContainerNameError(tobiko.TobikoException):
+    message = ("Unknown container name for agent name '{agent_name}' and "
                "topology class '{topology_class}'")
 
 
@@ -161,6 +183,7 @@ class OpenStackTopology(tobiko.SharedFixture):
         neutron.OPENVSWITCH_AGENT: 'devstack@q-agt',
         neutron.METADATA_AGENT: 'devstack@q-meta'
     }
+    agent_to_container_name_mappings: typing.Dict[str, str] = {}
 
     has_containers = False
 
@@ -194,6 +217,15 @@ class OpenStackTopology(tobiko.SharedFixture):
             pass
         raise UnknowOpenStackServiceNameError(agent_name=agent_name,
                                               topology_class=cls)
+
+    @classmethod
+    def get_agent_container_name(cls, agent_name: str) -> str:
+        try:
+            return cls.agent_to_container_name_mappings[agent_name]
+        except KeyError:
+            pass
+        raise UnknowOpenStackContainerNameError(agent_name=agent_name,
+                                                topology_class=cls)
 
     def discover_nodes(self):
         self.discover_configured_nodes()

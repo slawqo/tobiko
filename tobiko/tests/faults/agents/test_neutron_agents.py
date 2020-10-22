@@ -43,6 +43,7 @@ class BaseAgentTest(testtools.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.service_name: str = topology.get_agent_service_name(cls.agent_name)
+        cls.container_name: str = ''
         cls.agents: AgentListType = \
             neutron.list_networking_agents(binary=cls.agent_name)
 
@@ -50,13 +51,14 @@ class BaseAgentTest(testtools.TestCase):
     def hosts(self) -> typing.List[str]:
         return [agent['host'] for agent in self.agents]
 
-    def stop_service(self, hosts: typing.Optional[typing.List[str]] = None):
-        '''Stop systemd service on hosts
+    def stop_agent(self, hosts: typing.Optional[typing.List[str]] = None):
+        '''Stop network agent on hosts
 
         It ensures service service is stopped and register systemd service
-        restart as test case cleanup.
+        restart as test case cleanup. In case of systemd service is not
+        available it stops the container itself
 
-        :parm hosts: List of hostnames to stop service on
+        :parm hosts: List of hostnames to stop agent on
         :type hosts: list of strings
         '''
         hosts = hosts or self.hosts
@@ -64,23 +66,36 @@ class BaseAgentTest(testtools.TestCase):
 
         for host in hosts:
             ssh_client = topology.get_openstack_node(hostname=host).ssh_client
-            LOG.debug(f"Stopping service '{self.service_name}' on "
-                      f"host '{host}'...")
-            sh.execute(f"systemctl stop {self.service_name}",
-                       ssh_client=ssh_client,
-                       sudo=True)
-            LOG.debug(f"Service '{self.service_name}' stopped on host "
-                      f"'{host}'.")
+            is_systemd = topology.check_systemd_monitors_agent(host,
+                                                               self.agent_name)
+            if is_systemd:
+                LOG.debug(f"Stopping service '{self.service_name}' on "
+                          f"host '{host}'...")
+                sh.execute(f"systemctl stop {self.service_name}",
+                           ssh_client=ssh_client,
+                           sudo=True)
+                LOG.debug(f"Service '{self.service_name}' stopped on host "
+                          f"'{host}'.")
+            else:
+                self.container_name = \
+                            topology.get_agent_container_name(self.agent_name)
+                LOG.debug(f'Stopping container {self.container_name} on '
+                          f"host '{host}'...")
+                sh.execute(f'docker stop {self.container_name}',
+                           ssh_client=ssh_client,
+                           sudo=True)
+                LOG.debug(f'Container {self.container_name} has been stopped '
+                          f"on host '{host}'...")
             # Schedule auto-restart of service at the end of this test case
-            self.addCleanup(sh.execute, f"systemctl start {self.service_name}",
-                            ssh_client=ssh_client, sudo=True)
+            self.addCleanup(self.start_agent, hosts=[host, ])
 
-    def start_service(self, hosts: typing.Optional[typing.List[str]] = None):
-        '''Start systemd service on hosts
+    def start_agent(self, hosts: typing.Optional[typing.List[str]] = None):
+        '''Start network agent on hosts
 
-        It ensures system service is running.
+        It ensures system service is running. If the systemd service is not
+        available it starts container itself
 
-        :parm hosts: List of hostnames to start service on
+        :parm hosts: List of hostnames to start agent on
         :type hosts: list of strings
         '''
         hosts = hosts or self.hosts
@@ -88,10 +103,22 @@ class BaseAgentTest(testtools.TestCase):
 
         for host in hosts:
             ssh_client = topology.get_openstack_node(hostname=host).ssh_client
-            LOG.debug(f"Starting service '{self.service_name}' on "
-                      f"host '{host}'...")
-            sh.execute(f"systemctl start {self.service_name}",
-                       ssh_client=ssh_client, sudo=True)
+            is_systemd = topology.check_systemd_monitors_agent(host,
+                                                               self.agent_name)
+            if is_systemd:
+                LOG.debug(f"Starting service '{self.service_name}' on "
+                          f"host '{host}'...")
+                sh.execute(f"systemctl start {self.service_name}",
+                           ssh_client=ssh_client,
+                           sudo=True)
+            else:
+                self.container_name = \
+                            topology.get_agent_container_name(self.agent_name)
+                LOG.debug(f'Starting container {self.container_name} on '
+                          f"host '{host}'...")
+                sh.execute(f'docker start {self.container_name}',
+                           ssh_client=ssh_client,
+                           sudo=True)
 
     def get_cmd_pids(self, process_name, command_filter, hosts=None,
                      timeout=120, interval=2, min_pids_per_host=1) -> \
@@ -255,11 +282,11 @@ class DHCPAgentTest(BaseAgentTest):
             f"'{self.stack.network}'")
         pids = self.get_cmd_pids("dnsmasq", self.stack.network)
 
-        self.stop_service()
+        self.stop_agent()
         self.assertEqual(pids, self.get_cmd_pids("dnsmasq",
                                                  self.stack.network))
 
-        self.start_service()
+        self.start_agent()
         self.wait_processes_destroyed(self.stack.network, pids)
         new_pids = self.get_cmd_pids("dnsmasq", self.stack.network)
         self.assertNotEqual(pids, new_pids)
@@ -279,13 +306,13 @@ class DHCPAgentTest(BaseAgentTest):
             [], self.agents, "No DHCP agent found serving network "
             f"'{self.stack.network}'")
         pids = self.get_cmd_pids("dnsmasq", self.stack.network)
-        self.stop_service()
+        self.stop_agent()
 
         nova.shutoff_server(self.stack.server_id)
         nova.activate_server(self.stack.server_id)
         ping.ping_until_received(self.stack.ip_address).assert_replied()
 
-        self.start_service()
+        self.start_agent()
         self.wait_processes_destroyed(self.stack.network, pids)
         new_pids = self.get_cmd_pids("dnsmasq", self.stack.network)
         self.assertNotEqual(pids, new_pids)
@@ -329,8 +356,8 @@ class L3AgentTest(BaseAgentTest):
         ha_router_id = self.ha_stack.network_stack.gateway_id
         pids = self.get_cmd_pids('keepalived', ha_router_id,
                                  min_pids_per_host=2)
-        self.stop_service()
-        self.start_service()
+        self.stop_agent()
+        self.start_agent()
         self.agents = [self.wait_for_active_ha_l3_agent()]
         self.assertEqual(pids,
                          self.get_cmd_pids('keepalived',
@@ -357,7 +384,7 @@ class L3AgentTest(BaseAgentTest):
         for _ in tobiko.retry(timeout=120., interval=5.):
             new_ka_state_pids = self.get_cmd_pids('/usr/bin/python',
                                                   ka_state_cmd,
-                                                  min_pids_per_host=2)
+                                                  min_pids_per_host=1)
             if ka_state_pids == new_ka_state_pids:
                 break
             else:
@@ -377,13 +404,13 @@ class L3AgentTest(BaseAgentTest):
     def test_metadata_haproxy_during_stop_L3_agent(self):
         self.agents = neutron.list_l3_agent_hosting_routers(self.router_id)
         pids = self.get_cmd_pids("haproxy", self.router_id)
-        self.stop_service()
+        self.stop_agent()
 
         # Now check if haproxy processes are still run and have got same pids
         # like before dhcp agent's stop
         self.assertEqual(pids, self.get_cmd_pids("haproxy", self.router_id))
 
-        self.start_service()
+        self.start_agent()
 
         # And finally check if haproxy processes are still run and have got
         # same pids like at the beginning of the test
@@ -416,12 +443,12 @@ class L3AgentTest(BaseAgentTest):
 
         self.agents = neutron.list_l3_agent_hosting_routers(self.router_id)
         pids = self.get_cmd_pids("radvd", self.router_id)
-        self.stop_service()
+        self.stop_agent()
         # Now check if radvd processes are still run and have got same pids
         # like before dhcp agent's stop
         self.assertEqual(pids, self.get_cmd_pids("radvd", self.router_id))
 
-        self.start_service()
+        self.start_agent()
 
         # And finally check if dnsmasq processes are still run and have got
         # same pids like at the beginning of the test
@@ -447,11 +474,11 @@ class OpenVSwitchAgentTest(BaseAgentTest):
 
     def test_vm_reachability_during_stop_ovs_agent(self):
         # Check if vm is reachable before stopping service
-        self.start_service()
+        self.start_agent()
         ping.ping_until_received(self.stack.ip_address).assert_replied()
 
         # Check if vm is reachable after stopping service
-        self.stop_service(hosts=[self.stack.hypervisor_host])
+        self.stop_agent(hosts=[self.stack.hypervisor_host])
         ping.ping_until_received(self.stack.ip_address).assert_replied()
 
 
@@ -522,22 +549,22 @@ class MetadataAgentTest(BaseAgentTest):
 
     def test_metadata_service_restart(self):
         # Ensure service is up
-        self.start_service()
+        self.start_agent()
         self.wait_for_metadata_status(is_reachable=True)
 
         # Ensure the servive gets down
-        self.stop_service()
+        self.stop_agent()
         self.wait_for_metadata_status(is_reachable=False)
 
         # Ensure service gets up again
-        self.start_service()
+        self.start_agent()
         self.wait_for_metadata_status(is_reachable=True)
 
     def test_vm_reachability_when_metadata_agent_is_down(self):
-        self.stop_service()
+        self.stop_agent()
         self.wait_for_metadata_status(is_reachable=False)
         ping.ping_until_received(self.stack.ip_address).assert_replied()
-        self.start_service()
+        self.start_agent()
         self.wait_for_metadata_status(is_reachable=True)
 
 

@@ -22,8 +22,10 @@ NoSuchOpenStackTopologyNode = _exception.NoSuchOpenStackTopologyNode
 
 UnknowOpenStackServiceNameError = _topology.UnknowOpenStackServiceNameError
 get_agent_service_name = _topology.get_agent_service_name
+get_agent_container_name = _topology.get_agent_container_name
 get_openstack_topology = _topology.get_openstack_topology
 get_openstack_node = _topology.get_openstack_node
+check_systemd_monitors_agent = _topology.check_systemd_monitors_agent
 find_openstack_node = _topology.find_openstack_node
 get_default_openstack_topology_class = (
     _topology.get_default_openstack_topology_class)
