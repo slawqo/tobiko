@@ -38,6 +38,7 @@ skip_if_missing_overcloud = overcloud.skip_if_missing_overcloud
 TripleoTopology = topology.TripleoTopology
 
 load_undercloud_rcfile = undercloud.load_undercloud_rcfile
+has_undercloud = undercloud.has_undercloud
 skip_if_missing_undercloud = undercloud.skip_if_missing_undercloud
 undercloud_host_config = undercloud.undercloud_host_config
 undercloud_keystone_client = undercloud.undercloud_keystone_client

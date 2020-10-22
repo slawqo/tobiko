@@ -54,6 +54,7 @@ LocalShellProcessFixture = _local.LocalShellProcessFixture
 LocalExecutePathFixture = _local.LocalExecutePathFixture
 
 process = _process.process
+str_from_stream = _process.str_from_stream
 ShellProcessFixture = _process.ShellProcessFixture
 
 PsError = _ps.PsError
