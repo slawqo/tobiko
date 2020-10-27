@@ -14,9 +14,9 @@
 
     check:
       jobs:
-        - devstack-tobiko-functional-centos
+        # - devstack-tobiko-functional-centos
         - devstack-tobiko-functional-ubuntu
-        - devstack-tobiko-faults-centos
+        # - devstack-tobiko-faults-centos
         - devstack-tobiko-faults-ubuntu
         - tobiko-tox-infrared-centos-7
         - tobiko-tox-infrared-centos-8
@@ -30,9 +30,9 @@
 
     periodic:
       jobs:
-        - devstack-tobiko-functional-centos
+        # - devstack-tobiko-functional-centos
         - devstack-tobiko-functional-ubuntu
-        - devstack-tobiko-faults-centos
+        # - devstack-tobiko-faults-centos
         - devstack-tobiko-faults-ubuntu
         - tobiko-tripleo-functional
         - tobiko-tripleo-faults
