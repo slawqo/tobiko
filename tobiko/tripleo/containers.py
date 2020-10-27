@@ -13,6 +13,7 @@ import tobiko
 from tobiko import podman
 from tobiko import docker
 from tobiko.openstack import topology
+from tobiko.shell import ssh
 from tobiko.tripleo import topology as tripleo_topology
 
 
@@ -55,13 +56,22 @@ def list_node_containers(ssh_client):
 def get_container_client(ssh_client=None):
     """returns a list of containers and their run state"""
 
-    if container_runtime_module == podman:
-        return container_runtime_module.get_podman_client(
-            ssh_client=ssh_client).connect()
-
-    elif container_runtime_module == docker:
-        return container_runtime_module.get_docker_client(
-            ssh_client=ssh_client).connect()
+    for attempt in tobiko.retry(
+            timeout=60.0,
+            interval=5.0):
+        try:
+            if container_runtime_module == podman:
+                return container_runtime_module.get_podman_client(
+                    ssh_client=ssh_client).connect()
+            elif container_runtime_module == docker:
+                return container_runtime_module.get_docker_client(
+                    ssh_client=ssh_client).connect()
+        except dockerlib.errors.DockerException:
+            LOG.debug('Unable to connect to docker API')
+            attempt.check_limits()
+            ssh.reset_default_ssh_port_forward_manager()
+    # no successful connection to docker/podman API has been performed
+    raise RuntimeError('Unable to connect to container mgmt tool')
 
 
 def list_containers_df(group=None):

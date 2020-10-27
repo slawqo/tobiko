@@ -49,6 +49,12 @@ def get_forward_url(url, ssh_client=None, manager=None):
     return binding_url(forward_address)
 
 
+def reset_default_ssh_port_forward_manager():
+    # pylint: disable=global-statement
+    global DEFAULT_SSH_PORT_FORWARD_MANAGER
+    DEFAULT_SSH_PORT_FORWARD_MANAGER = SSHPortForwardManager()
+
+
 class SSHPortForwardManager(object):
 
     def __init__(self):

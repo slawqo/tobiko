@@ -31,6 +31,8 @@ ssh_proxy_client = _client.ssh_proxy_client
 SSHConnectFailure = _client.SSHConnectFailure
 gather_ssh_connect_parameters = _client.gather_ssh_connect_parameters
 
+reset_default_ssh_port_forward_manager = \
+    _forward.reset_default_ssh_port_forward_manager
 get_port_forward_url = _forward.get_forward_url
 get_forward_port_address = _forward.get_forward_port_address
 SSHTunnelForwarderFixture = _forward.SSHTunnelForwarderFixture
