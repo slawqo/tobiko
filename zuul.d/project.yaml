@@ -25,7 +25,7 @@
 
     gate:
       jobs:
-        - devstack-tobiko-functional-centos
+        - devstack-tobiko-functional-ubuntu
         - tobiko-tox-infrared-centos-8
 
     periodic:
