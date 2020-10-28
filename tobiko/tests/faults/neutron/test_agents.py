@@ -47,6 +47,11 @@ class BaseAgentTest(testtools.TestCase):
         cls.agents: AgentListType = \
             neutron.list_networking_agents(binary=cls.agent_name)
 
+    def setUp(self):
+        super(BaseAgentTest, self).setUp()
+        if not self.agents:
+            self.skipTest(f"Missing Neutron agent(s): '{self.agent_name}'")
+
     @property
     def hosts(self) -> typing.List[str]:
         return [agent['host'] for agent in self.agents]
@@ -261,7 +266,6 @@ class BaseAgentTest(testtools.TestCase):
         return process_destroyed
 
 
-@neutron.skip_if_missing_networking_agents(neutron.DHCP_AGENT)
 class DHCPAgentTest(BaseAgentTest):
 
     agent_name = neutron.DHCP_AGENT
@@ -318,7 +322,6 @@ class DHCPAgentTest(BaseAgentTest):
         self.assertNotEqual(pids, new_pids)
 
 
-@neutron.skip_if_missing_networking_agents(neutron.L3_AGENT)
 class L3AgentTest(BaseAgentTest):
 
     agent_name = neutron.L3_AGENT
@@ -455,7 +458,6 @@ class L3AgentTest(BaseAgentTest):
         self.assertEqual(pids, self.get_cmd_pids("radvd", self.router_id))
 
 
-@neutron.skip_if_missing_networking_agents(neutron.OPENVSWITCH_AGENT)
 class OpenVSwitchAgentTest(BaseAgentTest):
 
     agent_name = neutron.OPENVSWITCH_AGENT
@@ -485,7 +487,6 @@ class OpenVSwitchAgentTest(BaseAgentTest):
 # TODO(eolivare): these tests will always be skipped on OSP13 because 'agent
 # list' requests return empty list with OVN+OSP13
 # Search for the corresponding container instead of the networking agent
-@neutron.skip_if_missing_networking_agents(neutron.OVN_CONTROLLER)
 class OvnControllerTest(BaseAgentTest):
 
     agent_name = neutron.OVN_CONTROLLER
@@ -503,10 +504,12 @@ class OvnControllerTest(BaseAgentTest):
         ping.ping_until_received(self.stack.ip_address).assert_replied()
 
 
-class BaseMetadataAgentTest(BaseAgentTest):
+class MetadataAgentTest(BaseAgentTest):
 
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+
+    agent_name = neutron.METADATA_AGENT
 
     def wait_for_metadata_status(self, count=None, timeout=60., interval=2.,
                                  is_reachable: typing.Optional[bool] = None):
@@ -565,12 +568,6 @@ class BaseMetadataAgentTest(BaseAgentTest):
                     "Metadata server reached from Nova server:\n"
                     f"{curl_output}")
 
-
-@neutron.skip_if_missing_networking_agents(neutron.METADATA_AGENT)
-class MetadataAgentTest(BaseMetadataAgentTest):
-
-    agent_name = neutron.METADATA_AGENT
-
     def test_metadata_service_restart(self):
         # Ensure service is up
         self.start_agent()
@@ -595,30 +592,9 @@ class MetadataAgentTest(BaseMetadataAgentTest):
 # TODO(eolivare): these tests will always be skipped on OSP13 because 'agent
 # list' requests return empty list with OVN+OSP13
 # Search for the corresponding container instead of the networking agent
-@neutron.skip_if_missing_networking_agents(neutron.OVN_METADATA_AGENT)
-class OvnMetadataAgentTest(BaseMetadataAgentTest):
+class OvnMetadataAgentTest(MetadataAgentTest):
 
     agent_name = neutron.OVN_METADATA_AGENT
-
-    def test_ovn_metadata_agent_restart(self):
-        # Ensure service is up
-        self.start_agent()
-        self.wait_for_metadata_status(is_reachable=True)
-
-        # Ensure the servive gets down
-        self.stop_agent()
-        self.wait_for_metadata_status(is_reachable=False)
-
-        # Ensure service gets up again
-        self.start_agent()
-        self.wait_for_metadata_status(is_reachable=True)
-
-    def test_vm_reachability_when_ovn_metadata_agent_is_down(self):
-        self.stop_agent()
-        self.wait_for_metadata_status(is_reachable=False)
-        ping.ping_until_received(self.stack.ip_address).assert_replied()
-        self.start_agent()
-        self.wait_for_metadata_status(is_reachable=True)
 
 
 def parse_http_status(curl_output: str) -> int:

@@ -26,7 +26,7 @@ from tobiko.common import _fixture
 SkipException = testtools.TestCase.skipException  # type: typing.Type
 
 
-def skip(reason, *args, **kwargs):
+def skip_test(reason, *args, **kwargs):
     if args or kwargs:
         reason = reason.format(*args, **kwargs)
     raise SkipException(reason)
@@ -55,9 +55,9 @@ def skip_if_match(reason, match, predicate, *args, **kwargs):
             return_value = predicate(*args, **kwargs)
             if match(return_value):
                 if '{return_value' in reason:
-                    skip(reason, return_value=return_value)
+                    skip_test(reason, return_value=return_value)
                 else:
-                    skip(reason)
+                    skip_test(reason)
             return method(*_args, **_kwargs)
 
         if obj is method:

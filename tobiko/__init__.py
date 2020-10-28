@@ -104,8 +104,8 @@ ObjectNotFound = _select.ObjectNotFound
 MultipleObjectsFound = _select.MultipleObjectsFound
 
 SkipException = _skip.SkipException
-skip = _skip.skip
 skip_if = _skip.skip_if
+skip_test = skip = _skip.skip_test
 skip_unless = _skip.skip_unless
 
 BaseTestCase = _testcase.TestCase
