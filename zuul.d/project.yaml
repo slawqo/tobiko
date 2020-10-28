@@ -16,6 +16,10 @@
       jobs:
         # - devstack-tobiko-functional-centos
         - devstack-tobiko-functional-ubuntu
+        # - devstack-tobiko-functional-ovn-centos
+        - devstack-tobiko-functional-ovn-ubuntu
+        # - devstack-tobiko-scenario-ovn-centos
+        - devstack-tobiko-scenario-ovn-ubuntu
         # - devstack-tobiko-faults-centos
         - devstack-tobiko-faults-ubuntu
         - tobiko-tox-infrared-centos-7
@@ -32,6 +36,10 @@
       jobs:
         # - devstack-tobiko-functional-centos
         - devstack-tobiko-functional-ubuntu
+        # - devstack-tobiko-functional-ovn-centos
+        - devstack-tobiko-functional-ovn-ubuntu
+        # - devstack-tobiko-scenario-ovn-centos
+        - devstack-tobiko-scenario-ovn-ubuntu
         # - devstack-tobiko-faults-centos
         - devstack-tobiko-faults-ubuntu
         - tobiko-tripleo-functional
