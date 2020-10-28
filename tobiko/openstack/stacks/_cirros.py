@@ -38,6 +38,7 @@ class CirrosImageFixture(glance.URLGlanceImageFixture):
     disk_format = CONF.tobiko.cirros.disk_format or "qcow2"
     username = CONF.tobiko.cirros.username or 'cirros'
     password = CONF.tobiko.cirros.password or 'gocubsgo'
+    connection_timeout = CONF.tobiko.cirros.connection_timeout or 200.
 
 
 class CirrosFlavorStackFixture(_nova.FlavorStackFixture):

@@ -452,7 +452,8 @@ class SSHClientManager(object):
 
     def get_client(self, host, hostname=None, username=None, port=None,
                    proxy_jump=None, host_config=None, config_files=None,
-                   proxy_client=None, **connect_parameters):
+                   proxy_client=None, **connect_parameters) -> \
+            SSHClientFixture:
         if isinstance(host, netaddr.IPAddress):
             host = str(host)
 
@@ -468,17 +469,22 @@ class SSHClientManager(object):
         username = username or global_host_config.username
 
         host_key = hostname, port, username, proxy_jump
-        client = self.clients.get(host_key, UNDEFINED_CLIENT)
-        if client is UNDEFINED_CLIENT:
-            # Put a placeholder client to avoid infinite recursive lookup
-            self.clients[host_key] = None
-            proxy_client = proxy_client or self.get_proxy_client(
-                host=host, proxy_jump=proxy_jump, config_files=config_files)
-            self.clients[host_key] = client = SSHClientFixture(
-                host=host, hostname=hostname, port=port, username=username,
-                proxy_client=proxy_client, host_config=host_config,
-                **connect_parameters)
-        return client
+        existing_client = self.clients.get(host_key)
+        if isinstance(existing_client, SSHClientFixture):
+            return existing_client
+
+        # Put a placeholder to avoid infinite recursive lookup
+        if existing_client is UNDEFINED_CLIENT:
+            raise RuntimeError('Recursive SSH proxy client definition')
+        self.clients[host_key] = UNDEFINED_CLIENT
+
+        proxy_client = proxy_client or self.get_proxy_client(
+            host=host, proxy_jump=proxy_jump, config_files=config_files)
+        self.clients[host_key] = new_client = SSHClientFixture(
+            host=host, hostname=hostname, port=port, username=username,
+            proxy_client=proxy_client, host_config=host_config,
+            **connect_parameters)
+        return new_client
 
     def get_proxy_client(self, host=None, proxy_jump=None, host_config=None,
                          config_files=None):
@@ -495,7 +501,7 @@ CLIENTS = SSHClientManager()
 
 def ssh_client(host, port=None, username=None, proxy_jump=None,
                host_config=None, config_files=None, manager=None,
-               **connect_parameters):
+               **connect_parameters) -> SSHClientFixture:
     manager = manager or CLIENTS
     return manager.get_client(host=host, port=port, username=username,
                               proxy_jump=proxy_jump, host_config=host_config,

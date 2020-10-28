@@ -58,7 +58,12 @@ def get_images_options():
              cfg.StrOpt('username',
                         help="Default " + name + " username"),
              cfg.StrOpt('password',
-                        help="Default " + name + " password")])]
+                        help="Default " + name + " password"),
+             cfg.FloatOpt('connection_timeout',
+                          default=None,
+                          help=("Default " + name +
+                                " SSH connection timeout (seconds)")), ]
+        )]
 
     return options
 
