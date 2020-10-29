@@ -14,6 +14,7 @@ from tobiko import podman
 from tobiko import docker
 from tobiko.openstack import topology
 from tobiko.shell import ssh
+from tobiko.tripleo import overcloud
 from tobiko.tripleo import topology as tripleo_topology
 
 
@@ -32,14 +33,13 @@ def get_container_runtime_module():
         return podman
 
 
-container_runtime_module = get_container_runtime_module()
-
-
 def get_container_runtime_name():
     return container_runtime_module.__name__.rsplit('.', 1)[1]
 
 
-container_runtime_name = get_container_runtime_name()
+if overcloud.has_overcloud():
+    container_runtime_module = get_container_runtime_module()
+    container_runtime_name = get_container_runtime_name()
 
 
 @functools.lru_cache()

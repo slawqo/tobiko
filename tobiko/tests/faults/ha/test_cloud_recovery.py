@@ -40,8 +40,9 @@ def check_pacemaker_resources_health():
 
 
 def check_overcloud_processes_health():
-    return processes.OvercloudProcessesStatus(
-            ).basic_overcloud_processes_running
+    procs = processes.OvercloudProcessesStatus()
+    return (procs.basic_overcloud_processes_running and
+            procs.ovn_overcloud_processes_validations)
 
 
 @undercloud.skip_if_missing_undercloud

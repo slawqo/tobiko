@@ -7,6 +7,8 @@ import pandas
 import six
 
 import tobiko
+from tobiko.openstack import topology
+from tobiko.tripleo import containers
 from tobiko.tripleo import overcloud
 from tobiko.shell import sh
 
@@ -103,6 +105,16 @@ class OvercloudProcessesStatus(object):
                                    'nova-scheduler', 'neutron-server',
                                    'nova-compute', 'glance-api']
 
+        self.ovn_processes_to_check_per_node = [{'name': 'ovn-controller',
+                                                 'node_group': 'controller',
+                                                 'number': 'all'},
+                                                {'name': 'ovn-controller',
+                                                 'node_group': 'compute',
+                                                 'number': 'all'},
+                                                {'name': 'ovn-northd',
+                                                 'node_group': 'controller',
+                                                 'number': 1}]
+
         self.oc_procs_df = overcloud.get_overcloud_nodes_dataframe(
                                             get_overcloud_node_processes_table)
 
@@ -146,3 +158,57 @@ class OvercloudProcessesStatus(object):
                     get_overcloud_node_processes_table)
         # exhausted all retries
         tobiko.fail('Not all overcloud processes are running !\n')
+
+    @property
+    def ovn_overcloud_processes_validations(self):
+        """
+        Checks that the oc_procs_df dataframe has OVN processes running on the
+        expected overcloud node or nodes
+        :return: Bool
+        """
+        if not containers.ovn_used_on_overcloud():
+            LOG.info("Networking OVN not configured")
+            return True
+
+        for process_dict in self.ovn_processes_to_check_per_node:
+            if not self.oc_procs_df.query('PROCESS=="{}"'.format(
+                    process_dict['name'])).empty:
+                LOG.info("overcloud processes status checks: "
+                         f"process {process_dict['name']} is  "
+                         "in running state")
+
+                ovn_proc_filtered_df = self.oc_procs_df.query(
+                    'PROCESS=="{}"'.format(process_dict['name']))
+
+                if (process_dict['node_group'] not in
+                        topology.list_openstack_node_groups()):
+                    LOG.debug(f"{process_dict['node_group']} is not "
+                              "a node group part of this Openstack cloud")
+                    continue
+                node_filter = (ovn_proc_filtered_df.overcloud_node.
+                               str.startswith(process_dict['node_group']))
+                # obtain the processes running on a specific type of nodes
+                ovn_proc_filtered_per_node_df = \
+                    ovn_proc_filtered_df[node_filter]
+                if type(process_dict['number']) == int:
+                    assert process_dict['number'] == \
+                        len(ovn_proc_filtered_per_node_df), (
+                        "Unexpected number"
+                        f" of processes {process_dict['name']} running on "
+                        f"{process_dict['node_group']} nodes")
+                elif process_dict['number'] == 'all':
+                    num_nodes = len(topology.list_openstack_nodes(
+                        group=process_dict['node_group']))
+                    assert num_nodes == len(ovn_proc_filtered_per_node_df), (
+                        "Unexpected number of processes "
+                        f"{process_dict['name']} running on "
+                        f"{process_dict['node_group']} nodes")
+                else:
+                    raise RuntimeError("Unexpected value:"
+                                       f"{process_dict['node_group']}")
+                # process successfully validated
+                LOG.debug(f"{process_dict['name']} successfully validated on "
+                          f"{process_dict['node_group']} nodes")
+
+        # if all procs are running we can return true
+        return True
