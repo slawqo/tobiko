@@ -15,20 +15,9 @@
 #    under the License.
 from __future__ import absolute_import
 
+import shlex
 import subprocess
-
-import six
-
-
-def shell_command(command):
-    if isinstance(command, ShellCommand):
-        return command
-    elif isinstance(command, six.string_types):
-        return ShellCommand(command.split())
-    elif command:
-        return ShellCommand(str(a) for a in command)
-    else:
-        return ShellCommand()
+import typing  # noqa
 
 
 class ShellCommand(tuple):
@@ -42,3 +31,15 @@ class ShellCommand(tuple):
     def __add__(self, other):
         other = shell_command(other)
         return shell_command(tuple(self) + other)
+
+
+ShellCommandType = typing.Union[ShellCommand, str, typing.Iterable]
+
+
+def shell_command(command: ShellCommandType) -> ShellCommand:
+    if isinstance(command, ShellCommand):
+        return command
+    elif isinstance(command, str):
+        return ShellCommand(shlex.split(command))
+    else:
+        return ShellCommand(str(a) for a in command)

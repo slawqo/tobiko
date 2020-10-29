@@ -15,12 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.shell.files import _exception
 from tobiko.shell.files import _logs
 
 
-LogParserError = _exception.LogParserError
-LogFileNotFound = _exception.LogFileNotFound
-
-LogFile = _logs.LogFile
-ClusterLogFile = _logs.ClusterLogFile
+LogFileDigger = _logs.LogFileDigger
+MultihostLogFileDigger = _logs.MultihostLogFileDigger

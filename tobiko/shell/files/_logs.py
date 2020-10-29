@@ -15,96 +15,71 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
 import os
 
-from tobiko.shell import files
+from tobiko.shell import grep
+from tobiko.shell import find
 from tobiko.shell import sh
-from tobiko.openstack import topology
 
 
-class LogFile(object):
+class LogFileDigger(object):
 
-    def __init__(self, hostname, filename):
+    def __init__(self, filename, **execute_params):
         self.filename = filename
-        self.host = topology.get_openstack_node(hostname=hostname)
-        self._list_logfiles()
-        self.cmd = ''
-        self.found = []
+        self.execute_params = execute_params
+        self.logfiles = set()
+        self.found = set()
 
-    def find(self, regex):
-        self._list_logfiles()
-        self.cmd = f"zgrep -Eh {regex}"
-        self.found = sh.execute(f'{self.cmd} {" ".join(self.logfiles)}',
-                                ssh_client=self.host.ssh_client,
-                                expect_exit_status=None,
-                                sudo=True).stdout.split('\n')
+    def find_lines(self, pattern, new_lines=False):
+        log_files = self.list_log_files()
         try:
-            self.found.remove('')
-        except ValueError:
-            pass
-        return self.found
+            lines = frozenset(
+                grep.grep_files(pattern=pattern, files=log_files,
+                                **self.execute_params))
+        except grep.NoMatchingLinesFound:
+            if new_lines:
+                return frozenset()
+        else:
+            lines -= self.found
+            self.found.update(lines)
+            if new_lines:
+                return lines
+        return frozenset(self.found)
 
-    def find_new(self):
-        self._list_logfiles()
-        if not self.cmd:
-            err_msg = 'find_new() method can be only executed after find()'
-            raise files.LogParserError(message=err_msg)
-        tmp = sh.execute(f'{self.cmd} {" ".join(self.logfiles)}',
-                         ssh_client=self.host.ssh_client,
-                         expect_exit_status=None,
-                         sudo=True).stdout.split('\n')
-        found = []
-        for log_string in tmp:
-            if log_string not in self.found and log_string != '':
-                found.append(log_string)
-                self.found.append(log_string)
-        return found
+    def find_new_lines(self, pattern):
+        return self.find_lines(pattern=pattern, new_lines=True)
 
-    def _list_logfiles(self):
+    def list_log_files(self):
         file_path, file_name = os.path.split(self.filename)
-        result = sh.execute(f'find {file_path} -name {file_name}*',
-                            ssh_client=self.host.ssh_client,
-                            expect_exit_status=None,
-                            sudo=True)
-        self.logfiles = set(result.stdout.split('\n'))
-        if '' in self.logfiles:
-            self.logfiles.remove('')
-        if self.logfiles == []:
-            raise files.LogFileNotFound(filename=str(self.filename),
-                                        host=str(self.host.name))
+        return find.find_files(path=file_path,
+                               name=file_name,
+                               **self.execute_params)
 
 
-class ClusterLogFile(object):
+class MultihostLogFileDigger(object):
 
-    def __init__(self, filename):
+    def __init__(self, filename, ssh_clients=None, **execute_params):
+        self.diggers = collections.OrderedDict()
         self.filename = filename
-        self.hostnames = []
-        self.logfiles = []
+        self.execute_params = execute_params
+        if ssh_clients:
+            for ssh_client in ssh_clients:
+                self.add_host(ssh_client=ssh_client)
 
-    def add_host(self, hostname):
-        if hostname in self.hostnames:
-            return
-        self.hostnames.append(hostname)
-        self.logfiles.append(LogFile(hostname, self.filename))
+    def add_host(self, hostname=None, ssh_client=None):
+        hostname = hostname or sh.get_hostname(ssh_client=ssh_client)
+        if hostname not in self.diggers:
+            self.diggers[hostname] = LogFileDigger(filename=self.filename,
+                                                   ssh_client=ssh_client,
+                                                   **self.execute_params)
 
-    def add_group(self, group):
-        for host in topology.list_openstack_nodes(group=group):
-            self.add_host(host.name)
+    def find_lines(self, pattern, new_lines=False):
+        lines = []
+        for hostname, digger in self.diggers.items():
+            for line in digger.find_lines(pattern, new_lines=new_lines):
+                lines.append((hostname, line))
+        return lines
 
-    def find(self, regex):
-        for logfile in self.logfiles:
-            logfile.find(regex)
-        return self.found
-
-    def find_new(self):
-        new_lines = []
-        for logfile in self.logfiles:
-            new_lines += logfile.find_new()
-        return new_lines
-
-    @property
-    def found(self):
-        found = []
-        for logfile in self.logfiles:
-            found += logfile.found
-        return found
+    def find_new_lines(self, pattern):
+        return self.find_lines(pattern=pattern, new_lines=True)

@@ -28,6 +28,8 @@ from tobiko.shell.sh import _ssh
 from tobiko.shell.sh import _uptime
 
 
+ShellCommand = _command.ShellCommand
+ShellCommandType = _command.ShellCommandType
 shell_command = _command.shell_command
 
 ShellError = _exception.ShellError

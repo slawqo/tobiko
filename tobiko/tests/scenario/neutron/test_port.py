@@ -24,6 +24,7 @@ from tobiko.shell import ip
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
+from tobiko.openstack import topology
 
 
 class PortTest(testtools.TestCase):
@@ -111,21 +112,30 @@ class PortLogs(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(PortLogsStack)
 
+    LOG_FILENAME = '/var/log/containers/neutron/server.log*'
+
     def test_nova_port_notification(self):
-        expected_logfile = '/var/log/containers/neutron/server.log'
-        logfile = files.ClusterLogFile(expected_logfile)
-        try:
-            logfile.add_group('controller')
-        except files.LogFileNotFound as ex:
-            tobiko.skip(str(ex))
-        logfile.find(f'Nova.+event.+response.*{self.stack.server_id}')
+        pattern = f'Nova.+event.+response.*{self.stack.server_id}'
+        log_digger = files.MultihostLogFileDigger(filename=self.LOG_FILENAME,
+                                                  sudo=True)
+        for node in topology.list_openstack_nodes(group='controller'):
+            log_digger.add_host(hostname=node.hostname,
+                                ssh_client=node.ssh_client)
+        log_digger.find_lines(pattern=pattern)
+
         nova.shutoff_server(self.stack.server_id)
         nova.activate_server(self.stack.server_id)
-        new_events = logfile.find_new()
-        self.assertEqual(len(new_events), 2)
-        self.assertTrue(
-                any('network-vif-unplugged' in event for event in new_events))
-        self.assertTrue(
-                any('network-vif-plugged' in event for event in new_events))
-        self.assertTrue(
-                all(self.stack.port_id in event for event in new_events))
+
+        new_lines = log_digger.find_new_lines(pattern=pattern)
+
+        plugged_events = [
+            (hostname, line)
+            for hostname, line in new_lines
+            if 'network-vif-plugged' in line and self.stack.port_id in line]
+        self.assertEqual(1, len(plugged_events), new_lines)
+
+        unplugged_events = [
+            (hostname, line)
+            for hostname, line in new_lines
+            if 'network-vif-unplugged' in line and self.stack.port_id in line]
+        self.assertEqual(1, len(unplugged_events), new_lines)
