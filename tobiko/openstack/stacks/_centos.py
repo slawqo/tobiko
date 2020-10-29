@@ -36,6 +36,7 @@ class CentosImageFixture(glance.URLGlanceImageFixture):
     container_format = CONF.tobiko.centos.container_format or "bare"
     username = CONF.tobiko.centos.username or 'centos'
     password = CONF.tobiko.centos.password
+    connection_timeout = CONF.tobiko.centos.connection_timeout or 400.
 
 
 class CentosFlavorStackFixture(_nova.FlavorStackFixture):

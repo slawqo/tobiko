@@ -39,8 +39,8 @@ class RebootHostTimeoutError(RebootHostError):
     message = "host {hostname!r} not rebooted after {timeout!s} seconds"
 
 
-def reboot_host(ssh_client, wait: bool = True, timeout: tobiko.Seconds = None,
-                method=soft_reset_method):
+def reboot_host(ssh_client: ssh.SSHClientFixture, wait: bool = True,
+                timeout: tobiko.Seconds = None, method=soft_reset_method):
     reboot = RebootHostOperation(ssh_client=ssh_client, wait=wait,
                                  timeout=timeout, method=method)
     return tobiko.setup_fixture(reboot)
@@ -58,6 +58,8 @@ class RebootHostOperation(tobiko.Operation):
 
     @property
     def ssh_client(self) -> ssh.SSHClientFixture:
+        if self._ssh_client is None:
+            raise ValueError(f"SSH client for object '{self}' is None")
         return self._ssh_client
 
     def __init__(self,
@@ -66,8 +68,7 @@ class RebootHostOperation(tobiko.Operation):
                  timeout: tobiko.Seconds = None,
                  method=soft_reset_method):
         super(RebootHostOperation, self).__init__()
-        if ssh_client is not None:
-            self._ssh_client = ssh_client
+        self._ssh_client = ssh_client
         tobiko.check_valid_type(self.ssh_client, ssh.SSHClientFixture)
         self.wait = bool(wait)
         self.timeout = tobiko.to_seconds(timeout)

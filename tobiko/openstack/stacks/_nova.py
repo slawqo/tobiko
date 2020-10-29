@@ -114,6 +114,10 @@ class ServerStackFixture(heat.HeatStackFixture):
         """password used to login to a Nova server instance"""
         return self.image_fixture.password
 
+    @property
+    def connection_timeout(self):
+        return self.image_fixture.connection_timeout
+
     # Stack used to create flavor for Nova server instance
     flavor_stack = None
 
@@ -146,10 +150,11 @@ class ServerStackFixture(heat.HeatStackFixture):
         return bool(self.floating_network)
 
     @property
-    def ssh_client(self):
+    def ssh_client(self) -> ssh.SSHClientFixture:
         return ssh.ssh_client(host=self.ip_address,
                               username=self.username,
-                              password=self.password)
+                              password=self.password,
+                              connection_timeout=self.connection_timeout)
 
     @property
     def ssh_command(self):
@@ -283,7 +288,7 @@ class ServerStackFixture(heat.HeatStackFixture):
 
 
 class PeerServerStackFixture(ServerStackFixture):
-    """Server witch networking access requires passing by a peer Nova server
+    """Server witch networking access requires passing by another Nova server
     """
 
     has_floating_ip = False
@@ -296,6 +301,7 @@ class PeerServerStackFixture(ServerStackFixture):
         return ssh.ssh_client(host=self.ip_address,
                               username=self.username,
                               password=self.password,
+                              connection_timeout=self.connection_timeout,
                               proxy_jump=self.peer_stack.ssh_client)
 
     @property

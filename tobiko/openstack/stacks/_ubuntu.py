@@ -33,6 +33,7 @@ class UbuntuImageFixture(glance.URLGlanceImageFixture):
     container_format = CONF.tobiko.ubuntu.container_format or "bare"
     username = CONF.tobiko.ubuntu.username or 'ubuntu'
     password = CONF.tobiko.ubuntu.password
+    connection_timeout = CONF.tobiko.ubuntu.connection_timeout or 300.
 
 
 class UbuntuFlavorStackFixture(_nova.FlavorStackFixture):
