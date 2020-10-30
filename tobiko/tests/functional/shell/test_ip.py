@@ -24,7 +24,7 @@ import tobiko
 from tobiko.openstack import stacks
 from tobiko.shell import ip
 from tobiko.shell import ssh
-from tobiko.tests.functional.shell import fixtures
+from tobiko.tests.functional.shell import _fixtures
 
 
 class IpTest(testtools.TestCase):
@@ -38,7 +38,8 @@ class IpTest(testtools.TestCase):
     ubuntu_stack = tobiko.required_setup_fixture(
         stacks.UbuntuServerStackFixture)
 
-    namespace = tobiko.required_setup_fixture(fixtures.NetworkNamespaceFixture)
+    namespace = tobiko.required_setup_fixture(
+        _fixtures.NetworkNamespaceFixture)
 
     def test_list_ip_addresses(self, ip_version=None, scope=None,
                                **execute_params):

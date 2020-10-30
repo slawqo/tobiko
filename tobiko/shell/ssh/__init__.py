@@ -19,6 +19,7 @@ from tobiko.shell.ssh import _config
 from tobiko.shell.ssh import _client
 from tobiko.shell.ssh import _command
 from tobiko.shell.ssh import _forward
+from tobiko.shell.ssh import _skip
 
 
 SSHHostConfig = _config.SSHHostConfig
@@ -37,3 +38,6 @@ get_port_forward_url = _forward.get_forward_url
 get_forward_port_address = _forward.get_forward_port_address
 SSHTunnelForwarderFixture = _forward.SSHTunnelForwarderFixture
 SSHTunnelForwarder = _forward.SSHTunnelForwarder
+
+has_ssh_proxy_jump = _skip.has_ssh_proxy_jump
+skip_unless_has_ssh_proxy_jump = _skip.skip_unless_has_ssh_proxy_jump

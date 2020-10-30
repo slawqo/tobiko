@@ -45,7 +45,7 @@ class UnknowHostError(PingError):
 
 class BadAddressPingError(PingError):
     """Raised when passing wrong address to ping command"""
-    message = "bad address ({address!r})"
+    message = "bad address: {address}"
 
 
 class PingFailed(PingError, tobiko.FailureException):

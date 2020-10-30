@@ -60,9 +60,9 @@ def parse_ping_header(line_it):
     header_fields = [(f[:-1] if f.endswith(':') else f)
                      for f in header_fields]
     destination = header_fields[2]
-    if destination[0] == '(':
+    while destination and destination[0] == '(':
         destination = destination[1:]
-    if destination[-1] == ')':
+    while destination and destination[-1] == ')':
         destination = destination[:-1]
     destination = netaddr.IPAddress(destination)
 

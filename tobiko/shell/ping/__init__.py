@@ -26,12 +26,14 @@ from tobiko.shell.ping import _statistics
 assert_reachable_hosts = _assert.assert_reachable_hosts
 assert_unreachable_hosts = _assert.assert_unreachable_hosts
 
-PingException = _exception.PingException
-PingError = _exception.PingError
-LocalPingError = _exception.LocalPingError
 BadAddressPingError = _exception.BadAddressPingError
-UnknowHostError = _exception.UnknowHostError
+LocalPingError = _exception.LocalPingError
+ConnectPingError = _exception.ConnectPingError
 PingFailed = _exception.PingFailed
+PingError = _exception.PingError
+PingException = _exception.PingException
+SendToPingError = _exception.SendToPingError
+UnknowHostError = _exception.UnknowHostError
 
 skip_if_missing_fragment_ping_option = (
     _interface.skip_if_missing_fragment_ping_option)

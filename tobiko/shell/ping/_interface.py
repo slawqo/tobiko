@@ -123,7 +123,7 @@ class PingInterface(object):
     def get_ping_command(self, parameters):
         host = parameters.host
         if not host:
-            raise ValueError("Ping host destination hasn't been specified")
+            raise ValueError(f"Invalid destination host: '{host}'")
 
         command = sh.shell_command([self.get_ping_executable(parameters)] +
                                    self.get_ping_options(parameters) +

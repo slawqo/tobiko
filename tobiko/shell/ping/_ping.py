@@ -291,12 +291,13 @@ def handle_ping_command_error(error):
         if error:
             prefix = 'ping: '
             if error.startswith('ping: '):
-                text = error[len(prefix):]
-                handle_ping_bad_address_error(text)
-                handle_ping_local_error(text)
-                handle_ping_send_to_error(text)
-                handle_ping_unknow_host_error(text)
-                raise _exception.PingError(details=text)
+                error = error[len(prefix):]
+            handle_ping_bad_address_error(error)
+            handle_ping_local_error(error)
+            handle_ping_connect_error(error)
+            handle_ping_send_to_error(error)
+            handle_ping_unknow_host_error(error)
+            raise _exception.PingError(details=error)
 
 
 def handle_ping_bad_address_error(text):
@@ -329,6 +330,11 @@ def handle_ping_send_to_error(text):
 
 def handle_ping_unknow_host_error(text):
     prefix = 'unknown host'
+    if text.startswith(prefix):
+        details = text[len(prefix):].strip()
+        raise _exception.UnknowHostError(details=details)
+
+    prefix = 'unreachable-host: '
     if text.startswith(prefix):
         details = text[len(prefix):].strip()
         raise _exception.UnknowHostError(details=details)

@@ -15,106 +15,187 @@
 #    under the License.
 from __future__ import absolute_import
 
-import os
+import typing  # noqa
 
 import netaddr
 import testtools
 
 import tobiko
 from tobiko import config
+from tobiko.openstack import stacks
 from tobiko.shell import ip
 from tobiko.shell import ping
-from tobiko.tests.functional.shell import fixtures
+from tobiko.shell import sh
+from tobiko.shell import ssh
+from tobiko.tests.functional.shell import _fixtures
 
 
 CONF = config.CONF
 
+SshClientType = typing.Union[bool, None, ssh.SSHClientFixture]
+
 
 class PingTest(testtools.TestCase):
 
-    namespace = tobiko.required_setup_fixture(fixtures.NetworkNamespaceFixture)
+    ssh_client: SshClientType = False
 
-    def test_ping_recheable_address(self):
-        result = ping.ping('127.0.0.1', count=3)
+    @property
+    def execute_params(self):
+        return dict(ssh_client=self.ssh_client)
+
+    def test_ping_reachable_address(self):
+        result = ping.ping('127.0.0.1', count=3,
+                           **self.execute_params)
         self.assertIsNone(result.source)
         self.assertEqual(netaddr.IPAddress('127.0.0.1'), result.destination)
         result.assert_transmitted()
         result.assert_replied()
 
     def test_ping_reachable_hostname(self):
-        result = ping.ping('example.org', count=3)
+        result = ping.ping('localhost', count=3, **self.execute_params)
         self.assertIsNone(result.source)
-        # self.assertIsNotNone(result.destination)
+        self.assertIsNotNone(result.destination)
         result.assert_transmitted()
         result.assert_replied()
 
     def test_ping_unreachable_address(self):
-        result = ping.ping('1.2.3.4', count=3)
+        result = ping.ping('1.2.3.4', count=3, check=False,
+                           **self.execute_params)
         self.assertIsNone(result.source)
-        self.assertEqual(netaddr.IPAddress('1.2.3.4'), result.destination)
-        result.assert_transmitted()
+        self.assertIn(result.destination, [netaddr.IPAddress('1.2.3.4'),
+                                           None])
+        if result.destination is not None:
+            result.assert_transmitted()
         result.assert_not_replied()
 
+    def test_ping_invalid_ip(self):
+        try:
+            result = ping.ping('0.1.2.3', count=1,
+                               **self.execute_params)
+        except ping.PingError as ex:
+            self.assertIn(ex, [
+                ping.ConnectPingError(details='Invalid argument'),
+                ping.ConnectPingError(details='Network is unreachable'),
+                ping.SendToPingError(details='No route to host'),
+            ])
+        else:
+            self.assertIsNone(result.source)
+            self.assertEqual(netaddr.IPAddress('0.1.2.3'),
+                             result.destination)
+            result.assert_transmitted()
+            result.assert_not_replied()
+
     def test_ping_unreachable_hostname(self):
-        ex = self.assertRaises(ping.UnknowHostError, ping.ping,
-                               'unreachable-host', count=3)
-        if ex.details:
-            self.assertEqual('unreachable-host', ex.details)
+        ex = self.assertRaises(ping.PingError, ping.ping,
+                               'unreachable-host', count=3,
+                               **self.execute_params)
+        self.assertIn(ex, [
+            ping.UnknowHostError(details='unreachable-host'),
+            ping.UnknowHostError(
+                details='Temporary failure in name resolution'),
+            ping.BadAddressPingError(address='unreachable-host'),
+            ping.UnknowHostError(
+                details='Name or service not known')
+        ])
 
     def test_ping_until_received(self):
-        result = ping.ping_until_received('127.0.0.1', count=3)
+        result = ping.ping_until_received('127.0.0.1', count=3,
+                                          **self.execute_params)
         self.assertIsNone(result.source)
         self.assertEqual(netaddr.IPAddress('127.0.0.1'), result.destination)
         result.assert_transmitted()
         result.assert_replied()
 
     def test_ping_until_received_unreachable(self):
-        ex = self.assertRaises(ping.PingFailed, ping.ping_until_received,
-                               '1.2.3.4', count=3, timeout=6)
-        self.assertEqual(6, ex.timeout)
-        self.assertEqual(0, ex.count)
-        self.assertEqual(3, ex.expected_count)
-        self.assertEqual('received', ex.message_type)
+        ex = self.assertRaises(ping.PingError, ping.ping_until_received,
+                               '1.2.3.4', count=3, timeout=6,
+                               **self.execute_params)
+        self.assertIn(ex, [
+            ping.PingFailed(timeout=6, count=0, expected_count=3,
+                            message_type='received'),
+            ping.ConnectPingError(details='Network is unreachable')])
 
-    def test_ping_until_unreceived_recheable(self):
+    def test_ping_until_unreceived_reachable(self):
         ex = self.assertRaises(ping.PingFailed, ping.ping_until_unreceived,
-                               '127.0.0.1', count=3, timeout=6)
+                               '127.0.0.1', count=3, timeout=6,
+                               **self.execute_params)
         self.assertEqual(6, ex.timeout)
         self.assertEqual(0, ex.count)
         self.assertEqual(3, ex.expected_count)
         self.assertEqual('unreceived', ex.message_type)
 
-    def test_ping_until_unreceived_unrecheable(self):
-        result = ping.ping_until_unreceived('1.2.3.4', count=3,
-                                            check=False)
+    def test_ping_until_unreceived_unreachable(self):
+        result = ping.ping_until_unreceived('1.2.3.4', count=3, check=False,
+                                            **self.execute_params)
         self.assertIsNone(result.source)
-        self.assertEqual(netaddr.IPAddress('1.2.3.4'), result.destination)
-        result.assert_transmitted()
+        if result.destination is None:
+            result.assert_not_transmitted()
+        else:
+            self.assertEqual(result.destination, netaddr.IPAddress('1.2.3.4'))
+            result.assert_transmitted()
         result.assert_not_replied()
 
     def test_ping_reachable_with_timeout(self):
         ex = self.assertRaises(ping.PingFailed, ping.ping, '127.0.0.1',
-                               count=20, timeout=1.)
+                               count=20, timeout=1.,
+                               **self.execute_params)
         self.assertEqual(1., ex.timeout)
         self.assertEqual(20, ex.expected_count)
         self.assertEqual('transmitted', ex.message_type)
 
-    def test_ping_hosts(self, ssh_client=None, network_namespace=None,
-                        **params):
-        if not os.path.isfile('/sbin/ip'):
-            self.skip("'/sbin/ip' command not found")
-        ips = ip.list_ip_addresses(ssh_client=ssh_client,
-                                   network_namespace=network_namespace)
-        reachable_ips, unrecheable_ips = ping.ping_hosts(
-            ips, ssh_client=ssh_client, network_namespace=network_namespace,
-            **params)
+    def test_ping_hosts(self):
+        try:
+            sh.execute('[ -x /sbin/ip ]', ssh_client=self.ssh_client)
+        except sh.ShellCommandFailed:
+            self.skipTest("'/sbin/ip' command not found")
+        ips = ip.list_ip_addresses(**self.execute_params)
+        reachable_ips, unreachable_ips = ping.ping_hosts(
+            ips, **self.execute_params)
 
         expected_reachable = [i for i in ips if i in reachable_ips]
         self.assertEqual(expected_reachable, reachable_ips)
         expected_unreachable = [i for i in ips if i not in reachable_ips]
-        self.assertEqual(expected_unreachable, unrecheable_ips)
+        self.assertEqual(expected_unreachable, unreachable_ips)
 
-    def test_ping_hosts_from_network_namespace(self):
-        self.test_ping_hosts(
-            ssh_client=self.namespace.ssh_client,
-            network_namespace=self.namespace.network_namespace)
+
+@ssh.skip_unless_has_ssh_proxy_jump
+class ProxyPingTest(PingTest):
+    ssh_client = None
+
+
+class NamespacePingTest(PingTest):
+
+    namespace = tobiko.required_setup_fixture(
+        _fixtures.NetworkNamespaceFixture)
+
+    @property
+    def ssh_client(self):
+        return self.namespace.ssh_client
+
+    @property
+    def network_namespace(self):
+        return self.namespace.network_namespace
+
+    @property
+    def execute_params(self):
+        return dict(ssh_client=self.ssh_client,
+                    network_namespace=self.network_namespace)
+
+
+class CirrosPingTest(PingTest):
+
+    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+
+    @property
+    def ssh_client(self):
+        return self.stack.ssh_client
+
+
+class CentosPingTest(CirrosPingTest):
+
+    stack = tobiko.required_setup_fixture(stacks.CentosServerStackFixture)
+
+
+class UbuntuPingTest(CirrosPingTest):
+
+    stack = tobiko.required_setup_fixture(stacks.UbuntuServerStackFixture)

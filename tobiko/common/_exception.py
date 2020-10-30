@@ -75,12 +75,17 @@ class TobikoException(Exception):
             class_name=type(self).__name__,
             message=self.message)
 
+    def __eq__(self, other):
+        return type(self) == type(other) and str(self) == str(other)
+
+    def __hash__(self):
+        return hash(type(self)) + hash(str(self))
+
 
 def check_valid_type(obj, *valid_types):
     if not isinstance(obj, valid_types):
         types_str = ", ".join(str(t) for t in valid_types)
-        message = ("Object {!r} is not of a valid type ({!s})").format(
-            obj, types_str)
+        message = f"Object {obj!r} is not of a valid type ({types_str})"
         raise TypeError(message)
     return obj
 
