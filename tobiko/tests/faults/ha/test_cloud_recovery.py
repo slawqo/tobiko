@@ -26,6 +26,7 @@ def overcloud_health_checks(passive_checks_only=False):
     containers.list_node_containers.cache_clear()
     containers.assert_all_tripleo_containers_running()
     containers.assert_equal_containers_state()
+    containers.run_container_config_validations()
     validations.run_post_deployment_validations()
 
 
