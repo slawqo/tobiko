@@ -27,6 +27,7 @@ def overcloud_health_checks(passive_checks_only=False):
     containers.assert_all_tripleo_containers_running()
     containers.assert_equal_containers_state()
     containers.run_container_config_validations()
+    tests.test_ovn_dbs_are_synchronized()
     validations.run_post_deployment_validations()
 
 
