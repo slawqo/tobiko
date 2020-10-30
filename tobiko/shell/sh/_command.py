@@ -16,7 +16,6 @@
 from __future__ import absolute_import
 
 import shlex
-import subprocess
 import typing  # noqa
 
 
@@ -26,7 +25,7 @@ class ShellCommand(tuple):
         return "ShellCommand([{!s}])".format(', '.join(self))
 
     def __str__(self):
-        return subprocess.list2cmdline(self)
+        return list_to_command_line(self)
 
     def __add__(self, other):
         other = shell_command(other)
@@ -43,3 +42,43 @@ def shell_command(command: ShellCommandType) -> ShellCommand:
         return ShellCommand(shlex.split(command))
     else:
         return ShellCommand(str(a) for a in command)
+
+
+def list_to_command_line(seq):
+    result = []
+    for arg in seq:
+        bs_buf = []
+
+        # Add a space to separate this argument from the others
+        if result:
+            result.append(' ')
+
+        needquote = (" " in arg) or ("\t" in arg) or not arg
+        if needquote:
+            result.append("'")
+
+        for c in arg:
+            if c == '\\':
+                # Don't know if we need to double yet.
+                bs_buf.append(c)
+            elif c == '"':
+                # Double backslashes.
+                result.append('\\' * len(bs_buf)*2)
+                bs_buf = []
+                result.append('\\"')
+            else:
+                # Normal char
+                if bs_buf:
+                    result.extend(bs_buf)
+                    bs_buf = []
+                result.append(c)
+
+        # Add remaining backslashes, if any.
+        if bs_buf:
+            result.extend(bs_buf)
+
+        if needquote:
+            result.extend(bs_buf)
+            result.append("'")
+
+    return ''.join(result)
