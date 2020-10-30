@@ -85,7 +85,8 @@ class PingTest(testtools.TestCase):
         self.assertEqual('unreceived', ex.message_type)
 
     def test_ping_until_unreceived_unrecheable(self):
-        result = ping.ping_until_unreceived('1.2.3.4', count=3)
+        result = ping.ping_until_unreceived('1.2.3.4', count=3,
+                                            check=False)
         self.assertIsNone(result.source)
         self.assertEqual(netaddr.IPAddress('1.2.3.4'), result.destination)
         result.assert_transmitted()

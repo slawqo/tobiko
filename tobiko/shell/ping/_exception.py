@@ -35,6 +35,10 @@ class SendToPingError(PingError):
     """Raised when sendto error happens"""
 
 
+class ConnectPingError(PingError):
+    """Raised when sendto error happens"""
+
+
 class UnknowHostError(PingError):
     """Raised when unable to resolve host name"""
 

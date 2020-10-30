@@ -313,6 +313,13 @@ def handle_ping_local_error(text):
         raise _exception.LocalPingError(details=details)
 
 
+def handle_ping_connect_error(text):
+    prefix = 'connect: '
+    if text.startswith(prefix):
+        details = text[len(prefix):].strip()
+        raise _exception.ConnectPingError(details=details)
+
+
 def handle_ping_send_to_error(text):
     prefix = 'sendto: '
     if text.startswith(prefix):
