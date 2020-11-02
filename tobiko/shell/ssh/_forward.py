@@ -228,11 +228,11 @@ class SSHTunnelForwarder(sshtunnel.SSHTunnelForwarder):
     def _get_transport(self):
         return self.ssh_client.connect().get_transport()
 
-    def _stop_transport(self):
+    def _stop_transport(self, force=True):
         if self.is_active:
             del self._transport
             assert not self.is_active
-        super(SSHTunnelForwarder, self)._stop_transport()
+        super(SSHTunnelForwarder, self)._stop_transport(force=force)
 
     @staticmethod
     def _get_binds(bind_address, bind_addresses, is_remote=False):
