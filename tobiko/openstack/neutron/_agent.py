@@ -72,8 +72,14 @@ def skip_if_missing_networking_agents(binary: typing.Optional[str] = None,
 
 
 def skip_unless_is_ovn():
-    '''Skip the test if ovn_controller agent does not exist'''
-    return skip_if_missing_networking_agents(OVN_CONTROLLER)
+    '''Skip the test if OVN is not configured'''
+    from tobiko.tripleo import overcloud
+    from tobiko.tripleo import containers
+    if overcloud.has_overcloud():
+        message = "OVN is not configured"
+        return tobiko.skip_unless(message, containers.ovn_used_on_overcloud)
+    else:
+        return skip_if_missing_networking_agents(OVN_CONTROLLER)
 
 
 def skip_unless_is_ovs():

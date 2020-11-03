@@ -27,6 +27,7 @@ from tobiko.openstack import stacks
 from tobiko.openstack import topology
 from tobiko.shell import ping
 from tobiko.shell import sh
+from tobiko.tripleo import containers
 
 
 LOG = log.getLogger(__name__)
@@ -56,6 +57,27 @@ class BaseAgentTest(testtools.TestCase):
     def hosts(self) -> typing.List[str]:
         return [agent['host'] for agent in self.agents]
 
+    def get_ovn_agents_from_containers(self):
+        if not self.agents:
+            try:
+                self.container_name = \
+                    topology.get_agent_container_name(self.agent_name)
+            except KeyError:
+                LOG.debug('OVN network agents are not containerized on this'
+                          'environment')
+                return
+            oc_containers_df = containers.list_containers_df().query(
+                f'container_name == "{self.container_name}"')
+            LOG.debug(
+                f"{self.container_name} container found:\n{oc_containers_df}")
+
+            self.agents = []
+            for _, oc_container in oc_containers_df.iterrows():
+                if oc_container['container_state'] == 'running':
+                    agent_info = {'host': oc_container['container_host'],
+                                  'name': oc_container['container_name']}
+                    self.agents.append(agent_info)
+
     def stop_agent(self, hosts: typing.Optional[typing.List[str]] = None):
         '''Stop network agent on hosts
 
@@ -82,8 +104,9 @@ class BaseAgentTest(testtools.TestCase):
                 LOG.debug(f"Service '{self.service_name}' stopped on host "
                           f"'{host}'.")
             else:
-                self.container_name = \
-                            topology.get_agent_container_name(self.agent_name)
+                if self.container_name == '':
+                    self.container_name = topology.get_agent_container_name(
+                        self.agent_name)
                 LOG.debug(f'Stopping container {self.container_name} on '
                           f"host '{host}'...")
                 sh.execute(f'docker stop {self.container_name}',
@@ -117,8 +140,9 @@ class BaseAgentTest(testtools.TestCase):
                            ssh_client=ssh_client,
                            sudo=True)
             else:
-                self.container_name = \
-                            topology.get_agent_container_name(self.agent_name)
+                if self.container_name == '':
+                    self.container_name = topology.get_agent_container_name(
+                        self.agent_name)
                 LOG.debug(f'Starting container {self.container_name} on '
                           f"host '{host}'...")
                 sh.execute(f'docker start {self.container_name}',
@@ -484,15 +508,16 @@ class OpenVSwitchAgentTest(BaseAgentTest):
         ping.ping_until_received(self.stack.ip_address).assert_replied()
 
 
-# TODO(eolivare): these tests will always be skipped on OSP13 because 'agent
-# list' requests return empty list with OVN+OSP13
-# Search for the corresponding container instead of the networking agent
 class OvnControllerTest(BaseAgentTest):
 
     agent_name = neutron.OVN_CONTROLLER
 
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+
+    def setUp(self):
+        self.get_ovn_agents_from_containers()
+        super(OvnControllerTest, self).setUp()
 
     def test_restart_ovn_controller(self):
         '''Test that OVN controller agents can be restarted successfully
@@ -595,6 +620,10 @@ class MetadataAgentTest(BaseAgentTest):
 class OvnMetadataAgentTest(MetadataAgentTest):
 
     agent_name = neutron.OVN_METADATA_AGENT
+
+    def setUp(self):
+        self.get_ovn_agents_from_containers()
+        super(OvnMetadataAgentTest, self).setUp()
 
 
 def parse_http_status(curl_output: str) -> int:
