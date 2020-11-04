@@ -75,7 +75,8 @@ class OpenvswitchTest(testtools.TestCase):
     @undercloud.skip_if_missing_undercloud
     def test_recreate_physical_bridge(self):
         # Check if vm is reachable before test
-        ping.ping_until_received(self.stack.ip_address).assert_replied()
+        ip_add = self.stack.ip_address
+        ping.ping_until_received(ip_add).assert_replied()
 
         network_l3_agents = neutron.list_l3_agent_hosting_routers(
             self.router_id)
@@ -86,6 +87,6 @@ class OpenvswitchTest(testtools.TestCase):
                 agent['host'],
                 ovs_agent['configurations']['bridge_mappings'].values())
 
-        ping.ping_until_unreceived(self.stack.ip_address).assert_not_replied()
+        ping.ping_until_unreceived(ip_add).assert_not_replied()
         self._create_bridges()
-        ping.ping_until_received(self.stack.ip_address).assert_replied()
+        ping.ping_until_received(ip_add).assert_replied()
