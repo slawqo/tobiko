@@ -288,11 +288,11 @@ def run_container_config_validations():
                 # versions. On versions with podman, 'docker' command is
                 # linked to 'podman'
                 obtained_param = sh.execute(
-                    "sudo docker exec -uroot "
+                    "docker exec -uroot "
                     f"{config_check['container_name']} crudini "
                     f"--get {config_check['config_file']} "
                     f"{param_check['section']} {param_check['param']}",
-                    ssh_client=node.ssh_client).stdout.strip()
+                    ssh_client=node.ssh_client, sudo=True).stdout.strip()
                 if param_check['expected_value'] not in obtained_param:
                     tobiko.fail(f"Expected {param_check['param']} value: "
                                 f"{param_check['expected_value']}\n"

@@ -41,8 +41,8 @@ def get_filtered_node_containers(node, containers_regex):
     # 'docker' is used here in order to be compatible with old OSP versions.
     # On versions with podman, 'docker' command is linked to 'podman'
     result = sh.execute(
-            'sudo docker ps --format "{{.Names}}"',
-            ssh_client=node.ssh_client)
+            'docker ps --format "{{.Names}}"',
+            ssh_client=node.ssh_client, sudo=True)
     all_node_containers = result.stdout.strip().split('\n')
     for container in all_node_containers:
         container = container.strip('"')
@@ -90,9 +90,9 @@ def get_config_files(node, kolla_jsons, conf_ignorelist, scripts_to_check):
     :rtype: list
     """
     cmds = sh.execute(
-            f"sudo jq '.command' {' '.join(kolla_jsons)}",
+            f"jq '.command' {' '.join(kolla_jsons)}",
             ssh_client=node.ssh_client,
-            expect_exit_status=None).stdout.strip().split('\n')
+            expect_exit_status=None, sudo=True).stdout.strip().split('\n')
     LOG.debug(f'{node.name} run containers with commands {cmds}')
     config_files = set()
     for cmd in cmds:
@@ -101,11 +101,12 @@ def get_config_files(node, kolla_jsons, conf_ignorelist, scripts_to_check):
             LOG.debug(f'{cmd} is recognized as script to search '
                       'for config files in')
             oc_script_location = sh.execute(
-                    f'sudo find /var/lib | grep {cmd} | grep -v overlay',
-                    ssh_client=node.ssh_client).stdout.strip().split('\n')[0]
+                    f'find /var/lib | grep {cmd} | grep -v overlay',
+                    ssh_client=node.ssh_client,
+                    sudo=True).stdout.strip().split('\n')[0]
             cmd = sh.execute(
-                    f'sudo cat {oc_script_location}',
-                    ssh_client=node.ssh_client).stdout.strip()
+                    f'cat {oc_script_location}',
+                    ssh_client=node.ssh_client, sudo=True).stdout.strip()
             cmd = cmd.strip('"')
         temp_conf_files = re.findall('--config-file [^ \n]*', cmd)
         for conf_file in temp_conf_files:
@@ -201,9 +202,10 @@ def get_node_logdir_from_pcs(node, container):
     if pcs_resource is None:
         return
     logdir = None
-    pcs_rsrc_cmd = f'sudo pcs resource show {pcs_resource}'
+    pcs_rsrc_cmd = f'pcs resource show {pcs_resource}'
     out_lines = sh.execute(pcs_rsrc_cmd,
-                           ssh_client=node.ssh_client).stdout.splitlines()
+                           ssh_client=node.ssh_client,
+                           sudo=True).stdout.splitlines()
     log_files_regex = re.compile(
         r'^\s*options=.*source-dir=(.*) target-dir=.*-log-files\)$')
     for line in out_lines:
@@ -221,9 +223,10 @@ def get_pacemaker_resource_logfiles(node, container):
     logfiles = []
     exclude_pid_files = 'ovn-controller.pid'
     resource = get_pacemaker_resource_from_container(container)
-    pcs_rsrc_cmd = f'sudo pcs resource show {resource}'
+    pcs_rsrc_cmd = f'pcs resource show {resource}'
     out_lines = sh.execute(pcs_rsrc_cmd,
-                           ssh_client=node.ssh_client).stdout.splitlines()
+                           ssh_client=node.ssh_client,
+                           sudo=True).stdout.splitlines()
     run_files_regex = re.compile(
         r'^\s*options=.*source-dir=(.*) target-dir=.*-run-files\)$')
     for line in out_lines:
@@ -234,12 +237,14 @@ def get_pacemaker_resource_logfiles(node, container):
                                     ssh_client=node.ssh_client).
                          stdout.splitlines())
             break
-    pids = sh.execute(f'sudo cat {" ".join(pid_files)}',
-                      ssh_client=node.ssh_client).stdout.splitlines()
+    pids = sh.execute(f'cat {" ".join(pid_files)}',
+                      ssh_client=node.ssh_client,
+                      sudo=True).stdout.splitlines()
     for pid in pids:
-        cmd_stdout = sh.execute(f'sudo docker exec -u root {container} '
+        cmd_stdout = sh.execute(f'docker exec -u root {container} '
                                 f'cat /proc/{pid}/cmdline',
-                                ssh_client=node.ssh_client).stdout
+                                ssh_client=node.ssh_client,
+                                sudo=True).stdout
         for log_file in re.findall('--log-file=[^ \n\x00]*', cmd_stdout):
             logfiles.append(log_file.split('=')[1])
     return logfiles
@@ -266,15 +271,15 @@ def get_container_logfiles(node, container):
     :rtype: list
     """
     cmd = sh.execute(
-            f'sudo docker exec -u root {container} cat /run_command',
-            ssh_client=node.ssh_client)
+            f'docker exec -u root {container} cat /run_command',
+            ssh_client=node.ssh_client, sudo=True)
     cmd_stdout = cmd.stdout.strip()
     if 'pacemaker_remoted' in cmd_stdout:
         return get_pacemaker_resource_logfiles(node, container)
     if ' ' not in cmd_stdout:  # probably script as no space in the command
         cmd = sh.execute(
-                f'sudo docker exec -u root {container} cat {cmd_stdout}',
-                ssh_client=node.ssh_client)
+                f'docker exec -u root {container} cat {cmd_stdout}',
+                ssh_client=node.ssh_client, sudo=True)
         cmd_stdout = cmd.stdout.strip()
     LOG.debug(f'The following command is executed in {container} container '
               f'on {node.name} node:\n{cmd_stdout}')
@@ -325,8 +330,8 @@ def log_msg(node, container, logfile, msg):
     :type msg: string
     """
     cmd = f"sh -c 'echo {msg} >> {logfile}'"
-    sh.execute(f'sudo docker exec -u root {container} {cmd}',
-               ssh_client=node.ssh_client)
+    sh.execute(f'docker exec -u root {container} {cmd}',
+               ssh_client=node.ssh_client, sudo=True)
 
 
 def find_msg_in_file(node, logfile, message, rotated=False):
@@ -349,9 +354,9 @@ def find_msg_in_file(node, logfile, message, rotated=False):
     else:
         suffix = ""
     LOG.debug(f'Searching for {message} in {logfile}{suffix} on {node.name}')
-    result = sh.execute(f'sudo grep -h {message} {logfile}{suffix}',
+    result = sh.execute(f'grep -h {message} {logfile}{suffix}',
                         ssh_client=node.ssh_client,
-                        expect_exit_status=None)
+                        expect_exit_status=None, sudo=True)
     if result.stderr:
         tobiko.fail(f'Failed to read {logfile} on {node.name}:\n'
                     f'{result.stderr}')
@@ -372,9 +377,9 @@ def rotate_logs(node):
         tobiko.skip('No logrotate container has been found')
     else:
         container = containers[0]
-    sh.execute(f'sudo docker exec -u root {container} logrotate '
+    sh.execute(f'docker exec -u root {container} logrotate '
                '-f /etc/logrotate-crond.conf',
-               ssh_client=node.ssh_client)
+               ssh_client=node.ssh_client, sudo=True)
 
 
 def has_docker():

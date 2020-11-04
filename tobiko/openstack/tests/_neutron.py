@@ -104,9 +104,9 @@ def test_ovn_dbs_are_synchronized():
 
     # declare commands
     search_container_cmd = (
-        "sudo %s ps --format '{{.Names}}' -f name=ovn-dbs-bundle" %
+        "%s ps --format '{{.Names}}' -f name=ovn-dbs-bundle" %
         containers.container_runtime_name)
-    container_cmd_prefix = ('sudo %s exec -uroot {container}' %
+    container_cmd_prefix = ('%s exec -uroot {container}' %
                             containers.container_runtime_name)
     ovndb_sync_cmd = ('ovs-appctl -t /var/run/openvswitch/{ovndb_ctl_file} '
                       'ovsdb-server/sync-status')
@@ -124,20 +124,22 @@ def test_ovn_dbs_are_synchronized():
     # obtained the container name
     container_name = sh.execute(
         search_container_cmd,
-        ssh_client=ovn_master_node.ssh_client).stdout.splitlines()[0]
+        ssh_client=ovn_master_node.ssh_client,
+        sudo=True).stdout.splitlines()[0]
     for db in ('nb', 'sb'):
         # check its synchronization is active
         sync_cmd = (' '.join((container_cmd_prefix, ovndb_sync_cmd)).
                     format(container=container_name,
                            ovndb_ctl_file=ovndb_ctl_file_dict[db]))
         sync_status = sh.execute(sync_cmd,
-                                 ssh_client=ovn_master_node.ssh_client).stdout
+                                 ssh_client=ovn_master_node.ssh_client,
+                                 sudo=True).stdout
         test_case.assertIn(expected_state_active_str, sync_status)
         # obtain nb and sb show output
         show_cmd = (' '.join((container_cmd_prefix, ovndb_show_cmd)).
                     format(container=container_name, ovndb=ovndb_dict[db]))
         ovn_db_show = sh.execute(
-            show_cmd, ssh_client=ovn_master_node.ssh_client).stdout
+            show_cmd, ssh_client=ovn_master_node.ssh_client, sudo=True).stdout
         ovn_master_dbs_show_dict[db] = build_ovn_db_show_dict(ovn_db_show)
 
     # ovn dbs are located on the controller nodes
@@ -147,7 +149,7 @@ def test_ovn_dbs_are_synchronized():
             continue
         container_name = sh.execute(
             search_container_cmd,
-            ssh_client=node.ssh_client).stdout.splitlines()[0]
+            ssh_client=node.ssh_client, sudo=True).stdout.splitlines()[0]
         # verify ovn nb and sb dbs are synchronized
         ovn_dbs_show_dict = {}
         for db in ('nb', 'sb'):
@@ -156,13 +158,14 @@ def test_ovn_dbs_are_synchronized():
                         format(container=container_name,
                                ovndb_ctl_file=ovndb_ctl_file_dict[db]))
             sync_status = sh.execute(sync_cmd,
-                                     ssh_client=node.ssh_client).stdout
+                                     ssh_client=node.ssh_client,
+                                     sudo=True).stdout
             test_case.assertIn(expected_state_backup_str, sync_status)
             # obtain nb and sb show output
             show_cmd = (' '.join((container_cmd_prefix, ovndb_show_cmd)).
                         format(container=container_name, ovndb=ovndb_dict[db]))
             ovn_db_show = sh.execute(
-                show_cmd, ssh_client=node.ssh_client).stdout
+                show_cmd, ssh_client=node.ssh_client, sudo=True).stdout
             ovn_dbs_show_dict[db] = build_ovn_db_show_dict(ovn_db_show)
             test_case.assertEqual(ovn_dbs_show_dict[db],
                                   ovn_master_dbs_show_dict[db])

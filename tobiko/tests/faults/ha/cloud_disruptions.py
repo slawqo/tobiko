@@ -271,8 +271,20 @@ def reset_all_compute_nodes(hard_reset=False):
         LOG.info('{} is up '.format(compute_checked))
 
 
-def reset_ovndb_master_resource():
-    """restart ovndb pacemaker resource"""
+def reset_ovndb_pcs_master_resource():
+    """restart ovndb pacemaker resource
+    this method only restart the resource running on the controller with is
+    acting as Master"""
+    node = pacemaker.get_overcloud_nodes_running_pcs_resource(
+        resource_type='(ocf::ovn:ovndb-servers):', resource_state='Master')[0]
+    ovn_db_pcs_master_resource_restart = (ovn_db_pcs_resource_restart + ' ' +
+                                          node)
+    disrupt_node(node, disrupt_method=ovn_db_pcs_master_resource_restart)
+
+
+def reset_ovndb_pcs_resource():
+    """restart ovndb pacemaker resource
+    this method restart the whole resource, i.e. on all the controller nodes"""
     node = pacemaker.get_overcloud_nodes_running_pcs_resource(
         resource_type='(ocf::ovn:ovndb-servers):', resource_state='Master')[0]
     disrupt_node(node, disrupt_method=ovn_db_pcs_resource_restart)
@@ -281,7 +293,7 @@ def reset_ovndb_master_resource():
 def reset_ovndb_master_container():
     """get and restart the ovndb master container
     use of partial name :  resource: ovn-dbs-bundle-0 =>
-    container: ovn-dbs-bundle-podman-2"""
+    container: ovn-dbs-bundle-podman-0 or ovn-dbs-bundle-docker-0"""
     node = pacemaker.get_overcloud_nodes_running_pcs_resource(
         resource_type='(ocf::ovn:ovndb-servers):', resource_state='Master')[0]
     resource = pacemaker.get_overcloud_resource(

@@ -519,6 +519,71 @@ class OvnControllerTest(BaseAgentTest):
         self.get_ovn_agents_from_containers()
         super(OvnControllerTest, self).setUp()
 
+    def kill_ovn_controller(self,
+                            hosts: typing.Optional[typing.List[str]] = None,
+                            timeout=60, interval=5):
+        '''Stop OVN controller container by killing ovn-controller process
+        running into it
+
+        Docker/Podman service should restart it automatically
+
+        :parm hosts: List of hostnames to stop agent on
+        :type hosts: list of strings
+        :param timeout: Time to wait OVN controller is recovered
+        :type timeout: int
+        :param interval: Time to wait between attempts
+        :type interval: int
+        '''
+        hosts = hosts or self.hosts
+        self.assertNotEqual([], hosts, "Host list is empty")
+
+        if self.container_name == '':
+            self.container_name = topology.get_agent_container_name(
+                self.agent_name)
+
+        for host in hosts:
+            ssh_client = topology.get_openstack_node(hostname=host).ssh_client
+            pid = None
+            for directory in ('ovn', 'openvswitch'):
+                try:
+                    pid = sh.execute('docker exec -uroot '
+                                     f'{self.container_name} cat '
+                                     f'/run/{directory}/ovn-controller.pid',
+                                     ssh_client=ssh_client,
+                                     sudo=True).stdout.splitlines()[0]
+                except sh.ShellCommandFailed:
+                    LOG.debug(f'/run/{directory}/ovn-controller.pid cannot '
+                              f'be accessed')
+                else:
+                    LOG.debug(f'/run/{directory}/ovn-controller.pid returned '
+                              f'pid {pid}')
+                    break
+
+            self.assertIsNotNone(pid)
+            LOG.debug(f'Killing process {pid} from container '
+                      f'{self.container_name} on host {host}')
+            sh.execute(f'docker exec -uroot {self.container_name} '
+                       f'kill {pid}',
+                       ssh_client=ssh_client,
+                       sudo=True)
+            LOG.debug(f'Container {self.container_name} has been killed '
+                      f"on host '{host}'...")
+            # Schedule auto-restart of service at the end of this test case
+            self.addCleanup(self.start_agent, hosts=[host, ])
+
+            # Verify the container is restarted automatically
+            for attempt in tobiko.retry(timeout=timeout, interval=interval):
+                search_running_ovn_cont = ("docker ps --format '{{.Names}}'"
+                                           f" -f name={self.container_name}")
+                output = sh.execute(search_running_ovn_cont,
+                                    ssh_client=ssh_client,
+                                    sudo=True).stdout.splitlines()
+
+                if self.container_name in output:
+                    LOG.debug(f'{self.container_name} successfully restarted')
+                    break
+                attempt.check_limits()
+
     def test_restart_ovn_controller(self):
         '''Test that OVN controller agents can be restarted successfully
         '''
@@ -527,6 +592,12 @@ class OvnControllerTest(BaseAgentTest):
 
         self.start_agent()
         ping.ping_until_received(self.stack.ip_address).assert_replied()
+
+    def test_kill_ovn_controller(self):
+        '''Test that OVN controller container is restarted automatically after
+        ovn-controller process running into it was killed
+        '''
+        self.kill_ovn_controller()
 
 
 class MetadataAgentTest(BaseAgentTest):
