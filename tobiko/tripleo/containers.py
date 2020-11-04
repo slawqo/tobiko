@@ -13,6 +13,7 @@ import tobiko
 from tobiko import podman
 from tobiko import docker
 from tobiko.openstack import topology
+from tobiko.shell import sh
 from tobiko.shell import ssh
 from tobiko.tripleo import overcloud
 from tobiko.tripleo import topology as tripleo_topology
@@ -242,6 +243,65 @@ def assert_ovn_containers_running():
         LOG.info("Networking OVN containers verified in running state")
     else:
         LOG.info("Networking OVN not configured")
+
+
+def run_container_config_validations():
+    """check containers configuration in different scenarios
+    """
+
+    # TODO add here any generic configuration validation
+    config_checkings = []
+
+    if ovn_used_on_overcloud():
+        ovn_config_checkings = \
+            [{'node_group': 'controller',
+              'container_name': 'neutron_api',
+              'config_file': '/etc/neutron/plugins/ml2/ml2_conf.ini',
+              'param_validations': [{'section': 'ml2',
+                                     'param': 'mechanism_drivers',
+                                     'expected_value': 'ovn'},
+                                    {'section': 'ml2',
+                                     'param': 'type_drivers',
+                                     'expected_value': 'geneve'},
+                                    {'section': 'ovn',
+                                     'param': 'ovn_l3_mode',
+                                     'expected_value': 'True'},
+                                    {'section': 'ovn',
+                                     'param': 'ovn_metadata_enabled',
+                                     'expected_value': 'True'}]}]
+        config_checkings += ovn_config_checkings
+    else:
+        ovs_config_checkings = \
+            [{'node_group': 'controller',
+              'container_name': 'neutron_api',
+              'config_file': '/etc/neutron/plugins/ml2/ml2_conf.ini',
+              'param_validations': [{'section': 'ml2',
+                                     'param': 'mechanism_drivers',
+                                     'expected_value': 'openvswitch'}]}]
+        config_checkings += ovs_config_checkings
+
+    for config_check in config_checkings:
+        for node in topology.list_openstack_nodes(
+                group=config_check['node_group']):
+            for param_check in config_check['param_validations']:
+                # 'docker' is used here in order to be compatible with old OSP
+                # versions. On versions with podman, 'docker' command is
+                # linked to 'podman'
+                obtained_param = sh.execute(
+                    "sudo docker exec -uroot "
+                    f"{config_check['container_name']} crudini "
+                    f"--get {config_check['config_file']} "
+                    f"{param_check['section']} {param_check['param']}",
+                    ssh_client=node.ssh_client).stdout.strip()
+                if param_check['expected_value'] not in obtained_param:
+                    tobiko.fail(f"Expected {param_check['param']} value: "
+                                f"{param_check['expected_value']}\n"
+                                f"Obtained {param_check['param']} value: "
+                                f"{obtained_param}")
+        LOG.info("Configuration verified:\n"
+                 f"node group: {config_check['node_group']}\n"
+                 f"container: {config_check['container_name']}\n"
+                 f"config file: {config_check['config_file']}")
 
 
 def comparable_container_keys(container, include_container_objects=False):
