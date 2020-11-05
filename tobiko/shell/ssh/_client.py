@@ -550,11 +550,12 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
                            key_filename=key_filename,
                            **parameters)
         except ValueError as ex:
+            attempt.check_limits()
             if (str(ex) == 'q must be exactly 160, 224, or 256 bits long' and
-                    key_filename):
+                    len(key_filename) > 1):
                 # Must try without the first key
-                LOG.debug("Retry connecting with the next key")
-                key_filename = key_filename[1:] + [key_filename[0]]
+                LOG.debug(f"Retry connecting with the next key: {ex}")
+                key_filename = key_filename[1:]
                 continue
             else:
                 raise
