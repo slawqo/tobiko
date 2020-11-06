@@ -172,3 +172,12 @@ class KeystoneClientAPITest(testtools.TestCase):
         self.assertEqual(service.id, endpoint.service_id)
         self.assertEqual('public', endpoint.interface)
         self.assertTrue(endpoint.enabled)
+
+    def test_get_session_endpoint(self):
+        endpoint = keystone.get_keystone_endpoint(
+            service_type='identity')
+        self.assertIsInstance(endpoint, str)
+
+    def test_get_session_token(self):
+        token = keystone.get_keystone_token()
+        self.assertIsInstance(token, str)

@@ -17,6 +17,7 @@ import typing
 
 from keystoneauth1 import loading
 from keystoneauth1 import session as _session
+from keystoneauth1 import plugin as _plugin
 from oslo_log import log
 
 import tobiko
@@ -165,3 +166,18 @@ def get_keystone_session(
                                   init_session=init_session)
     tobiko.check_valid_type(session, KeystoneSessionFixture)
     return tobiko.setup_fixture(session).session
+
+
+def get_keystone_endpoint(
+        session: KeystoneSessionType = None,
+        auth: typing.Optional[_plugin.BaseAuthPlugin] = None,
+        **kwargs) -> \
+        typing.Optional[str]:
+    return keystone_session(session).get_endpoint(auth=auth, **kwargs)
+
+
+def get_keystone_token(
+        session: KeystoneSessionType = None,
+        auth: typing.Optional[_plugin.BaseAuthPlugin] = None) -> \
+        typing.Optional[str]:
+    return keystone_session(session).get_token(auth=auth)

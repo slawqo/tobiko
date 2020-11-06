@@ -55,4 +55,6 @@ keystone_session = _session.keystone_session
 KeystoneSessionType = _session.KeystoneSessionType
 KeystoneSessionFixture = _session.KeystoneSessionFixture
 KeystoneSessionManager = _session.KeystoneSessionManager
+get_keystone_endpoint = _session.get_keystone_endpoint
 get_keystone_session = _session.get_keystone_session
+get_keystone_token = _session.get_keystone_token
