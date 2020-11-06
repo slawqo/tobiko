@@ -52,6 +52,7 @@ is_service_missing = _services.is_service_missing
 skip_if_missing_service = _services.skip_if_missing_service
 
 keystone_session = _session.keystone_session
+KeystoneSessionType = _session.KeystoneSessionType
 KeystoneSessionFixture = _session.KeystoneSessionFixture
 KeystoneSessionManager = _session.KeystoneSessionManager
 get_keystone_session = _session.get_keystone_session

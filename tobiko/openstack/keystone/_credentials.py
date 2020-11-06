@@ -70,25 +70,65 @@ class NoSuchCredentialsError(tobiko.TobikoException):
     message = "No such credentials from any of: {fixtures}"
 
 
-def get_keystone_credentials(obj=None) -> KeystoneCredentials:
-    if not obj:
+class KeystoneCredentialsFixture(tobiko.SharedFixture):
+
+    credentials: typing.Optional[KeystoneCredentials] = None
+
+    def __init__(self,
+                 credentials: typing.Optional[KeystoneCredentials] = None):
+        super(KeystoneCredentialsFixture, self).__init__()
+        if credentials is not None:
+            self.credentials = credentials
+
+    def setup_fixture(self):
+        self.setup_credentials()
+
+    def setup_credentials(self):
+        credentials = self.credentials
+        if credentials is None:
+            credentials = self.get_credentials()
+            if credentials is not None:
+                try:
+                    credentials.validate()
+                except InvalidKeystoneCredentials as ex:
+                    LOG.info("No such valid credentials from %r (%r)",
+                             self, ex)
+                else:
+                    self.addCleanup(self.cleanup_credentials)
+                    self.credentials = credentials
+
+    def cleanup_credentials(self):
+        del self.credentials
+
+    def get_credentials(self) -> typing.Optional[KeystoneCredentials]:
+        return self.credentials
+
+
+KeystoneCredentialsType = typing.Union[None,
+                                       KeystoneCredentials,
+                                       KeystoneCredentialsFixture,
+                                       str,
+                                       typing.Type]
+
+
+def get_keystone_credentials(obj: KeystoneCredentialsType = None) -> \
+        typing.Optional[KeystoneCredentials]:
+    if obj is None:
         return default_keystone_credentials()
+    if isinstance(obj, KeystoneCredentials):
+        return obj
     if tobiko.is_fixture(obj):
         obj = tobiko.get_fixture(obj)
         if isinstance(obj, KeystoneCredentialsFixture):
             obj = tobiko.setup_fixture(obj).credentials
-    if isinstance(obj, KeystoneCredentials):
-        return obj
-
-    message = "Can't get {!r} object from {!r}".format(
-        KeystoneCredentials, obj)
-    raise TypeError(message)
+            return get_keystone_credentials(obj)
+    raise TypeError(f"Can't get {KeystoneCredentials} object from {obj}")
 
 
-def default_keystone_credentials() -> KeystoneCredentials:
+def default_keystone_credentials() -> typing.Optional[KeystoneCredentials]:
     credentials = tobiko.setup_fixture(
         DefaultKeystoneCredentialsFixture).credentials
-    if credentials:
+    if credentials is not None:
         tobiko.check_valid_type(credentials, KeystoneCredentials)
     return credentials
 
@@ -118,40 +158,6 @@ def keystone_credentials(api_version=None,
 
 class InvalidKeystoneCredentials(tobiko.TobikoException):
     message = "invalid Keystone credentials; {reason!s}; {credentials!r}"
-
-
-class KeystoneCredentialsFixture(tobiko.SharedFixture):
-
-    credentials: typing.Optional[KeystoneCredentials] = None
-
-    def __init__(self,
-                 credentials: typing.Optional[KeystoneCredentials] = None):
-        super(KeystoneCredentialsFixture, self).__init__()
-        if credentials:
-            self.credentials = credentials
-
-    def setup_fixture(self):
-        self.setup_credentials()
-
-    def setup_credentials(self):
-        credentials = self.credentials
-        if not self.credentials:
-            credentials = self.get_credentials()
-            if credentials:
-                try:
-                    credentials.validate()
-                except InvalidKeystoneCredentials as ex:
-                    LOG.info("No such valid credentials from %r (%r)",
-                             self, ex)
-                else:
-                    self.addCleanup(self.cleanup_credentials)
-                    self.credentials = credentials
-
-    def cleanup_credentials(self):
-        del self.credentials
-
-    def get_credentials(self) -> typing.Optional[KeystoneCredentials]:
-        return self.credentials
 
 
 class EnvironKeystoneCredentialsFixture(KeystoneCredentialsFixture):

@@ -79,7 +79,7 @@ class KeystoneClientAPITest(testtools.TestCase):
                           keystone.find_service,
                           name='never-never-land')
 
-    def test_find_service_with_defaulkt(self):
+    def test_find_service_with_default(self):
         service = keystone.find_service(name='never-never-land',
                                         default=None)
         self.assertIsNone(service)

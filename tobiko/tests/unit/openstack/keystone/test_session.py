@@ -134,7 +134,8 @@ class KeystoneSessionManagerTest(openstack.OpenstackTest):
         self.test_get_session(credentials=CredentialsFixture)
 
     def test_get_session_with_init_session(self):
-        mock_session = mock.MagicMock(specs=keystone.KeystoneSessionFixture)
+        mock_session = mock.MagicMock(spec=keystone.KeystoneSessionFixture)
+        self.assertIsInstance(mock_session, keystone.KeystoneSessionFixture)
         init_session = mock.MagicMock(return_value=mock_session)
         manager = keystone.KeystoneSessionManager()
         session = manager.get_session(credentials=CREDENTIALS,
