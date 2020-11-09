@@ -173,7 +173,7 @@ def execute_process(process, stdin, expect_exit_status, login=None):
             except _exception.ShellCommandFailed:
                 status = ShellExecuteStatus.FAILED
                 error = tobiko.exc_info()
-            except _exception.ShellProcessNotTeriminated:
+            except _exception.ShellProcessNotTerminated:
                 status = ShellExecuteStatus.UNTERMINATED
             else:
                 status = ShellExecuteStatus.SUCCEEDED

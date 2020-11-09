@@ -35,8 +35,8 @@ shell_command = _command.shell_command
 ShellError = _exception.ShellError
 ShellCommandFailed = _exception.ShellCommandFailed
 ShellTimeoutExpired = _exception.ShellTimeoutExpired
-ShellProcessTeriminated = _exception.ShellProcessTeriminated
-ShellProcessNotTeriminated = _exception.ShellProcessNotTeriminated
+ShellProcessTerminated = _exception.ShellProcessTerminated
+ShellProcessNotTerminated = _exception.ShellProcessNotTerminated
 ShellStdinClosed = _exception.ShellStdinClosed
 
 execute = _execute.execute
