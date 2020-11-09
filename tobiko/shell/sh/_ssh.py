@@ -105,7 +105,10 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
                 client = ssh_client.connect()
                 process = client.get_transport().open_session()
                 if environment:
-                    process.update_environment(environment)
+                    variables = " ".join(
+                        f"{name}='{value}'"
+                        for name, value in self.environment.items())
+                    command = variables + " " + command
                 process.exec_command(command)
                 LOG.debug(f"Remote process created. ({details})")
                 return process

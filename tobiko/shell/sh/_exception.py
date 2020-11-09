@@ -40,7 +40,7 @@ class ShellTimeoutExpired(ShellError):
                "stderr:\n{stderr}")
 
 
-class ShellProcessTeriminated(ShellError):
+class ShellProcessTerminated(ShellError):
     message = ("command '{command}' terminated (exit status is {exit_status})"
                ";\n"
                "stdin:\n{stdin}\n"
@@ -48,7 +48,7 @@ class ShellProcessTeriminated(ShellError):
                "stderr:\n{stderr}")
 
 
-class ShellProcessNotTeriminated(ShellError):
+class ShellProcessNotTerminated(ShellError):
     message = ("command '{command}' not terminated (time left is {time_left})"
                ";\n"
                "stdin:\n{stdin}\n"

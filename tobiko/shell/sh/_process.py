@@ -260,7 +260,7 @@ class ShellProcessFixture(tobiko.SharedFixture):
     def check_is_running(self):
         exit_status = self.exit_status
         if exit_status is not None:
-            raise _exception.ShellProcessTeriminated(
+            raise _exception.ShellProcessTerminated(
                 command=str(self.command),
                 exit_status=int(exit_status),
                 stdin=str_from_stream(self.stdin),
@@ -395,7 +395,7 @@ class ShellProcessFixture(tobiko.SharedFixture):
         exit_status = self.poll_exit_status()
         if exit_status is None:
             time_left = self.check_timeout()
-            ex = _exception.ShellProcessNotTeriminated(
+            ex = _exception.ShellProcessNotTerminated(
                 command=str(self.command),
                 time_left=time_left,
                 stdin=self.stdin,
@@ -432,7 +432,7 @@ def str_from_stream(stream):
 def default_shell_command():
     from tobiko import config
     CONF = config.CONF
-    return _command.shell_command(CONF.tobiko.shell.sudo)
+    return _command.shell_command(CONF.tobiko.shell.sudo.command)
 
 
 def default_sudo_command():
