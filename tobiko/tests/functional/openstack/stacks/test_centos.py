@@ -43,6 +43,13 @@ class CentosServerStackTest(test_cirros.CirrosServerStackTest):
         self.assertTrue(user_data.startswith('#cloud-config\n'), user_data)
         self.assertEqual(self.stack.cloud_config, yaml.load(user_data))
 
+    def test_platform_python3(self):
+        python_version = sh.execute(['/usr/libexec/platform-python',
+                                     '--version'],
+                                    ssh_client=self.stack.ssh_client).stdout
+        self.assertTrue(python_version.startswith('Python 3.'),
+                        python_version)
+
     def test_python3(self):
         nova.wait_for_cloud_init_done(ssh_client=self.stack.ssh_client)
         python_version = sh.execute(['python3', '--version'],
