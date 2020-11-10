@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import re
 import time
 
 from oslo_log import log
@@ -185,8 +186,13 @@ class OvercloudProcessesStatus(object):
                     LOG.debug(f"{process_dict['node_group']} is not "
                               "a node group part of this Openstack cloud")
                     continue
+                node_list = [node.name
+                             for node in
+                             topology.list_openstack_nodes(
+                                group=process_dict['node_group'])]
+                node_names_re = re.compile(r'|'.join(node_list))
                 node_filter = (ovn_proc_filtered_df.overcloud_node.
-                               str.startswith(process_dict['node_group']))
+                               str.match(node_names_re))
                 # obtain the processes running on a specific type of nodes
                 ovn_proc_filtered_per_node_df = \
                     ovn_proc_filtered_df[node_filter]
@@ -197,8 +203,7 @@ class OvercloudProcessesStatus(object):
                         f" of processes {process_dict['name']} running on "
                         f"{process_dict['node_group']} nodes")
                 elif process_dict['number'] == 'all':
-                    num_nodes = len(topology.list_openstack_nodes(
-                        group=process_dict['node_group']))
+                    num_nodes = len(node_list)
                     assert num_nodes == len(ovn_proc_filtered_per_node_df), (
                         "Unexpected number of processes "
                         f"{process_dict['name']} running on "
