@@ -14,14 +14,14 @@
 
     check:
       jobs:
-        # - devstack-tobiko-functional-centos
-        - devstack-tobiko-functional-ubuntu
-        # - devstack-tobiko-functional-ovn-centos
-        - devstack-tobiko-functional-ovn-ubuntu
-        # - devstack-tobiko-faults-centos
-        - devstack-tobiko-faults-ubuntu
-        # - devstack-tobiko-faults-ovn-centos
-        - devstack-tobiko-faults-ovn-ubuntu
+        - devstack-tobiko-functional-centos
+        # - devstack-tobiko-functional-ubuntu
+        - devstack-tobiko-functional-ovn-centos
+        # - devstack-tobiko-functional-ovn-ubuntu
+        - devstack-tobiko-faults-centos
+        # - devstack-tobiko-faults-ubuntu
+        - devstack-tobiko-faults-ovn-centos
+        # - devstack-tobiko-faults-ovn-ubuntu
         - tobiko-tox-infrared-centos-7
         - tobiko-tox-infrared-centos-8
         - tobiko-tox-infrared-fedora-latest
@@ -29,7 +29,8 @@
 
     gate:
       jobs:
-        - devstack-tobiko-functional-ubuntu
+        - devstack-tobiko-functional-centos
+        # - devstack-tobiko-functional-ubuntu
         - tobiko-tox-infrared-centos-8
 
     periodic:
