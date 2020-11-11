@@ -222,3 +222,30 @@ def test_ovn_dbs_validations():
     # run validations
     ovn_dbs_are_synchronized(test_case)
     ovn_dbs_vip_bindings(test_case)
+
+
+def test_ovs_bridges_mac_table_size():
+    test_case = tobiko.get_test_case()
+    expected_mac_table_size = '50000'
+    get_mac_table_size_cmd = ('ovs-vsctl get bridge {br_name} '
+                              'other-config:mac-table-size')
+    if is_ovn_configured():
+        get_br_mappings_cmd = ('ovs-vsctl get Open_vSwitch . '
+                               'external_ids:ovn-bridge-mappings')
+    else:
+        get_br_mappings_cmd = (
+            'crudini --get /var/lib/config-data/puppet-generated/neutron/'
+            'etc/neutron/plugins/ml2/openvswitch_agent.ini '
+            'ovs bridge_mappings')
+    for node in topology.list_openstack_nodes(group='overcloud'):
+        br_mappings_str = sh.execute(get_br_mappings_cmd,
+                                     ssh_client=node.ssh_client,
+                                     sudo=True).stdout.splitlines()[0]
+        br_list = [br_mapping.split(':')[1] for br_mapping in
+                   br_mappings_str.replace('"', '').split(',')]
+        for br_name in br_list:
+            mac_table_size = sh.execute(
+                get_mac_table_size_cmd.format(br_name=br_name),
+                ssh_client=node.ssh_client, sudo=True).stdout.splitlines()[0]
+            test_case.assertEqual(mac_table_size.replace('"', ''),
+                                  expected_mac_table_size)

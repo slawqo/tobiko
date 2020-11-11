@@ -13,7 +13,8 @@ from tobiko.tripleo import undercloud
 from tobiko.tripleo import validations
 
 
-def overcloud_health_checks(passive_checks_only=False):
+def overcloud_health_checks(passive_checks_only=False,
+                            skip_mac_table_size_test=True):
     # this method will be changed in future commit
     check_pacemaker_resources_health()
     check_overcloud_processes_health()
@@ -28,6 +29,11 @@ def overcloud_health_checks(passive_checks_only=False):
     containers.assert_equal_containers_state()
     containers.run_container_config_validations()
     tests.test_ovn_dbs_validations()
+    # skip_mac_table_size_test has to be removed when BZ1695122 is resolved
+    # we need it for the moment because this validation should not be performed
+    # after any overcloud node is rebooted
+    if not skip_mac_table_size_test:
+        tests.test_ovs_bridges_mac_table_size()
     validations.run_post_deployment_validations()
 
 
@@ -54,7 +60,7 @@ class DisruptTripleoNodesTest(testtools.TestCase):
     disruptive_action: a function that runs some
     disruptive scenarion on a overcloud"""
     def test_0vercloud_health_check(self):
-        overcloud_health_checks()
+        overcloud_health_checks(skip_mac_table_size_test=False)
 
     def test_hard_reboot_controllers_recovery(self):
         overcloud_health_checks()
