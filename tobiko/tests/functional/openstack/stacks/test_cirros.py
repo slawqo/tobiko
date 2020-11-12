@@ -15,6 +15,9 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
+import netaddr
 import testtools
 
 import tobiko
@@ -30,6 +33,8 @@ class CirrosServerStackTest(testtools.TestCase):
 
     #: Stack of resources with a server attached to a floating IP
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+
+    nameservers_filenames: typing.Optional[typing.Sequence[str]] = None
 
     def test_ping(self):
         """Test connectivity to floating IP address"""
@@ -54,6 +59,43 @@ class CirrosServerStackTest(testtools.TestCase):
         self.stack.ssh_client.connect()
         output = self.stack.console_output
         self.assertTrue(output)
+
+    def test_ipv4_subnet_nameservers(self):
+        self._test_subnet_nameservers(
+            subnet=self.stack.network_stack.ipv4_subnet_details,
+            ip_version=4)
+
+    def test_ipv6_subnet_nameservers(self):
+        self._test_subnet_nameservers(
+            subnet=self.stack.network_stack.ipv6_subnet_details,
+            ip_version=6)
+
+    def _test_subnet_nameservers(self, subnet, ip_version):
+        subnet_nameservers = [netaddr.IPAddress(nameserver)
+                              for nameserver in subnet['dns_nameservers']]
+        if not subnet_nameservers:
+            self.skipTest(f"Subnet '{subnet['id']}' has any IPv{ip_version} "
+                          "nameserver")
+        server_nameservers = sh.list_nameservers(
+            ssh_client=self.stack.ssh_client, ip_version=ip_version,
+            filenames=self.nameservers_filenames)
+        self.assertEqual(subnet_nameservers, server_nameservers)
+
+    def test_ping_ipv4_nameservers(self):
+        self._test_ping_nameservers(ip_version=4)
+
+    def test_ping_ipv6_nameservers(self):
+        self._test_ping_nameservers(ip_version=6)
+
+    def _test_ping_nameservers(self, ip_version: int):
+        nameservers = sh.list_nameservers(ssh_client=self.stack.ssh_client,
+                                          filenames=self.nameservers_filenames,
+                                          ip_version=ip_version)
+        if not nameservers:
+            self.skipTest(f"Target server has no IPv{ip_version} "
+                          "nameservers configured")
+        ping.assert_reachable_hosts(nameservers,
+                                    ssh_client=self.stack.ssh_client)
 
 
 class EvacuablesServerStackTest(CirrosServerStackTest):

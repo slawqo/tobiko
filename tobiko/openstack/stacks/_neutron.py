@@ -160,7 +160,10 @@ class NetworkStackFixture(heat.HeatStackFixture):
 
     @property
     def ipv4_dns_nameservers(self):
-        return ','.join(CONF.tobiko.neutron.ipv4_dns_nameservers or [])
+        nameservers = CONF.tobiko.neutron.ipv4_dns_nameservers
+        if nameservers is None:
+            nameservers = neutron.default_nameservers(ip_version=4)
+        return ','.join(str(nameserver) for nameserver in nameservers)
 
     @property
     def ipv6_subnet_details(self):
@@ -176,7 +179,10 @@ class NetworkStackFixture(heat.HeatStackFixture):
 
     @property
     def ipv6_dns_nameservers(self):
-        return ','.join(CONF.tobiko.neutron.ipv6_dns_nameservers or [])
+        nameservers = CONF.tobiko.neutron.ipv6_dns_nameservers
+        if nameservers is None:
+            nameservers = neutron.default_nameservers(ip_version=6)
+        return ','.join(str(nameserver) for nameserver in nameservers)
 
     @property
     def gateway_details(self):

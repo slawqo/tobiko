@@ -27,6 +27,8 @@ class UbuntuServerStackTest(test_cirros.CirrosServerStackTest):
     #: Stack of resources with a server attached to a floating IP
     stack = tobiko.required_setup_fixture(stacks.UbuntuServerStackFixture)
 
+    nameservers_filenames = ('/run/systemd/resolve/resolv.conf',)
+
     def test_python(self):
         python_version = sh.execute(['python3', '--version'],
                                     ssh_client=self.stack.ssh_client).stdout

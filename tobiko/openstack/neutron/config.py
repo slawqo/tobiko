@@ -28,8 +28,8 @@ OPTIONS = [
                default=24,
                help="The mask bits for IPv4 subnets"),
     cfg.ListOpt('ipv4_dns_nameservers',
-                default=['8.8.8.8', '8.8.4.4'],
-                help="The CIDR block to allocate IPv4 subnets from"),
+                default=None,
+                help="List of nameservers IPv4 addresses"),
     cfg.StrOpt('ipv6_cidr',
                default='2001:db8::/48',
                help="The CIDR block to allocate IPv6 subnets from"),
@@ -37,7 +37,8 @@ OPTIONS = [
                default=64,
                help="The mask bits for IPv6 subnets"),
     cfg.ListOpt('ipv6_dns_nameservers',
-                help="The CIDR block to allocate IPv4 subnets from"),
+                default=None,
+                help="List of nameservers IPv6 addresses"),
     cfg.IntOpt('custom_mtu_size',
                default=1350,
                help=("Customized maximum transfer unit size\n"
@@ -47,6 +48,12 @@ OPTIONS = [
                      "unknown cause.\n"
                      " - Too big MTU values (like greater than 1400)"
                      " may be refused during network creation")),
+    cfg.StrOpt('nameservers_host',
+               default=None,
+               help="Host where nameservers files are located"),
+    cfg.ListOpt('nameservers_filenames',
+                default=['/etc/resolv.conf'],
+                help="File to parse for getting default nameservers list")
 ]
 
 

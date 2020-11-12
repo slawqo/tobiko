@@ -17,6 +17,7 @@ from tobiko.openstack.neutron import _agent
 from tobiko.openstack.neutron import _client
 from tobiko.openstack.neutron import _cidr
 from tobiko.openstack.neutron import _extension
+from tobiko.openstack.neutron import _nameservers
 from tobiko.openstack.neutron import _port
 from tobiko.openstack.neutron import _network
 
@@ -32,7 +33,6 @@ skip_if_missing_networking_agents = _agent.skip_if_missing_networking_agents
 skip_unless_is_ovn = _agent.skip_unless_is_ovn
 skip_unless_is_ovs = _agent.skip_unless_is_ovs
 list_networking_agents = _agent.list_networking_agents
-
 
 NeutronClientFixture = _client.NeutronClientFixture
 ServiceUnavailable = _client.ServiceUnavailable
@@ -65,6 +65,9 @@ has_networking_extensions = _extension.has_networking_extensions
 
 skip_if_missing_networking_extensions = (
     _extension.skip_if_missing_networking_extensions)
+
+DefaultNameserversFixture = _nameservers.DefaultNameserversFixture
+default_nameservers = _nameservers.default_nameservers
 
 find_port_ip_address = _port.find_port_ip_address
 list_port_ip_addresses = _port.list_port_ip_addresses
