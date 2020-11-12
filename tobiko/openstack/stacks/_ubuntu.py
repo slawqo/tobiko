@@ -20,9 +20,11 @@ from tobiko.openstack.stacks import _nova
 
 CONF = config.CONF
 
-UBUNTU_IMAGE_URL = \
-    ('http://cloud-images.ubuntu.com/bionic/current/'
-     'bionic-server-cloudimg-amd64.img')
+UBUNTU_IMAGE_VERSION = 'focal'
+
+UBUNTU_IMAGE_URL = (
+    f'http://cloud-images.ubuntu.com/{UBUNTU_IMAGE_VERSION}/current/'
+    f'{UBUNTU_IMAGE_VERSION}-server-cloudimg-amd64.img')
 
 
 class UbuntuImageFixture(glance.URLGlanceImageFixture):
