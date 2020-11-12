@@ -21,6 +21,7 @@ from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _hostname
 from tobiko.shell.sh import _io
 from tobiko.shell.sh import _local
+from tobiko.shell.sh import _nameservers
 from tobiko.shell.sh import _process
 from tobiko.shell.sh import _ps
 from tobiko.shell.sh import _reboot
@@ -52,6 +53,9 @@ local_execute = _local.local_execute
 local_process = _local.local_process
 LocalShellProcessFixture = _local.LocalShellProcessFixture
 LocalExecutePathFixture = _local.LocalExecutePathFixture
+
+ListNameserversFixture = _nameservers.ListNameserversFixture
+list_nameservers = _nameservers.list_nameservers
 
 process = _process.process
 str_from_stream = _process.str_from_stream
