@@ -96,9 +96,15 @@ class DisruptTripleoNodesTest(testtools.TestCase):
     #     cloud_disruptions.network_undisrupt_controllers_non_main_vip()
 
     @neutron.skip_unless_is_ovn()
-    def test_reset_ovndb_master_resource(self):
+    def test_reset_ovndb_pcs_master_resource(self):
         overcloud_health_checks()
-        cloud_disruptions.reset_ovndb_master_resource()
+        cloud_disruptions.reset_ovndb_pcs_master_resource()
+        overcloud_health_checks()
+
+    @neutron.skip_unless_is_ovn()
+    def test_reset_ovndb_pcs_resource(self):
+        overcloud_health_checks()
+        cloud_disruptions.reset_ovndb_pcs_resource()
         overcloud_health_checks()
 
     @neutron.skip_unless_is_ovn()
