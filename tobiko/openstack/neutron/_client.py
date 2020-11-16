@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import collections
+import typing
 
 import netaddr
 from neutronclient.v2_0 import client as neutronclient
@@ -40,7 +41,12 @@ class NeutronClientManager(_client.OpenstackClientManager):
 CLIENTS = NeutronClientManager()
 
 
-def neutron_client(obj):
+NeutronClientType = typing.Union[None,
+                                 neutronclient.Client,
+                                 NeutronClientFixture]
+
+
+def neutron_client(obj: NeutronClientType) -> neutronclient.Client:
     if not obj:
         return get_neutron_client()
 
@@ -55,8 +61,20 @@ def neutron_client(obj):
     raise TypeError(message)
 
 
+class HasNeutronClientFixture(tobiko.SharedFixture):
+
+    client: typing.Optional[neutronclient.Client] = None
+
+    def __init__(self, obj: NeutronClientType = None):
+        super(HasNeutronClientFixture, self).__init__()
+        self._obj = obj
+
+    def setup_fixture(self):
+        self.client = neutron_client(self._obj)
+
+
 def get_neutron_client(session=None, shared=True, init_client=None,
-                       manager=None):
+                       manager=None) -> neutronclient.Client:
     manager = manager or CLIENTS
     client = manager.get_client(session=session, shared=shared,
                                 init_client=init_client)
@@ -65,19 +83,6 @@ def get_neutron_client(session=None, shared=True, init_client=None,
 
 
 _RAISE_ERROR = object()
-
-
-def find_network(client=None, unique=False, default=_RAISE_ERROR,
-                 **attributes):
-    """Look for a network matching some property values"""
-    networks = list_networks(client=client, **attributes)
-    if default is _RAISE_ERROR or networks:
-        if unique:
-            return networks.unique
-        else:
-            return networks.first
-    else:
-        return default
 
 
 def find_port(client=None, unique=False, default=_RAISE_ERROR, **attributes):
@@ -102,11 +107,6 @@ def find_subnet(client=None, unique=False, default=_RAISE_ERROR, **attributes):
             return subnets.first
     else:
         return default
-
-
-def list_networks(client=None, **params):
-    networks = neutron_client(client).list_networks(**params)['networks']
-    return tobiko.select(networks)
 
 
 def list_ports(client=None, **params):
@@ -136,14 +136,6 @@ def list_subnet_cidrs(client=None, **params):
 def get_floating_ip(floating_ip, client=None, **params):
     floating_ip = neutron_client(client).show_floatingip(floating_ip, **params)
     return floating_ip['floatingip']
-
-
-def get_network(network, client=None, **params):
-    try:
-        return neutron_client(client).show_network(network,
-                                                   **params)['network']
-    except neutronclient.exceptions.NotFound as ex:
-        raise NoSuchNetwork(id=network) from ex
 
 
 def get_port(port, client=None, **params):
@@ -194,10 +186,6 @@ def list_dhcp_agent_hosting_network(network, client=None, **params):
     if isinstance(agents, collections.Mapping):
         agents = agents['agents']
     return tobiko.select(agents)
-
-
-class NoSuchNetwork(tobiko.ObjectNotFound):
-    message = "No such network found for {id!r}"
 
 
 class NoSuchPort(tobiko.ObjectNotFound):

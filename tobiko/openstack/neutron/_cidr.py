@@ -28,7 +28,7 @@ def new_ipv4_cidr(seed=None):
     return tobiko.setup_fixture(IPv4CIDRGeneratorFixture).new_cidr(seed=seed)
 
 
-def new_ipv6_cidr(seed):
+def new_ipv6_cidr(seed=None):
     return tobiko.setup_fixture(IPv6CIDRGeneratorFixture).new_cidr(seed=seed)
 
 

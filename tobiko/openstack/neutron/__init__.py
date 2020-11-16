@@ -18,6 +18,7 @@ from tobiko.openstack.neutron import _client
 from tobiko.openstack.neutron import _cidr
 from tobiko.openstack.neutron import _extension
 from tobiko.openstack.neutron import _port
+from tobiko.openstack.neutron import _network
 
 
 DHCP_AGENT = _agent.DHCP_AGENT
@@ -37,8 +38,6 @@ NeutronClientFixture = _client.NeutronClientFixture
 ServiceUnavailable = _client.ServiceUnavailable
 neutron_client = _client.neutron_client
 get_neutron_client = _client.get_neutron_client
-find_network = _client.find_network
-list_networks = _client.list_networks
 find_subnet = _client.find_subnet
 find_port = _client.find_port
 list_ports = _client.list_ports
@@ -46,7 +45,6 @@ list_subnets = _client.list_subnets
 list_subnet_cidrs = _client.list_subnet_cidrs
 list_agents = _client.list_agents
 get_floating_ip = _client.get_floating_ip
-get_network = _client.get_network
 get_router = _client.get_router
 get_port = _client.get_port
 get_subnet = _client.get_subnet
@@ -54,7 +52,6 @@ list_l3_agent_hosting_routers = _client.list_l3_agent_hosting_routers
 find_l3_agent_hosting_router = _client.find_l3_agent_hosting_router
 list_dhcp_agent_hosting_network = _client.list_dhcp_agent_hosting_network
 
-NoSuchNetwork = _client.NoSuchNetwork
 NoSuchPort = _client.NoSuchPort
 NoSuchRouter = _client.NoSuchRouter
 NoSuchSubnet = _client.NoSuchSubnet
@@ -71,3 +68,11 @@ skip_if_missing_networking_extensions = (
 
 find_port_ip_address = _port.find_port_ip_address
 list_port_ip_addresses = _port.list_port_ip_addresses
+
+NeutronNetworkFixture = _network.NeutronNetworkFixture
+NoSuchNetwork = _network.NoSuchNetwork
+create_network = _network.create_network
+delete_network = _network.delete_network
+get_network = _network.get_network
+find_network = _network.find_network
+list_networks = _network.list_networks

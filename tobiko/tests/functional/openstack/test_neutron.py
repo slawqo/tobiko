@@ -31,7 +31,7 @@ CONF = config.CONF
 
 
 @keystone.skip_unless_has_keystone_credentials()
-class NeutronApiTestCase(testtools.TestCase):
+class NeutronApiTest(testtools.TestCase):
     """Tests network creation"""
 
     #: Stack of resources with a network with a gateway router
@@ -84,6 +84,21 @@ class NeutronApiTestCase(testtools.TestCase):
             self.assertIn(self.stack.ipv6_subnet_id, network['subnets'])
         else:
             self.assertNotIn(self.stack.ipv6_subnet_id, network['subnets'])
+
+    def test_create_network(self):
+        network = neutron.create_network(name=self.id())
+        self.addCleanup(neutron.delete_network, network['id'])
+        self.assertIsInstance(network['id'], str)
+        self.assertNotEqual('', network['id'])
+        self.assertEqual(self.id(), network['name'])
+        observed = neutron.get_network(network['id'])
+        self.assertEqual(network['id'], observed['id'])
+
+    def test_delete_network(self):
+        network = neutron.create_network(name=self.id())
+        neutron.delete_network(network['id'])
+        self.assertRaises(neutron.NoSuchNetwork, neutron.get_network,
+                          network['id'])
 
     def test_get_router(self):
         if not self.stack.has_gateway:
