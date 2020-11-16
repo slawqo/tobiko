@@ -284,11 +284,8 @@ def run_container_config_validations():
         for node in topology.list_openstack_nodes(
                 group=config_check['node_group']):
             for param_check in config_check['param_validations']:
-                # 'docker' is used here in order to be compatible with old OSP
-                # versions. On versions with podman, 'docker' command is
-                # linked to 'podman'
                 obtained_param = sh.execute(
-                    "docker exec -uroot "
+                    f"{container_runtime_name} exec -uroot "
                     f"{config_check['container_name']} crudini "
                     f"--get {config_check['config_file']} "
                     f"{param_check['section']} {param_check['param']}",

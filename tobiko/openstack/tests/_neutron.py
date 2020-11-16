@@ -95,13 +95,7 @@ def test_neutron_agents_are_alive(timeout=300., interval=5.):
         return agents
 
 
-def test_ovn_dbs_are_synchronized():
-    if not is_ovn_configured():
-        LOG.debug('OVN not configured. OVN DB sync validations skipped')
-        return
-
-    test_case = tobiko.get_test_case()
-
+def ovn_dbs_are_synchronized(test_case):
     # declare commands
     search_container_cmd = (
         "%s ps --format '{{.Names}}' -f name=ovn-dbs-bundle" %
@@ -171,3 +165,60 @@ def test_ovn_dbs_are_synchronized():
                                   ovn_master_dbs_show_dict[db])
 
     LOG.info("All OVN DBs are synchronized")
+
+
+def ovn_dbs_vip_bindings(test_case):
+    # commands to obtain OVN SB and NB connection strings
+    get_ovn_nb_conn_cmd = (
+        'crudini --get /var/lib/config-data/puppet-generated/neutron/etc/'
+        'neutron/plugins/ml2/ml2_conf.ini ovn ovn_nb_connection')
+    get_ovn_sb_conn_cmd = get_ovn_nb_conn_cmd.replace('ovn_nb_connection',
+                                                      'ovn_sb_connection')
+
+    controllers = topology.list_openstack_nodes(group='controller')
+    ovn_conn_str = {}
+    ovn_conn_str['nb'] = sh.execute(get_ovn_nb_conn_cmd,
+                                    ssh_client=controllers[0].ssh_client,
+                                    sudo=True).stdout.splitlines()[0]
+    ovn_conn_str['sb'] = sh.execute(get_ovn_sb_conn_cmd,
+                                    ssh_client=controllers[0].ssh_client,
+                                    sudo=True).stdout.splitlines()[0]
+    ovn_conn = {}
+    for db in ('nb', 'sb'):
+        ovn_conn[db] = {}
+        ipv6 = re.findall(r'\[.*\]', ovn_conn_str[db])
+        if len(ipv6) == 1:
+            ovn_conn[db]['ip'] = ipv6[0]
+        elif len(ipv6) == 0:
+            ovn_conn[db]['ip'] = ovn_conn_str[db].split(':')[1]
+        else:
+            raise RuntimeError('Error parsing ovn db connection string from '
+                               'configuration file')
+        ovn_conn[db]['port'] = ovn_conn_str[db].split(':')[-1]
+
+    # command to obtain sockets listening on OVN SB and DB DBs
+    get_ovn_db_sockets_listening_cmd = \
+        "ss -p state listening 'sport = {srcport} and src {srcip}'"
+
+    for controller in controllers:
+        for db in ('nb', 'sb'):
+            ovn_db_sockets_listening = sh.execute(
+                get_ovn_db_sockets_listening_cmd.format(
+                    srcport=ovn_conn[db]['port'],
+                    srcip=ovn_conn[db]['ip']),
+                ssh_client=controller.ssh_client,
+                sudo=True).stdout.splitlines()
+            test_case.assertEqual(2, len(ovn_db_sockets_listening))
+            test_case.assertIn('ovsdb-server', ovn_db_sockets_listening[1])
+
+
+def test_ovn_dbs_validations():
+    if not is_ovn_configured():
+        LOG.debug('OVN not configured. OVN DB sync validations skipped')
+        return
+
+    test_case = tobiko.get_test_case()
+
+    # run validations
+    ovn_dbs_are_synchronized(test_case)
+    ovn_dbs_vip_bindings(test_case)

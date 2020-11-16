@@ -20,7 +20,7 @@ from tobiko.openstack.tests import _neutron
 from tobiko.openstack.tests import _nova
 
 test_neutron_agents_are_alive = _neutron.test_neutron_agents_are_alive
-test_ovn_dbs_are_synchronized = _neutron.test_ovn_dbs_are_synchronized
+test_ovn_dbs_validations = _neutron.test_ovn_dbs_validations
 
 test_evacuable_server_creation = _nova.test_evacuable_server_creation
 test_server_creation = _nova.test_server_creation
