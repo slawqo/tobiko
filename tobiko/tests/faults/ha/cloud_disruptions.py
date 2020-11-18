@@ -3,6 +3,7 @@ from __future__ import absolute_import
 
 import re
 import time
+import random
 
 from oslo_log import log
 
@@ -35,6 +36,7 @@ undisrupt_network = """
  sudo iptables-restore /root/working.iptables.rules
 """
 ovn_db_pcs_resource_restart = """sudo pcs resource restart ovn-dbs-bundle"""
+kill_rabbit = """sudo kill -9 $(pgrep beam.smp)"""
 
 
 def get_node(node_name):
@@ -302,6 +304,25 @@ def reset_ovndb_master_container():
     containers.action_on_container('restart',
                                    partial_container_name=resource,
                                    container_host=node)
+
+
+def kill_rabbitmq_service():
+    """kill a rabbit process on a random controller,
+    check in pacemaker it is down"""
+    if 'messaging' in topology.list_openstack_node_groups():
+        group = 'messaging'
+    else:
+        group = 'controller'
+    nodes = topology.list_openstack_nodes(group=group)
+    node = random.choice(nodes)
+    sh.execute(kill_rabbit, ssh_client=node.ssh_client)
+    LOG.info('kill rabbit: {} on server: {}'.format(kill_rabbit,
+             node.name))
+    retry = tobiko.retry(timeout=30, interval=5)
+    for _ in retry:
+        if not(pacemaker.PacemakerResourcesStatus().
+               rabbitmq_resource_healthy()):
+            return
 
 
 def evac_failover_compute(compute_host, failover_type=sh.hard_reset_method):
