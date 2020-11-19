@@ -121,6 +121,7 @@ class CloudsFileKeystoneCredentialsFixture(
 
         username = auth.get('username') or auth.get('user_id')
         password = auth.get('password')
+        cacert = clouds_config.get('cacert')
         project_name = (auth.get('project_name') or
                         auth.get('tenant_namer') or
                         auth.get('project_id') or
@@ -154,6 +155,7 @@ class CloudsFileKeystoneCredentialsFixture(
                 user_domain_name=user_domain_name,
                 project_domain_name=project_domain_name,
                 project_domain_id=project_domain_id,
+                cacert=cacert,
                 trust_id=trust_id)
 
     def _get_cloud_name(self):

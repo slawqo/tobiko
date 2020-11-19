@@ -63,6 +63,7 @@ class KeystoneSessionFixture(tobiko.SharedFixture):
             params = credentials.to_dict()
             # api version parameter is not accepted
             params.pop('api_version', None)
+            params.pop('cacert', None)
             auth = loader.load_from_options(**params)
             self.session = session = _session.Session(auth=auth, verify=False)
             http.setup_http_session(session)
