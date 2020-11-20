@@ -15,8 +15,13 @@
 #    under the License.
 from __future__ import absolute_import
 
+import glob
+import json
+import io
+import os
 import time
 import typing
+
 
 import netaddr
 from oslo_log import log
@@ -415,3 +420,77 @@ def handle_ping_unknow_host_error(text):
     if text.endswith(suffix):
         details = text[:-len(suffix)].strip().split()[-1]
         raise _exception.UnknowHostError(details=details)
+
+
+def ping_to_json(ping_result: _statistics.PingStatistics) -> str:
+    '''Transform an iter_statistics.statistics object
+    into a json string with ping ip and result'''
+    destination = str(ping_result.destination)
+    transmitted = ping_result.transmitted
+    received = ping_result.received
+    timestamp = time.ctime(ping_result.begin_interval)
+    ping_result_line_dict = {"destination": destination,
+                             "transmitted": transmitted,
+                             "received": received,
+                             "timestamp": timestamp}
+    return json.dumps(ping_result_line_dict)
+
+
+def write_ping_to_file(ping_ip=None, output_dir='tobiko_ping_results'):
+    '''use iter_statistics to ping a host and record statistics
+    put results in output_dir filenames correlate with vm fip'''
+    output_dir_path = f'{sh.get_user_home_dir()}/{output_dir}'
+    if not os.path.exists(output_dir_path):
+        os.makedirs(output_dir_path)
+    output_filename = f'ping_{ping_ip}.log'
+    output_path = os.path.join(output_dir_path, output_filename)
+    LOG.info(f'starting ping process to > {ping_ip} , '
+             f'output file is : {output_path}')
+    ping_result_statistics = iter_statistics(parameters=None,
+                                             host=ping_ip, until=None,
+                                             timeout=99999,
+                                             check=True)
+    for ping_result in ping_result_statistics:
+        with open(output_path, "at") as ping_result_file:
+            ping_result_file.write(ping_to_json(ping_result) + "\n")
+            time.sleep(5)
+
+
+def get_vm_ping_log_files(glob_ping_log_pattern='tobiko_ping_results/ping_'
+                                                '*.log'):
+    """return a list of files mathcing : the pattern"""
+    glob_path = f'{sh.get_user_home_dir()}/{glob_ping_log_pattern}'
+    for filename in glob.glob(glob_path):
+        LOG.info(f'found following ping_vm_log files {filename}')
+        vm_ping_log_filename = filename
+        yield vm_ping_log_filename
+
+
+def rename_ping_staistics_file_to_checked(filepath):
+    """append _checked to a ping statistics file once finished it's check"""
+    os.rename(filepath, f'{filepath}_checked')
+
+
+def check_ping_statistics(failure_limit=10):
+    """Gets a list of ping_vm_log files and
+    iterates their lines, checks if max ping
+    failures have been reached per fip=file"""
+    # iterate over ping_vm_log files:
+    for filename in list(get_vm_ping_log_files()):
+        with io.open(filename, 'rt') as fd:
+            LOG.info(f'checking ping log file: {filename}, '
+                     f'failure_limit is :{failure_limit}')
+            failure_counter = 0
+            for ping_line in fd.readlines():
+                ping_line = json.loads(ping_line.rstrip())
+                if ping_line['transmitted'] != ping_line['received']:
+                    failure_counter += 1
+                    LOG.debug(f'found ping failure to :'
+                              f' {ping_line["destination"]}')
+                    if failure_counter >= failure_limit:
+                        rename_ping_staistics_file_to_checked(filename)
+                        tobiko.fail(f'{failure_counter} pings failure found '
+                                    f'to vm fip destination: '
+                                    f'{ping_line["destination"]}')
+            LOG.info(f'no failures in ping log file: {filename}')
+            rename_ping_staistics_file_to_checked(filename)

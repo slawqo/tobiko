@@ -24,6 +24,7 @@ from tobiko.shell.sh import _io
 from tobiko.shell.sh import _local
 from tobiko.shell.sh import _mktemp
 from tobiko.shell.sh import _nameservers
+from tobiko.shell.sh import _path
 from tobiko.shell.sh import _process
 from tobiko.shell.sh import _ps
 from tobiko.shell.sh import _reboot
@@ -71,6 +72,10 @@ ListNameserversFixture = _nameservers.ListNameserversFixture
 list_nameservers = _nameservers.list_nameservers
 
 process = _process.process
+start_background_process = _process.start_background_process
+check_or_start_background_process =\
+    _process.check_or_start_background_process
+get_user_home_dir = _path.get_user_home_dir
 str_from_stream = _process.str_from_stream
 ShellProcessFixture = _process.ShellProcessFixture
 

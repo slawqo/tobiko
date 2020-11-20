@@ -7,11 +7,13 @@ from oslo_log import log
 import pandas
 
 import tobiko
+from tobiko import tripleo
 from tobiko.tripleo import overcloud
 from tobiko.shell import ping
 from tobiko.shell import sh
 from tobiko.openstack import nova
 from tobiko.openstack import topology
+from tobiko.openstack import stacks
 from tobiko.tripleo import containers
 
 
@@ -123,6 +125,7 @@ def check_ping_vm_fip(fip):
 def check_df_vms_ping(df):
     """input: dataframe with vms_ids
     try to ping all vms in df"""
+
     for vm_id in df.vm_id.to_list():
         check_ping_vm_fip(vm_floating_ip(vm_id))
 
@@ -218,3 +221,26 @@ def check_computes_vms_running_via_virsh():
                 else:
                     LOG.info(f"{vm_id} is not in running state on "
                              f"{compute.hostname}")
+
+
+def get_nova_server_floating_ip():
+    """get an a running's vm floating_ip"""
+    return tobiko.setup_fixture(
+           stacks.CirrosServerStackFixture).floating_ip_address
+
+
+# Test is inteded for D/S env
+@tripleo.skip_if_missing_overcloud
+def check_or_start_background_vm_ping():
+    """Check if process exists, if so stop and check ping health
+    if not : start a new separate ping process.
+    Executes a Background ping to a vm floating_ip,
+    this test is intended to be run and picked up again
+    by the next tobiko run. Ping results are parsed
+    and a failure is raised if ping failure is above a certain amount"""
+    ping_vm_fip = get_nova_server_floating_ip()
+    sh.check_or_start_background_process(
+        bg_function=ping.write_ping_to_file,
+        bg_process_name='tobiko_background_ping',
+        check_function=ping.check_ping_statistics,
+        ping_ip=ping_vm_fip)
