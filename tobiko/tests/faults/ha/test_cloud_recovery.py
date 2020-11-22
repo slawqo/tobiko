@@ -119,6 +119,12 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.reset_ovndb_master_container()
         overcloud_health_checks()
 
+    def test_kill_rabbitmq_service_one_controller(self):
+        overcloud_health_checks()
+        cloud_disruptions.kill_rabbitmq_service()
+        overcloud_health_checks()
+
+
 # [..]
 # more tests to follow
 # run health checks
