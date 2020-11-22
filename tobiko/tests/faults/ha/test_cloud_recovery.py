@@ -124,6 +124,10 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.kill_rabbitmq_service()
         overcloud_health_checks()
 
+    def test_kill_all_galera_services(self):
+        overcloud_health_checks()
+        cloud_disruptions.kill_all_galera_services()
+        overcloud_health_checks()
 
 # [..]
 # more tests to follow

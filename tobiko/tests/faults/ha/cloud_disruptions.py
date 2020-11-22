@@ -37,6 +37,7 @@ undisrupt_network = """
 """
 ovn_db_pcs_resource_restart = """sudo pcs resource restart ovn-dbs-bundle"""
 kill_rabbit = """sudo kill -9 $(pgrep beam.smp)"""
+kill_galera = """sudo kill -9 $(pgrep mysqld)"""
 
 
 def get_node(node_name):
@@ -322,6 +323,25 @@ def kill_rabbitmq_service():
     for _ in retry:
         if not(pacemaker.PacemakerResourcesStatus().
                rabbitmq_resource_healthy()):
+            return
+
+
+def kill_all_galera_services():
+    """kill all galera processes,
+    check in pacemaker it is down"""
+    if 'database' in topology.list_openstack_node_groups():
+        group = 'database'
+    else:
+        group = 'controller'
+    nodes = topology.list_openstack_nodes(group=group)
+    for node in nodes:
+        sh.execute(kill_galera, ssh_client=node.ssh_client)
+        LOG.info('kill galera: {} on server: {}'.format(kill_galera,
+                 node.name))
+    retry = tobiko.retry(timeout=30, interval=5)
+    for _ in retry:
+        if not(pacemaker.PacemakerResourcesStatus().
+               galera_resource_healthy()):
             return
 
 
