@@ -16,6 +16,7 @@
 .tox
 .vagrant
 .venv
+.idea
 
 __pycache__
 AUTHORS
