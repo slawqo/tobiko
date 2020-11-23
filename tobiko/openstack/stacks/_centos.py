@@ -16,7 +16,6 @@ from __future__ import absolute_import
 import tobiko
 from tobiko import config
 from tobiko.openstack import glance
-from tobiko.openstack import nova
 from tobiko.openstack.stacks import _nova
 
 
@@ -50,10 +49,3 @@ class CentosServerStackFixture(_nova.ServerStackFixture):
 
     #: Flavor used to create a Nova server instance
     flavor_stack = tobiko.required_setup_fixture(CentosFlavorStackFixture)
-
-    #: Install Python3 package by default
-    @property
-    def cloud_config(self):
-        return nova.cloud_config(
-            super(CentosServerStackFixture, self).cloud_config,
-            packages=['python3'])
