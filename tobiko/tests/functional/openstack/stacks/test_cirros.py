@@ -22,6 +22,7 @@ import testtools
 
 import tobiko
 from tobiko.openstack import keystone
+from tobiko.openstack import nova
 from tobiko.openstack import stacks
 from tobiko.shell import ping
 from tobiko.shell import sh
@@ -59,6 +60,27 @@ class CirrosServerStackTest(testtools.TestCase):
         self.stack.ssh_client.connect()
         output = self.stack.console_output
         self.assertTrue(output)
+
+    def test_swap_file(self):
+        if self.stack.swap_maxsize is None:
+            self.skipTest('Swap maxsize is None')
+
+        cloud_config = self.stack.cloud_config
+        self.assertEqual({'filename': self.stack.swap_filename,
+                          'size': self.stack.swap_size or "auto",
+                          'maxsize': self.stack.swap_maxsize},
+                         cloud_config['swap'])
+
+        nova.wait_for_cloud_init_done(ssh_client=self.stack.ssh_client)
+        # check swap file exists
+        sh.execute(f"ls -lh '{self.stack.swap_filename}'",
+                   ssh_client=self.stack.ssh_client)
+        # check swap file is mounted
+        swaps_table = sh.execute("cat /proc/swaps",
+                                 ssh_client=self.stack.ssh_client).stdout
+        mounted_filenames = [line.split()[0]
+                             for line in swaps_table.splitlines()[1:]]
+        self.assertIn(self.stack.swap_filename, mounted_filenames, swaps_table)
 
     def test_ipv4_subnet_nameservers(self):
         self._test_subnet_nameservers(
