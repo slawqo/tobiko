@@ -55,14 +55,20 @@ def execute(cmd, *args, **kwargs):
 def _param_list(*args, **kwargs):
     if not any(param in kwargs for param in ['os-token', 'os-username']):
         credentials = keystone.get_keystone_credentials()
-        kwargs['os-auth-url'] = credentials.auth_url
-        kwargs['os-password'] = credentials.password
-        kwargs['os-username'] = credentials.username
-        kwargs['os-project-name'] = credentials.project_name
+        tmp_auth = {}
+        tmp_auth['os-auth-url'] = credentials.auth_url
+        tmp_auth['os-password'] = credentials.password
+        tmp_auth['os-username'] = credentials.username
+        tmp_auth['os-cacert'] = credentials.cacert
+        tmp_auth['os-project-name'] = credentials.project_name
+        tmp_auth['os-user-domain-name'] = credentials.user_domain_name
+        tmp_auth['os-project-domain-name'] = credentials.project_domain_name
+        tmp_auth['os-project-domain-id'] = credentials.project_domain_id
         if credentials.api_version == 3:
-            kwargs['os-user-domain-name'] = credentials.user_domain_name
-            kwargs['os-project-domain-name'] = credentials.project_domain_name
-            kwargs['os-identity-api-version'] = credentials.api_version
+            tmp_auth['os-identity-api-version'] = credentials.api_version
+        for key, val in tmp_auth.items():
+            if val is not None:
+                kwargs[key] = val
     arg_list = []
     for arg in args:
         if len(arg) == 1:

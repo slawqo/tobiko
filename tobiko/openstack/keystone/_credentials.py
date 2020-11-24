@@ -38,6 +38,7 @@ class KeystoneCredentials(collections.namedtuple(
                                 'user_domain_name',
                                 'project_domain_name',
                                 'project_domain_id',
+                                'cacert',
                                 'trust_id'])):
 
     def to_dict(self):
@@ -142,6 +143,7 @@ def keystone_credentials(api_version=None,
                          user_domain_name=None,
                          project_domain_name=None,
                          project_domain_id=None,
+                         cacert=None,
                          trust_id=None,
                          cls=KeystoneCredentials) -> KeystoneCredentials:
     return cls(api_version=api_version,
@@ -153,6 +155,7 @@ def keystone_credentials(api_version=None,
                user_domain_name=user_domain_name,
                project_domain_name=project_domain_name,
                project_domain_id=project_domain_id,
+               cacert=cacert,
                trust_id=trust_id)
 
 
