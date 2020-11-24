@@ -36,12 +36,6 @@ class TestUserData(testtools.TestCase):
                                                    ['echo', '2']]},
                                        user_data)
 
-    def test_user_data_with_invalid(self):
-        ex = self.assertRaises(ValueError, nova.user_data, wrong='mistake')
-        self.assertEqual(
-            'Invalid cloud-init parameters:\n{\n    "wrong": "mistake"\n}',
-            str(ex))
-
     def assert_equal_cloud_config(self, expected, actual):
         self.assertTrue(actual.startswith('#cloud-config'))
         self.assertEqual(expected, yaml.load(actual))
@@ -62,9 +56,3 @@ class TestCloudConfig(testtools.TestCase):
         self.assertEqual({'runcmd': [['echo', '1'],
                                      ['echo', '2']]},
                          cloud_config)
-
-    def test_cloud_config_with_invalid(self):
-        ex = self.assertRaises(ValueError, nova.cloud_config, wrong='mistake')
-        self.assertEqual(
-            'Invalid cloud-init parameters:\n{\n    "wrong": "mistake"\n}',
-            str(ex))

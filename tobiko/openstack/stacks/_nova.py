@@ -263,11 +263,29 @@ class ServerStackFixture(heat.HeatStackFixture):
         return nova.get_console_output(server=self.server_id,
                                        length=self.max_console_output_length)
 
-    cloud_config = nova.cloud_config()
-
     @property
     def user_data(self):
         return nova.user_data(self.cloud_config)
+
+    #: SWAP file name
+    swap_filename: str = '/swap.img'
+    #: SWAP file size in bytes
+    swap_size: typing.Optional[int] = None
+    #: nax SWAP file size in bytes
+    swap_maxsize: typing.Optional[int] = None
+
+    @property
+    def cloud_config(self):
+        cloud_config = nova.cloud_config()
+        # default is to not create any swap files,
+        # because 'swap_file_max_size' is set to None
+        if self.swap_maxsize is not None:
+            cloud_config = nova.cloud_config(
+                cloud_config,
+                swap={'filename': self.swap_filename,
+                      'size': self.swap_size or 'auto',
+                      'maxsize': self.swap_maxsize})
+        return cloud_config
 
     def ensure_server_status(self, status):
         tobiko.setup_fixture(self)

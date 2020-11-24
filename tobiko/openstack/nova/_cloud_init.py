@@ -14,7 +14,6 @@
 from __future__ import absolute_import
 
 import collections
-import json
 import time
 
 from oslo_log import log
@@ -41,6 +40,7 @@ def cloud_config(*args, **kwargs):
 def combine_cloud_configs(objs):
     packages = []
     runcmd = []
+    extra_params = {}
     for obj in objs:
         if obj:
             if not isinstance(obj, collections.abc.Mapping):
@@ -54,12 +54,11 @@ def combine_cloud_configs(objs):
                     if cmdline:
                         runcmd.append(cmdline)
             if obj:
-                message = ('Invalid cloud-init parameters:\n' +
-                           json.dumps(obj, indent=4, sort_keys=True))
-                raise ValueError(message)
+                extra_params.update(obj)
 
     return CloudConfig.create(packages=packages or None,
-                              runcmd=runcmd or None)
+                              runcmd=runcmd or None,
+                              **extra_params)
 
 
 class CloudConfig(dict):

@@ -39,7 +39,7 @@ class CentosImageFixture(glance.URLGlanceImageFixture):
 
 
 class CentosFlavorStackFixture(_nova.FlavorStackFixture):
-    ram = 512
+    ram = 256
 
 
 class CentosServerStackFixture(_nova.ServerStackFixture):
@@ -49,3 +49,6 @@ class CentosServerStackFixture(_nova.ServerStackFixture):
 
     #: Flavor used to create a Nova server instance
     flavor_stack = tobiko.required_setup_fixture(CentosFlavorStackFixture)
+
+    #: Setup SWAP file in bytes
+    swap_maxsize = 1 * 1024 * 1024 * 1024  # 1 GB
