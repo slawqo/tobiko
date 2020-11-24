@@ -117,7 +117,8 @@ class CirrosServerStackTest(testtools.TestCase):
             self.skipTest(f"Target server has no IPv{ip_version} "
                           "nameservers configured")
         ping.assert_reachable_hosts(nameservers,
-                                    ssh_client=self.stack.ssh_client)
+                                    ssh_client=self.stack.ssh_client,
+                                    count=5)
 
 
 class EvacuablesServerStackTest(CirrosServerStackTest):

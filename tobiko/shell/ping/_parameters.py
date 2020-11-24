@@ -16,12 +16,15 @@
 from __future__ import absolute_import
 
 import collections
+import typing
 
 import netaddr
 from oslo_log import log
 
 
 LOG = log.getLogger(__name__)
+
+PingAddressType = typing.Union[str, netaddr.IPAddress]
 
 
 class PingParameters(collections.namedtuple('PingParameters',
@@ -61,9 +64,10 @@ def get_ping_parameters(default=None, **ping_params):
 
 
 def ping_parameters(default=None, count=None, deadline=None,
-                    fragmentation=None, host=None, interval=None,
-                    ip_version=None, packet_size=None, source=None,
-                    timeout=None, network_namespace=None):
+                    fragmentation=None,
+                    host: typing.Optional[PingAddressType] = None,
+                    interval=None, ip_version=None, packet_size=None,
+                    source=None, timeout=None, network_namespace=None):
     """Validate parameters and initialize a new PingParameters instance
 
     :param default: (PingParameters or None) instance from where to take
@@ -193,16 +197,23 @@ def get_boolean(name, value, default=None):
     return value
 
 
-def get_address(name, value, default=None):
-    if value is None and default:
-        return get_address(name, getattr(default, name))
-    if value is not None:
+def get_address(name: str, value: typing.Optional[PingAddressType],
+                default=None) -> typing.Optional[PingAddressType]:
+    if value is None:
+        if default:
+            return get_address(name, getattr(default, name))
+        else:
+            return None
+    if isinstance(value, netaddr.IPAddress):
+        return value
+    elif isinstance(value, str):
         try:
-            value = netaddr.IPAddress(value)
+            return netaddr.IPAddress(value)
         except netaddr.core.AddrFormatError:
             # NOTE: value may be an host name so this is fine
-            value = str(value)
-    return value
+            return value
+    else:
+        raise TypeError(f"Object '{value}' is not a valid address")
 
 
 def get_string(name, value, default=None):

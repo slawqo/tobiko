@@ -16,9 +16,10 @@
 from __future__ import absolute_import
 
 import time
+import typing
 
+import netaddr
 from oslo_log import log
-
 
 import tobiko
 from tobiko.shell import sh
@@ -38,22 +39,37 @@ RECEIVED = 'received'
 UNRECEIVED = 'unreceived'
 
 
-def list_reachable_hosts(hosts, **params):
+PingHostType = typing.Union['str', netaddr.IPAddress]
+
+
+def list_reachable_hosts(hosts: typing.Iterable[PingHostType],
+                         **params) -> tobiko.Selection[PingHostType]:
     reachable_host, _ = ping_hosts(hosts, **params)
     return reachable_host
 
 
-def list_unreachable_hosts(hosts, **params):
+def list_unreachable_hosts(hosts: typing.Iterable[PingHostType],
+                           **params) -> tobiko.Selection[PingHostType]:
     _, unreachable_host = ping_hosts(hosts, **params)
     return unreachable_host
 
 
-def ping_hosts(hosts, **params):
-    reachable = tobiko.Selection()
-    unreachable = tobiko.Selection()
+PingHostsResultType = typing.Tuple[tobiko.Selection[PingHostType],
+                                   tobiko.Selection[PingHostType]]
+
+
+def ping_hosts(hosts: typing.Iterable[PingHostType],
+               count: typing.Optional[int] = None,
+               **params) -> PingHostsResultType:
+    if count is None:
+        count = 1
+    else:
+        count = int(count)
+    reachable = tobiko.Selection[PingHostType]()
+    unreachable = tobiko.Selection[PingHostType]()
     for host in hosts:
         try:
-            result = ping(host, count=1, **params)
+            result = ping(host, count=count, **params)
         except _exception.PingError:
             LOG.exception('Error pinging host: %r', host)
             unreachable.append(host)
@@ -65,7 +81,8 @@ def ping_hosts(hosts, **params):
     return reachable, unreachable
 
 
-def ping(host, until=TRANSMITTED, check=True, **ping_params):
+def ping(host: PingHostType, until=TRANSMITTED, check: bool = True,
+         **ping_params) -> _statistics.PingStatistics:
     """Send ICMP messages to host address until timeout
 
     :param host: destination host address
@@ -151,7 +168,7 @@ def ping_until_unreceived(host, **ping_params):
 
 
 def get_statistics(parameters=None, ssh_client=None, until=None, check=True,
-                   **ping_params):
+                   **ping_params) -> _statistics.PingStatistics:
     parameters = _parameters.get_ping_parameters(default=parameters,
                                                  **ping_params)
     statistics = _statistics.PingStatistics()
