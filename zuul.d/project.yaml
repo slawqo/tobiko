@@ -37,6 +37,7 @@
 
     periodic:
       jobs:
+        - tripleo-ci-centos-8-content-provider
         - devstack-tobiko-functional-centos
         - devstack-tobiko-functional-ubuntu
         - devstack-tobiko-functional-ovn-centos
@@ -47,5 +48,14 @@
         - devstack-tobiko-faults-ovn-ubuntu
         - devstack-tobiko-scenario-ovn-centos
         - devstack-tobiko-scenario-ovn-ubuntu
-        - tobiko-tripleo-functional
-        - tobiko-tripleo-faults
+        - tobiko-tripleo-functional:
+            vars: &consumer_vars
+              consumer_job: true
+              build_container_images: false
+              remove_tags:
+                - build
+            dependencies: &deps_cprovider
+              - tripleo-ci-centos-8-content-provider
+        - tobiko-tripleo-faults:
+            vars: *consumer_vars
+            dependencies: *deps_cprovider
