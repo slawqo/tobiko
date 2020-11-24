@@ -34,13 +34,13 @@ CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
-class FloatingNetworkStackFixture(heat.HeatStackFixture):
+class ExternalNetworkStackFixture(heat.HeatStackFixture):
 
-    template = _hot.heat_template_file('neutron/floating_network.yaml')
+    template = _hot.heat_template_file('neutron/external_network.yaml')
 
     @property
     def external_name(self):
-        return tobiko.tobiko_config().neutron.floating_network
+        return tobiko.tobiko_config().neutron.external_network
 
     _external_network = None
 
@@ -64,6 +64,15 @@ class FloatingNetworkStackFixture(heat.HeatStackFixture):
     @property
     def network_details(self):
         return neutron.get_network(self.network_id)
+
+    has_gateway = False
+
+
+class FloatingNetworkStackFixture(ExternalNetworkStackFixture):
+
+    @property
+    def external_name(self):
+        return tobiko.tobiko_config().neutron.floating_network
 
 
 @neutron.skip_if_missing_networking_extensions('port-security')

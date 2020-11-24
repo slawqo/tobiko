@@ -305,6 +305,20 @@ class ServerStackFixture(heat.HeatStackFixture):
                         "method not implemented")
 
 
+class ExternalServerStackFixture(ServerStackFixture):
+
+    #: stack with the network where the server port is created
+    network_stack = tobiko.required_setup_fixture(
+        _neutron.ExternalNetworkStackFixture)
+
+    # external servers doesn't need floating IPs
+    has_floating_ip = False
+
+    @property
+    def floating_network(self):
+        return self.network_stack.network_id
+
+
 class PeerServerStackFixture(ServerStackFixture):
     """Server witch networking access requires passing by another Nova server
     """

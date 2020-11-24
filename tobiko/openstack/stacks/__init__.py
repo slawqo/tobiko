@@ -30,6 +30,7 @@ CentosServerStackFixture = _centos.CentosServerStackFixture
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture
 CirrosServerStackFixture = _cirros.CirrosServerStackFixture
+CirrosExternalServerStackFixture = _cirros.CirrosExternalServerStackFixture
 CirrosPeerServerStackFixture = _cirros.CirrosPeerServerStackFixture
 CirrosDifferentHostServerStackFixture = (
     _cirros.CirrosDifferentHostServerStackFixture)

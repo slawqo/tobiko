@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import netaddr
+from oslo_log import log
 import testtools
 
 import tobiko
@@ -27,17 +28,34 @@ from tobiko.openstack import stacks
 from tobiko.openstack import topology
 
 
+LOG = log.getLogger(__name__)
+
+
 class PortTest(testtools.TestCase):
     """Test Neutron ports"""
 
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
-    def test_port_ips(self):
-        server_ips = ip.list_ip_addresses(scope='global',
-                                          ssh_client=self.stack.ssh_client)
-        port_ips = neutron.list_port_ip_addresses(port=self.stack.port_details)
-        self.assertFalse(set(port_ips) - set(server_ips))
+    def test_port_ips(self, ip_version=None):
+        port = self.stack.port_details
+        port_ips = tobiko.Selection()
+        for subnet in neutron.list_subnets(
+                network_id=self.stack.network_stack.network_id):
+            if subnet['enable_dhcp']:
+                port_ips += neutron.list_port_ip_addresses(
+                    port=port, subnet_id=subnet['id'], ip_version=ip_version)
+            else:
+                LOG.warning(f"Subnet '{subnet['id']}' has "
+                            f" enable_dhcp={subnet['enable_dhcp']}")
+        if port_ips:
+            server_ips = ip.list_ip_addresses(scope='global',
+                                              ssh_client=self.stack.ssh_client)
+            self.assertEqual(set(port_ips), set(port_ips) & set(server_ips))
+        elif ip_version:
+            self.skipTest(f"No port IPv{ip_version} addresses found")
+        else:
+            self.skipTest("No port IP addresses found")
 
     def test_port_network(self):
         self.assertEqual(self.stack.network_stack.network_id,
@@ -57,24 +75,47 @@ class PortTest(testtools.TestCase):
         ping.assert_reachable_hosts(gateway_ips,
                                     ssh_client=self.stack.ssh_client)
 
-    def test_ping_port(self, network_id=None, device_id=None):
+    def test_ping_port(self, network_id=None, device_id=None,
+                       ip_version=None):
         network_id = network_id or self.stack.network_stack.network_id
         device_id = device_id or self.stack.server_id
         ports = neutron.list_ports(network_id=network_id,
                                    device_id=device_id)
-        port_ips = set()
+        port_ips: tobiko.Selection[netaddr.IPAddress] = tobiko.Selection()
         for port in ports:
             self.assertEqual(network_id, port['network_id'])
             self.assertEqual(device_id, port['device_id'])
-            port_ips.update(neutron.list_port_ip_addresses(port=port))
-        ping.assert_reachable_hosts(port_ips,
-                                    ssh_client=self.stack.ssh_client)
+            port_ips.extend(neutron.list_port_ip_addresses(port=port))
+        if ip_version is not None:
+            port_ips = port_ips.with_attributes(version=ip_version)
+        server_ips = ip.list_ip_addresses(scope='global',
+                                          ssh_client=self.stack.ssh_client)
+        # Remove IPs that hasn't been assigned to server
+        port_ips = tobiko.Selection(set(port_ips) & set(server_ips))
+        if port_ips:
+            ping.assert_reachable_hosts(port_ips,
+                                        ssh_client=self.stack.ssh_client)
+        elif ip_version:
+            self.skipTest(f"No port IPv{ip_version} addresses found")
+        else:
+            self.skipTest("No port IP addresses found")
 
     @tobiko.retry_test_case(interval=30.)
-    def test_ping_inner_gateway_ip(self):
+    def test_ping_inner_gateway_ip(self, ip_version=None):
         if not self.stack.network_stack.has_gateway:
             self.skip('Server network has no gateway router')
-        self.test_ping_port(device_id=self.stack.network_stack.gateway_id)
+        self.test_ping_port(device_id=self.stack.network_stack.gateway_id,
+                            ip_version=ip_version)
+
+
+# --- Test opening ports on external network ----------------------------------
+
+class ExternalPortTest(PortTest):
+    """Test Neutron ports"""
+
+    #: Resources stack with Nova server to send messages to
+    stack = tobiko.required_setup_fixture(
+        stacks.CirrosExternalServerStackFixture)
 
 
 # --- Test la-h3 extension ----------------------------------------------------

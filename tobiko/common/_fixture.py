@@ -242,7 +242,7 @@ def get_required_fixture_properties(cls):
 
 
 def init_fixture(obj, name):
-    if (inspect.isclass(obj) and issubclass(obj, fixtures.Fixture)):
+    if inspect.isclass(obj) and issubclass(obj, fixtures.Fixture):
         try:
             obj = obj()
         except Exception as ex:
