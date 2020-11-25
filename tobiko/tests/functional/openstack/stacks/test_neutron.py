@@ -102,15 +102,31 @@ class L3HaNetworkTest(NetworkTest):
 
 
 @keystone.skip_unless_has_keystone_credentials()
+@stacks.skip_unless_has_external_network
+class ExternalNetworkStackTest(testtools.TestCase):
+
+    def test_get_external_network(self):
+        network = stacks.get_external_network()
+        self.assertTrue(network['id'])
+        self.assertIs(True, network['router:external'])
+        self.assertEqual('ACTIVE', network['status'])
+        subnets = neutron.list_subnets(network_id=network['id'],
+                                       enable_dhcp=True)
+        self.assertNotEqual([], subnets)
+
+    def test_has_external_network(self):
+        self.assertIs(True, stacks.has_external_network())
+
+
+@keystone.skip_unless_has_keystone_credentials()
+@stacks.skip_unless_has_floating_network
 class FloatingNetworkStackTest(testtools.TestCase):
 
-    @stacks.skip_if_missing_floating_network
     def test_get_floating_network(self):
         network = stacks.get_floating_network()
         self.assertTrue(network['id'])
         self.assertIs(True, network['router:external'])
         self.assertEqual('ACTIVE', network['status'])
 
-    @stacks.skip_if_missing_floating_network
     def test_has_floating_network(self):
         self.assertIs(True, stacks.has_floating_network())

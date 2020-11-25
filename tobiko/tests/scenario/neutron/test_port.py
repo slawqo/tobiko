@@ -110,6 +110,7 @@ class PortTest(testtools.TestCase):
 
 # --- Test opening ports on external network ----------------------------------
 
+@stacks.skip_unless_has_external_network
 class ExternalPortTest(PortTest):
     """Test Neutron ports"""
 

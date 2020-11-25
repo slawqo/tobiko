@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import json
+import typing
 
 import netaddr
 from oslo_log import log
@@ -33,6 +34,8 @@ LOG = log.getLogger(__name__)
 CONF = config.CONF
 LOG = log.getLogger(__name__)
 
+NeutronNetworkType = typing.Dict[str, typing.Any]
+
 
 class ExternalNetworkStackFixture(heat.HeatStackFixture):
 
@@ -42,15 +45,40 @@ class ExternalNetworkStackFixture(heat.HeatStackFixture):
     def external_name(self):
         return tobiko.tobiko_config().neutron.external_network
 
-    _external_network = None
+    subnet_enable_dhcp: typing.Optional[bool] = True
+
+    _external_network: typing.Optional[NeutronNetworkType] = None
 
     @property
-    def external_network(self):
-        network = self._external_network
-        if network is None:
-            self._external_network = network = find_external_network(
-                name=self.external_name) or {}
-        return network
+    def external_network(self) -> typing.Optional[NeutronNetworkType]:
+        external_network = self._external_network
+        if external_network is None:
+            subnet_parameters = {}
+            if self.subnet_enable_dhcp is not None:
+                subnet_parameters['enable_dhcp'] = self.subnet_enable_dhcp
+            for network in list_external_networks(name=self.external_name):
+                if not network['subnets']:
+                    LOG.debug(f"Network '{network['id']}' has any subnet")
+                    continue
+                if subnet_parameters:
+                    subnets = neutron.list_subnets(network_id=network['id'],
+                                                   **subnet_parameters)
+                    if not subnets:
+                        LOG.debug(f"Network '{network['id']}' has any valid "
+                                  f"subnet: {subnet_parameters}")
+                        continue
+
+                network_dump = json.dumps(network, indent=4, sort_keys=True)
+                LOG.debug(f"Found external network for {self.fixture_name}:\n"
+                          f"{network_dump}")
+                self._external_network = external_network = network
+                break
+            else:
+                LOG.warning("No external network found for "
+                            f"'{self.fixture_name}':\n"
+                            f" - name or ID: {self.external_name}\n"
+                            f" - subnet attributes: {subnet_parameters}\n")
+        return external_network
 
     @property
     def external_id(self):
@@ -73,6 +101,8 @@ class FloatingNetworkStackFixture(ExternalNetworkStackFixture):
     @property
     def external_name(self):
         return tobiko.tobiko_config().neutron.floating_network
+
+    subnet_enable_dhcp = None
 
 
 @neutron.skip_if_missing_networking_extensions('port-security')
@@ -270,32 +300,41 @@ class SecurityGroupsFixture(heat.HeatStackFixture):
     template = _hot.heat_template_file('neutron/security_groups.yaml')
 
 
-def find_external_network(name=None):
-    network = None
-    if name:
+def list_external_networks(name: typing.Optional[str] = None) -> \
+        tobiko.Selection[NeutronNetworkType]:
+    networks = tobiko.Selection[NeutronNetworkType]()
+    if name is not None:
         try:
             network = neutron.get_network(name)
         except neutron.NoSuchNetwork:
-            LOG.debug('No such network with ID %r', name)
+            LOG.error(f"No such network with ID '{name}'")
+        else:
+            networks.append(network)
+    if not networks:
+        network_params = {'router:external': True, "status": "ACTIVE"}
+        if name is not None:
+            network_params['name'] = name
+        networks += neutron.list_networks(**network_params)
+    if not networks and name:
+        raise ValueError("No such external network with name or ID "
+                         f"'{name}'")
+    return networks
 
-    if not network:
-        params = {'router:external': True, "status": "ACTIVE"}
-        if name:
-            params['name'] = name
-        try:
-            network = neutron.find_network(**params)
-        except tobiko.ObjectNotFound as ex:
-            LOG.exception('No such network (%s):',
-                          json.dumps(params, sort_keys=True))
-            if name:
-                raise ValueError("No such external network with name or ID "
-                                 f"'{name}'") from ex
 
-    if network:
-        LOG.debug('Found external network %r:\n%s',
-                  network['name'], json.dumps(network, indent=4,
-                                              sort_keys=True))
-    return network
+def get_external_network_id():
+    return tobiko.setup_fixture(ExternalNetworkStackFixture).network_id
+
+
+def get_external_network():
+    return tobiko.setup_fixture(ExternalNetworkStackFixture).network_details
+
+
+def has_external_network():
+    return tobiko.setup_fixture(ExternalNetworkStackFixture).has_network
+
+
+skip_unless_has_external_network = tobiko.skip_unless(
+    'External network not found', has_external_network)
 
 
 def get_floating_network_id():
@@ -310,5 +349,5 @@ def has_floating_network():
     return tobiko.setup_fixture(FloatingNetworkStackFixture).has_network
 
 
-skip_if_missing_floating_network = tobiko.skip_unless(
+skip_unless_has_floating_network = tobiko.skip_unless(
     'Floating network not found', has_floating_network)
