@@ -20,6 +20,7 @@ from oslo_log import log
 
 from tobiko.openstack import neutron
 from tobiko.openstack import topology
+from tobiko.shell import files
 from tobiko.tripleo import _overcloud
 from tobiko.tripleo import _undercloud
 
@@ -51,6 +52,17 @@ class TripleoTopology(topology.OpenStackTopology):
 
     # TODO: add more known subgrups here
     known_subgroups: typing.List[str] = ['controller', 'compute']
+
+    # In TripleO we need to parse log files directly
+    file_digger_class = files.LogFileDigger
+
+    # This is dict which handles mapping of the log file and systemd_unit (if
+    # needed) for the OpenStack services
+    # Format of this dict is like below:
+    # service_name: (log_filename, systemd_unit_name)
+    log_names_mappings = {
+        neutron.SERVER: '/var/log/containers/neutron/server.log*',
+    }
 
     def discover_nodes(self):
         self.discover_undercloud_nodes()

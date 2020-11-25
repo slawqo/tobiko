@@ -19,4 +19,5 @@ from tobiko.shell.files import _logs
 
 
 LogFileDigger = _logs.LogFileDigger
+JournalLogDigger = _logs.JournalLogDigger
 MultihostLogFileDigger = _logs.MultihostLogFileDigger

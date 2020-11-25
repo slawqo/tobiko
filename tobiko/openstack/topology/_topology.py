@@ -25,6 +25,7 @@ from six.moves.urllib import parse
 import tobiko
 from tobiko import docker
 from tobiko import podman
+from tobiko.shell import files
 from tobiko.shell import ip
 from tobiko.shell import sh
 from tobiko.shell import ssh
@@ -191,6 +192,18 @@ class OpenStackTopology(tobiko.SharedFixture):
 
     _connections = tobiko.required_setup_fixture(
         _connection.SSHConnectionManager)
+
+    # In Devstack based env logs can be accessed by journalctl
+    file_digger_class: typing.Type
+    file_digger_class = files.JournalLogDigger
+
+    # This is dict which handles mapping of the log file and systemd_unit (if
+    # needed) for the OpenStack services.
+    # In case of Devstack topology file name in fact name of the systemd unit
+    # as logs are stored in journalctl
+    log_names_mappings = {
+        neutron.SERVER: 'devstack@q-svc',
+    }
 
     def __init__(self):
         super(OpenStackTopology, self).__init__()

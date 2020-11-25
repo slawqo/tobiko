@@ -22,6 +22,7 @@ from tobiko.openstack.neutron import _port
 from tobiko.openstack.neutron import _network
 
 
+SERVER = 'neutron-server'
 DHCP_AGENT = _agent.DHCP_AGENT
 L3_AGENT = _agent.L3_AGENT
 METADATA_AGENT = _agent.METADATA_AGENT

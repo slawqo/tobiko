@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import re
 import typing  # noqa
 
 import tobiko
@@ -55,4 +56,31 @@ def grep_files(pattern: str,
             return output_lines
     raise NoMatchingLinesFound(pattern=pattern,
                                files=files,
+                               login=ssh_client and ssh_client.login or None)
+
+
+def grep_lines(pattern: str,
+               command: sh.ShellCommandType,
+               ssh_client: ssh.SSHClientFixture = None,
+               **execute_params) -> typing.List[str]:
+    if not pattern:
+        raise ValueError("Pattern string can't be empty")
+    command_line = sh.shell_command(command)
+    try:
+        result = sh.execute(command_line,
+                            ssh_client=ssh_client,
+                            **execute_params)
+    except sh.ShellCommandFailed as ex:
+        if ex.exit_status > 1:
+            # Some unknown problem occurred
+            raise
+    else:
+        output_lines: typing.List[str] = []
+        r = re.compile(pattern)
+        output_lines = [line for line in result.stdout.splitlines()
+                        if r.search(line)]
+        if output_lines:
+            return output_lines
+    raise NoMatchingLinesFound(pattern=pattern,
+                               files=command,
                                login=ssh_client and ssh_client.login or None)
