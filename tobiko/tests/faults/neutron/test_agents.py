@@ -516,8 +516,8 @@ class OvnControllerTest(BaseAgentTest):
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
     def setUp(self):
-        self.get_ovn_agents_from_containers()
         super(OvnControllerTest, self).setUp()
+        self.get_ovn_agents_from_containers()
 
     def kill_ovn_controller(self,
                             hosts: typing.Optional[typing.List[str]] = None,
