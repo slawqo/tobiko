@@ -32,6 +32,10 @@
       jobs:
         - devstack-tobiko-functional-centos
         # - devstack-tobiko-functional-ubuntu
+        # - devstack-tobiko-functional-ovn-centos
+        # - devstack-tobiko-functional-ovn-ubuntu
+        - devstack-tobiko-scenario-ovn-centos
+        # - devstack-tobiko-scenario-ovn-ubuntu
         - tobiko-tox-infrared-centos-8
 
     periodic:
