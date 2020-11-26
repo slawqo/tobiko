@@ -1,6 +1,6 @@
-======
-Tobiko
-======
+==========
+Tobiko 0.3
+==========
 
 
 Test Big Cloud Operations
@@ -28,21 +28,23 @@ Tobiko Python framework is being automatically tested with below Python
 versions:
 
 - Python 3.6
-- Python 3.7
 - Python 3.8
+- Python 3.9 (new)
 
 and below Linux distributions:
 
 - CentOS 7 / RHEL 7 (with Python 3.6)
 - CentOS 8 / RHEL 8 (with Python 3.6)
-- Ubuntu Bionic (with Python 3.6 and 3.7)
+- Ubuntu Focal (with Python 3.8)
 
-Tobiko is also tested for development purposes with below OSes:
+Tobiko has also been tested for development purposes with below OSes:
 
 - Fedora 31 (with Python 3.7)
 - Fedora 32 (with Python 3.8)
-- OSX (with Python 3.8)
-- Ubuntu Focal (with Python 3.8)
+- Fedora 33 (with Python 3.9)
+- OSX (with Python 3.6 and Python 3.8)
+- Ubuntu Bionic (with Python 3.6)
+- Ubuntu Focal (with Python 3.9)
 
 The Tobiko Python framework is being used to implement test cases. As Tobiko
 can be executed on nodes that are not part of the cloud to test against, this
