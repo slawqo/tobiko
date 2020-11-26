@@ -164,8 +164,12 @@ def ovn_dbs_are_synchronized(test_case):
             ovn_db_show = sh.execute(
                 show_cmd, ssh_client=node.ssh_client, sudo=True).stdout
             ovn_dbs_show_dict[db] = build_ovn_db_show_dict(ovn_db_show)
-            test_case.assertEqual(ovn_dbs_show_dict[db],
-                                  ovn_master_dbs_show_dict[db])
+            test_case.assertEqual(len(ovn_dbs_show_dict[db]),
+                                  len(ovn_master_dbs_show_dict[db]))
+            for key in ovn_dbs_show_dict[db]:
+                test_case.assertEqual(
+                    sorted(ovn_dbs_show_dict[db][key]),
+                    sorted(ovn_master_dbs_show_dict[db][key]))
 
     LOG.info("All OVN DBs are synchronized")
 
