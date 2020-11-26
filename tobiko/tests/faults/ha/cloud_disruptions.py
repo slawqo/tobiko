@@ -1,9 +1,9 @@
 
 from __future__ import absolute_import
 
-import re
 import time
 import random
+import urllib.parse
 
 from oslo_log import log
 
@@ -172,11 +172,11 @@ def reboot_all_controller_nodes(reboot_method=sh.hard_reset_method,
 
 
 def get_main_vip():
-    """return the ip of the overcloud main_vip"""
-    credentials = keystone.default_keystone_credentials()
-    auth_url = credentials.auth_url
-    auth_url_ip = re.findall(r'[0-9]+(?:\.[0-9]+){3}', auth_url)[0]
-    return auth_url_ip
+    """return the ip of the overcloud main vip.
+    Retreive an ip address (ipv4/ipv6) from the auth_url."""
+    auth_url = keystone.default_keystone_credentials().auth_url
+    auth_url_parsed = urllib.parse.urlsplit(auth_url)
+    return auth_url_parsed.hostname
 
 
 def get_main_vip_controller(main_vip):
