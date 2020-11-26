@@ -1,8 +1,6 @@
 # To use IR master branch version please copy below URL
-# git+https://github.com/redhat-openstack/infrared.git
+git+https://github.com/redhat-openstack/infrared.git
 
 # To use instead an IR patchsets use instead below URL replaching with your
 # rigth full patchset endpoint
 # git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/23/493623/12
-
-git+https://review.gerrithub.io/redhat-openstack/infrared@refs/changes/07/501507/4
