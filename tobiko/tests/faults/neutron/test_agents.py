@@ -24,10 +24,12 @@ import tobiko
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
+from tobiko.openstack import tests
 from tobiko.openstack import topology
 from tobiko.shell import ping
 from tobiko.shell import sh
 from tobiko.tripleo import containers
+from tobiko.tripleo import overcloud
 
 
 LOG = log.getLogger(__name__)
@@ -52,10 +54,18 @@ class BaseAgentTest(testtools.TestCase):
         super(BaseAgentTest, self).setUp()
         if not self.agents:
             self.skipTest(f"Missing Neutron agent(s): '{self.agent_name}'")
+        self.addCleanup(tests.test_neutron_agents_are_alive)
 
     @property
     def hosts(self) -> typing.List[str]:
         return [agent['host'] for agent in self.agents]
+
+    @property
+    def container_runtime_name(self):
+        if overcloud.has_overcloud():
+            return containers.container_runtime_name
+        else:
+            return 'docker'
 
     def get_ovn_agents_from_containers(self):
         if not self.agents:
@@ -109,7 +119,8 @@ class BaseAgentTest(testtools.TestCase):
                         self.agent_name)
                 LOG.debug(f'Stopping container {self.container_name} on '
                           f"host '{host}'...")
-                sh.execute(f'docker stop {self.container_name}',
+                sh.execute(f'{self.container_runtime_name} stop '
+                           f'{self.container_name}',
                            ssh_client=ssh_client,
                            sudo=True)
                 LOG.debug(f'Container {self.container_name} has been stopped '
@@ -145,9 +156,34 @@ class BaseAgentTest(testtools.TestCase):
                         self.agent_name)
                 LOG.debug(f'Starting container {self.container_name} on '
                           f"host '{host}'...")
-                sh.execute(f'docker start {self.container_name}',
+                sh.execute(f'{self.container_runtime_name} start '
+                           f'{self.container_name}',
                            ssh_client=ssh_client,
                            sudo=True)
+
+    def restart_agent_container(
+            self, hosts: typing.Optional[typing.List[str]] = None):
+        '''Restart network agent containers on hosts
+
+        Restart docker or podman containers and check network agents are up and
+        running after it
+
+        :parm hosts: List of hostnames to start agent on
+        :type hosts: list of strings
+        '''
+        hosts = hosts or self.hosts
+        self.assertNotEqual([], hosts, "Host list is empty")
+
+        self.container_name = (self.container_name or
+                               topology.get_agent_container_name(
+                                   self.agent_name))
+
+        for host in hosts:
+            ssh_client = topology.get_openstack_node(hostname=host).ssh_client
+            sh.execute(f'{self.container_runtime_name} restart '
+                       f'{self.container_name}',
+                       ssh_client=ssh_client,
+                       sudo=True)
 
     def get_cmd_pids(self, process_name, command_filter, hosts=None,
                      timeout=120, interval=2, min_pids_per_host=1) -> \
@@ -546,8 +582,8 @@ class OvnControllerTest(BaseAgentTest):
             pid = None
             for directory in ('ovn', 'openvswitch'):
                 try:
-                    pid = sh.execute('docker exec -uroot '
-                                     f'{self.container_name} cat '
+                    pid = sh.execute(f'{self.container_runtime_name} exec '
+                                     f'-uroot {self.container_name} cat '
                                      f'/run/{directory}/ovn-controller.pid',
                                      ssh_client=ssh_client,
                                      sudo=True).stdout.splitlines()[0]
@@ -562,8 +598,8 @@ class OvnControllerTest(BaseAgentTest):
             self.assertIsNotNone(pid)
             LOG.debug(f'Killing process {pid} from container '
                       f'{self.container_name} on host {host}')
-            sh.execute(f'docker exec -uroot {self.container_name} '
-                       f'kill {pid}',
+            sh.execute(f'{self.container_runtime_name} exec -uroot '
+                       f'{self.container_name} kill {pid}',
                        ssh_client=ssh_client,
                        sudo=True)
             LOG.debug(f'Container {self.container_name} has been killed '
@@ -573,7 +609,8 @@ class OvnControllerTest(BaseAgentTest):
 
             # Verify the container is restarted automatically
             for attempt in tobiko.retry(timeout=timeout, interval=interval):
-                search_running_ovn_cont = ("docker ps --format '{{.Names}}'"
+                search_running_ovn_cont = (f"{self.container_runtime_name} ps "
+                                           "--format '{{.Names}}'"
                                            f" -f name={self.container_name}")
                 output = sh.execute(search_running_ovn_cont,
                                     ssh_client=ssh_client,
@@ -598,6 +635,12 @@ class OvnControllerTest(BaseAgentTest):
         ovn-controller process running into it was killed
         '''
         self.kill_ovn_controller()
+
+    def test_restart_ovn_controller_containers(self):
+        '''Test that OVN controller containers can be restarted successfully
+        '''
+        self.restart_agent_container()
+        ping.ping_until_received(self.stack.ip_address).assert_replied()
 
 
 class MetadataAgentTest(BaseAgentTest):
@@ -682,6 +725,10 @@ class MetadataAgentTest(BaseAgentTest):
         self.wait_for_metadata_status(is_reachable=False)
         ping.ping_until_received(self.stack.ip_address).assert_replied()
         self.start_agent()
+        self.wait_for_metadata_status(is_reachable=True)
+
+    def test_restart_metadata_containers(self):
+        self.restart_agent_container()
         self.wait_for_metadata_status(is_reachable=True)
 
 
