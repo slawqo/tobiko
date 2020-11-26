@@ -15,7 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import re
 import typing  # noqa
 
 import tobiko
@@ -28,17 +27,26 @@ class NoMatchingLinesFound(tobiko.TobikoException):
                " files={files}, login={login})")
 
 
-def grep_files(pattern: str,
-               files: typing.List[str],
-               command: sh.ShellCommandType = 'zgrep -Eh',
-               ssh_client: ssh.SSHClientFixture = None,
-               blank_lines=False,
-               **execute_params) -> typing.List[str]:
+def grep(pattern: str,
+         command: typing.Optional[sh.ShellCommandType] = None,
+         grep_command: sh.ShellCommandType = 'zgrep -Eh',
+         files: typing.Optional[typing.List[str]] = None,
+         ssh_client: ssh.SSHClientFixture = None,
+         blank_lines: bool = True,
+         **execute_params) -> typing.List[str]:
     if not pattern:
         raise ValueError("Pattern string can't be empty")
-    if not files:
-        raise ValueError("File list can't be empty")
-    command_line = sh.shell_command(command) + ['-e', pattern] + files
+    if command:
+        if files:
+            raise ValueError("File list must be empty when command is given")
+        command_line = sh.shell_command(command) + ['|'] + grep_command + [
+            '-e', pattern]
+    elif files:
+        command_line = sh.shell_command(grep_command) + [
+            '-e', pattern] + files
+    else:
+        raise ValueError("command and files can't be both empty or None")
+
     try:
         result = sh.execute(command_line,
                             ssh_client=ssh_client,
@@ -59,28 +67,13 @@ def grep_files(pattern: str,
                                login=ssh_client and ssh_client.login or None)
 
 
+def grep_files(pattern: str,
+               files: typing.List[str],
+               **grep_params) -> typing.List[str]:
+    return grep(pattern=pattern, files=files, **grep_params)
+
+
 def grep_lines(pattern: str,
                command: sh.ShellCommandType,
-               ssh_client: ssh.SSHClientFixture = None,
-               **execute_params) -> typing.List[str]:
-    if not pattern:
-        raise ValueError("Pattern string can't be empty")
-    command_line = sh.shell_command(command)
-    try:
-        result = sh.execute(command_line,
-                            ssh_client=ssh_client,
-                            **execute_params)
-    except sh.ShellCommandFailed as ex:
-        if ex.exit_status > 1:
-            # Some unknown problem occurred
-            raise
-    else:
-        output_lines: typing.List[str] = []
-        r = re.compile(pattern)
-        output_lines = [line for line in result.stdout.splitlines()
-                        if r.search(line)]
-        if output_lines:
-            return output_lines
-    raise NoMatchingLinesFound(pattern=pattern,
-                               files=command,
-                               login=ssh_client and ssh_client.login or None)
+               **grep_params) -> typing.List[str]:
+    return grep(pattern=pattern, command=command, **grep_params)

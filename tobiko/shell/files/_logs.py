@@ -32,11 +32,8 @@ class LogFileDigger(object):
         self.found = set()
 
     def find_lines(self, pattern, new_lines=False):
-        log_files = self.list_log_files()
         try:
-            lines = frozenset(
-                grep.grep_files(pattern=pattern, files=log_files,
-                                **self.execute_params))
+            lines = frozenset(self.grep_lines(pattern))
         except grep.NoMatchingLinesFound:
             if new_lines:
                 return frozenset()
@@ -46,6 +43,11 @@ class LogFileDigger(object):
             if new_lines:
                 return lines
         return frozenset(self.found)
+
+    def grep_lines(self, pattern):
+        log_files = self.list_log_files()
+        return grep.grep_files(pattern=pattern, files=log_files,
+                               **self.execute_params)
 
     def find_new_lines(self, pattern):
         return self.find_lines(pattern=pattern, new_lines=True)
@@ -59,24 +61,22 @@ class LogFileDigger(object):
 
 class JournalLogDigger(LogFileDigger):
 
-    def find_lines(self, pattern, new_lines=False):
-        dump_log_cmd = [
-            "journalctl", "--unit", self.filename,
-            "--since", "5 minutes ago"]
+    def grep_lines(self, pattern):
         try:
-            lines = frozenset(
-                grep.grep_lines(pattern=pattern,
-                                command=dump_log_cmd,
-                                **self.execute_params))
-        except grep.NoMatchingLinesFound:
-            if new_lines:
-                return frozenset()
+            result = sh.execute(["journalctl", '--no-pager',
+                                 "--unit", self.filename,
+                                 "--since", "5 minutes ago",
+                                 '--grep', pattern],
+                                **self.execute_params)
+        except sh.ShellCommandFailed as ex:
+            if ex.stdout.endswith('-- No entries --\n'):
+                ssh_client = self.execute_params.get('ssh_client')
+                raise grep.NoMatchingLinesFound(
+                    pattern=pattern,
+                    files=[self.filename],
+                    login=ssh_client and ssh_client.login or None)
         else:
-            lines -= self.found
-            self.found.update(lines)
-            if new_lines:
-                return lines
-        return frozenset(self.found)
+            return result.stdout.splitlines()
 
 
 class MultihostLogFileDigger(object):
