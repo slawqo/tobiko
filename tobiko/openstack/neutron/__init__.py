@@ -72,6 +72,8 @@ default_nameservers = _nameservers.default_nameservers
 
 find_port_ip_address = _port.find_port_ip_address
 list_port_ip_addresses = _port.list_port_ip_addresses
+find_device_ip_address = _port.find_device_ip_address
+list_device_ip_addresses = _port.list_device_ip_addresses
 
 NeutronNetworkFixture = _network.NeutronNetworkFixture
 NoSuchNetwork = _network.NoSuchNetwork

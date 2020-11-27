@@ -114,7 +114,13 @@ def list_ports(client=None, **params):
     return tobiko.select(ports)
 
 
-def list_subnets(client=None, **params):
+NeutronSubnetType = typing.Dict[str, typing.Any]
+
+
+def list_subnets(client=None, ip_version: typing.Optional[int] = None,
+                 **params) -> tobiko.Selection[NeutronSubnetType]:
+    if ip_version is not None:
+        params['ip_version'] = ip_version
     subnets = neutron_client(client).list_subnets(**params)
     if isinstance(subnets, collections.Mapping):
         subnets = subnets['subnets']

@@ -13,30 +13,73 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 import netaddr
 
 import tobiko
+from tobiko.openstack.neutron import _client
+from tobiko.shell import ssh
 from tobiko.shell import ping
 
 
-def list_port_ip_addresses(port, subnet_id=None, ip_version=None,
-                           check_connectivity=False, ssh_client=None):
-    selected_addresses = []
-    for fixed_ip in port['fixed_ips']:
-        if subnet_id and subnet_id != fixed_ip['subnet_id']:
-            continue
-        ip_address = netaddr.IPAddress(fixed_ip['ip_address'])
-        if ip_version and ip_version != ip_address.version:
-            continue
-        if check_connectivity and not ping.ping(
-                host=ip_address, ssh_client=ssh_client).received:
-            continue
-        selected_addresses.append(ip_address)
-    return tobiko.Selection(selected_addresses)
+NeutronPortType = typing.Dict[str, typing.Any]
 
 
-def find_port_ip_address(port, unique=False, **kwargs):
+def list_port_ip_addresses(port: NeutronPortType,
+                           subnet_id: typing.Optional[str] = None,
+                           ip_version: typing.Optional[int] = None,
+                           check_connectivity: bool = False,
+                           ssh_client: ssh.SSHClientFixture = None) -> \
+        tobiko.Selection[netaddr.IPAddress]:
+    addresses = tobiko.Selection[netaddr.IPAddress](
+        netaddr.IPAddress(fixed_ip['ip_address'])
+        for fixed_ip in port['fixed_ips']
+        if subnet_id is None or subnet_id == fixed_ip['subnet_id'])
+    if ip_version:
+        addresses = addresses.with_attributes(version=ip_version)
+    if addresses and check_connectivity:
+        hosts = ping.list_reachable_hosts(addresses, ssh_client=ssh_client)
+        addresses = tobiko.Selection(netaddr.IPAddress(host) for host in hosts)
+    return addresses
+
+
+def find_port_ip_address(port: NeutronPortType, unique: bool = False,
+                         **kwargs) -> netaddr.IPAddress:
     addresses = list_port_ip_addresses(port=port, **kwargs)
+    if unique:
+        return addresses.unique
+    else:
+        return addresses.first
+
+
+def list_device_ip_addresses(device_id: str,
+                             network_id: typing.Optional[str] = None,
+                             ip_version: typing.Optional[int] = None,
+                             check_connectivity: bool = False,
+                             ssh_client: ssh.SSHClientFixture = None,
+                             **subnet_params) -> \
+        tobiko.Selection[netaddr.IPAddress]:
+    ports = _client.list_ports(device_id=device_id,
+                               network_id=network_id)
+    subnets = _client.list_subnets(network_id=network_id,
+                                   ip_version=ip_version,
+                                   **subnet_params)
+    addresses = tobiko.Selection[netaddr.IPAddress](
+        port_ip
+        for subnet in subnets
+        for port in ports
+        for port_ip in list_port_ip_addresses(port=port,
+                                              subnet_id=subnet['id'],
+                                              ip_version=ip_version))
+    if addresses and check_connectivity:
+        hosts = ping.list_reachable_hosts(addresses, ssh_client=ssh_client)
+        addresses = tobiko.Selection(netaddr.IPAddress(host) for host in hosts)
+    return addresses
+
+
+def find_device_ip_address(device_id: str, unique: bool = False, **kwargs):
+    addresses = list_device_ip_addresses(device_id=device_id,  **kwargs)
     if unique:
         return addresses.unique
     else:
