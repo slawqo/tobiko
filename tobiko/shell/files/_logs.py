@@ -57,10 +57,35 @@ class LogFileDigger(object):
                                **self.execute_params)
 
 
+class JournalLogDigger(LogFileDigger):
+
+    def find_lines(self, pattern, new_lines=False):
+        dump_log_cmd = [
+            "journalctl", "--unit", self.filename,
+            "--since", "5 minutes ago"]
+        try:
+            lines = frozenset(
+                grep.grep_lines(pattern=pattern,
+                                command=dump_log_cmd,
+                                **self.execute_params))
+        except grep.NoMatchingLinesFound:
+            if new_lines:
+                return frozenset()
+        else:
+            lines -= self.found
+            self.found.update(lines)
+            if new_lines:
+                return lines
+        return frozenset(self.found)
+
+
 class MultihostLogFileDigger(object):
 
-    def __init__(self, filename, ssh_clients=None, **execute_params):
+    def __init__(self, filename, ssh_clients=None,
+                 file_digger_class=LogFileDigger,
+                 **execute_params):
         self.diggers = collections.OrderedDict()
+        self.file_digger_class = file_digger_class
         self.filename = filename
         self.execute_params = execute_params
         if ssh_clients:
@@ -70,9 +95,10 @@ class MultihostLogFileDigger(object):
     def add_host(self, hostname=None, ssh_client=None):
         hostname = hostname or sh.get_hostname(ssh_client=ssh_client)
         if hostname not in self.diggers:
-            self.diggers[hostname] = LogFileDigger(filename=self.filename,
-                                                   ssh_client=ssh_client,
-                                                   **self.execute_params)
+            self.diggers[hostname] = self.file_digger_class(
+                filename=self.filename,
+                ssh_client=ssh_client,
+                **self.execute_params)
 
     def find_lines(self, pattern, new_lines=False):
         lines = []

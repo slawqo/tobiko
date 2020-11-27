@@ -156,12 +156,18 @@ class PortLogsTest(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(PortLogsStack)
 
-    LOG_FILENAME = '/var/log/containers/neutron/server.log*'
+    def setUp(self):
+        super(PortLogsTest, self).setUp()
+        os_topology = topology.get_openstack_topology()
+        self.LOG_FILENAME = os_topology.log_names_mappings[neutron.SERVER]
+        self.FILE_DIGGER_CLASS = os_topology.file_digger_class
 
     def test_nova_port_notification(self):
         pattern = f'Nova.+event.+response.*{self.stack.server_id}'
-        log_digger = files.MultihostLogFileDigger(filename=self.LOG_FILENAME,
-                                                  sudo=True)
+        log_digger = files.MultihostLogFileDigger(
+            filename=self.LOG_FILENAME,
+            file_digger_class=self.FILE_DIGGER_CLASS,
+            sudo=True)
         for node in topology.list_openstack_nodes(group='controller'):
             log_digger.add_host(hostname=node.hostname,
                                 ssh_client=node.ssh_client)
