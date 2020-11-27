@@ -45,11 +45,12 @@ class HeatStackFixtureTest(testtools.TestCase):
     stack = tobiko.required_setup_fixture(MyStack)
 
     def test_get_stack(self):
+        self.stack.wait_for_create_complete()
         stack = self.stack.get_stack()
         self.assertIsNotNone(stack)
-        self.assertTrue(stack.id)
         self.assertEqual(tobiko.get_fixture_name(MyStack), stack.stack_name)
-        self.assertEqual('CREATE_COMPLETE', stack.stack_status)
+        self.assertIsInstance(stack.id, str)
+        self.assertIsInstance(stack.stack_status, str)
 
     def test_get_fixture_with_fixture_id_0(self):
         fixture_0 = tobiko.get_fixture(MyStack, fixture_id=0)
