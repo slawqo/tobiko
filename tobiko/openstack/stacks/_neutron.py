@@ -26,6 +26,9 @@ from tobiko import config
 from tobiko.openstack import heat
 from tobiko.openstack import neutron
 from tobiko.openstack.stacks import _hot
+from tobiko.shell import ip
+from tobiko.shell import sh
+from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
@@ -201,7 +204,7 @@ class NetworkStackFixture(heat.HeatStackFixture):
     def ipv4_dns_nameservers(self):
         nameservers = CONF.tobiko.neutron.ipv4_dns_nameservers
         if nameservers is None:
-            nameservers = neutron.default_nameservers(ip_version=4)
+            nameservers = default_nameservers(ip_version=4)
         return ','.join(str(nameserver) for nameserver in nameservers)
 
     @property
@@ -220,7 +223,7 @@ class NetworkStackFixture(heat.HeatStackFixture):
     def ipv6_dns_nameservers(self):
         nameservers = CONF.tobiko.neutron.ipv6_dns_nameservers
         if nameservers is None:
-            nameservers = neutron.default_nameservers(ip_version=6)
+            nameservers = default_nameservers(ip_version=6)
         return ','.join(str(nameserver) for nameserver in nameservers)
 
     @property
@@ -351,3 +354,72 @@ def has_floating_network():
 
 skip_unless_has_floating_network = tobiko.skip_unless(
     'Floating network not found', has_floating_network)
+
+
+class DefaultNameserversFixture(tobiko.SharedFixture):
+
+    remove_local_ips = True
+    max_count = 3
+    ip_version = None
+
+    nameservers: typing.Optional[tobiko.Selection[netaddr.IPAddress]] = None
+
+    @property
+    def ssh_client(self):
+        host = tobiko.tobiko_config().neutron.nameservers_host
+        if host is None:
+            return ssh.ssh_proxy_client()
+        else:
+            return ssh.ssh_client(host)
+
+    @property
+    def filenames(self):
+        return tuple(tobiko.tobiko_config().neutron.nameservers_filenames)
+
+    def setup_fixture(self):
+        self.nameservers = self.list_nameservers()
+
+    def list_nameservers(self) -> tobiko.Selection[netaddr.IPAddress]:
+        nameservers: tobiko.Selection[netaddr.IPAddress]
+        if has_external_network():
+            network_id = get_external_network_id()
+            nameservers = neutron.list_network_nameservers(
+                network_id=network_id)
+            LOG.debug("Nameservers copied from external network: "
+                      f"{nameservers}")
+        else:
+            # Copy nameservers from target host
+            nameservers = sh.list_nameservers(ssh_client=self.ssh_client,
+                                              ip_version=self.ip_version,
+                                              filenames=self.filenames)
+            if self.remove_local_ips:
+                local_ips = ip.list_ip_addresses(scope='host')
+                if local_ips:
+                    # Filter out all local IPs
+                    nameservers = tobiko.Selection[netaddr.IPAddress](
+                        nameserver for nameserver in nameservers
+                        if nameserver not in local_ips)
+            LOG.debug(f"Nameservers copied from host: {nameservers}")
+        if self.max_count:
+            # Keep only up to max_count nameservers
+            actual_count = len(nameservers)
+            if actual_count > self.max_count:
+                LOG.waring("Limit the number of nameservers from "
+                           f"{actual_count} to {self.max_count}: "
+                           f"{nameservers}")
+                nameservers = tobiko.Selection[netaddr.IPAddress](
+                    nameservers[:self.max_count])
+        return nameservers
+
+
+DEFAULT_NAMESERVERS_FIXTURE = DefaultNameserversFixture
+
+
+def default_nameservers(
+        ip_version: typing.Optional[int] = None) -> \
+        tobiko.Selection[netaddr.IPAddress]:
+    nameservers = tobiko.setup_fixture(
+        DEFAULT_NAMESERVERS_FIXTURE).nameservers
+    if ip_version is not None:
+        nameservers = nameservers.with_attributes(version=ip_version)
+    return nameservers

@@ -17,7 +17,6 @@ from tobiko.openstack.neutron import _agent
 from tobiko.openstack.neutron import _client
 from tobiko.openstack.neutron import _cidr
 from tobiko.openstack.neutron import _extension
-from tobiko.openstack.neutron import _nameservers
 from tobiko.openstack.neutron import _port
 from tobiko.openstack.neutron import _network
 
@@ -67,9 +66,6 @@ has_networking_extensions = _extension.has_networking_extensions
 skip_if_missing_networking_extensions = (
     _extension.skip_if_missing_networking_extensions)
 
-DefaultNameserversFixture = _nameservers.DefaultNameserversFixture
-default_nameservers = _nameservers.default_nameservers
-
 find_port_ip_address = _port.find_port_ip_address
 list_port_ip_addresses = _port.list_port_ip_addresses
 find_device_ip_address = _port.find_device_ip_address
@@ -82,3 +78,4 @@ delete_network = _network.delete_network
 get_network = _network.get_network
 find_network = _network.find_network
 list_networks = _network.list_networks
+list_network_nameservers = _network.list_network_nameservers

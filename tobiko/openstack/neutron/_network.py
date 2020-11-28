@@ -15,6 +15,8 @@ from __future__ import absolute_import
 
 import typing
 
+import netaddr
+
 import tobiko
 from tobiko.openstack.neutron import _client
 
@@ -86,3 +88,16 @@ class NeutronNetworkFixture(_client.HasNeutronClientFixture):
         self.name = self.fixture_name
         self.details = create_network(client=self.client, name=self.name)
         self.addCleanup(delete_network, network=self.id, client=self.client)
+
+
+def list_network_nameservers(network_id: typing.Optional[str] = None,
+                             ip_version: typing.Optional[int] = None) -> \
+        tobiko.Selection[netaddr.IPAddress]:
+    subnets = _client.list_subnets(network_id=network_id)
+    nameservers = tobiko.Selection[netaddr.IPAddress](
+        netaddr.IPAddress(nameserver)
+        for subnets in subnets
+        for nameserver in subnets['dns_nameservers'])
+    if ip_version is not None:
+        nameservers = nameservers.with_attributes(version=ip_version)
+    return nameservers
