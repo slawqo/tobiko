@@ -5,7 +5,7 @@
     path: "{{ deploy_dir | realpath }}"
     state: absent
   when:
-    - deploy_clean | bool
+    - (deploy_clean | bool)
 
 
 - name: "ensure target directory exists: '{{ deploy_dir }}'"
@@ -13,6 +13,19 @@
     path: "{{ deploy_dir | realpath }}"
     state: directory
   register: create_dest_dir
+
+
+- name: "checkout files from '{{ deploy_git_repo }}[{{ deploy_git_refspec }}]' to '{{ deploy_dir }}'"
+  git:
+    dest: '{{ deploy_dir }}'
+    repo: '{{ deploy_git_repo }}'
+    refspec: '{{ deploy_git_refspec }}'
+    version: FETCH_HEAD
+    remote: '{{ deploy_git_remote or omit }}'
+    force: yes
+  register: checkout_files
+  when:
+    - (deploy_git_refspec | length) > 0
 
 
 - name: "copy '{{ deploy_src_dir }}' to '{{ deploy_dir }}'"
@@ -26,27 +39,7 @@
   register: copy_src_dir
   when:
     - (deploy_src_dir | length) > 0
-
-
-- when: copy_src_dir is skipped
-  block:
-
-  - name: "override deploy_git_version and deploy_src_dir because deploy_git_refspec is '{{ deploy_git_refspec }}'"
-    set_fact:
-      deploy_git_version: 'FETCH_HEAD'
-    when: "(deploy_git_refspec | length) > 0"
-
-  - name: "checkout files from '{{ deploy_git_repo }}[{{ deploy_git_refspec | default(deploy_git_version) }}]' to '{{ deploy_dir }}'"
-    git:
-      dest: '{{ deploy_dir }}'
-      repo: '{{ deploy_git_repo }}'
-      refspec: '{{ deploy_git_refspec or omit }}'
-      version: '{{ deploy_git_version or omit }}'
-      remote: '{{ deploy_git_remote or omit }}'
-      force: yes
-    register: checkout_files
-    when:
-      - (deploy_git_version | length) > 0
+    - checkout_files is skipped
 
 
 - name: "get last change details for '{{ deploy_dir }}'"  # noqa 303
@@ -60,8 +53,9 @@
 - name: "show last change details"
   debug: var=get_git_log.stdout_lines
 
-#we install validations-common here since it's
-#packaged by rhel-osp
+
+# we install validations-common here since it's
+# packaged by rhel-osp
 - name: install validations-common
   ignore_errors: yes
   become: true

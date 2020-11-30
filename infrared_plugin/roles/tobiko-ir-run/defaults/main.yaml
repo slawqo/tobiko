@@ -1,0 +1,7 @@
+---
+
+# tobiko_git_refspec is empty to allow copying files from tobini_src_dir
+tobiko_git_refspec: ''
+test_git_refspec: ''
+tobiko_git_remote: ''
+test_git_remote: ''
