@@ -22,6 +22,7 @@ import testtools
 
 import tobiko
 from tobiko.openstack import keystone
+from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
 from tobiko.shell import ping
@@ -109,6 +110,7 @@ class CirrosServerStackTest(testtools.TestCase):
     def test_ping_ipv6_nameservers(self):
         self._test_ping_nameservers(ip_version=6)
 
+    @neutron.skip_unless_is_ovs()
     def _test_ping_nameservers(self, ip_version: int):
         nameservers = sh.list_nameservers(ssh_client=self.stack.ssh_client,
                                           filenames=self.nameservers_filenames,
