@@ -37,7 +37,7 @@ subparsers:
           clean:
             type: Flag
             help: Cleanup directory where test cases will be downloaded
-            ansible_variable: clean_deploy_dir
+            ansible_variable: deploy_clean
           git-base:
             type: Value
             help: Git Url prefix where test projects are fetched from
@@ -58,10 +58,6 @@ subparsers:
             type: Value
             help: Git URL from where to download test files
             ansible_variable: test_git_repo
-          test-version:
-            type: Value
-            help: Git version to be used for checking out test scripts
-            ansible_variable: test_git_version
           test-remote:
             type: Value
             help: Git remote name to be used for checking out test scripts
@@ -91,10 +87,6 @@ subparsers:
             help: Git URL from where to download tobiko files
             ansible_variable: tobiko_git_repo
             default: 'https://opendev.org/x/tobiko.git'
-          tobiko-version:
-            type: Value
-            help: Git version to be used for checking out Tobiko scripts
-            ansible_variable: tobiko_git_version
           tobiko-remote:
             type: Value
             help: Git remote name to be used for checking out test scripts

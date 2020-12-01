@@ -1,10 +1,9 @@
 ---
 
 deploy_dir: ''
-deploy_clean: no
+deploy_clean: '{{ (deploy_git_refspec | length) > 0 | default(false) }}'
 deploy_src_dir: ''
 
 deploy_git_repo: ''
-deploy_git_version: ''
 deploy_git_refspec: ''
 deploy_git_remote: ''
