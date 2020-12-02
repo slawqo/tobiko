@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import json
 import os
 import inspect
+import sys
 
 import fixtures
 from oslo_log import log
@@ -97,12 +98,25 @@ def remove_fixture(obj, fixture_id=None, manager=None):
     return manager.remove_fixture(obj, fixture_id=fixture_id)
 
 
-def setup_fixture(obj, fixture_id=None, manager=None):
+def setup_fixture(obj, fixture_id=None, manager=None, alternative=None):
     '''Get registered fixture and setup it up'''
-    fixture = get_fixture(obj, fixture_id=fixture_id, manager=manager)
+    if alternative is None:
+        objs = [obj]
+    else:
+        objs = [obj, alternative]
     with _exception.handle_multiple_exceptions(
             handle_exception=handle_setup_error):
-        fixture.setUp()
+        errors = []
+        for _obj in objs:
+            fixture = get_fixture(_obj, fixture_id=fixture_id, manager=manager)
+            try:
+                fixture.setUp()
+                break
+            except testtools.MultipleExceptions:
+                errors.append(sys.exc_info())
+        else:
+            raise testtools.MultipleExceptions(*errors)
+
     return fixture
 
 
@@ -260,18 +274,18 @@ def fixture_property(*args, **kwargs):
     return FixtureProperty(*args, **kwargs)
 
 
-def required_fixture(obj):
+def required_fixture(obj, **params):
     '''Creates a property that gets fixture identified by given :param obj:
 
     '''
-    return RequiredFixtureProperty(obj)
+    return RequiredFixtureProperty(obj, **params)
 
 
-def required_setup_fixture(obj):
+def required_setup_fixture(obj, **params):
     '''Creates a property that sets up fixture identified by given :param obj:
 
     '''
-    return RequiredSetupFixtureProperty(obj)
+    return RequiredSetupFixtureProperty(obj, **params)
 
 
 def get_object_name(obj):
@@ -430,8 +444,9 @@ class FixtureProperty(property):
 
 class RequiredFixtureProperty(object):
 
-    def __init__(self, fixture):
+    def __init__(self, fixture, **params):
         self.fixture = fixture
+        self.fixture_params = params
 
     def __get__(self, instance, _):
         if instance is None:
@@ -440,7 +455,7 @@ class RequiredFixtureProperty(object):
             return self.get_fixture(instance)
 
     def get_fixture(self, _instance):
-        return get_fixture(self.fixture)
+        return get_fixture(self.fixture, **self.fixture_params)
 
     @property
     def __tobiko_required_fixtures__(self):
@@ -450,7 +465,7 @@ class RequiredFixtureProperty(object):
 class RequiredSetupFixtureProperty(RequiredFixtureProperty):
 
     def get_fixture(self, _instance):
-        fixture = setup_fixture(self.fixture)
+        fixture = setup_fixture(self.fixture, **self.fixture_params)
         if (hasattr(_instance, 'addCleanup') and
                 hasattr(_instance, 'getDetails')):
             _instance.addCleanup(_detail.gather_details,

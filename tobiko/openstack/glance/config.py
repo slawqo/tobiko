@@ -29,6 +29,7 @@ OPTIONS = [
 
 GLANCE_IMAGE_NAMES = ['centos',
                       'cirros',
+                      'rhel',
                       'ubuntu']
 
 

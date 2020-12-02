@@ -27,7 +27,7 @@ from tobiko.tests.functional.openstack.stacks import test_cirros
 
 @keystone.skip_unless_has_keystone_credentials()
 class CentosServerStackTest(test_cirros.CirrosServerStackTest):
-    """Tests connectivity to Nova instances via floating IPs"""
+    """Test CentOS server instance"""
 
     #: Stack of resources with a server attached to a floating IP
     stack = tobiko.required_setup_fixture(stacks.CentosServerStackFixture)
