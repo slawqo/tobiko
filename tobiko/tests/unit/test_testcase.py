@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import os
+import subprocess
 
 import testtools
 
@@ -30,11 +31,15 @@ class DiscoverTestCasesTest(unit.TobikoUnitTest):
 
         top_dir = os.path.abspath(self.test_path)
         while os.path.isdir(top_dir) and top_dir != os.path.sep:
-            if os.path.isdir(os.path.join(top_dir, '.stestr')):
+            if os.path.isfile(os.path.join(top_dir, 'tox.ini')):
                 break
             top_dir = os.path.dirname(top_dir)
         else:
-            raise self.fail("Unable to find '.stestr' directory")
+            self.fail("'tox.ini' file not found in any parent "
+                      f"of directory '{self.test_path}'")
+
+        if not os.path.isdir(os.path.join(top_dir, '.stestr')):
+            subprocess.run(['stestr', 'init'], cwd=top_dir, check=True)
         self.top_dir = top_dir
         self.repo_url = top_dir
 

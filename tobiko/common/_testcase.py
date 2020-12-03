@@ -20,7 +20,6 @@ import traceback
 import typing  # noqa
 
 from oslo_log import log
-from stestr import config_file
 import testtools
 
 from tobiko.common import _config
@@ -85,6 +84,8 @@ class TestCasesFinder(object):
         filter the output just like with the run command to see exactly what
         will be run.
         """
+        from stestr import config_file
+
         params = dict(config=self.config, repo_type=self.repo_type,
                       repo_url=self.repo_url, test_path=self.test_path,
                       top_dir=self.top_dir, group_regex=self.group_regex,
