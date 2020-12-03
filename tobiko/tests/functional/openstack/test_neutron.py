@@ -44,7 +44,7 @@ class NeutronApiTest(testtools.TestCase):
     def test_find_floating_network(self):
         floating_network = CONF.tobiko.neutron.floating_network
         if not floating_network:
-            tobiko.skip('floating_network not configured')
+            tobiko.skip_test('floating_network not configured')
         network = neutron.find_network(name=floating_network)
         self.assertIn(floating_network, [network['name'], network['id']])
         self.assertEqual(self.stack.gateway_network_id, network['id'])
@@ -102,23 +102,23 @@ class NeutronApiTest(testtools.TestCase):
 
     def test_get_router(self):
         if not self.stack.has_gateway:
-            tobiko.skip("Stack {stack} has no gateway router",
-                        stack=self.stack.stack_name)
+            tobiko.skip_test(f"Stack {self.stack.stack_name} has no gateway "
+                             "router")
         router = neutron.get_router(self.stack.gateway_id)
         self.assertEqual(self.stack.gateway_id, router['id'])
 
     def test_get_ipv4_subnet(self):
         if not self.stack.has_ipv4:
-            tobiko.skip("Stack {stack} has no IPv4 subnet",
-                        stack=self.stack.stack_name)
+            tobiko.skip_test(
+                "Stack {self.stack.stack_name} has no IPv4 subnet")
         subnet = neutron.get_subnet(self.stack.ipv4_subnet_id)
         self.assertEqual(self.stack.ipv4_subnet_id, subnet['id'])
         self.assertEqual(self.stack.ipv4_subnet_details, subnet)
 
     def test_get_ipv6_subnet(self):
         if not self.stack.has_ipv6:
-            tobiko.skip("Stack {stack} has no IPv6 subnet",
-                        stack=self.stack.stack_name)
+            tobiko.skip_test(
+                "Stack {self.stack.stack_name} has no IPv6 subnet")
         subnet = neutron.get_subnet(self.stack.ipv6_subnet_id)
         self.assertEqual(self.stack.ipv6_subnet_id, subnet['id'])
         self.assertEqual(self.stack.ipv6_subnet_details, subnet)

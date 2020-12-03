@@ -44,37 +44,38 @@ class NetworkTest(testtools.TestCase):
 
     def test_ipv4_subnet_cidr(self):
         if not self.stack.has_ipv4:
-            tobiko.skip('Stack {!s} has no ipv4 subnet', self.stack.stack_name)
+            tobiko.skip_test(f"Stack {self.stack.stack_name} has no ipv4 "
+                             "subnet")
 
         subnet = neutron.find_subnet(cidr=str(self.stack.ipv4_subnet_cidr))
         self.assertEqual(neutron.get_subnet(self.stack.ipv4_subnet_id), subnet)
 
     def test_ipv6_subnet_cidr(self):
         if not self.stack.has_ipv6:
-            tobiko.skip('Stack {!s} has no ipv6 subnet', self.stack.stack_name)
+            tobiko.skip_test(f"Stack {self.stack.stack_name} has no ipv6 "
+                             "subnet")
         subnet = neutron.find_subnet(cidr=str(self.stack.ipv6_subnet_cidr))
         self.assertEqual(neutron.get_subnet(self.stack.ipv6_subnet_id), subnet)
 
     def test_gateway_network(self):
         if not self.stack.has_gateway:
-            tobiko.skip('Stack {!s} has no gateway',
-                        self.stack.stack_name)
+            tobiko.skip_test(f"Stack {self.stack.stack_name} has no gateway")
         self.assertEqual(
             self.stack.gateway_network_id,
             self.stack.gateway_details['external_gateway_info']['network_id'])
 
     def test_ipv4_subnet_gateway_ip(self):
         if not self.stack.has_ipv4 or not self.stack.has_gateway:
-            tobiko.skip('Stack {!s} has no IPv4 gateway',
-                        self.stack.stack_name)
+            tobiko.skip_test(f"Stack {self.stack.stack_name} has no IPv4 "
+                             "gateway")
         self.assertIn(
             self.stack.ipv4_subnet_gateway_ip,
             self.stack.ipv4_gateway_addresses)
 
     def test_ipv6_subnet_gateway_ip(self):
         if not self.stack.has_ipv6 or not self.stack.has_gateway:
-            tobiko.skip('Stack {!s} has no IPv6 gateway',
-                        self.stack.stack_name)
+            tobiko.skip_test(f"Stack {self.stack.stack_name} has no IPv6 "
+                             "gateway")
         self.assertIn(
             self.stack.ipv6_subnet_gateway_ip,
             self.stack.ipv6_gateway_addresses)

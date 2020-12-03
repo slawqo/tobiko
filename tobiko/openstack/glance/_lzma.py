@@ -39,11 +39,9 @@ def open_file(filename, mode):
     try:
         lzma = import_lzma()
     except ImportError:
-        tobiko.skip("Package lzma or backports.lzma is required to decompress "
-                    "{filename!r} (mode={mode!r}) XZ image file "
-                    "({python_version!r}).",
-                    filename=filename,
-                    mode=mode,
-                    python_version=sys.version)
+        tobiko.skip_test(
+            "Package lzma or backports.lzma is required to decompress "
+            f"{filename!r} (mode={mode!r}) XZ image file "
+            f"({sys.version!r}).")
 
     return lzma.LZMAFile(filename=filename, mode=mode)

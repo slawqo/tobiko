@@ -37,8 +37,8 @@ class RouterTest(testtools.TestCase):
     def setUp(self):
         super(RouterTest, self).setUp()
         if not self.stack.network_stack.has_gateway:
-            tobiko.skip('Stack {!s} has no gateway',
-                        self.stack.network_stack.stack_name)
+            tobiko.skip_test(
+                f"Stack {self.stack.network_stack.stack_name} has no gateway")
 
     @property
     def router(self):
@@ -47,15 +47,15 @@ class RouterTest(testtools.TestCase):
     @property
     def ipv4_subnet_gateway_ip(self):
         if not self.stack.network_stack.has_ipv4:
-            tobiko.skip('Stack {!s} has no ipv4 subnet',
-                        self.stack.network_stack.stack_name)
+            tobiko.skip_test(f"Stack {self.stack.network_stack.stack_name} "
+                             "has no ipv4 subnet")
         return self.stack.network_stack.ipv4_subnet_gateway_ip
 
     @property
     def ipv6_subnet_gateway_ip(self):
         if not self.stack.network_stack.has_ipv6:
-            tobiko.skip('Stack {!s} has no ipv6 subnet',
-                        self.stack.network_stack.stack_name)
+            tobiko.skip_test(f"Stack {self.stack.network_stack.stack_name} "
+                             "has no ipv6 subnet")
         return self.stack.network_stack.ipv6_subnet_gateway_ip
 
     @property

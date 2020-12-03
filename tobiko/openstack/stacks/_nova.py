@@ -214,20 +214,20 @@ class ServerStackFixture(heat.HeatStackFixture):
             different_host_hypervisors = nova.get_different_host_hypervisors(
                 self.same_host, hypervisor)
             if different_host_hypervisors:
-                tobiko.skip("server {!r} of stack {!r} created on "
-                            "different hypervisor host from servers:\n{!r}",
-                            self.server_id, self.stack_name,
-                            different_host_hypervisors)
+                tobiko.skip_test(f"Server {self.server_id} of stack "
+                                 f"{self.stack_name} created on different "
+                                 "hypervisor host from servers:\n"
+                                 f"{different_host_hypervisors}")
 
     def validate_different_host_scheduler_hints(self, hypervisor):
         if self.different_host:
             same_host_hypervisors = nova.get_same_host_hypervisors(
                 self.different_host, hypervisor)
             if same_host_hypervisors:
-                tobiko.skip("server {!r} of stack {!r} created on the same "
-                            "hypervisor host as servers:\n{!r}",
-                            self.server_id, self.stack_name,
-                            same_host_hypervisors)
+                tobiko.skip_test(f"Server {self.server_id} of stack "
+                                 f"{self.stack_name} created on the same "
+                                 "hypervisor host as servers:\n"
+                                 f"{same_host_hypervisors}")
 
     @property
     def server_details(self):
@@ -301,8 +301,8 @@ class ServerStackFixture(heat.HeatStackFixture):
             tobiko.reset_fixture(self)
             return nova.wait_for_server_status(self.server_id, 'ACTIVE')
         else:
-            tobiko.skip(f"{type(self).__name__}.ensure_server_status "
-                        "method not implemented")
+            tobiko.skip_test(f"{type(self).__name__}.ensure_server_status "
+                             "method not implemented")
 
 
 class ExternalServerStackFixture(ServerStackFixture):

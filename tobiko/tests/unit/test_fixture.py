@@ -42,10 +42,10 @@ class MyBaseFixture(tobiko.SharedFixture):
 class MySkyppingFixture(tobiko.SharedFixture):
 
     def setup_fixture(self):
-        tobiko.skip('some-reason')
+        tobiko.skip_test('some-reason')
 
     def cleanup_fixture(self):
-        tobiko.skip('some-reason')
+        tobiko.skip_test('some-reason')
 
 
 class MyFixture(MyBaseFixture):

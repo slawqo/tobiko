@@ -105,8 +105,9 @@ MultipleObjectsFound = _select.MultipleObjectsFound
 
 SkipException = _skip.SkipException
 skip_if = _skip.skip_if
-skip_test = skip = _skip.skip_test
+skip_test = _skip.skip_test
 skip_unless = _skip.skip_unless
+skip = _skip.skip
 
 BaseTestCase = _testcase.TestCase
 assert_test_case_was_skipped = _testcase.assert_test_case_was_skipped

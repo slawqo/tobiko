@@ -15,70 +15,76 @@ from __future__ import absolute_import
 
 import functools
 import inspect
-import unittest
 import typing  # noqa
 
+import fixtures
 import testtools
-
-from tobiko.common import _fixture
 
 
 SkipException = testtools.TestCase.skipException  # type: typing.Type
 
+SkipTarget = typing.Union[typing.Callable,
+                          typing.Type[testtools.TestCase],
+                          typing.Type[fixtures.Fixture]]
+SkipDecorator = typing.Callable[[SkipTarget], SkipTarget]
 
-def skip_test(reason, *args, **kwargs):
-    if args or kwargs:
-        reason = reason.format(*args, **kwargs)
+
+def skip_test(reason: str):
+    """Interrupt test case execution marking it as skipped for given reason"""
     raise SkipException(reason)
 
 
-def skip_if(reason, predicate, *args, **kwargs):
-    return skip_if_match(reason, bool, predicate, *args, **kwargs)
+def skip(reason: str) -> SkipDecorator:
+    """Mark test case for being skipped for a given reason"""
+    return _skip_unless(reason, None, True)
 
 
-def skip_unless(reason, predicate, *args, **kwargs):
-    return skip_if_match(reason, lambda x: bool(not x), predicate, *args,
-                         **kwargs)
+def skip_if(reason: str, function: typing.Callable, *args, **kwargs) -> \
+        SkipDecorator:
+    """Mark test case for being skipped for a given reason if it matches"""
+    return _skip_unless(reason, function, False, *args, **kwargs)
 
 
-def skip_if_match(reason, match, predicate, *args, **kwargs):
+def skip_unless(reason: str, function: typing.Callable, *args, **kwargs) -> \
+        SkipDecorator:
+    """Mark test case for being skipped for a given reason unless it matches"""
+    return _skip_unless(reason, function, True, *args, **kwargs)
 
-    if not callable(predicate):
-        args = (predicate,) + args
-        predicate = bool
 
-    def decorator(obj):
+def _skip_unless(reason: str, function: typing.Optional[typing.Callable],
+                 unless: bool, *args, **kwargs) -> SkipDecorator:
+    """Mark test case for being skipped for a given reason unless it matches"""
+
+    def decorator(obj: SkipTarget) -> SkipTarget:
         method = _get_decorated_method(obj)
 
         @functools.wraps(method)
-        def wrapped_method(*_args, **_kwargs):
-            return_value = predicate(*args, **kwargs)
-            if match(return_value):
+        def skipping_unless(*_args, **_kwargs):
+            if function is not None:
+                return_value = function(*args, **kwargs)
+                if unless is bool(return_value):
+                    return method(*_args, **_kwargs)
                 if '{return_value' in reason:
-                    skip_test(reason, return_value=return_value)
-                else:
-                    skip_test(reason)
-            return method(*_args, **_kwargs)
+                    skip_test(reason.format(return_value=return_value))
+            skip_test(reason)
 
         if obj is method:
-            return wrapped_method
+            return skipping_unless
         else:
-            setattr(obj, method.__name__, wrapped_method)
+            setattr(obj, method.__name__, skipping_unless)
             return obj
 
     return decorator
 
 
-def _get_decorated_method(obj):
+def _get_decorated_method(obj: typing.Any) -> typing.Callable:
     if inspect.isclass(obj):
-        if issubclass(obj, (unittest.TestCase, testtools.TestCase)):
-            return obj.setUp
-        elif _fixture.is_fixture(obj):
-            return obj.setUp
+        setup_method = getattr(obj, 'setUp', None)
+        if callable(setup_method):
+            return setup_method
         else:
-            raise TypeError("Cannot decorate class {!r}".format(obj))
+            raise TypeError(f"Class {obj} does not implement setUp method")
+    elif callable(obj):
+        return obj
     else:
-        if callable(obj):
-            return obj
-        else:
-            raise TypeError("Cannot decorate object {!r}".format(obj))
+        raise TypeError(f"Object {obj} is not a class or a function")

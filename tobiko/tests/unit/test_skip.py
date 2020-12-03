@@ -24,8 +24,8 @@ def condition(value):
 
 class PositiveSkipMethodTest(unit.TobikoUnitTest):
 
-    @tobiko.skip_if('condition value was true', True)
-    def test_skip_if_condition(self):
+    @tobiko.skip('must always skip')
+    def test_skip(self):
         self.fail('Not skipped')
 
     @tobiko.skip_if('condition value was true', condition, True)
@@ -57,10 +57,6 @@ class NegativeSkipBase(unit.TobikoUnitTest):
 
 
 class NegativeSkipMethodTest(NegativeSkipBase):
-
-    @tobiko.skip_if('condition value was false', False)
-    def test_skip_if_conditions(self):
-        self.test_method_called = True
 
     @tobiko.skip_if('condition value was false', condition, False)
     def test_skip_if_condition_called_with_args(self):

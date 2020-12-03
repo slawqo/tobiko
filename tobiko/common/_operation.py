@@ -124,9 +124,8 @@ class RunsOperationProperty(object):
         def is_before():
             return self.get_operation().is_before
 
-        decorator = _skip.skip_unless(
-            predicate=is_before,
-            reason="Before operation {name!r}".format(name=self.name))
+        decorator = _skip.skip_unless(f"Before operation {self.name}",
+                                      is_before)
 
         return self.with_operation(decorator(obj))
 
@@ -135,9 +134,8 @@ class RunsOperationProperty(object):
         def is_after():
             return self.get_operation().is_after
 
-        decorator = _skip.skip_unless(
-            predicate=is_after,
-            reason="After operation {name!r}".format(name=self.name))
+        decorator = _skip.skip_unless(f"After operation {self.name}",
+                                      is_after)
 
         return self.with_operation(decorator(obj))
 

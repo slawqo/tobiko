@@ -374,7 +374,7 @@ def rotate_logs(node):
     """
     containers = get_filtered_node_containers(node, ['logrotate.*', ])
     if not containers:
-        tobiko.skip('No logrotate container has been found')
+        tobiko.skip_test('No logrotate container has been found')
     else:
         container = containers[0]
     sh.execute(f'docker exec -u root {container} logrotate '

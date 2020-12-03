@@ -38,8 +38,9 @@ class DockerNodeFixture(tobiko.SharedFixture):
                 break
 
         if self.node is None:
-            tobiko.skip('Docker server is not running in any of nodes {}',
-                        ' '.join(node.name for node in nodes))
+            nodes_text = ' '.join(node.name for node in nodes)
+            tobiko.skip_test("Docker server is not running in any of nodes "
+                             f"{nodes_text}")
 
 
 @keystone.skip_unless_has_keystone_credentials()
