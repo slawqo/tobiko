@@ -1,6 +1,8 @@
 # pep8 and flake8 requirements
 
 ansible-lint == 4.2.0  # MIT
-# pylint >= 2.6.1  # GPLv2
-git+https://github.com/PyCQA/pylint.git  # GPLv2
+astroid>=2.4.0; python_version < '3.8'  # LGPLv2.1
+git+https://github.com/PyCQA/astroid.git@master; python_version >= '3.8'  # LGPLv2.1
+git+https://github.com/PyCQA/pylint.git@master; python_version >= '3.8'  # GPLv2
 pre-commit >= 2.6.0  # MIT
+pylint >= 2.6.0; python_version < '3.8'  # GPLv2
