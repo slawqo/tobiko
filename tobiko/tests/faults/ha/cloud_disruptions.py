@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import time
 import random
 import urllib.parse
+import re
 
 from oslo_log import log
 
@@ -35,15 +36,28 @@ network_disruption = """
 undisrupt_network = """
  sudo iptables-restore /root/working.iptables.rules
 """
-ovn_db_pcs_resource_restart = """sudo pcs resource restart ovn-dbs-bundle"""
-kill_rabbit = """sudo kill -9 $(pgrep beam.smp)"""
-kill_galera = """sudo kill -9 $(pgrep mysqld)"""
+ovn_db_pcs_resource_restart = "sudo pcs resource restart ovn-dbs-bundle"
+kill_rabbit = "sudo kill -9 $(pgrep beam.smp)"
+kill_galera = "sudo kill -9 $(pgrep mysqld)"
+remove_grastate = "sudo rm -rf /var/lib/mysql/grastate.dat"
+check_grastate = """ps ax | grep -v grep|
+grep wsrep-cluster-address=gcomm://"""
+disable_galera = "sudo pcs resource disable galera --wait=60"
+enable_galera = "sudo pcs resource enable galera --wait=90"
+disable_haproxy = "sudo pcs resource disable haproxy-bundle --wait=30"
+enable_haproxy = "sudo pcs resource enable haproxy-bundle --wait=60"
 
 
-def get_node(node_name):
-    node_name = node_name.split('.')[0]
-    return [node for node in topology.list_openstack_nodes() if
-            node.name == node_name][0]
+class PcsDisableException(tobiko.TobikoException):
+    message = "pcs disable didn't shut down the resource"
+
+
+class PcsEnableException(tobiko.TobikoException):
+    message = "pcs enable didn't start the resource"
+
+
+class GaleraBoostrapException(tobiko.TobikoException):
+    message = "Bootstrap should not be done from node without grastate.dat"
 
 
 def network_disrupt_node(node_name, disrupt_method=network_disruption):
@@ -62,7 +76,7 @@ def disrupt_node(node_name, disrupt_method=network_disruption):
     # container_restart
 
     # using ssh_client.connect we use a fire and forget reboot method
-    node = get_node(node_name)
+    node = tripleo_topology.get_node(node_name)
     node.ssh_client.connect().exec_command(disrupt_method)
     LOG.info('disrupt exec: {} on server: {}'.format(disrupt_method,
                                                      node.name))
@@ -76,7 +90,7 @@ def reboot_node(node_name, wait=True, reboot_method=sh.hard_reset_method):
     # method : method of disruption to use : reset | network_disruption
 
     # using ssh_client.connect we use a fire and forget reboot method
-    node = get_node(node_name)
+    node = tripleo_topology.get_node(node_name)
     sh.reboot_host(ssh_client=node.ssh_client, wait=wait, method=reboot_method)
     LOG.info('disrupt exec: {} on server: {}'.format(reboot_method,
                                                      node.name))
@@ -310,11 +324,10 @@ def reset_ovndb_master_container():
 def kill_rabbitmq_service():
     """kill a rabbit process on a random controller,
     check in pacemaker it is down"""
-    if 'messaging' in topology.list_openstack_node_groups():
-        group = 'messaging'
+    if tripleo_topology.is_composable_roles_env():
+        nodes = topology.list_openstack_nodes(group='messaging')
     else:
-        group = 'controller'
-    nodes = topology.list_openstack_nodes(group=group)
+        nodes = topology.list_openstack_nodes(group='controller')
     node = random.choice(nodes)
     sh.execute(kill_rabbit, ssh_client=node.ssh_client)
     LOG.info('kill rabbit: {} on server: {}'.format(kill_rabbit,
@@ -329,11 +342,10 @@ def kill_rabbitmq_service():
 def kill_all_galera_services():
     """kill all galera processes,
     check in pacemaker it is down"""
-    if 'database' in topology.list_openstack_node_groups():
-        group = 'database'
+    if tripleo_topology.is_composable_roles_env():
+        nodes = topology.list_openstack_nodes(group='database')
     else:
-        group = 'controller'
-    nodes = topology.list_openstack_nodes(group=group)
+        nodes = topology.list_openstack_nodes(group='controller')
     for node in nodes:
         sh.execute(kill_galera, ssh_client=node.ssh_client)
         LOG.info('kill galera: {} on server: {}'.format(kill_galera,
@@ -343,6 +355,65 @@ def kill_all_galera_services():
         if not(pacemaker.PacemakerResourcesStatus().
                galera_resource_healthy()):
             return
+
+
+def remove_all_grastate_galera():
+    """shut down galera properly,
+    remove all grastate"""
+    if tripleo_topology.is_composable_roles_env():
+        nodes = topology.list_openstack_nodes(group='database')
+    else:
+        nodes = topology.list_openstack_nodes(group='controller')
+    LOG.info('shut down galera: {} on all servers: {}'.
+             format(disable_galera, nodes))
+    if "resource 'galera' is not running on any node" not in\
+            sh.execute(disable_galera, ssh_client=nodes[0].ssh_client).stdout:
+        raise PcsDisableException()
+    for node in nodes:
+        sh.execute(remove_grastate, ssh_client=node.ssh_client)
+    LOG.info('enable back galera: {} on all servers: {}'.
+             format(enable_galera, nodes))
+    if "resource 'galera' is master on node" not in\
+            sh.execute(enable_galera, ssh_client=nodes[0].ssh_client).stdout:
+        raise PcsEnableException()
+
+
+def remove_one_grastate_galera():
+    """shut down galera properly,
+    delete /var/lib/mysql/grastate.dat in a random node,
+    check that bootstrap is done from a node with grastate"""
+    if tripleo_topology.is_composable_roles_env():
+        nodes = topology.list_openstack_nodes(group='database')
+    else:
+        nodes = topology.list_openstack_nodes(group='controller')
+    node = random.choice(nodes)
+    LOG.info('disable haproxy-bunble')
+    if "resource 'haproxy-bundle' is not running on any node" not in\
+            sh.execute(disable_haproxy, ssh_client=node.ssh_client).stdout:
+        raise PcsDisableException()
+    LOG.info('shut down galera: {} on all servers: {}'.
+             format(disable_galera, nodes))
+    if "resource 'galera' is not running on any node" not in\
+            sh.execute(disable_galera, ssh_client=node.ssh_client).stdout:
+        raise PcsDisableException()
+    LOG.info('remove grastate: {} on server: {}'.format(remove_grastate,
+                                                        node.name))
+    sh.execute(remove_grastate, ssh_client=node.ssh_client)
+    LOG.info('enable back galera: {} on all servers: {}'.
+             format(enable_galera, nodes))
+    if "resource 'galera' is master on node" not in\
+            sh.execute(enable_galera, ssh_client=node.ssh_client).stdout:
+        raise PcsEnableException()
+    LOG.info('enable haproxy-bundle')
+    if "resource 'haproxy-bundle' is running on node" not in\
+            sh.execute(enable_haproxy, ssh_client=node.ssh_client).stdout:
+        raise PcsEnableException()
+    # gcomm:// without args means that bootstrap is done from this node
+    if re.search('wsrep-cluster-address=gcomm:// --',
+                 sh.execute(check_grastate,
+                            ssh_client=node.ssh_client).stdout) is not None:
+        raise GaleraBoostrapException()
+    return node
 
 
 def evac_failover_compute(compute_host, failover_type=sh.hard_reset_method):
