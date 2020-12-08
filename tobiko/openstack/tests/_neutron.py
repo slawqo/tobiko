@@ -245,9 +245,14 @@ def test_ovs_bridges_mac_table_size():
             'etc/neutron/plugins/ml2/openvswitch_agent.ini '
             'ovs bridge_mappings')
     for node in topology.list_openstack_nodes(group='overcloud'):
-        br_mappings_str = sh.execute(get_br_mappings_cmd,
-                                     ssh_client=node.ssh_client,
-                                     sudo=True).stdout.splitlines()[0]
+        try:
+            br_mappings_str = sh.execute(get_br_mappings_cmd,
+                                         ssh_client=node.ssh_client,
+                                         sudo=True).stdout.splitlines()[0]
+        except sh.ShellCommandFailed:
+            LOG.debug(f"bridge mappings not configured on node '{node.name}'",
+                      exc_info=1)
+            continue
         br_list = [br_mapping.split(':')[1] for br_mapping in
                    br_mappings_str.replace('"', '').split(',')]
         for br_name in br_list:
