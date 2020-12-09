@@ -27,7 +27,6 @@ from tobiko.shell import ssh
 from tobiko.shell import sh
 from tobiko.tests import base
 
-
 LOG = log.getLogger(__name__)
 
 CONF = config.CONF
@@ -84,6 +83,10 @@ class OctaviaBasicTrafficScenarioTest(base.TobikoTest):
         # pylint: disable=no-member
         super(OctaviaBasicTrafficScenarioTest, self).setUp()
 
+        self.loadbalancer_vip = self.loadbalancer_stack.loadbalancer_vip
+        self.loadbalancer_port = self.listener_stack.lb_port
+        self.loadbalancer_protocol = self.listener_stack.lb_protocol
+
         # Wait for members
         self._check_member(self.member1_stack)
         self._check_member(self.member2_stack)
@@ -127,8 +130,8 @@ class OctaviaBasicTrafficScenarioTest(base.TobikoTest):
 
         raise TimeoutException(
             reason=("Cannot get operating_status '{}' from {} {} "
-                    "within the timeout period.".format(
-                        operating_status, resource_type, args)))
+                    "within the timeout period.".format(operating_status,
+                                                        resource_type, args)))
 
     def _wait_lb_operating_status(self, lb_id, operating_status):
         LOG.debug("Wait for loadbalancer {} to have '{}' "
@@ -171,14 +174,10 @@ class OctaviaBasicTrafficScenarioTest(base.TobikoTest):
         loadbalancer_id = self.loadbalancer_stack.loadbalancer_id
         self._wait_lb_operating_status(loadbalancer_id, 'ONLINE')
 
-        loadbalancer_vip = self.loadbalancer_stack.loadbalancer_vip
-        loadbalancer_port = self.listener_stack.lb_port
-        loadbalancer_protocol = self.listener_stack.lb_protocol
-
         self._wait_for_request_data(self.client_stack,
-                                    loadbalancer_vip,
-                                    loadbalancer_protocol,
-                                    loadbalancer_port)
+                                    self.loadbalancer_vip,
+                                    self.loadbalancer_protocol,
+                                    self.loadbalancer_port)
 
     def _check_member(self, member_stack):
         """Wait until a member server is functional."""
@@ -194,13 +193,10 @@ class OctaviaBasicTrafficScenarioTest(base.TobikoTest):
         """Check if traffic is properly balanced between members."""
         replies = {}
 
-        loadbalancer_vip = self.loadbalancer_stack.loadbalancer_vip
-        loadbalancer_port = self.listener_stack.lb_port
-        loadbalancer_protocol = self.listener_stack.lb_protocol
-
-        for _ in range(20):
-            content = self._request(self.client_stack, loadbalancer_vip,
-                                    loadbalancer_protocol, loadbalancer_port)
+        for _ in range(self.members_count*10):
+            content = self._request(
+                self.client_stack, self.loadbalancer_vip,
+                self.loadbalancer_protocol, self.loadbalancer_port)
 
             if content not in replies:
                 replies[content] = 0
@@ -213,12 +209,18 @@ class OctaviaBasicTrafficScenarioTest(base.TobikoTest):
             replies))
 
         # assert that 'members_count' servers replied
-        self.assertEqual(len(replies), self.members_count)
+        self.assertEqual(
+            self.members_count, len(replies),
+            'The number of detected active members:{} is not '
+            'as expected:{}'.format(len(replies), self.members_count))
 
         if self.listener_stack.lb_algorithm == 'ROUND_ROBIN':
             # assert that requests have been fairly dispatched (each server
             # received the same number of requests)
-            self.assertEqual(len(set(replies.values())), 1)
+            self.assertEqual(
+                1, len(set(replies.values())),
+                'The number of requests served by each member is '
+                'different and not as expected by used ROUND_ROBIN algorithm.')
 
     def test_traffic(self):
         self._check_members_balanced()
