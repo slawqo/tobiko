@@ -24,6 +24,7 @@ def overcloud_health_checks(passive_checks_only=False,
         # create a uniq stack
         check_vm_create()
         nova.start_all_instances()
+        nova.check_computes_vms_running_via_virsh()
     containers.list_node_containers.cache_clear()
     containers.assert_all_tripleo_containers_running()
     containers.assert_equal_containers_state()

@@ -7,8 +7,12 @@ from oslo_log import log
 import pandas
 
 import tobiko
+from tobiko.tripleo import overcloud
 from tobiko.shell import ping
+from tobiko.shell import sh
 from tobiko.openstack import nova
+from tobiko.openstack import topology
+from tobiko.tripleo import containers
 
 
 LOG = log.getLogger(__name__)
@@ -171,3 +175,46 @@ def check_vm_evacuations(vms_df_old=None, compute_host=None, timeout=600,
 
 def get_stack_server_id(stack):
     return stack.server_details.id
+
+
+def get_fqdn_from_topology_node(topology_node):
+    return sh.execute("hostname -f", ssh_client=topology_node.ssh_client,
+                      expect_exit_status=None).stdout.strip()
+
+
+def check_vm_running_via_virsh(topology_compute, vm_id):
+    """check that a vm is in running state via virsh command,
+    return false if not"""
+    if vm_id in get_vm_uuid_list_running_via_virsh(topology_compute):
+        return True
+    else:
+        return False
+
+
+def get_vm_uuid_list_running_via_virsh(topology_compute):
+    if overcloud.has_overcloud():
+        container_runtime = containers.get_container_runtime_name()
+        command = f"sudo {container_runtime} exec nova_libvirt " \
+                  f"sh -c 'for i in `virsh list --name --state-running` " \
+                  f";do virsh domuuid $i;done'"
+    else:
+        command = "for i in `sudo virsh list --name --state-running` " \
+                  ";do virsh domuuid $i;done'"
+    return sh.execute(command,
+                      ssh_client=topology_compute.ssh_client).stdout.split()
+
+
+def check_computes_vms_running_via_virsh():
+    """check all vms are running via virsh list command"""
+    for compute in topology.list_openstack_nodes(group='compute'):
+        hostname = get_fqdn_from_topology_node(compute)
+        retry = tobiko.retry(timeout=120, interval=5)
+        for vm_id in get_compute_vms_df(hostname)['vm_id'].to_list():
+            for _ in retry:
+                if check_vm_running_via_virsh(compute, vm_id):
+                    LOG.info(f"{vm_id} is running ok on "
+                             f"{compute.hostname}")
+                    break
+                else:
+                    LOG.info(f"{vm_id} is not in running state on "
+                             f"{compute.hostname}")
