@@ -29,25 +29,25 @@ from tools import common  # noqa
 
 LOG = common.get_logger(__name__)
 
+OS_TEST_PATH = common.normalize_path(os.environ['OS_TEST_PATH'])
 
 # Output dirs
 TOX_REPORT_DIR = common.normalize_path(
     os.environ.get('TOX_REPORT_DIR', os.getcwd()))
 
-TOX_REPORT_NAME = os.environ.get('TOX_REPORT_NAME', 'test_results')
+TOX_REPORT_NAME = os.environ.get('TOX_REPORT_NAME', 'tobiko_results')
 TOX_REPORT_PREFIX = os.path.join(TOX_REPORT_DIR, TOX_REPORT_NAME)
 
 TOX_REPORT_LOG = os.environ.get(
     'TOX_REPORT_LOG', TOX_REPORT_PREFIX + '.log')
-
-TOX_REPORT_SUBUNIT = os.environ.get(
-    'TOX_REPORT_SUBUNIT', TOX_REPORT_PREFIX + '.subunit')
 
 TOX_REPORT_HTML = os.environ.get(
     'TOX_REPORT_HTML', TOX_REPORT_PREFIX + '.html')
 
 TOX_REPORT_XML = os.environ.get(
     'TOX_REPORT_XML', TOX_REPORT_PREFIX + '.xml')
+
+TOX_NUM_PROCESSES = os.environ.get('TOX_NUM_PROCESSES') or 'auto'
 
 TOX_RUN_TESTS_TIMEOUT = float(os.environ.get('TOX_RUN_TESTS_TIMEOUT') or 0.)
 
@@ -90,20 +90,6 @@ def run_tests():
         LOG.error(f"Error while running test cases.\n{ex}")
         succeeded = False
 
-    try:
-        log_tests_results()
-    except subprocess.CalledProcessError:
-        if succeeded:
-            raise
-
-    make_subunit_file()
-    make_html_file()
-    try:
-        make_xml_file()
-    except subprocess.CalledProcessError:
-        if succeeded:
-            raise
-
     return succeeded
 
 
@@ -137,8 +123,7 @@ def terminate_childs():
 
 
 def cleanup_report_dir():
-    for report_file in [TOX_REPORT_LOG, TOX_REPORT_SUBUNIT, TOX_REPORT_HTML,
-                        TOX_REPORT_XML]:
+    for report_file in [TOX_REPORT_LOG, TOX_REPORT_HTML, TOX_REPORT_XML]:
         if not common.make_dir(os.path.dirname(report_file)):
             common.remove_file(report_file)
 
@@ -148,13 +133,6 @@ def log_environ():
                    capture_stdout=False)
 
 
-def log_tests_results():
-    common.execute('stestr last --all-attachments >> "{log_file}"',
-                   log_file=TOX_REPORT_LOG,
-                   capture_stdout=False,
-                   check=False)
-
-
 def debug_test_cases():
     common.execute_python('-m testtools.run {posargs}',
                           posargs=common.get_posargs(),
@@ -162,28 +140,14 @@ def debug_test_cases():
 
 
 def run_test_cases():
-    common.execute('stestr run {posargs}',
-                   posargs=common.get_posargs(),
-                   capture_stdout=False)
-
-
-def make_subunit_file():
-    common.execute('stestr last --subunit > "{subunit_file}"',
-                   subunit_file=TOX_REPORT_SUBUNIT,
-                   capture_stdout=False)
-
-
-def make_html_file():
-    common.execute('subunit2html "{subunit_file}" "{html_file}"',
-                   subunit_file=TOX_REPORT_SUBUNIT,
-                   html_file=TOX_REPORT_HTML,
-                   capture_stdout=False)
-
-
-def make_xml_file():
-    common.execute('subunit2junitxml "{subunit_file}" -o "{xml_file}"',
-                   subunit_file=TOX_REPORT_SUBUNIT,
-                   xml_file=TOX_REPORT_XML,
+    xdist_options = ''
+    if TOX_NUM_PROCESSES != '1':
+        xdist_options = f"--numprocesses {TOX_NUM_PROCESSES} --dist loadscope"
+    common.execute(f"pytest "
+                   f"{xdist_options} "
+                   f"--junitxml={TOX_REPORT_XML} "
+                   f"--html={TOX_REPORT_HTML} --self-contained-html "
+                   f"{common.get_posargs()}",
                    capture_stdout=False)
 
 

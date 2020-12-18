@@ -46,7 +46,7 @@ test_report_files:
   - '{{ test_log_file | realpath }}'
 
 # Test report files prefix
-test_report_name: test_results
+test_report_name: tobiko_results
 
 # Log file where test cases should write logging messages to
 test_log_file: '{{ test_report_dir | realpath }}/tobiko.log'
