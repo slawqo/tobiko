@@ -314,6 +314,8 @@ class ExternalServerStackFixture(ServerStackFixture):
     # external servers doesn't need floating IPs
     has_floating_ip = False
 
+    config_drive = True
+
     @property
     def floating_network(self):
         return self.network_stack.network_id

@@ -57,6 +57,11 @@ parameters:
     type: json
     description: Hints to create server
 
+  config_drive:
+    type: boolean
+    description: Whenever server should use config drive with metadata or not
+    default: false
+
   user_data:
     type: string
     default: ''
@@ -95,6 +100,7 @@ resources:
       networks:
         - port: {get_resource: port}
       scheduler_hints: {get_param: scheduler_hints}
+      config_drive: {get_param: config_drive}
       user_data_format: RAW
       user_data: {get_param: user_data}
 
