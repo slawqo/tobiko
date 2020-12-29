@@ -130,3 +130,36 @@ class L3HARouterTest(RouterTest):
         for backup_agent in backup_agents:
             self._check_routers_namespace_on_host(
                 backup_agent['host'], state="backup")
+
+
+class NetworkWithNoServersStack(stacks.NetworkStackFixture):
+    pass
+
+
+@neutron.skip_unless_is_ovs()
+class DVRTest(testtools.TestCase):
+
+    router_stack = tobiko.required_setup_fixture(NetworkWithNoServersStack)
+    server_stack = tobiko.required_setup_fixture(
+            stacks.CirrosExternalServerStackFixture)
+
+    def setUp(self):
+        super(DVRTest, self).setUp()
+        if not self.router_stack.gateway_details.get('distributed'):
+            tobiko.skip_test('No DVR enabled')
+
+    def test_router_not_created_on_compute_if_no_instance_connected(self):
+        '''Test that no router namespace is created for DVR on compute node
+
+        Namespace should be only created if there is VM with router that is set
+        as a default gateway. Need to verify that there will be no namespace
+        created on the compute node where VM is connected to the external
+        network. The same network is used as the default gateway for the router
+        '''
+
+        router_namespace = f'qrouter-{self.router_stack.gateway_details["id"]}'
+        cirros_hypervisor = topology.get_openstack_node(
+                hostname=self.server_stack.hypervisor_host)
+        namespaces = ip.list_network_namespaces(
+            ssh_client=cirros_hypervisor.ssh_client)
+        self.assertNotIn(router_namespace, namespaces)
