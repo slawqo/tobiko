@@ -1,27 +1,22 @@
 # Tobiko framework requirements
 
-coverage==5.3.0
-docker==4.4.0
+docker==4.4.1
 fixtures==3.0.0
-keystoneauth1==4.3.0
 Jinja2==2.11.2
-junitxml==0.7.0
-mock==3.0.5
+keystoneauth1==4.3.0
 netaddr==0.8.0
 neutron-lib==2.7.0
-os-testr==2.0.0
 oslo.config==8.4.0
 oslo.log==4.4.0
 paramiko==2.7.2
 pbr==5.5.1
 podman==1.6.0
-python-heatclient==2.3.0
 python-glanceclient==3.2.2
+python-heatclient==2.3.0
 python-neutronclient==7.2.1
 python-novaclient==17.2.1
 python-octaviaclient==2.2.0
 python-openstackclient==5.4.0
-python-subunit==1.4.0
 six==1.15.0
 sshtunnel==0.3.1
 stestr==3.1.0

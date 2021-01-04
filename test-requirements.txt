@@ -6,4 +6,5 @@ mock>=2.0.0                    # BSD
 psutil>=5.7.2                  # BSD
 pytest>=6.0.0                  # MIT
 pytest-html>=3.0.0             # MPL-2.0
+pytest-rerunfailures>=9.0.0    # MPL-2.0
 pytest-xdist[psutil]>=2.0.0    # MIT

@@ -1,3 +1,2 @@
 pandas                   # BSD
-python-openstackclient   # APACHE-2.0
 validations-libs         # APACHE-2.0

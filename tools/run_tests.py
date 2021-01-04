@@ -51,6 +51,10 @@ TOX_NUM_PROCESSES = os.environ.get('TOX_NUM_PROCESSES') or 'auto'
 
 TOX_RUN_TESTS_TIMEOUT = float(os.environ.get('TOX_RUN_TESTS_TIMEOUT') or 0.)
 
+TOX_RERUNS = int(os.environ.get('TOX_RERUNS') or 0)
+TOX_RERUNS_DELAY = int(os.environ.get('TOX_RERUNS_DELAY') or 5)
+
+
 TOX_PYDEV_DEBUG = bool(
     os.environ.get('TOX_PYDEV_DEBUG', 'false').lower() in
     ['true', 'yes', '1'])
@@ -142,9 +146,13 @@ def debug_test_cases():
 def run_test_cases():
     xdist_options = ''
     if TOX_NUM_PROCESSES != '1':
-        xdist_options = f"--numprocesses {TOX_NUM_PROCESSES} --dist loadscope"
+        xdist_options = f"--numprocesses '{TOX_NUM_PROCESSES}' --dist loadscope"
+    rerun_options = ''
+    if TOX_RERUNS:
+        rerun_options = f"--reruns '{TOX_RERUNS}' --reruns-delay '{TOX_RERUNS_DELAY}'"
     common.execute(f"pytest "
                    f"{xdist_options} "
+                   f"{rerun_options} "
                    f"--junitxml={TOX_REPORT_XML} "
                    f"--html={TOX_REPORT_HTML} --self-contained-html "
                    f"{common.get_posargs()}",

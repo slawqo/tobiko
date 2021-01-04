@@ -4,21 +4,32 @@ test_workflow_steps:
   - tox_description: 'run unit test cases'
     tox_envlist: py3
     tox_step_name: unit
+    tox_environment:
+      TOX_RERUNS: 0
 
   - tox_description: 'run functional test cases'
     tox_envlist: functional
     tox_step_name: functional
+    tox_environment:
+      TOX_RERUNS: 2
+      TOX_RERUNS_DELAY: 60
 
   - tox_description: 'create workload resources'
     tox_envlist: scenario
     tox_step_name: create_resources
+    tox_environment:
+      TOX_RERUNS: 2
+      TOX_RERUNS_DELAY: 60
 
 #  - tox_description: 'run disruptive test cases'
 #    tox_envlist: faults
 #    tox_step_name: faults
+#    tox_environment:
+#      TOX_RERUNS: 0
 
   - tox_description: 'verify workload resources'
     tox_envlist: scenario
     tox_step_name: verify_resources
     tox_environment:
       TOBIKO_PREVENT_CREATE: yes
+      TOX_RERUNS: 0
