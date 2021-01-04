@@ -1,10 +1,8 @@
 # Unit tests requirements
 
-ansi2html>=1.6.0               # LGPLv3+
-coverage>=4.5.0                # Apache-2.0
-mock>=2.0.0                    # BSD
-psutil>=5.7.2                  # BSD
-pytest>=6.0.0                  # MIT
-pytest-html>=3.0.0             # MPL-2.0
-pytest-rerunfailures>=9.0.0    # MPL-2.0
-pytest-xdist[psutil]>=2.0.0    # MIT
+coverage>=5.3.1                # Apache-2.0
+mock>=3.0.5                    # BSD
+psutil>=5.8.0                  # BSD
+pytest>=6.2.1                  # MIT
+pytest-html>=3.1.1             # MPL-2.0
+pytest-xdist[psutil]>=2.2.0    # MIT

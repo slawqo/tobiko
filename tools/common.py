@@ -33,7 +33,7 @@ def get_logger(name):
     return logging.getLogger(name)
 
 
-def setup_logging(main_script=None, level=logging.DEBUG):
+def setup_logging(main_script=None, level=logging.DEBUG) -> object:
     main_script = main_script or sys.modules['__main__'].__file__
     logging.basicConfig(
         level=level,

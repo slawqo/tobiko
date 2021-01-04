@@ -17,7 +17,6 @@ import io
 import os
 
 from oslo_log import log
-import pandas
 import six
 
 import tobiko
@@ -184,6 +183,7 @@ def get_overcloud_nodes_dataframe(oc_node_df_function):
 
     :return: dataframe of all overcloud nodes processes
     """
+    import pandas
     oc_nodes_selection = list_overcloud_nodes()
     oc_nodes_names = [node.name for node in oc_nodes_selection]
     oc_nodes_dfs = [oc_node_df_function(node_name) for

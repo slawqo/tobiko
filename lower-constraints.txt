@@ -1,4 +1,4 @@
-# Tobiko framework requirements
+# from requirements.txt
 
 docker==4.4.1
 fixtures==3.0.0
@@ -21,3 +21,14 @@ six==1.15.0
 sshtunnel==0.3.1
 stestr==3.1.0
 testtools==2.4.0
+
+
+# from test-requirements.txt
+
+ansi2html==1.6.0
+coverage==5.3.1
+mock==3.0.5
+psutil==5.8.0
+pytest==6.2.1
+pytest-html==3.1.1
+pytest-xdist==2.2.0

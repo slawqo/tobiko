@@ -23,12 +23,20 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
+
 import os
 import sys
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TOBIKO_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
 sys.path.insert(0, TOBIKO_DIR)
+
+# -- Python logging ----------------------------------------------------------
+
+import logging
+from tools import common
+
+common.setup_logging(level=logging.INFO)
 
 
 # -- Project information -----------------------------------------------------
@@ -41,11 +49,16 @@ author = "Tobiko's Team"
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-# Version info
-from tobiko import version
-release = version.release
-# The short X.Y version.
-version = version.version
+
+from tools import get_version
+release = get_version.get_version()
+version = '.'.join(release.split('.', 2)[:2])
+
+
+# -- Install requirements ----------------------------------------------------
+
+from tools import install
+install.pip_install('sphinx_rtd_theme>=0.5.1,<1')   # Apache-2.0
 
 
 # -- General configuration ---------------------------------------------------
