@@ -2,52 +2,46 @@
 
 version: '3.4'
 services:
-  base:
+  unit:
     build:
       context: .
-      target: base
+      target: tobiko
+    hostname: tobiko
+    environment:
+      OS_TEST_PATH: tobiko/tests/unit
+      TOX_REPORT_NAME: tobiko_results_unit
+    volumes:
+      - ./report:/report
 
-  sources:
-    build:
-      context: .
-      target: sources
-
-  bindeps:
-    build:
-      context: .
-      target: bindeps
-
-  py3:
-    build:
-      context: .
-      target: py3
-
-  venv:
-    build:
-      context: .
-      target: venv
+  shell:
+    extends:
+      service: unit
+    entrypoint: /bin/bash
 
   functional:
-    build:
-      context: .
-      target: functional
+    extends:
+      service: unit
+    environment:
+      OS_TEST_PATH: tobiko/tests/functional
+      TOX_REPORT_NAME: tobiko_results_functional
 
-  scenario:
-    build:
-      context: .
-      target: scenario
+  create:
+    extends:
+      service: unit
+    environment:
+      OS_TEST_PATH: tobiko/tests/scenario
+      TOX_REPORT_NAME: tobiko_results_create
 
-  neutron:
-    build:
-      context: .
-      target: neutron
+  disrupt:
+    extends:
+      service: unit
+    environment:
+      OS_TEST_PATH: tobiko/tests/faults
+      TOX_REPORT_NAME: tobiko_results_disrupt
 
-  faults:
-    build:
-      context: .
-      target: faults
-
-  infrared:
-    build:
-      context: .
-      target: infrared
+  verify:
+    extends:
+      service: create
+    environment:
+      PREVENT_CREATE: true
+      TOX_REPORT_NAME: tobiko_results_verify

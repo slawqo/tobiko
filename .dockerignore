@@ -7,12 +7,14 @@
 # Hidden files
 .coverage
 .coverage.*
+.dockerignore
 .eggs
 .mypy_cache
 .stestr
 .test
 .testrepository
 .tobiko-env
+.tobiko
 .tox
 .vagrant
 .venv
@@ -21,21 +23,29 @@ __pycache__
 AUTHORS
 build/*
 ChangeLog
-doc/build/*
+doc/
 cover/
 dist/
 etc/*.sample
+playbooks/
+releasenotes/
 report/
+roles/
 test_results*
 zuul/versioninfo
 
 # Files created by releasenotes build
 releasenotes/build
 
-# Docs related files
-doc/source/_static/config-samples/*.sample
-
 Pipfile.lock
 
 # Infrared things
 .infrared
+
+# Docker files
+Dockerfile
+docker-compose.yaml
+docker-compose.yml
+
+# Tobiko configuration files
+tobiko.conf
