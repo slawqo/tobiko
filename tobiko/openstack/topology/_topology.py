@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import collections
+import re
 import typing  # noqa
 import weakref
 
@@ -456,6 +457,43 @@ def get_openstack_topology(topology_class: typing.Type = None) -> \
     return tobiko.setup_fixture(topology_class)
 
 
+def get_rhosp_version():
+    ssh_client = list_openstack_nodes(group='controller')[0].ssh_client
+    rhosp_release = sh.execute('cat /etc/rhosp-release',
+                               ssh_client=ssh_client).stdout
+    rhosp_version = re.search(r"[0-9]*\.[0-9]*\.[0-9]*", rhosp_release)[0]
+    return rhosp_version
+
+
+def get_nova_version_from_container():
+    cmd = 'docker exec -uroot nova_conductor nova-manage --version'
+    ssh_client = list_openstack_nodes(group='controller')[0].ssh_client
+    return sh.execute(cmd,
+                      ssh_client=ssh_client,
+                      sudo=True).stdout
+
+
+def get_openstack_version():
+    try:
+        return get_rhosp_version()
+    except (TypeError, sh.ShellCommandFailed):
+        pass
+    try:
+        nova_version = get_nova_version_from_container()
+    except sh.ShellCommandFailed:
+        ssh_client = list_openstack_nodes(group='controller')[0].ssh_client
+        nova_version = sh.execute('nova-manage --version',
+                                  ssh_client=ssh_client,
+                                  sudo=True).stdout
+    os_to_nova_versions = {'13.0.0': '17',  # Queens
+                           '16.0.0': '19',  # Stein
+                           '16.1.0': '20',  # Train
+                           '17.0.0': '21'}  # Ussuri
+    for os_version, nova_major_version in os_to_nova_versions.items():
+        if nova_version.split('.')[0] == nova_major_version:
+            return os_version
+
+
 DEFAULT_TOPOLOGY_CLASS = OpenStackTopology
 
 
@@ -467,3 +505,42 @@ def remove_duplications(items: typing.List) -> typing.List:
     # use all items as dictionary keys to remove duplications
     mapping = collections.OrderedDict((k, None) for k in items)
     return list(mapping.keys())
+
+
+def _is_version_matched(current, required, higher=False, lower=False):
+    if not higher and not lower:
+        if int(current) != int(required):
+            return False
+    elif higher and lower:
+        pass
+    elif higher:
+        if int(current) < int(required):
+            return False
+    elif lower:
+        if int(current) > int(required):
+            return False
+    return True
+
+
+def verify_osp_version(version, higher=False, lower=False):
+    current_version = get_openstack_version()
+    correct_version = True
+    if not current_version:
+        correct_version = False
+    else:
+        os_version = current_version.split('.')
+        required_version = version.split('.')
+        for version_type in range(len(required_version)):
+            if not _is_version_matched(os_version[version_type],
+                                       required_version[version_type],
+                                       higher=higher,
+                                       lower=lower):
+                correct_version = False
+                break
+    return correct_version
+
+
+def skip_unless_osp_version(version, higher=False, lower=False):
+    skip_msg = "OSP version doesn't match the requirement"
+    return tobiko.skip_unless(skip_msg, verify_osp_version,
+                              version, higher, lower)
