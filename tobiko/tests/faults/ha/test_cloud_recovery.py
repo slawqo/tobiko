@@ -130,6 +130,16 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.kill_all_galera_services()
         overcloud_health_checks()
 
+    def test_remove_all_grastate_galera(self):
+        overcloud_health_checks()
+        cloud_disruptions.remove_all_grastate_galera()
+        overcloud_health_checks()
+
+    def test_remove_one_grastate_galera(self):
+        overcloud_health_checks()
+        cloud_disruptions.remove_one_grastate_galera()
+        overcloud_health_checks()
+
 # [..]
 # more tests to follow
 # run health checks

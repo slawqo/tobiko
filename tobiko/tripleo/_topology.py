@@ -161,3 +161,17 @@ def ip_to_hostname(oc_ip):
 def actual_node_groups(groups):
     """return only existing node groups"""
     return set(groups).intersection(topology.list_openstack_node_groups())
+
+
+def get_node(node_name):
+    node_name = node_name.split('.')[0]
+    return [node for node in topology.list_openstack_nodes() if
+            node.name == node_name][0]
+
+
+def is_composable_roles_env():
+    composable_nodes = ['messaging', 'database', 'networker']
+    for nodes in composable_nodes:
+        if nodes in topology.list_openstack_node_groups():
+            return True
+    return False
