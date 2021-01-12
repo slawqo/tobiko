@@ -25,6 +25,7 @@ from tobiko.openstack import keystone
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
+from tobiko.shell import curl
 from tobiko.shell import ping
 from tobiko.shell import sh
 
@@ -38,10 +39,27 @@ class CirrosServerStackTest(testtools.TestCase):
 
     nameservers_filenames: typing.Optional[typing.Sequence[str]] = None
 
-    def test_ping(self):
+    def test_ping_floating_ip(self):
         """Test connectivity to floating IP address"""
         ping.ping_until_received(
             self.stack.floating_ip_address).assert_replied()
+
+    def test_ping_fixed_ipv4(self):
+        ping.ping_until_received(
+            self.get_fixed_ip(ip_version=4),
+            ssh_client=self.stack.ssh_client).assert_replied()
+
+    def test_ping_fixed_ipv6(self):
+        ping.ping_until_received(
+            self.get_fixed_ip(ip_version=6),
+            ssh_client=self.stack.ssh_client).assert_replied()
+
+    def get_fixed_ip(self, ip_version: int):
+        try:
+            return self.stack.find_fixed_ip(ip_version=ip_version)
+        except tobiko.ObjectNotFound:
+            self.skipTest(f"Server {self.stack.server_id} has any "
+                          f"IPv{ip_version} address.")
 
     def test_ssh_connect(self):
         """Test SSH connectivity via Paramiko SSHClient"""
@@ -135,3 +153,56 @@ class EvacuablesServerStackTest(CirrosServerStackTest):
     def test_image_tags(self):
         image = self.stack.image_fixture.get_image()
         self.assertEqual(['evacuable'], image.tags)
+
+
+class CirrosPeerServerStackTest(CirrosServerStackTest):
+
+    #: Stack of resources with an HTTP server
+    stack = tobiko.required_setup_fixture(stacks.CirrosPeerServerStackFixture)
+
+    def test_ping_floating_ip(self):
+        self.skipTest(f"Server '{self.stack.server_id}' has any floating IP")
+
+    def test_ping_fixed_ipv4(self):
+        ping.ping_until_received(
+            self.get_fixed_ip(ip_version=4),
+            ssh_client=self.stack.peer_stack.ssh_client).assert_replied()
+
+    def test_ping_fixed_ipv6(self):
+        ping.ping_until_received(
+            self.get_fixed_ip(ip_version=6),
+            ssh_client=self.stack.peer_stack.ssh_client).assert_replied()
+
+
+class HttpServerStackTest(CirrosPeerServerStackTest):
+
+    #: Stack of resources with an HTTP server
+    stack = tobiko.required_setup_fixture(stacks.CirrosHttpServerStackFixture)
+
+    def test_server_port_ipv4(self):
+        self._test_server_port(ip_version=4)
+
+    def test_server_port_ipv6(self):
+        self._test_server_port(ip_version=6)
+
+    def _test_server_port(self, ip_version: int):
+        scheme = self.stack.http_request_scheme
+        ip_address = self.get_fixed_ip(ip_version=ip_version)
+        port = self.stack.http_server_port
+        ssh_client = self.stack.peer_stack.ssh_client
+        reply = curl.execute_curl(scheme=scheme,
+                                  hostname=ip_address,
+                                  port=port,
+                                  ssh_client=ssh_client,
+                                  connect_timeout=5.,
+                                  retry_count=10,
+                                  retry_timeout=60.)
+        self.assertEqual(self.stack.server_name, reply)
+
+    def test_send_http_request_ipv4(self):
+        reply = self.stack.send_http_request(ip_version=4)
+        self.assertEqual(self.stack.server_name, reply)
+
+    def test_send_http_request_ipv6(self):
+        reply = self.stack.send_http_request(ip_version=6)
+        self.assertEqual(self.stack.server_name, reply)
