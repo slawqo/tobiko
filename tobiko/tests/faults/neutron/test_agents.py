@@ -67,14 +67,19 @@ class BaseAgentTest(testtools.TestCase):
         else:
             return 'docker'
 
+    def get_agent_container_name(self, agent_name):
+        try:
+            return topology.get_agent_container_name(agent_name)
+        except topology.UnknowOpenStackContainerNameError:
+            LOG.debug(
+                'Network agents are not contenerized on this environment')
+            return
+
     def get_ovn_agents_from_containers(self):
         if not self.agents:
-            try:
-                self.container_name = \
-                    topology.get_agent_container_name(self.agent_name)
-            except KeyError:
-                LOG.debug('OVN network agents are not containerized on this'
-                          'environment')
+            self.container_name = self.get_agent_container_name(
+                self.agent_name)
+            if not self.container_name:
                 return
             oc_containers_df = containers.list_containers_df().query(
                 f'container_name == "{self.container_name}"')
@@ -115,7 +120,7 @@ class BaseAgentTest(testtools.TestCase):
                           f"'{host}'.")
             else:
                 if self.container_name == '':
-                    self.container_name = topology.get_agent_container_name(
+                    self.container_name = self.get_agent_container_name(
                         self.agent_name)
                 LOG.debug(f'Stopping container {self.container_name} on '
                           f"host '{host}'...")
@@ -152,7 +157,7 @@ class BaseAgentTest(testtools.TestCase):
                            sudo=True)
             else:
                 if self.container_name == '':
-                    self.container_name = topology.get_agent_container_name(
+                    self.container_name = self.get_agent_container_name(
                         self.agent_name)
                 LOG.debug(f'Starting container {self.container_name} on '
                           f"host '{host}'...")
@@ -175,8 +180,10 @@ class BaseAgentTest(testtools.TestCase):
         self.assertNotEqual([], hosts, "Host list is empty")
 
         self.container_name = (self.container_name or
-                               topology.get_agent_container_name(
+                               self.get_agent_container_name(
                                    self.agent_name))
+        if not self.container_name:
+            self.skipTest(f"Missing container(s): '{self.container_name}'")
 
         for host in hosts:
             ssh_client = topology.get_openstack_node(hostname=host).ssh_client
@@ -574,7 +581,7 @@ class OvnControllerTest(BaseAgentTest):
         self.assertNotEqual([], hosts, "Host list is empty")
 
         if self.container_name == '':
-            self.container_name = topology.get_agent_container_name(
+            self.container_name = self.get_agent_container_name(
                 self.agent_name)
 
         for host in hosts:
