@@ -9,14 +9,13 @@
       - openstack-lower-constraints-jobs
       - openstack-python3-wallaby-jobs
       - publish-to-pypi
+      - devstack-tobiko-gate
     vars:
         rtd_webhook_id: '84947'
 
     check:
       jobs:
         - devstack-tobiko-faults-ubuntu
-        - devstack-tobiko-gate
-        - devstack-tobiko-gate-ovn
         - tobiko-tox-infrared-centos-7
         - tobiko-tox-infrared-centos-8
         - tobiko-tox-infrared-fedora-latest
@@ -24,14 +23,10 @@
 
     gate:
       jobs:
-        - devstack-tobiko-gate
-        - devstack-tobiko-gate-ovn
         - tobiko-tox-infrared-centos-8
 
     periodic:
       jobs:
-        - devstack-tobiko-gate
-        - devstack-tobiko-gate-ovn
         - tripleo-ci-centos-8-content-provider
         - tobiko-tripleo-functional:
             vars: &consumer_vars
