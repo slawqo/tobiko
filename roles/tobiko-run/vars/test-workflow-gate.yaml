@@ -21,11 +21,11 @@ test_workflow_steps:
       TOX_RERUNS: 2
       TOX_RERUNS_DELAY: 60
 
-#  - tox_description: 'run disruptive test cases'
-#    tox_envlist: faults
-#    tox_step_name: faults
-#    tox_environment:
-#      TOX_RERUNS: 0
+  - tox_description: 'run disruptive test cases'
+    tox_envlist: faults
+    tox_step_name: faults
+    tox_environment:
+      TOX_RERUNS: 0
 
   - tox_description: 'verify workload resources'
     tox_envlist: scenario
