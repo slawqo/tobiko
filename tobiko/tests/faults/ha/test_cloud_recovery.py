@@ -140,6 +140,11 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.remove_one_grastate_galera()
         overcloud_health_checks()
 
+    def test_request_galera_sst(self):
+        overcloud_health_checks()
+        cloud_disruptions.request_galera_sst()
+        overcloud_health_checks()
+
 # [..]
 # more tests to follow
 # run health checks

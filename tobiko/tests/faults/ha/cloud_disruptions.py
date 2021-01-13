@@ -5,6 +5,7 @@ import time
 import random
 import urllib.parse
 import re
+from datetime import datetime
 
 from oslo_log import log
 
@@ -40,12 +41,14 @@ ovn_db_pcs_resource_restart = "sudo pcs resource restart ovn-dbs-bundle"
 kill_rabbit = "sudo kill -9 $(pgrep beam.smp)"
 kill_galera = "sudo kill -9 $(pgrep mysqld)"
 remove_grastate = "sudo rm -rf /var/lib/mysql/grastate.dat"
-check_grastate = """ps ax | grep -v grep|
+check_bootstrap = """ps -eo lstart,cmd | grep -v grep|
 grep wsrep-cluster-address=gcomm://"""
 disable_galera = "sudo pcs resource disable galera --wait=60"
 enable_galera = "sudo pcs resource enable galera --wait=90"
 disable_haproxy = "sudo pcs resource disable haproxy-bundle --wait=30"
 enable_haproxy = "sudo pcs resource enable haproxy-bundle --wait=60"
+galera_sst_request = """sudo grep 'wsrep_sst_rsync.*'
+/var/log/containers/mysql/mysqld.log"""
 
 
 class PcsDisableException(tobiko.TobikoException):
@@ -58,6 +61,10 @@ class PcsEnableException(tobiko.TobikoException):
 
 class GaleraBoostrapException(tobiko.TobikoException):
     message = "Bootstrap should not be done from node without grastate.dat"
+
+
+class TimestampException(tobiko.TobikoException):
+    message = "Timestamp mismatch: sst was requested before grastate removal"
 
 
 def network_disrupt_node(node_name, disrupt_method=network_disruption):
@@ -409,11 +416,30 @@ def remove_one_grastate_galera():
             sh.execute(enable_haproxy, ssh_client=node.ssh_client).stdout:
         raise PcsEnableException()
     # gcomm:// without args means that bootstrap is done from this node
-    if re.search('wsrep-cluster-address=gcomm:// --',
-                 sh.execute(check_grastate,
-                            ssh_client=node.ssh_client).stdout) is not None:
+    bootstrap = sh.execute(check_bootstrap, ssh_client=node.ssh_client).stdout
+    if re.search('wsrep-cluster-address=gcomm:// --', bootstrap) is not None:
         raise GaleraBoostrapException()
-    return node
+    lastDate = re.findall(r"\w{,3}\s*\w{,3}\s*\d{,2}\s*\d{,2}:\d{,2}:\d{,2}\s*"
+                          r"\d{4}", bootstrap)[-1]
+    return node, lastDate
+
+
+def request_galera_sst():
+    """remove_one_grastate_galera,
+    check that sst is requested by a node with grastate"""
+    node, date = remove_one_grastate_galera()
+    bootstrapDate = datetime.strptime(date, '%a %b %d %H:%M:%S %Y')
+    retry = tobiko.retry(timeout=30, interval=5)
+    for _ in retry:
+        sst_req = sh.execute(galera_sst_request,
+                             ssh_client=node.ssh_client).stdout
+        if sst_req:
+            break
+    sstDate = datetime.strptime(re.findall
+                                (r"\d{4}-\d{,2}-\d{,2}\s*\d{,2}:\d{,2}:\d{,2}",
+                                 sst_req)[-1], '%Y-%m-%d %H:%M:%S')
+    if bootstrapDate > sstDate:
+        raise TimestampException
 
 
 def evac_failover_compute(compute_host, failover_type=sh.hard_reset_method):
