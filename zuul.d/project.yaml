@@ -16,17 +16,19 @@
     check:
       jobs:
         - devstack-tobiko-faults-ubuntu
-        - tobiko-tox-infrared-centos-7
-        - tobiko-tox-infrared-centos-8
-        - tobiko-tox-infrared-fedora-latest
-        - tobiko-tox-infrared-ubuntu-focal
+        - tobiko-infrared
 
     gate:
       jobs:
-        - tobiko-tox-infrared-centos-8
+        - tobiko-infrared
 
     periodic:
       jobs:
+        - tobiko-infrared
+        - tobiko-infrared-centos
+        - tobiko-infrared-centos-7
+        - tobiko-infrared-fedora
+        - tobiko-infrared-ubuntu
         - tripleo-ci-centos-8-content-provider
         - tobiko-tripleo-functional:
             vars: &consumer_vars

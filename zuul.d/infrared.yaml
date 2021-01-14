@@ -1,9 +1,9 @@
 ---
 
 - job:
-    name: tobiko-tox-infrared
+    name: tobiko-infrared
     parent: tox
-    abstract: true
+    nodeset: tobiko-centos-8-2-node
     timeout: 1800
     description: |
       Run test cases using tobiko infrared plugin
@@ -29,14 +29,13 @@
       - ^doc/
       - ^releasenotes/
       - ^report/
-      - ^tobiko/tests/functional/
       - ^tobiko/tests/scenario/
       - ^tobiko/tests/faults/
 
 
 - job:
-    name: tobiko-tox-infrared-centos-7
-    parent: tobiko-tox-infrared
+    name: tobiko-infrared-centos-7
+    parent: tobiko-infrared
     nodeset: centos-7-2-node
     voting: false
     description: |
@@ -46,17 +45,17 @@
 
 
 - job:
-    name: tobiko-tox-infrared-centos-8
-    parent: tobiko-tox-infrared
+    name: tobiko-infrared-centos
+    parent: tobiko-infrared
     nodeset: tobiko-centos-8-2-node
-    voting: true
+    voting: false
     description: |
       Run test cases using tobiko infrared plugin on CentOS 8
 
 
 - job:
-    name: tobiko-tox-infrared-fedora-latest
-    parent: tobiko-tox-infrared
+    name: tobiko-infrared-fedora
+    parent: tobiko-infrared
     nodeset: tobiko-fedora-latest-2-node
     voting: false
     description: |
@@ -64,8 +63,8 @@
 
 
 - job:
-    name: tobiko-tox-infrared-ubuntu-focal
-    parent: tobiko-tox-infrared
+    name: tobiko-infrared-ubuntu
+    parent: tobiko-infrared
     nodeset: tobiko-ubuntu-focal-2-node
     voting: false
     description: |
