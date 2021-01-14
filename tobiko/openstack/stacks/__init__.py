@@ -39,6 +39,7 @@ CirrosSameHostServerStackFixture = _cirros.CirrosSameHostServerStackFixture
 RebootCirrosServerOperation = _cirros.RebootCirrosServerOperation
 EvacuableCirrosImageFixture = _cirros.EvacuableCirrosImageFixture
 EvacuableServerStackFixture = _cirros.EvacuableServerStackFixture
+CirrosHttpServerStackFixture = _cirros.CirrosHttpServerStackFixture
 
 RedHatFlavorStackFixture = _redhat.RedHatFlavorStackFixture
 RhelImageFixture = _redhat.RhelImageFixture

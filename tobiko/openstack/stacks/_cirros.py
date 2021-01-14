@@ -93,3 +93,23 @@ class EvacuableServerStackFixture(CirrosServerStackFixture):
 class CirrosExternalServerStackFixture(CirrosServerStackFixture,
                                        _nova.ExternalServerStackFixture):
     pass
+
+
+class CirrosHttpServerStackFixture(CirrosPeerServerStackFixture,
+                                   _nova.HttpServerStackFixture):
+
+    @property
+    def user_data(self):
+        # Launch a webserver on port 80 that replies the server name to the
+        # client
+        # This webserver relies on the nc command which may fail if multiple
+        # clients connect at the same time. For concurrency testing,
+        # OctaviaCentosServerStackFixture is more suited to handle multiple
+        # requests.
+        reply = ("HTTP/1.1 200 OK\r\n"
+                 "Content-Length:8\r\n"
+                 "\r\n"
+                 "$(hostname)")
+        command = f'nc -lk -p {self.http_server_port} -e echo -e "{reply}"'
+        return ("#!/bin/sh\n"
+                f"{command}")

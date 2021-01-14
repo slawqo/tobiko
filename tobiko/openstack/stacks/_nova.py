@@ -15,21 +15,25 @@
 #    under the License.
 from __future__ import absolute_import
 
+import abc
 import os
-import typing  # noqa
+import typing
 
+import netaddr
 import six
 from oslo_log import log
 
 import tobiko
 from tobiko import config
+from tobiko.openstack import glance
 from tobiko.openstack import heat
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack.stacks import _hot
 from tobiko.openstack.stacks import _neutron
-from tobiko.shell import ssh
+from tobiko.shell import curl
 from tobiko.shell import sh
+from tobiko.shell import ssh
 
 
 CONF = config.CONF
@@ -81,7 +85,7 @@ class FlavorStackFixture(heat.HeatStackFixture):
 
 
 @neutron.skip_if_missing_networking_extensions('port-security')
-class ServerStackFixture(heat.HeatStackFixture):
+class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
 
     #: Heat template file
     template = _hot.heat_template_file('nova/server.yaml')
@@ -92,8 +96,10 @@ class ServerStackFixture(heat.HeatStackFixture):
     #: stack with the internal where the server port is created
     network_stack = tobiko.required_setup_fixture(_neutron.NetworkStackFixture)
 
-    #: Glance image used to create a Nova server instance
-    image_fixture = None
+    @property
+    def image_fixture(self) -> glance.GlanceImageFixture:
+        """Glance image used to create a Nova server instance"""
+        raise NotImplementedError
 
     def delete_stack(self, stack_id=None):
         if self._outputs:
@@ -101,28 +107,30 @@ class ServerStackFixture(heat.HeatStackFixture):
         super(ServerStackFixture, self).delete_stack(stack_id=stack_id)
 
     @property
-    def image(self):
+    def image(self) -> str:
         return self.image_fixture.image_id
 
     @property
-    def username(self):
+    def username(self) -> str:
         """username used to login to a Nova server instance"""
-        return self.image_fixture.username
+        return self.image_fixture.username or 'root'
 
     @property
-    def password(self):
+    def password(self) -> typing.Optional[str]:
         """password used to login to a Nova server instance"""
         return self.image_fixture.password
 
     @property
-    def connection_timeout(self):
+    def connection_timeout(self) -> tobiko.Seconds:
         return self.image_fixture.connection_timeout
 
-    # Stack used to create flavor for Nova server instance
-    flavor_stack = None
+    @property
+    def flavor_stack(self) -> FlavorStackFixture:
+        """stack used to create flavor for Nova server instance"""
+        raise NotImplementedError
 
     @property
-    def flavor(self):
+    def flavor(self) -> str:
         """Flavor for Nova server instance"""
         return self.flavor_stack.flavor_id
 
@@ -130,23 +138,23 @@ class ServerStackFixture(heat.HeatStackFixture):
     port_security_enabled = False
 
     #: Security groups to be associated to network ports
-    security_groups = []  # type: typing.List[str]
+    security_groups: typing.List[str] = []
 
     @property
-    def key_name(self):
+    def key_name(self) -> str:
         return self.key_pair_stack.key_name
 
     @property
-    def network(self):
+    def network(self) -> str:
         return self.network_stack.network_id
 
     #: Floating IP network where the Neutron floating IP are created
     @property
-    def floating_network(self):
+    def floating_network(self) -> str:
         return self.network_stack.floating_network
 
     @property
-    def has_floating_ip(self):
+    def has_floating_ip(self) -> bool:
         return bool(self.floating_network)
 
     @property
@@ -157,16 +165,41 @@ class ServerStackFixture(heat.HeatStackFixture):
                               connection_timeout=self.connection_timeout)
 
     @property
-    def ssh_command(self):
+    def ssh_command(self) -> sh.ShellCommand:
         return ssh.ssh_command(host=self.ip_address,
                                username=self.username)
 
     @property
-    def ip_address(self):
+    def ip_address(self) -> str:
         if self.has_floating_ip:
             return self.floating_ip_address
         else:
             return self.outputs.fixed_ips[0]['ip_address']
+
+    def list_fixed_ips(self, ip_version: typing.Optional[int] = None) -> \
+            tobiko.Selection[netaddr.IPAddress]:
+        fixed_ips: tobiko.Selection[netaddr.IPAddress] = tobiko.Selection(
+            netaddr.IPAddress(fixed_ip['ip_address'])
+            for fixed_ip in self.fixed_ips)
+        if ip_version is not None:
+            fixed_ips.with_attributes(version=ip_version)
+        return fixed_ips
+
+    def find_fixed_ip(self, ip_version: typing.Optional[int] = None,
+                      unique=False) -> netaddr.IPAddress:
+        fixed_ips = self.list_fixed_ips(ip_version=ip_version)
+        if unique:
+            return fixed_ips.unique
+        else:
+            return fixed_ips.first
+
+    @property
+    def fixed_ipv4(self):
+        return self.find_fixed_ip(ip_version=4)
+
+    @property
+    def fixed_ipv6(self):
+        return self.find_fixed_ip(ip_version=6)
 
     #: Schedule on different host that this Nova server instance ID
     different_host = None
@@ -305,7 +338,8 @@ class ServerStackFixture(heat.HeatStackFixture):
                              "method not implemented")
 
 
-class ExternalServerStackFixture(ServerStackFixture):
+class ExternalServerStackFixture(ServerStackFixture, abc.ABC):
+    # pylint: disable=abstract-method
 
     #: stack with the network where the server port is created
     network_stack = tobiko.required_setup_fixture(
@@ -321,17 +355,19 @@ class ExternalServerStackFixture(ServerStackFixture):
         return self.network_stack.network_id
 
 
-class PeerServerStackFixture(ServerStackFixture):
+class PeerServerStackFixture(ServerStackFixture, abc.ABC):
     """Server witch networking access requires passing by another Nova server
     """
 
     has_floating_ip = False
 
-    #: Peer server used to reach this one
-    peer_stack = None
+    @property
+    def peer_stack(self) -> ServerStackFixture:
+        """Peer server used to reach this one"""
+        raise NotImplementedError
 
     @property
-    def ssh_client(self):
+    def ssh_client(self) -> ssh.SSHClientFixture:
         return ssh.ssh_client(host=self.ip_address,
                               username=self.username,
                               password=self.password,
@@ -339,7 +375,7 @@ class PeerServerStackFixture(ServerStackFixture):
                               proxy_jump=self.peer_stack.ssh_client)
 
     @property
-    def ssh_command(self):
+    def ssh_command(self) -> sh.ShellCommand:
         proxy_command = self.peer_stack.ssh_command + [
             'nc', self.ip_address, '22']
         return ssh.ssh_command(host=self.ip_address,
@@ -347,19 +383,20 @@ class PeerServerStackFixture(ServerStackFixture):
                                proxy_command=proxy_command)
 
     @property
-    def network(self):
+    def network(self) -> str:
         return self.peer_stack.network
 
 
 @nova.skip_if_missing_hypervisors(count=2, state='up', status='enabled')
-class DifferentHostServerStackFixture(PeerServerStackFixture):
+class DifferentHostServerStackFixture(PeerServerStackFixture, abc.ABC):
+    # pylint: disable=abstract-method
 
     @property
     def different_host(self):
         return [self.peer_stack.server_id]
 
 
-class SameHostServerStackFixture(PeerServerStackFixture):
+class SameHostServerStackFixture(PeerServerStackFixture, abc.ABC):
 
     @property
     def same_host(self):
@@ -371,6 +408,43 @@ def as_str(text):
         return text
     else:
         return text.decode()
+
+
+class HttpServerStackFixture(PeerServerStackFixture, abc.ABC):
+
+    http_server_port = 80
+
+    http_request_scheme = 'http'
+    http_request_path = ''
+
+    def send_http_request(
+            self,
+            hostname: typing.Union[str, netaddr.IPAddress, None] = None,
+            ip_version: typing.Optional[int] = None,
+            port: typing.Optional[int] = None,
+            path: typing.Optional[str] = None,
+            retry_count: typing.Optional[int] = None,
+            retry_timeout: tobiko.Seconds = None,
+            retry_interval: tobiko.Seconds = None,
+            ssh_client: typing.Optional[ssh.SSHClientFixture] = None,
+            **curl_parameters) -> str:
+        if hostname is None:
+            hostname = self.find_fixed_ip(ip_version=ip_version)
+        if port is None:
+            port = self.http_server_port
+        if path is None:
+            path = self.http_request_path
+        if ssh_client is None:
+            ssh_client = self.peer_stack.ssh_client
+        return curl.execute_curl(scheme='http',
+                                 hostname=hostname,
+                                 port=port,
+                                 path=path,
+                                 retry_count=retry_count,
+                                 retry_timeout=retry_timeout,
+                                 retry_interval=retry_interval,
+                                 ssh_client=ssh_client,
+                                 **curl_parameters)
 
 
 class ServerGroupStackFixture(heat.HeatStackFixture):
