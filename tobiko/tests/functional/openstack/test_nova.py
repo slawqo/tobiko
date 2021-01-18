@@ -219,5 +219,5 @@ class MigrateServerTest(testtools.TestCase):
             server, 'ACTIVE', transient_status={'VERIFY_RESIZE'})
         self.assertEqual('ACTIVE', server.status)
 
-        ping.assert_reachable_hosts([self.stack.ip_address])
+        ping.ping_until_received(self.stack.ip_address).assert_replied()
         return server
