@@ -90,6 +90,7 @@ class PingTest(testtools.TestCase):
                                'unreachable-host', count=3,
                                **self.execute_params)
         self.assertIn(ex, [
+            ping.UnknowHostError(details=''),
             ping.UnknowHostError(details='unreachable-host'),
             ping.UnknowHostError(
                 details='Temporary failure in name resolution'),
