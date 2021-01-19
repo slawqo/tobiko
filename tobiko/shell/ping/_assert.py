@@ -25,12 +25,14 @@ LOG = log.getLogger(__name__)
 
 
 def assert_reachable_hosts(hosts, **params):
-    unreachable_hosts = _ping.list_unreachable_hosts(hosts, **params)
+    unreachable_hosts = _ping.list_unreachable_hosts(
+        hosts, until=_ping.RECEIVED, **params)
     if unreachable_hosts:
         tobiko.fail("Unable to reach host(s): {!r}", unreachable_hosts)
 
 
 def assert_unreachable_hosts(hosts, **params):
-    reachable_hosts = _ping.list_reachable_hosts(hosts, **params)
+    reachable_hosts = _ping.list_reachable_hosts(
+        hosts, until=_ping.UNRECEIVED, **params)
     if reachable_hosts:
         tobiko.fail("Reached host(s): {!r}", reachable_hosts)
