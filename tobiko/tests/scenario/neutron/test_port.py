@@ -21,7 +21,6 @@ from oslo_log import log
 import testtools
 
 import tobiko
-from tobiko.shell import files
 from tobiko.shell import ping
 from tobiko.shell import ip
 from tobiko.openstack import neutron
@@ -145,36 +144,33 @@ class PortLogsTest(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(PortLogsStack)
 
-    def setUp(self):
-        super(PortLogsTest, self).setUp()
-        os_topology = topology.get_openstack_topology()
-        self.LOG_FILENAME = os_topology.log_names_mappings[neutron.SERVER]
-        self.FILE_DIGGER_CLASS = os_topology.file_digger_class
+    def test_nova_port_notification_on_shutoff(self):
+        self.stack.ensure_server_status('ACTIVE')
+        log_digger = topology.get_log_file_digger(
+            service_name=neutron.SERVER,
+            pattern=f'Nova.+event.+response.*{self.stack.server_id}')
 
-    def test_nova_port_notification(self):
-        pattern = f'Nova.+event.+response.*{self.stack.server_id}'
-        log_digger = files.MultihostLogFileDigger(
-            filename=self.LOG_FILENAME,
-            file_digger_class=self.FILE_DIGGER_CLASS,
-            sudo=True)
-        for node in topology.list_openstack_nodes(group='controller'):
-            log_digger.add_host(hostname=node.hostname,
-                                ssh_client=node.ssh_client)
-        log_digger.find_lines(pattern=pattern)
+        with log_digger:
+            # Check unplugged event is logged
+            nova.shutoff_server(self.stack.server_id)
+            new_lines = log_digger.find_new_lines()
+            self.assert_has_event(new_lines, 'network-vif-unplugged')
 
-        nova.shutoff_server(self.stack.server_id)
-        nova.activate_server(self.stack.server_id)
+    def test_nova_port_notification_on_activate(self):
+        self.stack.ensure_server_status('SHUTOFF')
+        log_digger = topology.get_log_file_digger(
+            service_name=neutron.SERVER,
+            pattern=f'Nova.+event.+response.*{self.stack.server_id}')
 
-        new_lines = log_digger.find_new_lines(pattern=pattern)
+        with log_digger:
+            # Check plugged event is logged
+            nova.activate_server(self.stack.server_id)
+            new_lines = log_digger.find_new_lines()
+            self.assert_has_event(new_lines, 'network-vif-plugged')
 
+    def assert_has_event(self, lines, content: str):
         plugged_events = [
             (hostname, line)
-            for hostname, line in new_lines
-            if 'network-vif-plugged' in line and self.stack.port_id in line]
-        self.assertEqual(1, len(plugged_events), new_lines)
-
-        unplugged_events = [
-            (hostname, line)
-            for hostname, line in new_lines
-            if 'network-vif-unplugged' in line and self.stack.port_id in line]
-        self.assertEqual(1, len(unplugged_events), new_lines)
+            for hostname, line in lines
+            if content in line and self.stack.port_id in line]
+        self.assertEqual(1, len(plugged_events), lines)
