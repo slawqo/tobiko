@@ -2,8 +2,5 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
 
-# As openstack job build-reno-releasenotes and Read The Docs page support only
-# one single requirements file for a project, we need to have one such file
-# which will include all project requirements
 reno>=3.2.0                   # Apache-2.0
 sphinx>=3.4.2                 # BSD
