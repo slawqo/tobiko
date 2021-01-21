@@ -36,16 +36,14 @@
   loop: "{{ find_tobiko_roles.files | map(attribute='path') | list }}"
 
 
-- name: "select test host from inventory"
+- name: "select tester host from the inventory"
   set_fact:
     test_host: '{{ item }}'
   when:
     - test_host is not defined
     - item in hostvars
   loop:
-    - tester-0
-    - tester
-    - undercloud-0
-    - undercloud
-    - tempest
+    - '{{ groups.get("tester", []) | first | default("tester")  }}'
+    - '{{ groups.get("undercloud", []) | first | default("undercloud-0") }}'
+    - '{{ groups.get("tempest", []) | first | default("tempest") }}'
     - primary
