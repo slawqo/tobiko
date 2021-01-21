@@ -243,6 +243,28 @@ class OpenStackTopology(tobiko.SharedFixture):
         raise UnknowOpenStackContainerNameError(agent_name=agent_name,
                                                 topology_class=cls)
 
+    def get_log_file_digger(self,
+                            service_name: str,
+                            pattern: typing.Optional[str] = None,
+                            groups: typing.Optional[typing.List[str]] = None,
+                            sudo=True,
+                            **execute_params) -> \
+            files.MultihostLogFileDigger:
+        digger = files.MultihostLogFileDigger(
+            filename=self.log_names_mappings[service_name],
+            pattern=pattern,
+            file_digger_class=self.file_digger_class,
+            sudo=sudo,
+            **execute_params)
+        if groups is None:
+            nodes = self.nodes
+        else:
+            nodes = self.get_groups(groups=groups)
+        for node in nodes:
+            digger.add_host(hostname=node.name,
+                            ssh_client=node.ssh_client)
+        return digger
+
     def discover_nodes(self):
         self.discover_configured_nodes()
         self.discover_controller_nodes()
@@ -366,7 +388,7 @@ class OpenStackTopology(tobiko.SharedFixture):
                                      ssh_client=ssh_client, **kwargs)
 
     @property
-    def nodes(self):
+    def nodes(self) -> tobiko.Selection[OpenStackTopologyNode]:
         return tobiko.select(self.get_node(name)
                              for name in self._names)
 
@@ -455,6 +477,23 @@ def get_openstack_topology(topology_class: typing.Type = None) -> \
     else:
         topology_class = get_default_openstack_topology_class()
     return tobiko.setup_fixture(topology_class)
+
+
+def get_log_file_digger(
+        service_name: str,
+        pattern: typing.Optional[str] = None,
+        groups: typing.Optional[typing.List[str]] = None,
+        topology: typing.Optional[OpenStackTopology] = None,
+        sudo=True,
+        **execute_params) -> \
+            files.MultihostLogFileDigger:
+    if topology is None:
+        topology = get_openstack_topology()
+    return topology.get_log_file_digger(service_name=service_name,
+                                        pattern=pattern,
+                                        groups=groups,
+                                        sudo=sudo,
+                                        **execute_params)
 
 
 def get_rhosp_version():

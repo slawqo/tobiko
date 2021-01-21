@@ -24,6 +24,7 @@ UnknowOpenStackContainerNameError = _topology.UnknowOpenStackContainerNameError
 UnknowOpenStackServiceNameError = _topology.UnknowOpenStackServiceNameError
 get_agent_service_name = _topology.get_agent_service_name
 get_agent_container_name = _topology.get_agent_container_name
+get_log_file_digger = _topology.get_log_file_digger
 get_openstack_topology = _topology.get_openstack_topology
 get_openstack_node = _topology.get_openstack_node
 skip_unless_osp_version = _topology.skip_unless_osp_version

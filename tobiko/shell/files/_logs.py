@@ -17,40 +17,66 @@ from __future__ import absolute_import
 
 import collections
 import os
+import typing
 
+import tobiko
 from tobiko.shell import grep
 from tobiko.shell import find
 from tobiko.shell import sh
+from tobiko.shell import ssh
 
 
-class LogFileDigger(object):
+class LogFileDigger(tobiko.SharedFixture):
 
-    def __init__(self, filename, **execute_params):
+    found: typing.Optional[typing.Set[str]] = None
+
+    def __init__(self, filename: str,
+                 pattern: typing.Optional[str] = None,
+                 **execute_params):
+        super(LogFileDigger, self).__init__()
         self.filename = filename
+        self.pattern = pattern
         self.execute_params = execute_params
-        self.logfiles = set()
-        self.found = set()
 
-    def find_lines(self, pattern, new_lines=False):
+    def setup_fixture(self):
+        if self.pattern is not None:
+            self.find_lines(pattern=self.pattern)
+
+    def cleanup_fixture(self):
+        self.found = None
+
+    def find_lines(self,
+                   pattern: typing.Optional[str] = None,
+                   new_lines=False) -> typing.FrozenSet[str]:
+        if pattern is None:
+            pattern = self.pattern
+            if pattern is None:
+                raise ValueError(f"Invalid pattern: {pattern}")
+
+        found = self.found
+        if found is None:
+            self.found = found = set()
+
         try:
             lines = frozenset(self.grep_lines(pattern))
         except grep.NoMatchingLinesFound:
             if new_lines:
                 return frozenset()
         else:
-            lines -= self.found
-            self.found.update(lines)
+            lines -= found
+            found.update(lines)
             if new_lines:
                 return lines
-        return frozenset(self.found)
+        return frozenset(found)
+
+    def find_new_lines(self, pattern: typing.Optional[str] = None) -> \
+            typing.FrozenSet[str]:
+        return self.find_lines(pattern=pattern, new_lines=True)
 
     def grep_lines(self, pattern):
         log_files = self.list_log_files()
         return grep.grep_files(pattern=pattern, files=log_files,
                                **self.execute_params)
-
-    def find_new_lines(self, pattern):
-        return self.find_lines(pattern=pattern, new_lines=True)
 
     def list_log_files(self):
         file_path, file_name = os.path.split(self.filename)
@@ -79,33 +105,63 @@ class JournalLogDigger(LogFileDigger):
             return result.stdout.splitlines()
 
 
-class MultihostLogFileDigger(object):
+class MultihostLogFileDigger(tobiko.SharedFixture):
 
-    def __init__(self, filename, ssh_clients=None,
-                 file_digger_class=LogFileDigger,
-                 **execute_params):
-        self.diggers = collections.OrderedDict()
+    diggers: typing.Optional[typing.Dict[str, LogFileDigger]] = None
+
+    def __init__(
+            self,
+            filename: str,
+            ssh_clients: typing.Optional[
+                typing.Iterable[ssh.SSHClientFixture]] = None,
+            file_digger_class: typing.Type[LogFileDigger] = LogFileDigger,
+            pattern: typing.Optional[str] = None,
+            **execute_params):
+        super(MultihostLogFileDigger, self).__init__()
         self.file_digger_class = file_digger_class
         self.filename = filename
         self.execute_params = execute_params
-        if ssh_clients:
-            for ssh_client in ssh_clients:
-                self.add_host(ssh_client=ssh_client)
+        self.pattern = pattern
+        self.ssh_clients: typing.List[ssh.SSHClientFixture] = list()
+        if ssh_clients is not None:
+            self.ssh_clients.extend(ssh_clients)
 
-    def add_host(self, hostname=None, ssh_client=None):
-        hostname = hostname or sh.get_hostname(ssh_client=ssh_client)
-        if hostname not in self.diggers:
-            self.diggers[hostname] = self.file_digger_class(
+    def setup_fixture(self):
+        for ssh_client in self.ssh_clients:
+            self.add_host(ssh_client=ssh_client)
+        if self.diggers is not None:
+            for digger in self.diggers.values():
+                self.useFixture(digger)
+
+    def cleanup_fixture(self):
+        self.diggers = None
+
+    def add_host(self, hostname: typing.Optional[str] = None,
+                 ssh_client: typing.Optional[ssh.SSHClientFixture] = None):
+        if self.diggers is None:
+            self.diggers = collections.OrderedDict()
+        if hostname is None:
+            hostname = sh.get_hostname(ssh_client=ssh_client)
+        digger = self.diggers.get(hostname)
+        if digger is None:
+            self.diggers[hostname] = digger = self.file_digger_class(
                 filename=self.filename,
                 ssh_client=ssh_client,
+                pattern=self.pattern,
                 **self.execute_params)
+        return digger
 
-    def find_lines(self, pattern, new_lines=False):
+    def find_lines(self, pattern: typing.Optional[str] = None,
+                   new_lines=False):
+        # ensure diggers are ready before looking for lines
+        tobiko.setup_fixture(self)
         lines = []
-        for hostname, digger in self.diggers.items():
-            for line in digger.find_lines(pattern, new_lines=new_lines):
-                lines.append((hostname, line))
+        if self.diggers is not None:
+            for hostname, digger in self.diggers.items():
+                for line in digger.find_lines(pattern=pattern,
+                                              new_lines=new_lines):
+                    lines.append((hostname, line))
         return lines
 
-    def find_new_lines(self, pattern):
+    def find_new_lines(self, pattern: typing.Optional[str] = None):
         return self.find_lines(pattern=pattern, new_lines=True)
