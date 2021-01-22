@@ -21,8 +21,6 @@ import typing  # noqa
 
 from oslo_config import cfg
 from oslo_log import log
-import testtools
-from testtools import monkey
 
 import tobiko
 
@@ -47,7 +45,7 @@ LOGGING_CONF_GROUP_NAME = "logging"
 LOGGING_OPTIONS = [
     cfg.BoolOpt('capture_log',
                 default=True,
-                help="Whenever to capture LOG during test case excecution"),
+                help="Whenever to capture LOG during test case execution"),
 ]
 
 HTTP_CONF_GROUP_NAME = "http"
@@ -245,7 +243,6 @@ def setup_tobiko_config(conf):
         warnings_logger.logger.setLevel(log.ERROR)
 
     tobiko.setup_fixture(HttpProxyFixture)
-    monkey.patch(testtools, 'TestCase', tobiko.BaseTestCase)
 
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)

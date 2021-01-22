@@ -13,23 +13,14 @@
 #    under the License.
 from __future__ import absolute_import
 
-import logging
 import os
 import sys
-import traceback
 import typing  # noqa
 
-from oslo_log import log
 import testtools
 
-from tobiko.common import _config
 from tobiko.common import _exception
-from tobiko.common import _itimer
-from tobiko.common import _logging
-from tobiko.common import _time
 
-
-LOG = log.getLogger(__name__)
 
 os.environ.setdefault('PYTHON', sys.executable)
 
@@ -133,83 +124,22 @@ def discover_test_cases(finder=FINDER, **kwargs):
     return finder.discover_test_cases(**kwargs)
 
 
-class TestCaseTimeoutError(_exception.TobikoException):
-    message = ("Test case '{testcase_id}' timed out after {timeout} seconds "
-               "at:\n{stack}")
-
-
-class TestCase(testtools.TestCase):
-
-    _capture_log = False
-    _capture_log_level = logging.DEBUG
-    _capture_log_logger = logging.root
-    _testcase_timeout: _time.Seconds = None
-
-    @classmethod
-    def setUpClass(cls):
-        super(TestCase, cls).setUpClass()
-        config = _config.tobiko_config()
-        cls._capture_log = config.logging.capture_log
-        cls._testcase_timeout = _time.to_seconds(cls._testcase_timeout or
-                                                 config.testcase.timeout or
-                                                 None)
-
-    def setUp(self):
-        super(TestCase, self).setUp()
-        self._push_test_case()
-        self._setup_capture_log()
-        self._setup_testcase_timeout()
-
-    def _setup_capture_log(self):
-        if self._capture_log:
-            self.useFixture(_logging.CaptureLogFixture(
-                test_case_id=self.id(),
-                level=self._capture_log_level,
-                logger=self._capture_log_logger))
-
-    def _setup_testcase_timeout(self):
-        timeout = self._testcase_timeout
-        if timeout is not None:
-            self.useFixture(_itimer.itimer(
-                delay=timeout,
-                on_timeout=self._on_testcase_timeout))
-
-    def _on_testcase_timeout(self, _signal_number, frame):
-        stack = traceback.extract_stack(frame)
-        for test_method_index, summary in enumerate(stack):
-            if self._testMethodName == summary.name:
-                stack = stack[test_method_index:]
-                break
-
-        formatted_stack = ''.join(traceback.format_list(stack))
-        timeout = self._testcase_timeout
-        raise TestCaseTimeoutError(testcase_id=self.id(), timeout=timeout,
-                                   stack=formatted_stack)
-
-    def _push_test_case(self):
-        push_test_case(self)
-        self.addCleanup(self._pop_test_case)
-
-    def _pop_test_case(self):
-        self.assertIs(self, pop_test_case())
-
-
 class TestCasesManager(object):
 
     def __init__(self):
-        self._test_cases: typing.List[TestCase] = []
+        self._test_cases: typing.List[testtools.TestCase] = []
 
-    def get_test_case(self) -> TestCase:
+    def get_test_case(self) -> testtools.TestCase:
         try:
             return self._test_cases[-1]
         except IndexError:
             return DUMMY_TEST_CASE
 
-    def pop_test_case(self) -> TestCase:
+    def pop_test_case(self) -> testtools.TestCase:
         return self._test_cases.pop()
 
-    def push_test_case(self, test_case: TestCase):
-        _exception.check_valid_type(test_case, TestCase)
+    def push_test_case(self, test_case: testtools.TestCase):
+        _exception.check_valid_type(test_case, testtools.TestCase)
         self._test_cases.append(test_case)
 
 
@@ -231,7 +161,7 @@ def get_test_case(manager: TestCasesManager = TEST_CASES) -> \
     return manager.get_test_case()
 
 
-class DummyTestCase(TestCase):
+class DummyTestCase(testtools.TestCase):
 
     def runTest(self):
         pass
