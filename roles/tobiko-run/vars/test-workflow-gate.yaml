@@ -32,4 +32,5 @@ test_workflow_steps:
     tox_step_name: verify_resources
     tox_environment:
       TOBIKO_PREVENT_CREATE: yes
-      TOX_RERUNS: 0
+      TOX_RERUNS: 2
+      TOX_RERUNS_DELAY: 60
