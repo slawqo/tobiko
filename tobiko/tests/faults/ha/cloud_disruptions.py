@@ -253,6 +253,10 @@ def reset_controllers_non_main_vip():
                                 inverse=True)
 
 
+def crash_controller_main_vip():
+    disrupt_controller_main_vip(disrupt_method=sh.crash_method)
+
+
 def network_disrupt_controller_main_vip():
     disrupt_controller_main_vip(disrupt_method=network_disruption)
     LOG.info('waiting 60s to avoid race conditions...')
