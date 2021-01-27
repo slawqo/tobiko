@@ -21,6 +21,7 @@ from oslo_log import log
 import testtools
 
 import tobiko
+from tobiko.shell import ping
 from tobiko.shell import sh
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
@@ -37,7 +38,7 @@ class RebootHostTest(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(RebootHostStack)
 
-    def test_reboot_host(self, **params):
+    def test_reboot_host(self, nova_reboot=False, **params):
         server = self.stack.ensure_server_status('ACTIVE')
         self.assertEqual('ACTIVE', server.status)
 
@@ -53,19 +54,16 @@ class RebootHostTest(testtools.TestCase):
                               timeout=90.)
 
         reboot = sh.reboot_host(ssh_client=ssh_client, **params)
-
         self.assertIs(ssh_client, reboot.ssh_client)
         self.assertEqual(ssh_client.hostname, reboot.hostname)
-        self.assertIs(params.get('wait', True), reboot.wait)
-        hard = params.get('hard', False)
-        command = (params.get('method') or
-                   (hard and sh.hard_reset_method) or
-                   sh.soft_reset_method)
-        self.assertEqual(command, reboot.command)
+        method = params.get('method') or sh.soft_reset_method
+        self.assertIs(method, reboot.method)
 
-        if not reboot.wait:
-            self.assertFalse(reboot.is_rebooted)
+        if not reboot.is_rebooted:
             self.assert_is_not_connected(ssh_client)
+            if nova_reboot:
+                ping.ping_until_unreceived(self.stack.ip_address)
+                nova.reboot_server(server)
             reboot.wait_for_operation()
 
         self.assertTrue(reboot.is_rebooted)
@@ -80,8 +78,10 @@ class RebootHostTest(testtools.TestCase):
                   "uptime=%r", uptime_1)
         self.assertGreater(boottime_1, boottime_0)
 
-    def test_reboot_host_with_hard(self):
-        self.test_reboot_host(hard=True)
+    def test_reboot_host_with_chash_method(self):
+        self.test_reboot_host(method=sh.crash_method,
+                              wait=False,
+                              nova_reboot=True)
 
     def test_reboot_host_with_hard_method(self):
         self.test_reboot_host(method=sh.hard_reset_method)
@@ -90,13 +90,10 @@ class RebootHostTest(testtools.TestCase):
         self.test_reboot_host(method=sh.soft_reset_method)
 
     def test_reboot_host_with_invalid_method(self):
-        self.assertRaises(ValueError,
+        self.assertRaises(TypeError,
                           sh.reboot_host,
                           ssh_client=self.stack.ssh_client,
                           method='<invalid-method>')
-
-    def test_reboot_host_with_no_hard(self):
-        self.test_reboot_host(hard=False)
 
     def test_reboot_host_with_wait(self):
         self.test_reboot_host(wait=True)

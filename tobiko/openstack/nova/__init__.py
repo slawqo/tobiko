@@ -43,6 +43,7 @@ activate_server = _client.activate_server
 ensure_server_status = _client.ensure_server_status
 migrate_server = _client.migrate_server
 confirm_resize = _client.confirm_resize
+reboot_server = _client.reboot_server
 NovaServer = _client.NovaServer
 
 WaitForCloudInitTimeoutError = _cloud_init.WaitForCloudInitTimeoutError

@@ -238,7 +238,7 @@ class WaitForServerStatusTimeout(WaitForServerStatusError):
 
 
 NOVA_SERVER_TRANSIENT_STATUS: typing.Dict[str, typing.List[str]] = {
-    'ACTIVE': ['BUILD', 'SHUTOFF'],
+    'ACTIVE': ['BUILD', 'SHUTOFF', 'REBOOT'],
     'SHUTOFF': ['ACTIVE'],
     'VERIFY_RESIZE': ['RESIZE'],
 }
@@ -324,10 +324,31 @@ def activate_server(server: ServerType,
         LOG.info(f"Confirm resize of server '{server.id}' "
                  f"(status='{server.status}').")
         client.servers.confirm_resize(server)
-    else:
+    elif server.status != 'REBOOT':
         LOG.warning(f"Try activating server '{server.id}' by rebooting "
                     f"it  (status='{server.status}').")
         client.servers.reboot(server.id, reboot_type='HARD')
+
+    return wait_for_server_status(server=server.id, status='ACTIVE',
+                                  client=client, timeout=timeout,
+                                  sleep_time=sleep_time)
+
+
+def reboot_server(server: ServerType,
+                  client: NovaClientType = None,
+                  timeout: tobiko.Seconds = None,
+                  sleep_time: tobiko.Seconds = None) -> NovaServer:
+    client = nova_client(client)
+    server = get_server(server=server, client=client)
+    if server.status == 'REBOOT':
+        return server
+
+    if server.status == 'SHUTOFF':
+        LOG.info(f"Start server '{server.id}' (status='{server.status}').")
+        client.servers.start(server.id)
+    else:
+        LOG.info(f"Reboot server '{server.id}' (status='{server.status}').")
+        client.servers.reboot(server.id)
 
     return wait_for_server_status(server=server.id, status='ACTIVE',
                                   client=client, timeout=timeout,

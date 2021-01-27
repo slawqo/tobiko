@@ -72,8 +72,10 @@ reboot_host = _reboot.reboot_host
 RebootHostError = _reboot.RebootHostError
 RebootHostOperation = _reboot.RebootHostOperation
 RebootHostTimeoutError = _reboot.RebootHostTimeoutError
-hard_reset_method = _reboot.hard_reset_method
-soft_reset_method = _reboot.soft_reset_method
+RebootHostMethod = _reboot.RebootHostMethod
+crash_method = RebootHostMethod.CRASH
+hard_reset_method = RebootHostMethod.HARD
+soft_reset_method = RebootHostMethod.SOFT
 
 ssh_process = _ssh.ssh_process
 ssh_execute = _ssh.ssh_execute
