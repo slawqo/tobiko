@@ -54,10 +54,7 @@ TOX_RUN_TESTS_TIMEOUT = float(os.environ.get('TOX_RUN_TESTS_TIMEOUT') or 0.)
 TOX_RERUNS = int(os.environ.get('TOX_RERUNS') or 0)
 TOX_RERUNS_DELAY = int(os.environ.get('TOX_RERUNS_DELAY') or 5)
 
-
-TOX_PYDEV_DEBUG = bool(
-    os.environ.get('TOX_PYDEV_DEBUG', 'false').lower() in
-    ['true', 'yes', '1'])
+TOX_COVER = bool(os.environ.get('TOX_COVER', 'false').lower() in ['1', 'yes', 'true'])
 
 
 def main():
@@ -80,10 +77,6 @@ def run_tests():
     setup_timeout()
     cleanup_report_dir()
     log_environ()
-
-    if TOX_PYDEV_DEBUG:
-        debug_test_cases()
-        return True
 
     succeeded = True
     try:
@@ -144,9 +137,13 @@ def run_test_cases():
     rerun_options = ''
     if TOX_RERUNS:
         rerun_options = f"--reruns '{TOX_RERUNS}' --reruns-delay '{TOX_RERUNS_DELAY}'"
+    cover_options = ''
+    if TOX_COVER:
+        cover_options = f"--cov=tobiko"
     common.execute(f"pytest "
                    f"{xdist_options} "
                    f"{rerun_options} "
+                   f"{cover_options} "
                    f"--log-file={TOX_REPORT_LOG} "
                    f"--junitxml={TOX_REPORT_XML} "
                    f"--junit-prefix={TOX_REPORT_NAME} "
