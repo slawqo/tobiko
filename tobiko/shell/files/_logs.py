@@ -91,8 +91,8 @@ class JournalLogDigger(LogFileDigger):
         try:
             result = sh.execute(["journalctl", '--no-pager',
                                  "--unit", self.filename,
-                                 "--since", "5 minutes ago",
-                                 '--grep', pattern],
+                                 "--since", "30 minutes ago",
+                                 '--grep', "'%s'" % pattern],
                                 **self.execute_params)
         except sh.ShellCommandFailed as ex:
             if ex.stdout.endswith('-- No entries --\n'):
