@@ -13,47 +13,10 @@
 #    under the License.
 from __future__ import absolute_import
 
-import os
-import subprocess
-
 import testtools
 
 import tobiko
 from tobiko.tests import unit
-
-
-class DiscoverTestCasesTest(unit.TobikoUnitTest):
-
-    test_path = os.path.dirname(__file__)
-
-    def setUp(self):
-        super(DiscoverTestCasesTest, self).setUp()
-
-        top_dir = os.path.abspath(self.test_path)
-        while os.path.isdir(top_dir) and top_dir != os.path.sep:
-            if os.path.isfile(os.path.join(top_dir, 'tox.ini')):
-                break
-            top_dir = os.path.dirname(top_dir)
-        else:
-            self.fail("'tox.ini' file not found in any parent "
-                      f"of directory '{self.test_path}'")
-
-        if not os.path.isdir(os.path.join(top_dir, '.stestr')):
-            subprocess.run(['stestr', 'init'], cwd=top_dir, check=True)
-        self.top_dir = top_dir
-        self.repo_url = top_dir
-
-        # Move to top directory
-        original_work_dir = os.getcwd()
-        os.chdir(self.top_dir)
-        self.addCleanup(os.chdir, original_work_dir)
-
-    def test_discover_testcases(self):
-        testcases = tobiko.discover_test_cases(test_path=self.test_path,
-                                               top_dir=self.top_dir,
-                                               repo_url=self.repo_url,
-                                               filters=[self.id()])
-        self.assertIn(self.id(), testcases)
 
 
 class TestCaseTest(unit.TobikoUnitTest):
