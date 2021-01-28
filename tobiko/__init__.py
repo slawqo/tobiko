@@ -109,7 +109,6 @@ skip_test = _skip.skip_test
 skip_unless = _skip.skip_unless
 skip = _skip.skip
 
-BaseTestCase = _testcase.TestCase
 assert_test_case_was_skipped = _testcase.assert_test_case_was_skipped
 discover_test_cases = _testcase.discover_test_cases
 get_test_case = _testcase.get_test_case

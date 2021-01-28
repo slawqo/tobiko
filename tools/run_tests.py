@@ -137,12 +137,6 @@ def log_environ():
                    capture_stdout=False)
 
 
-def debug_test_cases():
-    common.execute_python('-m testtools.run {posargs}',
-                          posargs=common.get_posargs(),
-                          capture_stdout=False)
-
-
 def run_test_cases():
     xdist_options = ''
     if TOX_NUM_PROCESSES != '1':
@@ -153,7 +147,9 @@ def run_test_cases():
     common.execute(f"pytest "
                    f"{xdist_options} "
                    f"{rerun_options} "
+                   f"--log-file={TOX_REPORT_LOG} "
                    f"--junitxml={TOX_REPORT_XML} "
+                   f"--junit-prefix={TOX_REPORT_NAME} "
                    f"--html={TOX_REPORT_HTML} --self-contained-html "
                    f"{common.get_posargs()}",
                    capture_stdout=False)

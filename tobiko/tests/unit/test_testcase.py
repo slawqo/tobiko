@@ -75,7 +75,7 @@ class TestCaseTest(unit.TobikoUnitTest):
     def test_get_test_case_out_of_context(self):
         manager = tobiko.TestCasesManager()
         result = tobiko.get_test_case(manager=manager)
-        self.assertIsInstance(result, tobiko.BaseTestCase)
+        self.assertIsInstance(result, testtools.TestCase)
         self.assertEqual('tobiko.common._testcase.DummyTestCase.runTest',
                          result.id())
 
