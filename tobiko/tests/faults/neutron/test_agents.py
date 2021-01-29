@@ -584,6 +584,9 @@ class OvnControllerTest(BaseAgentTest):
             self.container_name = self.get_agent_container_name(
                 self.agent_name)
 
+        if not self.container_name:
+            self.skipTest(f"Missing container(s): '{self.container_name}'")
+
         for host in hosts:
             ssh_client = topology.get_openstack_node(hostname=host).ssh_client
             pid = None
