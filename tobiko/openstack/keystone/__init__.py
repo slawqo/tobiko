@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from tobiko.openstack.keystone import _client
 from tobiko.openstack.keystone import _clouds_file
 from tobiko.openstack.keystone import _credentials
+from tobiko.openstack.keystone import _resource
 from tobiko.openstack.keystone import _services
 from tobiko.openstack.keystone import _session
 
@@ -46,6 +47,13 @@ EnvironKeystoneCredentialsFixture = \
 InvalidKeystoneCredentials = _credentials.InvalidKeystoneCredentials
 DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES = \
     _credentials.DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES
+
+get_keystone_resource_id = _resource.get_keystone_resource_id
+get_project_id = _resource.get_project_id
+get_user_id = _resource.get_user_id
+KeystoneResourceType = _resource.KeystoneResourceType
+ProjectType = _resource.ProjectType
+UserType = _resource.UserType
 
 has_service = _services.has_service
 is_service_missing = _services.is_service_missing

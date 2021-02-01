@@ -27,6 +27,7 @@ import tobiko
 from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack import heat
+from tobiko.openstack import keystone
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack.stacks import _hot
@@ -95,6 +96,10 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
 
     #: stack with the internal where the server port is created
     network_stack = tobiko.required_setup_fixture(_neutron.NetworkStackFixture)
+
+    def create_stack(self, retry=None):
+        self.ensure_quota_limits()
+        super(ServerStackFixture, self).create_stack(retry=retry)
 
     @property
     def image_fixture(self) -> glance.GlanceImageFixture:
@@ -320,22 +325,50 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
                       'maxsize': self.swap_maxsize})
         return cloud_config
 
-    def ensure_server_status(self, status):
-        tobiko.setup_fixture(self)
-        try:
-            server = nova.wait_for_server_status(self.server_id, status)
-        except nova.WaitForServerStatusError:
-            server = nova.get_server(self.server_id)
-            LOG.debug(f"Server {server.id} status is {server.status} instead "
-                      f"of {status}", exc_info=1)
-        if server.status == status:
-            return server
-        elif status == "ACTIVE":
-            tobiko.reset_fixture(self)
-            return nova.wait_for_server_status(self.server_id, 'ACTIVE')
-        else:
-            tobiko.skip_test(f"{type(self).__name__}.ensure_server_status "
-                             "method not implemented")
+    def ensure_server_status(
+            self, status: str,
+            retry_count: typing.Optional[int] = None,
+            retry_timeout: tobiko.Seconds = None,
+            retry_interval: tobiko.Seconds = None):
+        self.ssh_client.close()
+        for attempt in tobiko.retry(count=retry_count,
+                                    timeout=retry_timeout,
+                                    interval=retry_interval,
+                                    default_count=3,
+                                    default_timeout=900.,
+                                    default_interval=5.):
+            tobiko.setup_fixture(self)
+            server_id = self.server_id
+            try:
+                server = nova.ensure_server_status(
+                    server=server_id,
+                    status=status,
+                    timeout=attempt.time_left)
+            except nova.WaitForServerStatusError:
+                attempt.check_limits()
+                LOG.warning(
+                    f"Unable to change server '{server_id}' status to "
+                    f"'{status}'",
+                    exc_info=1)
+                tobiko.cleanup_fixture(self)
+            else:
+                assert server.status == status
+                break
+
+        return server
+
+    def ensure_quota_limits(self):
+        """Ensures Nova quota limits before creating a new server
+        """
+        project = keystone.get_project_id(
+            session=self.client.http_client.session)
+        user = keystone.get_user_id(
+            session=self.client.http_client.session)
+        nova.ensure_nova_quota_limits(
+            project=project,
+            user=user,
+            instances=1,
+            cores=self.flavor_stack.vcpus or 1)
 
 
 class ExternalServerStackFixture(ServerStackFixture, abc.ABC):

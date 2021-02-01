@@ -103,21 +103,32 @@ class ClientTest(testtools.TestCase):
         self.assertEqual(server_id, server.id)
         self.assertEqual('ACTIVE', server.status)
 
-    def test_shutof_and_activate_server(self):
-        server_id = self.useFixture(stacks.CirrosServerStackFixture(
-            stack_name=self.id())).server_id
 
-        server = nova.wait_for_server_status(server=server_id, status='ACTIVE')
-        self.assertEqual(server_id, server.id)
+class ServerActionsStack(stacks.CirrosServerStackFixture):
+    pass
+
+
+class ServerActionsTest(testtools.TestCase):
+
+    stack = tobiko.required_setup_fixture(ServerActionsStack)
+
+    def test_activate_server(self, initial_status='SHUTOFF'):
+        self.stack.ensure_server_status(initial_status)
+        server = nova.activate_server(self.stack.server_id)
         self.assertEqual('ACTIVE', server.status)
+        ping.assert_reachable_hosts([self.stack.ip_address])
 
-        server = nova.shutoff_server(server=server_id)
-        self.assertEqual(server_id, server.id)
+    def test_activate_server_when_shutoff(self):
+        self.test_activate_server(initial_status='SHUTOFF')
+
+    def test_shutoff_server(self, initial_status='ACTIVE'):
+        self.stack.ensure_server_status(initial_status)
+        server = nova.shutoff_server(self.stack.server_id)
         self.assertEqual('SHUTOFF', server.status)
+        ping.assert_unreachable_hosts([self.stack.ip_address])
 
-        server = nova.activate_server(server=server_id)
-        self.assertEqual(server_id, server.id)
-        self.assertEqual('ACTIVE', server.status)
+    def test_shutoff_server_when_shutoff(self):
+        self.test_shutoff_server(initial_status='SHUTOFF')
 
 
 @keystone.skip_unless_has_keystone_credentials()
@@ -194,8 +205,8 @@ class MigrateServerTest(testtools.TestCase):
                 target_hypervisor = hypervisor.hypervisor_hostname
                 break
         else:
-            self.skip("Cannot find a valid hypervisor host to migrate server "
-                      "to")
+            self.skipTest("Cannot find a valid hypervisor host to migrate "
+                          "server to")
 
         server = self.migrate_server(server=server, host=target_hypervisor)
 

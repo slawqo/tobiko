@@ -16,11 +16,13 @@ from __future__ import absolute_import
 from tobiko.openstack.nova import _client
 from tobiko.openstack.nova import _cloud_init
 from tobiko.openstack.nova import _hypervisor
+from tobiko.openstack.nova import _quota_set
 from tobiko.openstack.nova import _server
 from tobiko.openstack.nova import _service
 
-
 CLIENT_CLASSES = _client.CLIENT_CLASSES
+NovaClient = _client.NovaClient
+NovaClientType = _client.NovaClientType
 get_console_output = _client.get_console_output
 get_nova_client = _client.get_nova_client
 get_server = _client.get_server
@@ -38,8 +40,10 @@ WaitForServerStatusError = _client.WaitForServerStatusError
 WaitForServerStatusTimeout = _client.WaitForServerStatusTimeout
 shutoff_server = _client.shutoff_server
 activate_server = _client.activate_server
+ensure_server_status = _client.ensure_server_status
 migrate_server = _client.migrate_server
 confirm_resize = _client.confirm_resize
+NovaServer = _client.NovaServer
 
 WaitForCloudInitTimeoutError = _cloud_init.WaitForCloudInitTimeoutError
 cloud_config = _cloud_init.cloud_config
@@ -53,6 +57,10 @@ get_same_host_hypervisors = _hypervisor.get_same_host_hypervisors
 get_different_host_hypervisors = _hypervisor.get_different_host_hypervisors
 get_server_hypervisor = _hypervisor.get_server_hypervisor
 get_servers_hypervisors = _hypervisor.get_servers_hypervisors
+
+get_nova_quota_set = _quota_set.get_nova_quota_set
+ensure_nova_quota_limits = _quota_set.ensure_nova_quota_limits
+set_nova_quota_set = _quota_set.set_nova_quota_set
 
 find_server_ip_address = _server.find_server_ip_address
 HasServerMixin = _server.HasServerMixin

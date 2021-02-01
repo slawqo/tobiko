@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 from keystoneclient import base
 from keystoneclient import client as keystoneclient
 from keystoneclient.v2_0 import client as v2_client
@@ -36,13 +38,16 @@ class KeystoneClientManager(_client.OpenstackClientManager):
 
 
 CLIENTS = KeystoneClientManager()
-
-
 CLIENT_CLASSES = (v2_client.Client, v3_client.Client)
+KeystoneClient = typing.Union[v2_client.Client, v3_client.Client]
+KeystoneClientType = typing.Union[KeystoneClient,
+                                  KeystoneClientFixture,
+                                  typing.Type[KeystoneClientFixture],
+                                  None]
 
 
-def keystone_client(obj):
-    if not obj:
+def keystone_client(obj: KeystoneClientType) -> KeystoneClient:
+    if obj is None:
         return get_keystone_client()
 
     if isinstance(obj, CLIENT_CLASSES):
@@ -50,14 +55,13 @@ def keystone_client(obj):
 
     fixture = tobiko.setup_fixture(obj)
     if isinstance(fixture, KeystoneClientFixture):
-        return fixture.client
+        return tobiko.setup_fixture(obj).client
 
-    message = "Object {!r} is not a KeystoneClientFixture".format(obj)
-    raise TypeError(message)
+    raise TypeError(f"Object {obj} is not a KeystoneClientFixture")
 
 
 def get_keystone_client(session=None, shared=True, init_client=None,
-                        manager=None):
+                        manager=None) -> KeystoneClient:
     manager = manager or CLIENTS
     client = manager.get_client(session=session, shared=shared,
                                 init_client=init_client)
