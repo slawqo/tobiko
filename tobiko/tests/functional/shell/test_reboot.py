@@ -18,7 +18,6 @@ from __future__ import absolute_import
 import time
 
 from oslo_log import log
-import paramiko
 import testtools
 
 import tobiko
@@ -31,7 +30,7 @@ LOG = log.getLogger(__name__)
 
 
 class RebootHostStack(stacks.CirrosServerStackFixture):
-    "Server to be rebooted"
+    """Server to be rebooted"""
 
 
 class RebootHostTest(testtools.TestCase):
@@ -58,6 +57,11 @@ class RebootHostTest(testtools.TestCase):
         self.assertIs(ssh_client, reboot.ssh_client)
         self.assertEqual(ssh_client.hostname, reboot.hostname)
         self.assertIs(params.get('wait', True), reboot.wait)
+        hard = params.get('hard', False)
+        command = (params.get('method') or
+                   (hard and sh.hard_reset_method) or
+                   sh.soft_reset_method)
+        self.assertEqual(command, reboot.command)
 
         if not reboot.wait:
             self.assertFalse(reboot.is_rebooted)
@@ -76,6 +80,24 @@ class RebootHostTest(testtools.TestCase):
                   "uptime=%r", uptime_1)
         self.assertGreater(boottime_1, boottime_0)
 
+    def test_reboot_host_with_hard(self):
+        self.test_reboot_host(hard=True)
+
+    def test_reboot_host_with_hard_method(self):
+        self.test_reboot_host(method=sh.hard_reset_method)
+
+    def test_reboot_host_with_soft_method(self):
+        self.test_reboot_host(method=sh.soft_reset_method)
+
+    def test_reboot_host_with_invalid_method(self):
+        self.assertRaises(ValueError,
+                          sh.reboot_host,
+                          ssh_client=self.stack.ssh_client,
+                          method='<invalid-method>')
+
+    def test_reboot_host_with_no_hard(self):
+        self.test_reboot_host(hard=False)
+
     def test_reboot_host_with_wait(self):
         self.test_reboot_host(wait=True)
 
@@ -88,12 +110,12 @@ class RebootHostTest(testtools.TestCase):
 
         ssh_client = self.stack.ssh_client
         self.assert_is_not_connected(ssh_client)
-        errors = (paramiko.ssh_exception.NoValidConnectionsError,
-                  paramiko.SSHException)
-        self.assertRaises(errors, sh.reboot_host, ssh_client=ssh_client,
+        self.assertRaises(sh.RebootHostTimeoutError,
+                          sh.reboot_host,
+                          ssh_client=ssh_client,
                           timeout=5.0)
         self.assert_is_not_connected(ssh_client)
-        server = nova.wait_for_server_status(self.stack.server_id, 'SHUTOFF')
+        server = nova.get_server(self.stack.server_id)
         self.assertEqual('SHUTOFF', server.status)
 
     def assert_is_connected(self, ssh_client):

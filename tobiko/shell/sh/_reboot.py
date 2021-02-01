@@ -18,17 +18,14 @@ import typing  # noqa
 from oslo_log import log
 
 import tobiko
-from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _uptime
 from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
 
-hard_reset_method = 'sudo chmod o+w /proc/sysrq-trigger;' \
-               'sudo echo b > /proc/sysrq-trigger'
-
-soft_reset_method = 'sudo /sbin/reboot'
+hard_reset_method = 'echo b > /proc/sysrq-trigger'
+soft_reset_method = '/sbin/reboot'
 
 
 class RebootHostError(tobiko.TobikoException):
@@ -39,10 +36,19 @@ class RebootHostTimeoutError(RebootHostError):
     message = "host {hostname!r} not rebooted after {timeout!s} seconds"
 
 
-def reboot_host(ssh_client: ssh.SSHClientFixture, wait: bool = True,
-                timeout: tobiko.Seconds = None, method=soft_reset_method):
-    reboot = RebootHostOperation(ssh_client=ssh_client, wait=wait,
-                                 timeout=timeout, method=method)
+def reboot_host(ssh_client: ssh.SSHClientFixture,
+                wait: bool = True,
+                timeout: tobiko.Seconds = None,
+                method: str = None,
+                hard: bool = False):
+    if method not in (None, hard_reset_method, soft_reset_method):
+        raise ValueError(f"Unsupported method: '{method}'")
+
+    command = method or (hard and hard_reset_method) or None
+    reboot = RebootHostOperation(ssh_client=ssh_client,
+                                 wait=wait,
+                                 timeout=timeout,
+                                 command=command)
     return tobiko.setup_fixture(reboot)
 
 
@@ -56,6 +62,8 @@ class RebootHostOperation(tobiko.Operation):
     default_wait_interval = 5.
     default_wait_count = 60
 
+    command = soft_reset_method
+
     @property
     def ssh_client(self) -> ssh.SSHClientFixture:
         if self._ssh_client is None:
@@ -64,28 +72,53 @@ class RebootHostOperation(tobiko.Operation):
 
     def __init__(self,
                  ssh_client: typing.Optional[ssh.SSHClientFixture] = None,
-                 wait=True,
+                 wait: bool = True,
                  timeout: tobiko.Seconds = None,
-                 method=soft_reset_method):
+                 command: typing.Optional[str] = None):
         super(RebootHostOperation, self).__init__()
         self._ssh_client = ssh_client
         tobiko.check_valid_type(self.ssh_client, ssh.SSHClientFixture)
         self.wait = bool(wait)
         self.timeout = tobiko.to_seconds(timeout)
-        self.method = method
+        if command is not None:
+            self.command = command
 
     def run_operation(self):
         ssh_client = self.ssh_client
-        with ssh_client:
-            self.hostname = ssh_client.hostname
-            LOG.debug(f"Rebooting host '{self.hostname}'... ")
-            self.is_rebooted = False
-            self.start_time = tobiko.time()
+        self.is_rebooted = None
+        self.start_time = None
+        for attempt in tobiko.retry(
+                timeout=self.timeout,
+                default_timeout=self.default_wait_timeout,
+                default_count=self.default_wait_count,
+                default_interval=self.default_wait_interval):
             try:
-                ssh_client.connect(connection_timeout=self.timeout).\
-                    exec_command(self.method)
-            except _exception.ShellTimeoutExpired as ex:
-                LOG.debug(f"Reboot command timeout expired: {ex}")
+                channel = ssh_client.connect(
+                    connection_timeout=attempt.time_left,
+                    retry_count=1)
+                self.hostname = self.hostname or ssh_client.hostname
+                LOG.info("Executing reboot command on host "
+                         f"'{self.hostname}' (command='{self.command}')... ")
+                self.start_time = tobiko.time()
+                channel.exec_command(f"sudo /bin/sh -c '{self.command}'")
+            except Exception as ex:
+                if attempt.time_left > 0.:
+                    LOG.debug(f"Unable to reboot remote host "
+                              f"(time_left={attempt.time_left}): {ex}")
+                else:
+                    LOG.exception(f"Unable to reboot remote host: {ex}")
+                    raise RebootHostTimeoutError(
+                        hostname=self.hostname or ssh_client.host,
+                        timeout=attempt.timeout) from ex
+            else:
+                self.is_rebooted = False
+                LOG.info(f"Host '{self.hostname}' is rebooting "
+                         f"(command='{self.command}').")
+                break
+            finally:
+                # Ensure we close connection after rebooting command
+                ssh_client.close()
+
         if self.wait:
             self.wait_for_operation()
 
