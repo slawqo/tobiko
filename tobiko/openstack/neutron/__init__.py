@@ -41,10 +41,15 @@ get_neutron_client = _client.get_neutron_client
 find_subnet = _client.find_subnet
 find_port = _client.find_port
 list_ports = _client.list_ports
+create_port = _client.create_port
+delete_port = _client.delete_port
 list_subnets = _client.list_subnets
 list_subnet_cidrs = _client.list_subnet_cidrs
 list_agents = _client.list_agents
 get_floating_ip = _client.get_floating_ip
+create_floating_ip = _client.create_floating_ip
+delete_floating_ip = _client.delete_floating_ip
+update_floating_ip = _client.update_floating_ip
 get_router = _client.get_router
 get_port = _client.get_port
 get_subnet = _client.get_subnet
@@ -53,6 +58,7 @@ find_l3_agent_hosting_router = _client.find_l3_agent_hosting_router
 list_dhcp_agent_hosting_network = _client.list_dhcp_agent_hosting_network
 
 NoSuchPort = _client.NoSuchPort
+NoSuchFIP = _client.NoSuchPort
 NoSuchRouter = _client.NoSuchRouter
 NoSuchSubnet = _client.NoSuchSubnet
 

@@ -14,17 +14,21 @@
 #    under the License.
 from __future__ import absolute_import
 
+from oslo_log import log
 import testtools
 
 import tobiko
 from tobiko import config
+from tobiko.shell import files
 from tobiko.shell import ping
 from tobiko.shell import sh
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
+from tobiko.openstack import topology
 
 
 CONF = config.CONF
+LOG = log.getLogger(__name__)
 
 
 class FloatingIPTest(testtools.TestCase):
@@ -237,3 +241,83 @@ class FloatingIpWithMtuWritableTest(FloatingIPTest):
 class FloatingIpWithL3HATest(FloatingIPTest):
     #: Resources stack with floating IP and Nova server
     stack = tobiko.required_setup_fixture(stacks.L3haServerStackFixture)
+
+
+@topology.skip_unless_osp_version('16.1', higher=True)
+class TestFloatingIPLogging(testtools.TestCase):
+
+    stack = tobiko.required_setup_fixture(stacks.NetworkStackFixture)
+
+    def setUp(self):
+        super(TestFloatingIPLogging, self).setUp()
+        net = self.stack.network_id
+        self.port = neutron.create_port(**{'network_id': net})
+        self.addCleanup(self.cleanup_port)
+        self.fip = neutron.create_floating_ip()
+        self.addCleanup(self.cleanup_floatingip)
+        log_filename = '/var/log/containers/neutron/server.log'
+        self.log_digger = files.MultihostLogFileDigger(filename=log_filename,
+                                                       sudo=True)
+        for node in topology.list_openstack_nodes(group='controller'):
+            self.log_digger.add_host(hostname=node.hostname,
+                                     ssh_client=node.ssh_client)
+
+    def cleanup_port(self):
+        try:
+            neutron.delete_port(self.port['id'])
+        except neutron.NoSuchPort:
+            pass
+
+    def cleanup_floatingip(self):
+        try:
+            neutron.delete_floating_ip(self.fip['id'])
+        except neutron.NoSuchFIP:
+            pass
+
+    def test_fip_attach_log(self):
+        '''Test log that FIP is attached to VM'''
+        pattern = f'{self.fip["id"]}.*associated'
+        self.log_digger.find_lines(pattern=pattern)
+        neutron.update_floating_ip(
+                self.fip['id'], **{'port_id': self.port['id']})
+        new_logs = self.log_digger.find_new_lines(pattern=pattern)
+        self.assertEqual(len(new_logs), 1)
+        self.assertIn(self.port['id'], new_logs[0][1])
+        self.assertIn(self.fip['floating_ip_address'], new_logs[0][1])
+
+    def test_fip_detach_log(self):
+        '''Test log that FIP is dettached from VM'''
+        neutron.update_floating_ip(
+                self.fip['id'], **{'port_id': self.port['id']})
+        pattern = f'{self.fip["id"]}.*disassociated'
+        self.log_digger.find_lines(pattern=pattern)
+        neutron.update_floating_ip(self.fip['id'], **{'port_id': None})
+        new_logs = self.log_digger.find_new_lines(pattern=pattern)
+        self.assertEqual(len(new_logs), 1)
+        self.assertIn(self.port['id'], new_logs[0][1])
+        self.assertIn(self.fip['floating_ip_address'], new_logs[0][1])
+
+    @tobiko.skip('Skipped because of bz1542122')
+    def test_fip_delete_detach_log(self):
+        '''Test log that FIP is dettached from VM if FIP is deleted'''
+        neutron.update_floating_ip(
+                self.fip['id'], **{'port_id': self.port['id']})
+        pattern = f'{self.fip["id"]}.*disassociated'
+        self.log_digger.find_lines(pattern=pattern)
+        neutron.delete_floating_ip(self.fip['id'])
+        new_logs = self.log_digger.find_new_lines(pattern=pattern)
+        self.assertEqual(len(new_logs), 1)
+        self.assertIn(self.port['id'], new_logs[0][1])
+        self.assertIn(self.fip['floating_ip_address'], new_logs[0][1])
+
+    def test_port_delete_fip_detach_log(self):
+        '''Test log that FIP is dettached from port if port is deleted'''
+        neutron.update_floating_ip(
+                self.fip['id'], **{'port_id': self.port['id']})
+        pattern = f'{self.fip["id"]}.*disassociated'
+        self.log_digger.find_lines(pattern=pattern)
+        neutron.delete_port(self.port['id'])
+        new_logs = self.log_digger.find_new_lines(pattern=pattern)
+        self.assertEqual(len(new_logs), 1)
+        self.assertIn(self.port['id'], new_logs[0][1])
+        self.assertIn(self.fip['floating_ip_address'], new_logs[0][1])

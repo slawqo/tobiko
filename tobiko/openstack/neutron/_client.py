@@ -140,13 +140,54 @@ def list_subnet_cidrs(client=None, **params):
 
 
 def get_floating_ip(floating_ip, client=None, **params):
-    floating_ip = neutron_client(client).show_floatingip(floating_ip, **params)
+    try:
+        floating_ip = neutron_client(client).show_floatingip(
+                floating_ip, **params)
+    except neutronclient.exceptions.NotFound as ex:
+        raise NoSuchFIP(id=floating_ip) from ex
     return floating_ip['floatingip']
+
+
+def create_floating_ip(floating_network_id=None, client=None, **params):
+    if floating_network_id is None:
+        from tobiko.openstack import stacks
+        floating_network_id = tobiko.setup_fixture(
+                stacks.FloatingNetworkStackFixture).external_id
+    if floating_network_id is not None:
+        params['floating_network_id'] = floating_network_id
+    floating_ip = neutron_client(client).create_floatingip(
+            body={'floatingip': params})
+    return floating_ip['floatingip']
+
+
+def delete_floating_ip(floating_ip, client=None):
+    try:
+        neutron_client(client).delete_floatingip(floating_ip)
+    except neutronclient.exceptions.NotFound as ex:
+        raise NoSuchFIP(id=floating_ip) from ex
+
+
+def update_floating_ip(floating_ip, client=None, **params):
+    fip = neutron_client(client).update_floatingip(
+            floating_ip, body={'floatingip': params})
+    return fip['floatingip']
 
 
 def get_port(port, client=None, **params):
     try:
         return neutron_client(client).show_port(port, **params)['port']
+    except neutronclient.exceptions.NotFound as ex:
+        raise NoSuchPort(id=port) from ex
+
+
+def create_port(client=None, **params):
+    port = neutron_client(client).create_port(body={'port': params})
+    return port['port']
+
+
+def delete_port(port, client=None):
+    try:
+        neutron_client(client).delete_port(port)
     except neutronclient.exceptions.NotFound as ex:
         raise NoSuchPort(id=port) from ex
 
@@ -204,3 +245,7 @@ class NoSuchRouter(tobiko.ObjectNotFound):
 
 class NoSuchSubnet(tobiko.ObjectNotFound):
     message = "No such subnet found for {id!r}"
+
+
+class NoSuchFIP(tobiko.ObjectNotFound):
+    message = "No such floating IP found for {id!r}"

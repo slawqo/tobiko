@@ -54,6 +54,7 @@ L3haDifferentHostServerStackFixture = _l3ha.L3haDifferentHostServerStackFixture
 L3haSameHostServerStackFixture = _l3ha.L3haSameHostServerStackFixture
 
 NetworkStackFixture = _neutron.NetworkStackFixture
+FloatingNetworkStackFixture = _neutron.FloatingNetworkStackFixture
 NetworkWithNetMtuWriteStackFixture = (
     _neutron.NetworkWithNetMtuWriteStackFixture)
 SecurityGroupsFixture = _neutron.SecurityGroupsFixture
