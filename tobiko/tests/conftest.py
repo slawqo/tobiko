@@ -15,6 +15,8 @@
 from __future__ import absolute_import
 
 from datetime import datetime
+import os
+import subprocess
 
 from oslo_log import log
 from py.xml import html  # pylint: disable=no-name-in-module,import-error
@@ -23,11 +25,25 @@ import pytest
 
 LOG = log.getLogger(__name__)
 
+TOX_REPORT_NAME = os.environ.get('TOX_REPORT_NAME', "tobiko_results")
+
 
 @pytest.hookimpl
 def pytest_configure(config):
+    configure_metadata(config)
     configure_caplog(config)
     configure_timeout(config)
+    configure_junitxml(config)
+
+
+def configure_metadata(config):
+    # pylint: disable=protected-access
+    from tobiko import version
+    config._metadata["Tobiko Version"] = version.release
+    git_commit = subprocess.check_output(
+        ['git', 'log', '-n', '1'],
+        universal_newlines=True).replace('\n', '<br>')
+    config._metadata["Tobiko Git Commit"] = git_commit
 
 
 def configure_caplog(config):
@@ -65,6 +81,10 @@ def configure_caplog(config):
             set_default_inicfg(config, key, default)
 
 
+def configure_junitxml(config):
+    config.inicfg['junit_suite_name'] = TOX_REPORT_NAME
+
+
 def set_default_inicfg(config, key, default):
     value = config.inicfg.setdefault(key, default)
     if value != default:
@@ -98,6 +118,10 @@ def pytest_runtest_makereport(item, call):  # pylint: disable=unused-argument
     outcome = yield
     report = outcome.get_result()
     report.description = str(item.function.__doc__)
+
+
+def pytest_html_report_title(report):
+    report.title = f"Tobiko test results ({TOX_REPORT_NAME})"
 
 
 @pytest.hookimpl(hookwrapper=True)

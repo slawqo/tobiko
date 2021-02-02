@@ -140,15 +140,18 @@ def run_test_cases():
     cover_options = ''
     if TOX_COVER:
         cover_options = f"--cov=tobiko"
+
+    # Pass environment variables to pytest command
+    environ = dict(os.environ, TOX_REPORT_NAME=TOX_REPORT_NAME)
     common.execute(f"pytest "
                    f"{xdist_options} "
                    f"{rerun_options} "
                    f"{cover_options} "
                    f"--log-file={TOX_REPORT_LOG} "
                    f"--junitxml={TOX_REPORT_XML} "
-                   f"--junit-prefix={TOX_REPORT_NAME} "
                    f"--html={TOX_REPORT_HTML} --self-contained-html "
                    f"{common.get_posargs()}",
+                   environ=environ,
                    capture_stdout=False)
 
 
