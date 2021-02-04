@@ -14,6 +14,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import pytest
 import testtools
 
 import tobiko
@@ -132,6 +133,7 @@ class L3HARouterTest(RouterTest):
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.L3haServerStackFixture)
 
+    @pytest.mark.flaky(reruns=5, reruns_delay=120)
     @neutron.skip_if_missing_networking_extensions('l3_agent_scheduler')
     def test_router_is_scheduled_on_l3_agents(self):
         master_agent, backup_agents = get_master_and_backup_agents(

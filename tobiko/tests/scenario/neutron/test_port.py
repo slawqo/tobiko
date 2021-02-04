@@ -18,6 +18,7 @@ import typing
 
 import netaddr
 from oslo_log import log
+import pytest
 import testtools
 
 import tobiko
@@ -156,6 +157,7 @@ class PortLogsTest(testtools.TestCase):
             new_lines = log_digger.find_new_lines()
             self.assert_has_event(new_lines, 'network-vif-unplugged')
 
+    @pytest.mark.flaky(reruns=5, reruns_delay=120)
     def test_nova_port_notification_on_activate(self):
         self.stack.ensure_server_status('SHUTOFF')
         log_digger = topology.get_log_file_digger(
