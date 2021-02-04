@@ -55,6 +55,7 @@ def execute(command, *args, **kwargs):
     universal_newlines = kwargs.pop('universal_newlines', True)
     check = kwargs.pop('check', True)
     shell = kwargs.pop('shell', '/bin/bash')
+    environ = kwargs.pop('environ', os.environ)
 
     if args or kwargs:
         command = command.format(*args, **kwargs)
@@ -70,7 +71,8 @@ def execute(command, *args, **kwargs):
     LOG.info(f"Execute: {command_line}")
     result = subprocess.run(command_line,
                             stdout=stdout, shell=False,
-                            universal_newlines=universal_newlines)
+                            universal_newlines=universal_newlines,
+                            env=dict(environ))
     if check:
         result.check_returncode()
     return result.stdout
