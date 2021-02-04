@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import pytest
+from oslo_log import log
 import testtools
 
 import tobiko
@@ -26,20 +27,8 @@ from tobiko.openstack import stacks
 from tobiko.openstack import topology
 
 
+LOG = log.getLogger(__name__)
 CONF = config.CONF
-
-
-def get_master_and_backup_agents(router_id, timeout=60., interval=2.):
-    for attempt in tobiko.retry(timeout=timeout, interval=interval):
-        try:
-            router_agents = neutron.list_l3_agent_hosting_routers(
-                router_id)
-            master_agent = router_agents.with_items(ha_state='active').unique
-            backup_agents = router_agents.with_items(ha_state='standby')
-            return master_agent, backup_agents
-        except Exception:
-            attempt.check_limits()
-            continue
 
 
 class RouterTest(testtools.TestCase):
@@ -136,8 +125,8 @@ class L3HARouterTest(RouterTest):
     @pytest.mark.flaky(reruns=5, reruns_delay=120)
     @neutron.skip_if_missing_networking_extensions('l3_agent_scheduler')
     def test_router_is_scheduled_on_l3_agents(self):
-        master_agent, backup_agents = get_master_and_backup_agents(
-            self.router['id'])
+        master_agent, backup_agents = (
+            neutron.wait_for_master_and_backup_agents(self.router['id']))
         self.assertGreaterEqual(len(backup_agents), 1)
         self._check_routers_namespace_on_host(master_agent['host'])
         for backup_agent in backup_agents:

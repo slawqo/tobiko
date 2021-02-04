@@ -19,6 +19,7 @@ from tobiko.openstack.neutron import _cidr
 from tobiko.openstack.neutron import _extension
 from tobiko.openstack.neutron import _port
 from tobiko.openstack.neutron import _network
+from tobiko.openstack.neutron import _router
 
 
 SERVER = 'neutron-server'
@@ -85,3 +86,5 @@ get_network = _network.get_network
 find_network = _network.find_network
 list_networks = _network.list_networks
 list_network_nameservers = _network.list_network_nameservers
+
+wait_for_master_and_backup_agents = _router.wait_for_master_and_backup_agents
