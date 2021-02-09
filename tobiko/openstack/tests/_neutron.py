@@ -10,24 +10,16 @@ from tobiko.openstack import neutron
 from tobiko.openstack import topology
 from tobiko.shell import sh
 from tobiko.tripleo import containers
-from tobiko.tripleo import has_undercloud
 from tobiko.tripleo import pacemaker
 
 LOG = log.getLogger(__name__)
 
 
 def get_osp_version():
-    if not has_undercloud():
-        return None
-    from tobiko.tripleo import undercloud_ssh_client
     try:
-        result = sh.execute("awk '{print $6}' /etc/rhosp-release",
-                            ssh_client=undercloud_ssh_client())
-    except (sh.ShellCommandFailed, sh.ShellTimeoutExpired):
-        LOG.debug("File /etc/rhosp-release not found")
+        return topology.get_openstack_version()
+    except Exception:
         return None
-    else:
-        return result.stdout.splitlines()[0]
 
 
 def is_ovn_configured():

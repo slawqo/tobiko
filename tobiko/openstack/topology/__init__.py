@@ -27,6 +27,7 @@ get_agent_container_name = _topology.get_agent_container_name
 get_log_file_digger = _topology.get_log_file_digger
 get_openstack_topology = _topology.get_openstack_topology
 get_openstack_node = _topology.get_openstack_node
+get_openstack_version = _topology.get_openstack_version
 skip_unless_osp_version = _topology.skip_unless_osp_version
 check_systemd_monitors_agent = _topology.check_systemd_monitors_agent
 find_openstack_node = _topology.find_openstack_node
