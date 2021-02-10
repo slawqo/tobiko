@@ -55,7 +55,7 @@ versions or Linux distributions.
 Main Project Goals
 ~~~~~~~~~~~~~~~~~~
 
-- To test OpenStakc and Red Hat OpenStack Platform projects before they are
+- To test OpenStack and Red Hat OpenStack Platform projects before they are
   released.
 - To provide a Python framework to write system scenario test cases (create
   and test workloads), to write white boxing test cases (to log to cloud nodes
