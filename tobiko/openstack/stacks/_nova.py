@@ -97,6 +97,9 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
     #: stack with the internal where the server port is created
     network_stack = tobiko.required_setup_fixture(_neutron.NetworkStackFixture)
 
+    #: whenever the server relies only on DHCP for address assignation
+    need_dhcp = False
+
     def create_stack(self, retry=None):
         self.ensure_quota_limits()
         super(ServerStackFixture, self).create_stack(retry=retry)

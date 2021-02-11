@@ -53,6 +53,9 @@ class CirrosServerStackFixture(_nova.ServerStackFixture):
     #: Flavor used to create a Nova server instance
     flavor_stack = tobiko.required_setup_fixture(CirrosFlavorStackFixture)
 
+    #: CirrOS can't get IP addresses from config-drive
+    need_dhcp = True
+
 
 class CirrosPeerServerStackFixture(CirrosServerStackFixture,
                                    _nova.PeerServerStackFixture):

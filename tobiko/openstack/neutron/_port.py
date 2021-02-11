@@ -58,10 +58,13 @@ def list_device_ip_addresses(device_id: str,
                              ip_version: typing.Optional[int] = None,
                              check_connectivity: bool = False,
                              ssh_client: ssh.SSHClientFixture = None,
+                             need_dhcp: typing.Optional[bool] = None,
                              **subnet_params) -> \
         tobiko.Selection[netaddr.IPAddress]:
     ports = _client.list_ports(device_id=device_id,
                                network_id=network_id)
+    if need_dhcp is not None:
+        subnet_params['enable_dhcp'] = bool(need_dhcp)
     subnets = _client.list_subnets(network_id=network_id,
                                    ip_version=ip_version,
                                    **subnet_params)

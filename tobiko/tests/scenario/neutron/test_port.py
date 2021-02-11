@@ -41,15 +41,28 @@ class PortTest(testtools.TestCase):
 
     def test_port_ips(self, ip_version: typing.Optional[int] = None):
         """Checks port IPS has been assigned to server via DHCP protocol"""
-        device_ips = set(neutron.list_device_ip_addresses(
+        port_ips = set(neutron.list_device_ip_addresses(
             device_id=self.stack.server_id,
             network_id=self.stack.network_stack.network_id,
-            enable_dhcp=True,
+            need_dhcp=self.stack.need_dhcp,
             ip_version=ip_version))
-        if device_ips:
-            server_ips = set(ip.list_ip_addresses(
-                scope='global', ssh_client=self.stack.ssh_client))
-            self.assertEqual(device_ips, device_ips & server_ips)
+        if port_ips:
+            # verify neutron port IPs and VM port IPs match
+            # when a VM connected to the external network has been just
+            # created, it may need some time to receive its IPv6 address
+            for attempt in tobiko.retry(timeout=60., interval=4.):
+                server_ips = set(ip.list_ip_addresses(
+                    scope='global', ssh_client=self.stack.ssh_client))
+                server_ips &= port_ips  # ignore other server IPs
+                LOG.debug("Neutron IPs and VM IPs should match...")
+                try:
+                    self.assertEqual(
+                        port_ips, server_ips,
+                        f"Server {self.stack.server_id} is missing port "
+                        f"IP(s): {port_ips - server_ips}")
+                    break
+                except self.failureException:
+                    attempt.check_limits()
         elif ip_version:
             self.skipTest(f"No port IPv{ip_version} addresses found")
         else:
