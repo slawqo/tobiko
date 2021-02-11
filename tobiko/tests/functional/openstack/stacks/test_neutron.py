@@ -111,8 +111,7 @@ class ExternalNetworkStackTest(testtools.TestCase):
         self.assertTrue(network['id'])
         self.assertIs(True, network['router:external'])
         self.assertEqual('ACTIVE', network['status'])
-        subnets = neutron.list_subnets(network_id=network['id'],
-                                       enable_dhcp=True)
+        subnets = neutron.list_subnets(network_id=network['id'])
         self.assertNotEqual([], subnets)
 
     def test_has_external_network(self):

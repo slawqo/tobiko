@@ -48,7 +48,7 @@ class ExternalNetworkStackFixture(heat.HeatStackFixture):
     def external_name(self):
         return tobiko.tobiko_config().neutron.external_network
 
-    subnet_enable_dhcp: typing.Optional[bool] = True
+    subnet_enable_dhcp: typing.Optional[bool] = None
 
     _external_network: typing.Optional[NeutronNetworkType] = None
 
@@ -74,6 +74,11 @@ class ExternalNetworkStackFixture(heat.HeatStackFixture):
                 network_dump = json.dumps(network, indent=4, sort_keys=True)
                 LOG.debug(f"Found external network for {self.fixture_name}:\n"
                           f"{network_dump}")
+
+                subnets = neutron.list_subnets(network_id=network['id'])
+                subnets_dump = json.dumps(subnets, indent=4, sort_keys=True)
+                LOG.debug(f"External subnets for {self.fixture_name}:\n"
+                          f"{subnets_dump}")
                 self._external_network = external_network = network
                 break
             else:
