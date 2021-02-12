@@ -32,9 +32,9 @@ Make sure Git and Python 3 are installed on your system.
 
 For instance on RedHat Linux / Fedora::
 
-    sudo yum install -y git python3 which
+    sudo dnf install -y git python3 which
 
-Check your Python 3 version is greater than 3.6::
+Check your Python 3 version is 3.6 or greater::
 
     python3 --version
 
@@ -205,22 +205,12 @@ example below (Or add to your existing file)::
 Setup Required Resources
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-A public Neutron network is required To be able to execute Tobiko scenario test
+A public Neutron network is required to be able to execute Tobiko scenario test
 cases by creating a floating IP port on it.
 
-To execute commands from a virtualenv created by Tox you can type as below::
-
-    tox -e venv -- <your-commands>
-
-You need to make sure ref:`authentication-environment-variables` are properly
-set so you can list available public netoworks::
-
-    tox -e venv -- openstack network list
-
-If there is any valid public network, you need to create one before running
+If there isn't any valid public network, you need to create one before running
 Tobiko OpenStack test cases. Please refer to the `Neutron documentation <https://docs.openstack.org/neutron/latest/>`__
 for additional information.
-
 
 If there is a valid public network for creating floating-IP ports on,
 Tobiko tests cases will automatically use it. To explicitly select a network,
@@ -230,6 +220,14 @@ please add a reference to the network in
     [neutron]
     floating_network = public
 
+To execute commands from a virtualenv created by Tox you can type as below::
+
+    tox -e venv -- <your-commands>
+
+You need to make sure ref:`authentication-environment-variables` are properly
+set so you can list available public netoworks::
+
+    tox -e venv -- openstack network list
 
 Running Test Cases
 ------------------
@@ -258,14 +256,14 @@ re-running test cases::
   TOBIKO_PREVENT_CREATE=yes tox -e scenario
 
 
-Cleanning Up Tobiko Workloads
+Cleaning Up Tobiko Workloads
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once Tobiko test cases have been executed, we may want to clean up all
 workloads remaining on the cloud so that we restore it to its original state.
 
 
-Cleanning Up Heat Stacks
+Cleaning Up Heat Stacks
 ++++++++++++++++++++++++
 
 Because Tobiko is using Heat stacks for orchestrating the creation of most of
@@ -275,10 +273,10 @@ almost all resources::
   tox -e venv -- bash -c 'openstack stack list -f value -c ID | xargs openstack stack delete'
 
 
-Cleanning Up Glance Images
+Cleaning Up Glance Images
 ++++++++++++++++++++++++++
 
-Because Heat doen't support creation of Glance images, Tobiko implemented some
+Because Heat doesn't support creation of Glance images, Tobiko implements some
 specific fixtures to download images from the Web and upload them to the Glance
 service::
 
@@ -322,7 +320,7 @@ be used to uncover more issues with the cloud than disruptive test cases alone.
 
     tox -e faults
 
-- Finally we might re-run scenario test cases to check thateverything is still running
+- Finally we might re-run scenario test cases to check that everything is still running
   as expected::
 
     TOBIKO_PREVENT_CREATE=yes tox -e scenario

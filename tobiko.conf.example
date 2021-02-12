@@ -61,6 +61,9 @@
 # From tobiko
 #
 
+# Cloud name (string value)
+#cloud_name = <None>
+
 # Identity API version (integer value)
 #api_version = <None>
 
