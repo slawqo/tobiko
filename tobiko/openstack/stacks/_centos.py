@@ -52,3 +52,8 @@ class CentosServerStackFixture(_nova.ServerStackFixture):
 
     #: Setup SWAP file in bytes
     swap_maxsize = 1 * 1024 * 1024 * 1024  # 1 GB
+
+
+class CentosExternalServerStackFixture(CentosServerStackFixture,
+                                       _nova.ExternalServerStackFixture):
+    pass
