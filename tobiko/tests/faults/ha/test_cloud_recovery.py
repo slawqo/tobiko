@@ -104,6 +104,11 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.crash_controller_main_vip()
         overcloud_health_checks()
 
+    def test_crash_controller_non_main_vip(self):
+        overcloud_health_checks()
+        cloud_disruptions.crash_controllers_non_main_vip()
+        overcloud_health_checks()
+
     @pacemaker.skip_if_fencing_not_deployed
     def test_network_disruptor_main_vip(self):
         overcloud_health_checks()

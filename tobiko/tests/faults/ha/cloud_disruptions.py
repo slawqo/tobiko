@@ -149,7 +149,7 @@ def disrupt_all_controller_nodes(disrupt_method=sh.hard_reset_method,
         nodes = [node for node in nodes if node.name not in exclude_list]
 
     for controller in nodes:
-        if disrupt_method in (sh.hard_reset_method, sh.soft_reset_method):
+        if isinstance(disrupt_method, sh.RebootHostMethod):
             reboot_node(controller.name, wait=sequentially,
                         reboot_method=disrupt_method)
         else:
@@ -228,7 +228,7 @@ def disrupt_controller_main_vip(disrupt_method=sh.hard_reset_method,
 
     main_vip_controller = get_main_vip_controller(main_vip)
 
-    if disrupt_method in (sh.hard_reset_method, sh.soft_reset_method):
+    if isinstance(disrupt_method, sh.RebootHostMethod):
         if inverse:
             reboot_all_controller_nodes(reboot_method=disrupt_method,
                                         exclude_list=[main_vip_controller])
@@ -255,6 +255,11 @@ def reset_controllers_non_main_vip():
 
 def crash_controller_main_vip():
     disrupt_controller_main_vip(disrupt_method=sh.crash_method)
+
+
+def crash_controllers_non_main_vip():
+    disrupt_controller_main_vip(disrupt_method=sh.crash_method,
+                                inverse=True)
 
 
 def network_disrupt_controller_main_vip():
