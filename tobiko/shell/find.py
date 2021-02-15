@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import math
 import typing  # noqa
 
 import tobiko
@@ -35,12 +36,17 @@ def find_files(path: sh.ShellCommandType,
                name: NameType = None,
                command: sh.ShellCommandType = 'find',
                ssh_client: ssh.SSHClientFixture = None,
+               modified_since: tobiko.Seconds = None,
                **execute_params) -> typing.List[str]:
     if not path:
         raise ValueError("Path can't be empty")
     command_line = sh.shell_command(command) + path
     if name is not None:
-        command_line += ['-name', name]
+        command_line += f"-name '{name}'"
+    if modified_since is not None:
+        # round seconds to the next minute
+        minutes = math.ceil(modified_since / 60.)
+        command_line += f"-mmin {minutes}"
     result = sh.execute(command_line,
                         ssh_client=ssh_client,
                         expect_exit_status=None,
