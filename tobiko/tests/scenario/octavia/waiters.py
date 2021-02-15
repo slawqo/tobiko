@@ -53,6 +53,32 @@ def wait_lb_operating_status(lb_id, operating_status):
                                    lb_id)
 
 
+def wait_resource_provisioning_status(resource_type, provisioning_status,
+                                      resource_get, *args):
+    start = time.time()
+
+    while time.time() - start < CONF.tobiko.octavia.check_timeout:
+        res = resource_get(*args)
+        if res['provisioning_status'] == provisioning_status:
+            return
+
+        time.sleep(CONF.tobiko.octavia.check_interval)
+
+    raise exceptions.TimeoutException(
+        reason=("Cannot get provisioning_status '{}' from {} {} "
+                "within the timeout period.".format(provisioning_status,
+                                                    resource_type, args)))
+
+
+def wait_lb_provisioning_status(lb_id, provisioning_status):
+    LOG.debug("Wait for loadbalancer {} to have '{}' "
+              "provisioning_status".format(lb_id, provisioning_status))
+    wait_resource_provisioning_status("loadbalancer",
+                                      provisioning_status,
+                                      octavia.get_loadbalancer,
+                                      lb_id)
+
+
 def wait_for_request_data(client_stack, server_ip_address,
                           server_protocol, server_port, request_function):
     """Wait until a request on a server succeeds
@@ -77,6 +103,11 @@ def wait_for_request_data(client_stack, server_ip_address,
         reason=("Cannot get data from {} on port {} with "
                 "protocol {} within the timeout period.".format(
                     server_ip_address, server_port, server_protocol)))
+
+
+def wait_for_loadbalancer_is_active(loadbalancer_stack):
+    loadbalancer_id = loadbalancer_stack.loadbalancer_id
+    wait_lb_provisioning_status(loadbalancer_id, 'ACTIVE')
 
 
 def wait_for_loadbalancer_functional(loadbalancer_stack, client_stack,
