@@ -4,3 +4,4 @@
 -r ../requirements.txt
 -r ../extra-requirements.txt
 -r ./requirements.txt
+sphinx_rtd_theme>=0.5.1,<1    # Apache-2.0

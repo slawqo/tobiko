@@ -56,13 +56,6 @@ release = get_version.get_version()
 version = '.'.join(release.split('.', 2)[:2])
 
 
-# -- Install requirements ----------------------------------------------------
-
-from tools import install
-install.pip_install('sphinx_rtd_theme>=0.5.1,<1')   # Apache-2.0
-install.install_tobiko()
-
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
