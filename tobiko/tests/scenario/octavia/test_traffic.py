@@ -61,6 +61,9 @@ class OctaviaBasicTrafficScenarioTest(octavia_base.OctaviaTest):
                                            self.listener_stack,
                                            self.member2_stack, self.request)
 
+        # Wait for LB is provisioned and ACTIVE
+        waiters.wait_for_loadbalancer_is_active(self.loadbalancer_stack)
+
         # Check if load balancer is functional
         waiters.wait_for_loadbalancer_functional(self.loadbalancer_stack,
                                                  self.client_stack,

@@ -68,9 +68,15 @@ class OctaviaCirrosServerStackFixture(_cirros.CirrosServerStackFixture):
         # clients connect at the same time. For concurrency testing,
         # OctaviaCentosServerStackFixture is more suited to handle multiple
         # requests.
-        return ("#!/bin/sh\n"
-                "sudo nc -k -p 80 -e echo -e \"HTTP/1.0 200 OK\r\n"
-                "\r\n$(hostname)\"\n")
+
+        return (
+            "#!/bin/sh\n"
+            "sudo nc -k -p 80 -e echo -e \"HTTP/1.1 200 OK\r\n"
+            "Content-Length: $(hostname | head -c-1 | wc -c )\r\n"
+            "Server: $(hostname)\r\n"
+            "Content-type: text/html; charset=utf-8\r\n"
+            "Connection: close\r\n\r\n"
+            "$(hostname)\"\n")
 
 
 class OctaviaServerStackFixture(OctaviaCirrosServerStackFixture):
