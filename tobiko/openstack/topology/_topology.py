@@ -505,11 +505,16 @@ def get_rhosp_version():
 
 
 def get_nova_version_from_container():
-    cmd = 'docker exec -uroot nova_conductor nova-manage --version'
     ssh_client = list_openstack_nodes(group='controller')[0].ssh_client
-    return sh.execute(cmd,
-                      ssh_client=ssh_client,
-                      sudo=True).stdout
+    for container_runtime_cmd in ('docker', 'podman'):
+        try:
+            cmd = (container_runtime_cmd +
+                   ' exec -uroot nova_conductor nova-manage --version')
+            return sh.execute(cmd,
+                              ssh_client=ssh_client,
+                              sudo=True).stdout
+        except sh.ShellCommandFailed:
+            pass
 
 
 def get_openstack_version():
@@ -517,9 +522,9 @@ def get_openstack_version():
         return get_rhosp_version()
     except (TypeError, sh.ShellCommandFailed):
         pass
-    try:
-        nova_version = get_nova_version_from_container()
-    except sh.ShellCommandFailed:
+
+    nova_version = get_nova_version_from_container()
+    if nova_version is None:
         ssh_client = list_openstack_nodes(group='controller')[0].ssh_client
         nova_version = sh.execute('nova-manage --version',
                                   ssh_client=ssh_client,
@@ -527,7 +532,7 @@ def get_openstack_version():
     os_to_nova_versions = {'13.0.0': '17',  # Queens
                            '16.0.0': '19',  # Stein
                            '16.1.0': '20',  # Train
-                           '17.0.0': '21'}  # Ussuri
+                           '17.0.0': '22'}  # Ussuri
     for os_version, nova_major_version in os_to_nova_versions.items():
         if nova_version.split('.')[0] == nova_major_version:
             return os_version
