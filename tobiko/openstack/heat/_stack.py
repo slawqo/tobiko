@@ -247,6 +247,7 @@ class HeatStackFixture(tobiko.SharedFixture):
             self.stack = stack = self.client.stacks.get(
                 self.stack_name, resolve_outputs=resolve_outputs)
         except exc.HTTPNotFound:
+            LOG.debug('Stack %s not found' % self.stack_name)
             self.stack = stack = None
         finally:
             self._outputs = self._resources = None
@@ -284,6 +285,10 @@ class HeatStackFixture(tobiko.SharedFixture):
                       stack.id, stack.stack_status, expected_status)
             time.sleep(self.wait_interval)
             stack = self.get_stack()
+
+        if stack:
+            LOG.debug('%s reached one of the expected stack status: %s' %
+                      (self.stack_name, stack.stack_status))
 
         if check:
             if stack is None:
