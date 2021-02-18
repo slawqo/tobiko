@@ -45,15 +45,15 @@
     - hostvars[hostname][varname] is defined
     - test_inventory_hostvars[hostname][varname] is not defined
 
-
-- debug: var=test_inventory_hostvars
-
+- debug: var=test_inventory_file
 
 - name: "ensures inventory directory exists"
   file:
     path: '{{ test_inventory_file | dirname }}'
     state: directory
 
+- debug: var=test_inventory_hostvars
+- debug: var=test_inventory_groups
 
 - name: "writes inventory file to: '{{ test_inventory_file }}'"
   template:

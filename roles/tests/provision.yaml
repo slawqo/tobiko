@@ -126,8 +126,10 @@
       set_fact:
         test_inventory_hostvars:
           '{{ test_inventory_hostvars_yaml | from_yaml }}'
+        test_inventory_groups: '{{ vagrant_groups }}'
 
     - debug: var=test_inventory_hostvars
+    - debug: var=test_inventory_groups
 
 
 - hosts: primary
@@ -138,8 +140,8 @@
     - name: "copy '{{ tobiko_src_dir }}' to '{{ tobiko_dir }}'"
       synchronize:
         src: "{{ tobiko_src_dir | realpath }}/."
-        dest: "{{ tobiko_dir | realpath }}"
+        dest: "{{ tobiko_dir }}"
         use_ssh_args: yes
         recursive: yes
         rsync_opts:
-          - '--exclude-from={{ tobiko_src_dir | realpath }}/.gitignore'
+          - '--exclude-from={{ tobiko_src_dir }}/.gitignore'

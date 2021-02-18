@@ -8,7 +8,7 @@ test_become: '{{ not (test_no_become | bool) }}'
 
 # --- Test deploy options -----------------------------------------------------
 
-test_deploy_home: '{{ ansible_user_dir | realpath }}/src'
+test_deploy_home: '{{ ansible_user_dir }}/src'
 
 git_base: 'https://opendev.org'
 

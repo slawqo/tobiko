@@ -36,10 +36,9 @@
       register: include_platform_vars
 
     - name: "run Tox InfraRed plugin"
-      command:
+      shell:
         cmd: >
           '{{ tox_executable }}' -e infrared --
-            --host secondary
             --collect-dir '{{ test_collect_dir }}'
         chdir: '{{ test_dir }}'
       environment:

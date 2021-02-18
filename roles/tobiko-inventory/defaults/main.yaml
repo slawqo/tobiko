@@ -2,4 +2,5 @@
 
 test_inventory_user: '{{ ansible_user }}'
 test_inventory_hostvars: {}
-test_inventory_file: '{{ test_dir | realpath }}/ansible_hosts'
+test_inventory_groups: {}
+test_inventory_file: '{{ test_dir }}/ansible_hosts'

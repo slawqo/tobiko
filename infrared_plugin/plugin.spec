@@ -117,6 +117,14 @@ subparsers:
             type: Value
             help: Test case timeout in seconds
             ansible_variable: test_case_timeout
+          undercloud_host:
+            type: Value
+            help: inventory hostname of the undercloud host
+            ansible_variable: undercloud_hostname
+          undercloud_ssh_host:
+            type: Value
+            help: hostname or IP address to be used to connect to undercloud host
+            ansible_variable: undercloud_ssh_hostname
 
       - title: Run stage
         options:
