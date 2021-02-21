@@ -83,6 +83,7 @@ UbuntuExternalServerStackFixture = _ubuntu.UbuntuExternalServerStackFixture
 
 OctaviaLoadbalancerStackFixture = _octavia.OctaviaLoadbalancerStackFixture
 OctaviaListenerStackFixture = _octavia.OctaviaListenerStackFixture
+OctaviaPoolStackFixture = _octavia.OctaviaPoolStackFixture
 OctaviaMemberServerStackFixture = _octavia.OctaviaMemberServerStackFixture
 OctaviaServerStackFixture = _octavia.OctaviaServerStackFixture
 OctaviaClientServerStackFixture = _octavia.OctaviaClientServerStackFixture

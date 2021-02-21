@@ -124,13 +124,13 @@ def wait_for_loadbalancer_functional(loadbalancer_stack, client_stack,
                           request_function)
 
 
-def wait_for_member_functional(client_stack, listener_stack, member_stack,
+def wait_for_member_functional(client_stack, pool_stack, member_stack,
                                request_function):
     """Wait until a member server is functional."""
 
     member_ip = member_stack.server_stack.floating_ip_address
     member_port = member_stack.application_port
-    member_protocol = listener_stack.pool_protocol
+    member_protocol = pool_stack.pool_protocol
 
     wait_for_request_data(client_stack, member_ip, member_protocol,
                           member_port, request_function)

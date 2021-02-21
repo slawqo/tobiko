@@ -52,7 +52,7 @@ class Validators(base.TobikoTest):
 
         return ret.stdout
 
-    def check_members_balanced(self, listener_stack, client_stack,
+    def check_members_balanced(self, pool_stack, client_stack,
                                members_count,
                                loadbalancer_vip, loadbalancer_protocol,
                                loadbalancer_port):
@@ -80,7 +80,7 @@ class Validators(base.TobikoTest):
                          'The number of detected active members:{} is not '
                          'as expected:{}'.format(len(replies), members_count))
 
-        if listener_stack.lb_algorithm == 'ROUND_ROBIN':
+        if pool_stack.lb_algorithm == 'ROUND_ROBIN':
             # assert that requests have been fairly dispatched (each server
             # received the same number of requests)
             self.assertEqual(1, len(set(replies.values())),

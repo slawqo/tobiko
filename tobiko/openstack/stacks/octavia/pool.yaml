@@ -1,0 +1,36 @@
+heat_template_version: 2015-10-15
+
+description: A pool for a Load Balancer
+
+parameters:
+    lb_algorithm:
+        type: string
+        default: ROUND_ROBIN
+        description: Load balancing algorithm
+
+    pool_protocol:
+        type: string
+        default: HTTP
+        description: Protocol used by the pool members
+
+    hm_type:
+        type: string
+        default: HTTP
+        description: Type of health-monitor
+
+    listener_id:
+        type: string
+        description: ID of the listener
+
+resources:
+    pool:
+        type: OS::Octavia::Pool
+        properties:
+            lb_algorithm: { get_param: lb_algorithm }
+            protocol: { get_param: pool_protocol }
+            listener: { get_param: listener_id }
+
+outputs:
+    pool_id:
+        description: Pool ID
+        value: { get_resource: pool }

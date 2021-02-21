@@ -34,6 +34,9 @@ class OctaviaBasicTrafficScenarioTest(octavia_base.OctaviaTest):
     listener_stack = tobiko.required_setup_fixture(
         stacks.OctaviaListenerStackFixture)
 
+    pool_stack = tobiko.required_setup_fixture(
+        stacks.OctaviaPoolStackFixture)
+
     member1_stack = tobiko.required_setup_fixture(
         stacks.OctaviaMemberServerStackFixture)
 
@@ -55,10 +58,10 @@ class OctaviaBasicTrafficScenarioTest(octavia_base.OctaviaTest):
 
         # Wait for members
         waiters.wait_for_member_functional(self.client_stack,
-                                           self.listener_stack,
+                                           self.pool_stack,
                                            self.member1_stack, self.request)
         waiters.wait_for_member_functional(self.client_stack,
-                                           self.listener_stack,
+                                           self.pool_stack,
                                            self.member2_stack, self.request)
 
         # Wait for LB is provisioned and ACTIVE
@@ -77,7 +80,7 @@ class OctaviaBasicTrafficScenarioTest(octavia_base.OctaviaTest):
         return self.loadbalancer_stack
 
     def test_traffic(self):
-        self.check_members_balanced(self.listener_stack,
+        self.check_members_balanced(self.pool_stack,
                                     self.client_stack,
                                     self.members_count,
                                     self.loadbalancer_vip,

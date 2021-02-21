@@ -106,23 +106,34 @@ class OctaviaListenerStackFixture(heat.HeatStackFixture):
 
     lb_port = 80
 
-    pool_protocol = 'HTTP'
-
     lb_protocol = 'HTTP'
-
-    lb_algorithm = 'ROUND_ROBIN'
-
-    hm_type = 'HTTP'
 
     @property
     def loadbalancer_id(self):
         return self.loadbalancer.loadbalancer_id
 
 
+class OctaviaPoolStackFixture(heat.HeatStackFixture):
+    template = _hot.heat_template_file('octavia/pool.yaml')
+
+    listener = tobiko.required_setup_fixture(
+        OctaviaListenerStackFixture)
+
+    pool_protocol = 'HTTP'
+
+    lb_algorithm = 'ROUND_ROBIN'
+
+    hm_type = 'HTTP'
+
+    @property
+    def listener_id(self):
+        return self.listener.listener_id
+
+
 class OctaviaMemberServerStackFixture(heat.HeatStackFixture):
     template = _hot.heat_template_file('octavia/member.yaml')
 
-    listener = tobiko.required_setup_fixture(OctaviaListenerStackFixture)
+    pool = tobiko.required_setup_fixture(OctaviaPoolStackFixture)
 
     server_stack = tobiko.required_setup_fixture(OctaviaServerStackFixture)
 
@@ -132,7 +143,7 @@ class OctaviaMemberServerStackFixture(heat.HeatStackFixture):
 
     @property
     def pool_id(self):
-        return self.listener.pool_id
+        return self.pool.pool_id
 
     @property
     def subnet_id(self):
