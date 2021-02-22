@@ -162,6 +162,7 @@ class PortLogsTest(testtools.TestCase):
         self.stack.ensure_server_status('ACTIVE')
         log_digger = topology.get_log_file_digger(
             service_name=neutron.SERVER,
+            groups=['controller'],
             pattern=f'Nova.+event.+response.*{self.stack.server_id}')
 
         with log_digger:
@@ -175,6 +176,7 @@ class PortLogsTest(testtools.TestCase):
         self.stack.ensure_server_status('SHUTOFF')
         log_digger = topology.get_log_file_digger(
             service_name=neutron.SERVER,
+            groups=['controller'],
             pattern=f'Nova.+event.+response.*{self.stack.server_id}')
 
         with log_digger:
