@@ -22,3 +22,14 @@
 
 Project Contributor Guide
 =========================
+
+.. sidebar:: See also
+
+    To configure your workstation to develop tobiko test cases please
+    read :ref:`tobiko-contributor-guide`.
+
+
+.. toctree::
+   :maxdepth: 2
+
+   contributor
