@@ -11,7 +11,7 @@ This document describes how to execute Tobiko scenario test cases.
     For a quick and simpler start you can jump to the
     :ref:`tobiko-quick-start-guide`.
 
-    To install Tobiko inside a virutalenv please read
+    To install Tobiko inside a virtualenv please read
     :ref:`tobiko-installation-guide`.
 
     To configure Tobiko please read :ref:`tobiko-configuration-guide`.
@@ -20,9 +20,9 @@ This document describes how to execute Tobiko scenario test cases.
 Prepare Your System
 ~~~~~~~~~~~~~~~~~~~
 
-Before running Tobiko test cases you need to be sure you are doing it from
-Tobiko source files folder and that you have actived a Virtualenv where Tobiko
-and its requirements are installed. Please refers to
+Before running Tobiko test cases, you need to be sure you are doing it from
+Tobiko source files folder and that you have activated a virtualenv where Tobiko
+and its requirements are installed. Please refer to
 :ref:`tobiko-installation-guide` and :ref:`tobiko-configuration-guide` to know
 how to setup your system before running test cases.
 
@@ -34,6 +34,6 @@ To run test cases you need a test runner able to execute Python test cases.
 Test cases delivered with Tobiko has been tested using
 `stestr <https://stestr.readthedocs.io/en/latest/>`__
 
-From Tobiko source folder you can run scenario test cases using below command::
+From the Tobiko source folder you can run scenario test cases using the below command::
 
     stestr run --test-path tobiko/tests/scenario/

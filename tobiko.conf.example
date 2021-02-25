@@ -73,11 +73,11 @@
 # Username (string value)
 #username = <None>
 
-# Project name (string value)
-#project_name = <None>
-
 # Password (string value)
 #password = <None>
+
+# Project name (string value)
+#project_name = <None>
 
 # Domain name (string value)
 #domain_name = <None>

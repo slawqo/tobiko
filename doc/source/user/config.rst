@@ -27,11 +27,11 @@ Configure Tobiko Framework
 
 In order to make sure Tobiko tools can connect to OpenStack services via Rest
 API configuration parameters can be passed either via environment variables or
-via a ini configuration file (referred here as :ref:`tobiko-conf`). Please look
+via an INI configuration file (referred here as :ref:`tobiko-conf`). Please look
 at :ref:`authentication-methods` for more details.
 
 To be able to execute scenario test cases there some OpenStack resources that
-has to be created before running test cases. Please look at
+have to be created before running test cases. Please look at
 :ref:`setup-required-resources` for more details.
 
 
@@ -40,7 +40,7 @@ has to be created before running test cases. Please look at
 tobiko.conf
 ~~~~~~~~~~~
 
-Tobiko tries to load :ref:`tobiko-conf` file from one of below locations:
+Tobiko tries to load :ref:`tobiko-conf` file from one of the below locations:
 
 * current directory::
 
@@ -58,8 +58,8 @@ Tobiko tries to load :ref:`tobiko-conf` file from one of below locations:
 Configure Logging
 ~~~~~~~~~~~~~~~~~
 
-Tobiko can configure logging system to write messages to a log file. You can
-edit below options in :ref:`tobiko-conf` to enable it as below::
+Tobiko can configure a logging system to write messages to a log file. You can
+edit the below options in :ref:`tobiko-conf` to enable it as below::
 
     [DEFAULT]
     # Whenever to allow debugging messages to be written out or not
@@ -132,18 +132,19 @@ Currently supported variables are::
 
 .. _authentication-configuration:
 
-Autentication Configuration
-+++++++++++++++++++++++++++
+Authentication Configuration
+++++++++++++++++++++++++++++
 
 You can also configure the same authentication parameters by editing 'keystone'
 section in :ref:`tobiko-conf` file. For example::
 
     [keystone]
+
     # Identity API version
     api_version = 3
 
-    # URL to be used to connect to OpenStack Irentity Rest API service
-    auth_url=http://10.0.0.109:5000/v3
+    # URL to be used to connect to OpenStack Identity REST API service
+    auth_url = http://10.0.0.109:5000/v3
 
     # Authentication username (name or ID)
     username = admin
@@ -160,7 +161,7 @@ section in :ref:`tobiko-conf` file. For example::
     # Domain name or ID containing user
     user_domain_name = default
 
-    # Domain name or ID containing prject
+    # Domain name or ID containing project
     project_domain_name = default
 
     # ID of the trust to use as a trustee user
@@ -172,10 +173,10 @@ section in :ref:`tobiko-conf` file. For example::
 Proxy Server Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The first thing to make sure is Tobiko can reach OpenStack services. In case
+The first thing to do is make sure Tobiko can reach OpenStack services. In case
 OpenStack is not directly accessible from where test cases or Tobiko CLI are
-executed it is possible to use an HTTP proxy server running on a network that
-is able to reach all OpenStack Rest API service. This can be performed
+executed, it is possible to use an HTTP proxy server running on a network that
+is able to reach all OpenStack REST API service. This can be performed
 by using below standard environment variables::
 
     export http_proxy=http://<proxy-host>:<proxy-port>/
@@ -190,7 +191,7 @@ For convenience it is also possible to specify the same parameters via
     https_proxy = http://<proxy-host>:<proxy-port>/
     no_proxy = 127.0.0.1,...
 
-Because Tobiko test cases could execute local commands (like for example ping)
+Because Tobiko test cases might execute local commands (like for example ping)
 to reach network services we have to specify in tobiko.conf file a shell
 (like OpenSSH client) to be used instead of the default local one
 ('/bin/sh')::
@@ -215,7 +216,7 @@ Setup Required Resources
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 To be able to execute Tobiko scenario test cases there some OpenStack
-resources that has to be created before running test cases.
+resources that have to be created before running test cases.
 
 Install required Python OpenStack clients::
 
@@ -241,16 +242,16 @@ in :ref:`tobiko-conf` file::
 Skipping resources creation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In some cases, for example when Tobiko is run after upgrade of cloud, it may be expected
-that resources used for tests should be already created. Tobiko should not try to create
-resources than and just run tests using what is already created.
-To configure Tobiko to not create test resources, environment variable ``TOBIKO_PREVENT_CREATE``
+In some cases, for example when Tobiko is run after an upgrade of a cloud, it may be expected
+that resources used for tests have already been created. Tobiko should not try to create
+resources than and just run tests using what has already been created.
+To configure Tobiko to not create test resources, the environment variable ``TOBIKO_PREVENT_CREATE``
 can be used::
 
     export TOBIKO_PREVENT_CREATE=True
 
 If this is set to ``True`` or ``1`` then Tobiko will not try to create resources like VMs,
-networks, routers or images and just run validation of what is exists in the cloud already.
+networks, routers, or images and just run validations of what exists in the cloud already.
 
 What's Next
 -----------

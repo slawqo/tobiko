@@ -208,6 +208,15 @@ Setup Required Resources
 A public Neutron network is required to be able to execute Tobiko scenario test
 cases by creating a floating IP port on it.
 
+To execute commands from a virtualenv created by Tox you can type as below::
+
+    tox -e venv -- <your-commands>
+
+You need to make sure :ref:`authentication-environment-variables` are properly
+set so you can list available public networks::
+
+    tox -e venv -- openstack network list
+
 If there isn't any valid public network, you need to create one before running
 Tobiko OpenStack test cases. Please refer to the `Neutron documentation <https://docs.openstack.org/neutron/latest/>`__
 for additional information.
@@ -219,15 +228,6 @@ please add a reference to the network in
 
     [neutron]
     floating_network = public
-
-To execute commands from a virtualenv created by Tox you can type as below::
-
-    tox -e venv -- <your-commands>
-
-You need to make sure ref:`authentication-environment-variables` are properly
-set so you can list available public netoworks::
-
-    tox -e venv -- openstack network list
 
 Running Test Cases
 ------------------
