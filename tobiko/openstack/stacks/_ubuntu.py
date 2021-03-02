@@ -26,6 +26,13 @@ UBUNTU_IMAGE_URL = (
     f'http://cloud-images.ubuntu.com/{UBUNTU_IMAGE_VERSION}/current/'
     f'{UBUNTU_IMAGE_VERSION}-server-cloudimg-amd64.img')
 
+UBUNTU_IMAGE_VERSION_NUMBER = '20.04'
+
+UBUNTU_MINIMAL_IMAGE_URL = (
+    'https://cloud-images.ubuntu.com/minimal/releases/'
+    f'{UBUNTU_IMAGE_VERSION}/release/'
+    f'ubuntu-{UBUNTU_IMAGE_VERSION_NUMBER}-minimal-cloudimg-amd64.img')
+
 
 class UbuntuImageFixture(glance.URLGlanceImageFixture):
     image_url = CONF.tobiko.ubuntu.image_url or UBUNTU_IMAGE_URL
@@ -38,8 +45,16 @@ class UbuntuImageFixture(glance.URLGlanceImageFixture):
     connection_timeout = CONF.tobiko.ubuntu.connection_timeout or 600.
 
 
+class UbuntuMinimalImageFixture(UbuntuImageFixture):
+    image_url = UBUNTU_MINIMAL_IMAGE_URL
+
+
 class UbuntuFlavorStackFixture(_nova.FlavorStackFixture):
     ram = 256
+
+
+class UbuntuMinimalFlavorStackFixture(_nova.FlavorStackFixture):
+    ram = 128
 
 
 class UbuntuServerStackFixture(_nova.ServerStackFixture):
@@ -52,3 +67,16 @@ class UbuntuServerStackFixture(_nova.ServerStackFixture):
 
     #: Setup SWAP file in bytes
     swap_maxsize = 1 * 1024 * 1024 * 1024  # 1 GB
+
+
+class UbuntuMinimalServerStackFixture(UbuntuServerStackFixture):
+
+    #: Glance image used to create a Nova server instance
+    image_fixture = tobiko.required_setup_fixture(UbuntuMinimalImageFixture)
+
+    #: Flavor used to create a Nova server instance
+    flavor_stack = tobiko.required_setup_fixture(
+        UbuntuMinimalFlavorStackFixture)
+
+    #: Setup SWAP file in bytes
+    swap_maxsize = 512 * 1024 * 1024  # 500 MB

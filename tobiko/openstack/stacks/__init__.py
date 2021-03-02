@@ -76,7 +76,9 @@ AntiAffinityServerGroupStackFixture = _nova.AntiAffinityServerGroupStackFixture
 
 UbuntuFlavorStackFixture = _ubuntu.UbuntuFlavorStackFixture
 UbuntuImageFixture = _ubuntu.UbuntuImageFixture
+UbuntuMinimalImageFixture = _ubuntu.UbuntuMinimalImageFixture
 UbuntuServerStackFixture = _ubuntu.UbuntuServerStackFixture
+UbuntuMinimalServerStackFixture = _ubuntu.UbuntuMinimalServerStackFixture
 
 OctaviaLoadbalancerStackFixture = _octavia.OctaviaLoadbalancerStackFixture
 OctaviaListenerStackFixture = _octavia.OctaviaListenerStackFixture

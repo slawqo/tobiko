@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import pytest
+
 import tobiko
 from tobiko.shell import sh
 from tobiko.openstack import stacks
@@ -34,3 +36,21 @@ class UbuntuServerStackTest(test_cirros.CirrosServerStackTest):
                                     ssh_client=self.stack.ssh_client).stdout
         self.assertTrue(python_version.startswith('Python 3.'),
                         python_version)
+
+
+class UbuntuMinimalServerStackTest(UbuntuServerStackTest):
+
+    #: Stack of resources with a server attached to a floating IP
+    stack = tobiko.required_setup_fixture(
+        stacks.UbuntuMinimalServerStackFixture)
+
+    @pytest.mark.skip(reason="ping not installed on image")
+    def test_ping_fixed_ipv4(self):
+        pass
+
+    @pytest.mark.skip(reason="ping not installed on image")
+    def test_ping_fixed_ipv6(self):
+        pass
+
+    def _test_ping_nameservers(self, ip_version: int):
+        self.skipTest("ping not installed on Ubuntu minimal image")
