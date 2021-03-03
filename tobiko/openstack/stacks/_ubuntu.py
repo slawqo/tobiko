@@ -80,3 +80,8 @@ class UbuntuMinimalServerStackFixture(UbuntuServerStackFixture):
 
     #: Setup SWAP file in bytes
     swap_maxsize = 512 * 1024 * 1024  # 500 MB
+
+
+class UbuntuExternalServerStackFixture(UbuntuMinimalServerStackFixture,
+                                       _nova.ExternalServerStackFixture):
+    pass

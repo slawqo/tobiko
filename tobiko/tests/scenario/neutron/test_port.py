@@ -64,9 +64,10 @@ class PortTest(testtools.TestCase):
                 except self.failureException:
                     attempt.check_limits()
         elif ip_version:
-            self.skipTest(f"No port IPv{ip_version} addresses found")
+            self.skipTest(f"Server has any port IPv{ip_version} address to be"
+                          " tested")
         else:
-            self.skipTest("No port IP addresses found")
+            self.skipTest("Server has any port IP address to be tested")
 
     def test_port_network(self):
         self.assertEqual(self.stack.network_stack.network_id,
@@ -93,21 +94,19 @@ class PortTest(testtools.TestCase):
 
     def test_ping_port(self, network_id=None, device_id=None, ip_version=None):
         """Checks server can ping its own port"""
-        device_ips = neutron.list_device_ip_addresses(
+        port_ips = neutron.list_device_ip_addresses(
             device_id=device_id or self.stack.server_id,
             network_id=network_id or self.stack.network_stack.network_id,
-            enable_dhcp=True, ip_version=ip_version)
-        server_ips = ip.list_ip_addresses(scope='global',
-                                          ssh_client=self.stack.ssh_client)
-        # Remove IPs that hasn't been assigned to server
-        port_ips = tobiko.Selection(set(device_ips) & set(server_ips))
+            need_dhcp=self.stack.need_dhcp, ip_version=ip_version)
         if port_ips:
             ping.assert_reachable_hosts(port_ips,
-                                        ssh_client=self.stack.ssh_client)
+                                        timeout=600.,
+                                        ssh_client=self.stack.peer_ssh_client)
         elif ip_version:
-            self.skipTest(f"No port IPv{ip_version} addresses found")
+            self.skipTest(f"Server has any port IPv{ip_version} address to be"
+                          " tested")
         else:
-            self.skipTest("No port IP addresses found")
+            self.skipTest("Server has any port IP address to be tested")
 
 
 # --- Test opening ports on external network ----------------------------------
@@ -128,6 +127,15 @@ class CentosExternalPortTest(PortTest):
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(
         stacks.CentosExternalServerStackFixture)
+
+
+@stacks.skip_unless_has_external_network
+class UbuntuExternalPortTest(PortTest):
+    """Test Neutron ports"""
+
+    #: Resources stack with Nova server to send messages to
+    stack = tobiko.required_setup_fixture(
+        stacks.UbuntuExternalServerStackFixture)
 
 
 # --- Test la-h3 extension ----------------------------------------------------

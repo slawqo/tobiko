@@ -98,7 +98,12 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
     network_stack = tobiko.required_setup_fixture(_neutron.NetworkStackFixture)
 
     #: whenever the server relies only on DHCP for address assignation
-    need_dhcp = False
+    @property
+    def need_dhcp(self) -> bool:
+        return not self.config_drive
+
+    #: whenever the server will use config-drive to get metadata
+    config_drive = False
 
     def create_stack(self, retry=None):
         self.ensure_quota_limits()
@@ -171,6 +176,13 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
                               username=self.username,
                               password=self.password,
                               connection_timeout=self.connection_timeout)
+
+    @property
+    def peer_ssh_client(self) -> typing.Optional[ssh.SSHClientFixture]:
+        """Nearest SSH client to an host that can see server fixed IPs ports
+
+        """
+        return self.ssh_client
 
     @property
     def ssh_command(self) -> sh.ShellCommand:
@@ -386,6 +398,8 @@ class ExternalServerStackFixture(ServerStackFixture, abc.ABC):
 
     config_drive = True
 
+    peer_ssh_client = None
+
     @property
     def floating_network(self):
         return self.network_stack.network_id
@@ -408,7 +422,11 @@ class PeerServerStackFixture(ServerStackFixture, abc.ABC):
                               username=self.username,
                               password=self.password,
                               connection_timeout=self.connection_timeout,
-                              proxy_jump=self.peer_stack.ssh_client)
+                              proxy_jump=self.peer_ssh_client)
+
+    @property
+    def peer_ssh_client(self) -> ssh.SSHClientFixture:
+        return self.peer_stack.ssh_client
 
     @property
     def ssh_command(self) -> sh.ShellCommand:

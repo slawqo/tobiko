@@ -79,6 +79,7 @@ UbuntuImageFixture = _ubuntu.UbuntuImageFixture
 UbuntuMinimalImageFixture = _ubuntu.UbuntuMinimalImageFixture
 UbuntuServerStackFixture = _ubuntu.UbuntuServerStackFixture
 UbuntuMinimalServerStackFixture = _ubuntu.UbuntuMinimalServerStackFixture
+UbuntuExternalServerStackFixture = _ubuntu.UbuntuExternalServerStackFixture
 
 OctaviaLoadbalancerStackFixture = _octavia.OctaviaLoadbalancerStackFixture
 OctaviaListenerStackFixture = _octavia.OctaviaListenerStackFixture
