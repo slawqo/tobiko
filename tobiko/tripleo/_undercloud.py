@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 from oslo_log import log
 
 import tobiko
@@ -26,20 +28,22 @@ CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
-def undercloud_ssh_client():
+def undercloud_ssh_client() -> ssh.SSHClientFixture:
     host_config = undercloud_host_config()
-    return ssh.ssh_client(host='undercloud-0', host_config=host_config)
+    if not host_config.hostname:
+        raise NoSuchUndercloudHostname('No such undercloud hostname')
+    return ssh.ssh_client(host=host_config.hostname, host_config=host_config)
 
 
-def undercloud_host_config():
-    return tobiko.setup_fixture(UndecloudHostConfig)
+class NoSuchUndercloudHostname(tobiko.TobikoException):
+    message = "Undercloud hostname not specified"
 
 
 class InvalidRCFile(tobiko.TobikoException):
     message = "Invalid RC file: {rcfile}"
 
 
-def fetch_os_env(rcfile, *rcfiles):
+def fetch_os_env(rcfile, *rcfiles) -> typing.Dict[str, str]:
     rcfiles = (rcfile,) + rcfiles
     errors = []
     for rcfile in rcfiles:
@@ -63,35 +67,41 @@ def fetch_os_env(rcfile, *rcfiles):
     raise InvalidRCFile(rcfile=", ".join(rcfiles))
 
 
-def load_undercloud_rcfile():
+def load_undercloud_rcfile() -> typing.Dict[str, str]:
     return fetch_os_env(*CONF.tobiko.tripleo.undercloud_rcfile)
 
 
 class UndercloudKeystoneCredentialsFixture(
         keystone.EnvironKeystoneCredentialsFixture):
-    def get_environ(self):
+    def get_environ(self) -> typing.Dict[str, str]:
         return load_undercloud_rcfile()
 
 
 class HasUndercloudFixture(tobiko.SharedFixture):
 
-    has_undercloud = None
+    has_undercloud: typing.Optional[bool] = None
 
     def setup_fixture(self):
+        self.has_undercloud = check_undercloud()
+
+
+def check_undercloud() -> bool:
+    try:
         ssh_client = undercloud_ssh_client()
-        try:
-            ssh_client.connect(retry_count=1,
-                               connection_attempts=1,
-                               timeout=15.)
-        except Exception as ex:
-            LOG.debug('Unable to connect to undercloud host: %s', ex,
-                      exc_info=1)
-            self.has_undercloud = False
-        else:
-            self.has_undercloud = True
+    except NoSuchUndercloudHostname:
+        return False
+    try:
+        ssh_client.connect(retry_count=1,
+                           connection_attempts=1,
+                           timeout=15.)
+    except Exception as ex:
+        LOG.debug('Unable to connect to undercloud host: %s', ex,
+                  exc_info=1)
+        return False
+    return True
 
 
-def has_undercloud():
+def has_undercloud() -> bool:
     return tobiko.setup_fixture(HasUndercloudFixture).has_undercloud
 
 
@@ -101,18 +111,17 @@ skip_if_missing_undercloud = tobiko.skip_unless(
 
 class UndecloudHostConfig(tobiko.SharedFixture):
 
-    host = 'undercloud-0'
-    hostname = None
-    port = None
-    username = None
-    key_filename = None
+    hostname: typing.Optional[str] = None
+    port: typing.Optional[int] = None
+    username: typing.Optional[str] = None
+    key_filename: typing.Optional[str] = None
 
     def __init__(self, **kwargs):
         super(UndecloudHostConfig, self).__init__()
         self._connect_parameters = ssh.gather_ssh_connect_parameters(**kwargs)
 
     def setup_fixture(self):
-        self.hostname = CONF.tobiko.tripleo.undercloud_ssh_hostname
+        self.hostname = CONF.tobiko.tripleo.undercloud_ssh_hostname.strip()
         self.port = CONF.tobiko.tripleo.undercloud_ssh_port
         self.username = CONF.tobiko.tripleo.undercloud_ssh_username
         self.key_filename = CONF.tobiko.tripleo.undercloud_ssh_key_filename
@@ -122,6 +131,10 @@ class UndecloudHostConfig(tobiko.SharedFixture):
         parameters = ssh.gather_ssh_connect_parameters(self)
         parameters.update(self._connect_parameters)
         return parameters
+
+
+def undercloud_host_config() -> UndecloudHostConfig:
+    return tobiko.setup_fixture(UndecloudHostConfig)
 
 
 def undercloud_keystone_client():
