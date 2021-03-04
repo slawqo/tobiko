@@ -1,0 +1,192 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# ---------------------------------------------------------------------
+# The only purpose of this Vagrantfile is testing procedures documented
+# by contributor.rst guide
+# ---------------------------------------------------------------------
+
+SSH_HOST = ENV.fetch('SSH_HOST', '')
+SSH_USERNAME = ENV.fetch('SSH_USERNAME', 'root')
+SSH_IDENTITY_FILE = ENV.fetch('SSH_IDENTITY_FILE',
+    File.join(Dir.home, '.ssh', 'id_rsa'))
+
+STDERR.puts "SSH_HOST = #{SSH_HOST}"
+STDERR.puts "SSH_USERNAME = #{SSH_USERNAME}"
+STDERR.puts "SSH_IDENTITY_FILE = #{SSH_IDENTITY_FILE}"
+
+PROVISION_SCRIPT = <<-'SCRIPT'
+
+# set -e
+#
+# if [ "${SSH_PRIVATE_KEY}" != '' ]; then
+#     mkdir -p ~/.ssh
+#     chmod 700 ~/.ssh
+#     echo -n "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
+#     echo -n "${SSH_PUBLIC_KEY}" > ~/.ssh/id_rsa.pub
+#     chmod 600 ~/.ssh/id_rsa ~/.ssh/id_rsa.pub
+# fi
+
+set -ex
+
+sudo dnf update -y
+
+sudo dnf install -y git python3 which
+python3 --version | grep -e '^Python 3\.8\.'
+
+curl https://bootstrap.pypa.io/get-pip.py | sudo python3
+python3 -m pip --version | grep -e '(python 3.8)$'
+
+sudo python3 -m pip install --upgrade setuptools wheel virtualenv tox six devstack-tools
+tox --version |  grep -e 'python3.8'
+
+if ! [ -d ~/src/tobiko ]; then
+  mkdir -p ~/src
+  git clone https://opendev.org/x/tobiko.git ~/src/tobiko
+fi
+cd ~/src/tobiko
+tools/install-bindeps.sh
+
+dsconf iniset tobiko.conf DEFAULT debug true
+dsconf iniset tobiko.conf DEFAULT log_file tobiko.log
+cat tobiko.conf
+
+mkdir -p .ssh
+chmod 700 .ssh
+if ! [ -f .ssh/id ]; then
+  ssh-keygen -v -f .ssh/id -N ''
+  chmod 600 .ssh/id .ssh/id.pub
+fi
+
+if [ "${SSH_HOST}" != "" ]; then
+  ssh-copy-id -i .ssh/id -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SSH_USERNAME}@${SSH_HOST}"
+  ssh -i .ssh/id -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SSH_USERNAME}@${SSH_HOST}" hostname
+
+  echo "
+Host ssh-proxy ${SSH_HOST}
+   IdentityFile .ssh/id
+   IdentitiesOnly yes
+   HostName ${SSH_HOST}
+   User ${SSH_USERNAME}
+   PasswordAuthentication no
+   StrictHostKeyChecking no
+   UserKnownHostsFile /dev/null
+" > .ssh/config
+  chmod 600 .ssh/config
+  ssh -F .ssh/config ssh-proxy hostname
+
+fi
+
+dsconf iniset tobiko.conf ssh proxy_jump ssh-proxy
+dsconf iniset tobiko.conf ssh config_files .ssh/config
+dsconf iniset tobiko.conf nova key_file .ssh/id
+cat tobiko.conf
+
+UNDERCLOUD_IP=$(
+    ssh -F .ssh/config ssh-proxy ping -c 1 undercloud-0 |
+    awk '/^PING/{gsub(/\(|\)/,""); print $3}')
+if [ "${UNDERCLOUD_IP}" != '' ]; then
+    dsconf iniset tobiko.conf tripleo undercloud_ssh_hostname "${UNDERCLOUD_IP}"
+    cat tobiko.conf
+fi
+
+touch tobiko.log
+tox -v -e scenario -- -v tobiko/tests/scenario/neutron/test_floating_ip.py::FloatingIPTest
+tail tobiko.log
+
+echo '
+source overcloudrc
+set -ex
+openstack image list | grep tobiko
+openstack stack list | grep tobiko
+' | ssh -F .ssh/config ssh-proxy -t ssh stack@undercloud-0 bash
+
+
+TOBIKO_PREVENT_CREATE=yes tox -e scenario -- -v tobiko/tests/scenario/neutron/test_floating_ip.py::FloatingIPTest
+
+
+echo '
+source overcloudrc
+set -ex
+openstack stack list -f value -c ID | xargs openstack stack delete
+openstack stack list | grep -v tobiko | grep -v CREATE_COMPLETE
+' | ssh -F .ssh/config ssh-proxy -t ssh stack@undercloud-0 bash
+
+
+SCRIPT
+
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  # The most common configuration options are documented and commented below.
+  # For a complete reference, please see the online documentation at
+  # https://docs.vagrantup.com.
+
+  # Every Vagrant development environment requires a box. You can search for
+  # boxes at https://vagrantcloud.com/search.
+  config.vm.box = "generic/fedora32"
+
+  # Disable automatic box update checking. If you disable this, then
+  # boxes will only be checked for updates when the user runs
+  # `vagrant box outdated`. This is not recommended.
+  config.vm.box_check_update = false
+
+  # Create a forwarded port mapping which allows access to a specific port
+  # within the machine from a port on the host machine. In the example below,
+  # accessing "localhost:8080" will access port 80 on the guest machine.
+  # NOTE: This will enable public access to the opened port
+  # config.vm.network "forwarded_port", guest: 80, host: 8080
+
+  # Create a forwarded port mapping which allows access to a specific port
+  # within the machine from a port on the host machine and only allow access
+  # via 127.0.0.1 to disable public access
+  # config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
+
+  # Create a private network, which allows host-only access to the machine
+  # using a specific IP.
+  # config.vm.network "private_network", ip: "192.168.33.10"
+
+  # Create a public network, which generally matched to bridged network.
+  # Bridged networks make the machine appear as another physical device on
+  # your network.
+  # config.vm.network "public_network"
+
+  # Share an additional folder to the guest VM. The first argument is
+  # the path on the host to the actual folder. The second argument is
+  # the path on the guest to mount the folder. And the optional third
+  # argument is a set of non-required options.
+  # config.vm.synced_folder "../data", "/vagrant_data"
+
+  # Provider-specific configuration so you can fine-tune various
+  # backing providers for Vagrant. These expose provider-specific options.
+  # Example for VirtualBox:
+  #
+  # config.vm.provider "virtualbox" do |vb|
+  #   # Display the VirtualBox GUI when booting the machine
+  #   vb.gui = true
+  #
+  #   # Customize the amount of memory on the VM:
+  #   vb.memory = "1024"
+  # end
+  #
+  # View the documentation for the provider you are using for more
+  # information on available options.
+
+  config.vm.provision "file", source: "~/.ssh/id_rsa", destination: "~/.ssh/id_rsa"
+  config.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "~/.ssh/id_rsa.pub"
+
+  # Enable provisioning with a shell script. Additional provisioners such as
+  # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
+  # documentation for more information about their specific syntax and use.
+  config.vm.provision "shell" do |shell|
+    shell.inline = PROVISION_SCRIPT
+    shell.privileged = false
+    shell.env = {
+      SSH_HOST: SSH_HOST,
+      SSH_USERNAME: SSH_USERNAME,
+    }
+  end
+end

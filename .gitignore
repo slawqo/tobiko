@@ -17,6 +17,7 @@
 .vagrant
 .venv
 .idea
+.ssh
 
 __pycache__
 AUTHORS
