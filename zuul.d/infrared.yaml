@@ -3,7 +3,7 @@
 - job:
     name: tobiko-infrared
     parent: tox
-    nodeset: tobiko-centos-8-2-node
+    nodeset: tobiko-infrared-centos
     timeout: 1800
     description: |
       Run test cases using tobiko infrared plugin
@@ -16,8 +16,9 @@
       ensure_pip_from_packages_with_python2: no
       test_collect_dir: '{{ zuul_output_dir }}/logs'
       test_inventory_file: '{{ zuul_work_dir }}/ansible_hosts'
+      test_inventory_groups: {undercloud: [secondary]}
       tox_envlist: infrared
-      tox_extra_args: -- --host secondary --collect-dir {{ test_collect_dir | quote }}
+      tox_extra_args: -- --collect-dir {{ test_collect_dir | quote }}
       tox_constraints_file: '{{ upper_constraints_file }}'
       upper_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/openstack/requirements/upper-constraints.txt'
       tox_environ:
@@ -34,38 +35,63 @@
 
 
 - job:
-    name: tobiko-infrared-centos-7
-    parent: tobiko-infrared
-    nodeset: centos-7-2-node
-    voting: false
-    description: |
-      Run test cases using tobiko infrared plugin on CentOS 7
-    vars:
-      tox_install_siblings: no
-
-
-- job:
     name: tobiko-infrared-centos
     parent: tobiko-infrared
-    nodeset: tobiko-centos-8-2-node
+    nodeset: tobiko-infrared-centos
     voting: false
     description: |
-      Run test cases using tobiko infrared plugin on CentOS 8
+      Run test cases using tobiko infrared plugin on CentOS
+
+- nodeset:
+    name: tobiko-infrared-centos
+    nodes:
+      - name: primary
+        label: centos-8-stream
+      - name: secondary
+        label: centos-8-stream
+    groups:
+      - name: undercloud
+        nodes:
+          - secondary
 
 
 - job:
     name: tobiko-infrared-fedora
     parent: tobiko-infrared
-    nodeset: tobiko-fedora-latest-2-node
+    nodeset: tobiko-infrared-fedora
     voting: false
     description: |
-      Run test cases using tobiko infrared plugin on latest Fedora
+      Run test cases using tobiko infrared plugin on Fedora
+
+- nodeset:
+    name: tobiko-infrared-fedora
+    nodes:
+      - name: primary
+        label: fedora-32
+      - name: secondary
+        label: fedora-32
+    groups:
+      - name: undercloud
+        nodes:
+          - secondary
 
 
 - job:
     name: tobiko-infrared-ubuntu
     parent: tobiko-infrared
-    nodeset: tobiko-ubuntu-focal-2-node
+    nodeset: tobiko-infrared-ubuntu
     voting: false
     description: |
-      Run test cases using tobiko infrared plugin on Ubuntu Focal
+      Run test cases using tobiko infrared plugin on Ubuntu
+
+- nodeset:
+    name: tobiko-infrared-ubuntu
+    nodes:
+      - name: primary
+        label: ubuntu-focal
+      - name: secondary
+        label: ubuntu-focal
+    groups:
+      - name: undercloud
+        nodes:
+          - secondary
