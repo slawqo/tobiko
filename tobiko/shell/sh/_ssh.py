@@ -17,6 +17,7 @@ from __future__ import absolute_import
 
 from oslo_log import log
 import paramiko
+from paramiko import channel
 
 import tobiko
 from tobiko.shell.sh import _exception
@@ -183,7 +184,7 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
                           self.command)
 
 
-class SSHChannelFile(paramiko.ChannelFile):
+class SSHChannelFile(channel.ChannelFile):
 
     def fileno(self):
         return self.channel.fileno()
