@@ -2,7 +2,6 @@
 
 ansible-lint == 4.2.0  # MIT
 astroid>=2.4.0; python_version < '3.8'  # LGPLv2.1
-astroid>=2.5.0; python_version >= '3.8'
-git+https://github.com/PyCQA/pylint.git@master; python_version >= '3.8'  # GPLv2
+astroid>=2.5.0; python_version >= '3.8' # LGPLv2.1
 pre-commit >= 2.6.0  # MIT
-pylint >= 2.6.0; python_version < '3.8'  # GPLv2
+pylint >= 2.6.0  # GPLv2
