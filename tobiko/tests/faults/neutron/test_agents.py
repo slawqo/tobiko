@@ -562,6 +562,9 @@ class OvnControllerTest(BaseAgentTest):
     def setUp(self):
         super(OvnControllerTest, self).setUp()
         self.get_ovn_agents_from_containers()
+        # Ensure that stack is really created to avoid VM error due to dead
+        # agents
+        ping.ping_until_received(self.stack.ip_address).assert_replied()
 
     def kill_ovn_controller(self,
                             hosts: typing.Optional[typing.List[str]] = None,
