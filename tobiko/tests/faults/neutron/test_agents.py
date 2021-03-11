@@ -749,11 +749,19 @@ class MetadataAgentTest(BaseAgentTest):
 # Search for the corresponding container instead of the networking agent
 class OvnMetadataAgentTest(MetadataAgentTest):
 
-    agent_name = neutron.OVN_METADATA_AGENT
+    agent_name = neutron.NEUTRON_OVN_METADATA_AGENT
 
     def setUp(self):
         self.get_ovn_agents_from_containers()
         super(OvnMetadataAgentTest, self).setUp()
+
+    @classmethod
+    def setUpClass(cls):
+        super(OvnMetadataAgentTest, cls).setUpClass()
+        if not cls.agents:
+            # Let's check if that is maybe older version with networking-ovn
+            cls.agents: AgentListType = neutron.list_networking_agents(
+                binary=neutron.OVN_METADATA_AGENT)
 
 
 def parse_http_status(curl_output: str) -> int:
