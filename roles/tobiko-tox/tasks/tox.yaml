@@ -54,3 +54,12 @@
   failed_when:
     - not (ignore_test_failures | bool)
     - run_tox.rc not in tox_expected_rcs
+
+
+- name: 'raise error in case of timeout'
+  debug:
+    msg: 'timeout during the execution of the tests'
+  when: run_tox is failed
+  failed_when:
+    - (run_tox.stdout_lines | length) > 0
+    - run_tox.stdout_lines | regex_search('run_tests: ERROR.*run_tests.py timeout out after')
