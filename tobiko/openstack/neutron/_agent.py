@@ -25,7 +25,12 @@ L3_AGENT = 'neutron-l3-agent'
 METADATA_AGENT = 'neutron-metadata-agent'
 OPENVSWITCH_AGENT = 'neutron-openvswitch-agent'
 OVN_CONTROLLER = 'ovn-controller'
+# NOTE(slaweq) name 'networking-ovn-metadata-agent' was used up to stable/train
+# release when ovn driver was stadium project,
+# Since stable/ussuri, when driver was included in the Neutron repo, it is
+# called 'neutron-ovn-metadata-agent'
 OVN_METADATA_AGENT = 'networking-ovn-metadata-agent'
+NEUTRON_OVN_METADATA_AGENT = 'neutron-ovn-metadata-agent'
 
 
 class AgentNotFoundOnHost(tobiko.TobikoException):

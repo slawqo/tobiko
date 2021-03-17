@@ -185,6 +185,7 @@ class OpenStackTopology(tobiko.SharedFixture):
         neutron.OPENVSWITCH_AGENT: 'devstack@q-agt',
         neutron.METADATA_AGENT: 'devstack@q-meta',
         neutron.OVN_METADATA_AGENT: 'devstack@q-ovn-metadata-agent',
+        neutron.NEUTRON_OVN_METADATA_AGENT: 'devstack@q-ovn-metadata-agent',
         neutron.OVN_CONTROLLER: 'ovn-controller'
     }
     agent_to_container_name_mappings: typing.Dict[str, str] = {}

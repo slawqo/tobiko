@@ -29,6 +29,7 @@ METADATA_AGENT = _agent.METADATA_AGENT
 OPENVSWITCH_AGENT = _agent.OPENVSWITCH_AGENT
 OVN_CONTROLLER = _agent.OVN_CONTROLLER
 OVN_METADATA_AGENT = _agent.OVN_METADATA_AGENT
+NEUTRON_OVN_METADATA_AGENT = _agent.NEUTRON_OVN_METADATA_AGENT
 AgentNotFoundOnHost = _agent.AgentNotFoundOnHost
 skip_if_missing_networking_agents = _agent.skip_if_missing_networking_agents
 skip_unless_is_ovn = _agent.skip_unless_is_ovn
