@@ -23,6 +23,7 @@ from tobiko.common import _logging
 from tobiko.common.managers import loader as loader_manager
 from tobiko.common import _operation
 from tobiko.common import _os
+from tobiko.common import _proxy
 from tobiko.common import _retry
 from tobiko.common import _select
 from tobiko.common import _skip
@@ -82,6 +83,12 @@ Operation = _operation.Operation
 get_operation = _operation.get_operation
 get_operation_name = _operation.get_operation_name
 operation_config = _operation.operation_config
+
+Protocol = _proxy.Protocol
+call_proxy = _proxy.call_proxy
+call_proxy_class = _proxy.call_proxy_class
+CallHandler = _proxy.CallHandler
+CallProxy = _proxy.CallProxy
 
 retry = _retry.retry
 retry_attempt = _retry.retry_attempt

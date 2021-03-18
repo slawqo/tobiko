@@ -1,5 +1,6 @@
 # from requirements.txt
 
+decorator===4.4.2
 docker==4.4.1
 fixtures==3.0.0
 Jinja2==2.11.2
