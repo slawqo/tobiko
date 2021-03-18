@@ -58,6 +58,7 @@ required_setup_fixture = _fixture.required_setup_fixture
 get_fixture_name = _fixture.get_fixture_name
 get_fixture_class = _fixture.get_fixture_class
 get_fixture_dir = _fixture.get_fixture_dir
+get_object_name = _fixture.get_object_name
 remove_fixture = _fixture.remove_fixture
 reset_fixture = _fixture.reset_fixture
 setup_fixture = _fixture.setup_fixture
@@ -85,6 +86,7 @@ get_operation_name = _operation.get_operation_name
 operation_config = _operation.operation_config
 
 Protocol = _proxy.Protocol
+list_protocols = _proxy.list_protocols
 call_proxy = _proxy.call_proxy
 call_proxy_class = _proxy.call_proxy_class
 CallHandler = _proxy.CallHandler

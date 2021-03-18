@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import asyncio
+import functools
 import inspect
 import shutil
 import os
@@ -64,6 +66,20 @@ class TobikoUnitTest(_patch.PatchMixin, testtools.TestCase):
         'https_proxy': 'http://127.0.0.1:88888',
         'no_proxy': '127.0.0.1'
     }
+
+    def _get_test_method(self):
+        method = super(TobikoUnitTest, self)._get_test_method()
+        if inspect.iscoroutinefunction(method):
+
+            @functools.wraps(method)
+            def wrapped_test(*args, **kwargs):
+                loop = asyncio.get_event_loop()
+                task = loop.create_task(method(*args, **kwargs))
+                loop.run_until_complete(task)
+
+            return wrapped_test
+        else:
+            return method
 
     def setUp(self):
         super(TobikoUnitTest, self).setUp()
