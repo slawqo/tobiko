@@ -85,12 +85,11 @@ get_operation = _operation.get_operation
 get_operation_name = _operation.get_operation_name
 operation_config = _operation.operation_config
 
-Protocol = _proxy.Protocol
-list_protocols = _proxy.list_protocols
 call_proxy = _proxy.call_proxy
 call_proxy_class = _proxy.call_proxy_class
+list_protocols = _proxy.list_protocols
+protocol = _proxy.protocol
 CallHandler = _proxy.CallHandler
-CallProxy = _proxy.CallProxy
 
 retry = _retry.retry
 retry_attempt = _retry.retry_attempt

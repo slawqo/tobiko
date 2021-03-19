@@ -26,18 +26,15 @@ import tobiko
 from tobiko.actor import _request
 
 
+T = typing.TypeVar('T')
+
+
 class ActorRef(tobiko.CallHandler):
 
-    def __init__(self,
-                 actor_id: str,
-                 requests: _request.ActorRequestQueue,
-                 protocols: typing.Iterable[typing.Type[tobiko.Protocol]]):
+    def __init__(self, actor_id: str, requests: _request.ActorRequestQueue):
+        super().__init__()
         self.actor_id = actor_id
         self._requests = requests
-        self._interfaces: typing.Dict[
-            typing.Type[tobiko.Protocol],
-            typing.Any] = {protocol: None
-                           for protocol in protocols}
 
     def send_request(self, method: str, **arguments):
         return self._requests.send_request(method=method, arguments=arguments)
@@ -47,19 +44,6 @@ class ActorRef(tobiko.CallHandler):
             None, *args, **kwargs).arguments
         arguments.pop('self', None)
         return self.send_request(method.__name__, **arguments)
-
-    def get_interface(self, protocol: typing.Type[tobiko.Protocol]):
-        try:
-            interface = self._interfaces[protocol]
-        except KeyError as ex:
-            raise TypeError(
-                f"Protocol '{protocol}' is not supported by actor "
-                f"'{self.actor_id}") from ex
-
-        if interface is None:
-            self._interfaces[protocol] = interface = tobiko.call_proxy(
-                protocol, self._handle_call)
-        return interface
 
 
 def is_actor_method(obj):
@@ -87,13 +71,13 @@ class Actor(tobiko.SharedFixture):
     log: logging.LoggerAdapter
     loop: asyncio.AbstractEventLoop
 
-    ref: ActorRef
+    base_ref_class = ActorRef
 
+    _actor_methods: typing.Dict[str, typing.Callable]
+    _ref_class: type
+    _ref: ActorRef
     _requests: _request.ActorRequestQueue
     _run_actor_task: asyncio.Task
-
-    _protocols: typing.Sequence[typing.Type[tobiko.Protocol]]
-    _actor_methods: typing.Dict[str, typing.Callable]
 
     @property
     def actor_id(self) -> str:
@@ -103,12 +87,32 @@ class Actor(tobiko.SharedFixture):
         self.loop = self.get_loop()
         self.log = self.create_log()
         self._requests = self.create_request_queue()
-        self._protocols = tobiko.list_protocols(type(self))
-        self.ref = ActorRef(actor_id=self.actor_id,
-                            requests=self._requests,
-                            protocols=self._protocols)
+
         self._run_actor_task = self.loop.create_task(
             self._run_actor())
+
+    @classmethod
+    def ref_class(cls) -> type:
+        try:
+            return cls._ref_class
+        except AttributeError:
+            pass
+        name = cls.__name__ + 'Ref'
+        bases = cls.base_ref_class,
+        namespace = {'__module__': cls.__module__,
+                     'protocol_class': cls}
+        return type(name, bases, namespace)
+
+    @property
+    def ref(self) -> ActorRef:
+        try:
+            return self._ref
+        except AttributeError:
+            pass
+        ref_class = self.ref_class()
+        self._ref = ref = ref_class(actor_id=self.actor_id,
+                                    requests=self._requests)
+        return ref
 
     def get_loop(self) -> asyncio.AbstractEventLoop:
         return asyncio.get_event_loop()

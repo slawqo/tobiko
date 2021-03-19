@@ -15,14 +15,14 @@ from __future__ import absolute_import
 
 import inspect
 import typing
-
-import mock
+from unittest import mock
 
 import tobiko
 from tobiko.tests import unit
 
 
-class MyProto1(tobiko.Protocol):
+@tobiko.protocol
+class MyProto:
     # pylint: disable=unused-argument
 
     def call_one(self, arg='a') -> int:
@@ -35,31 +35,50 @@ class MyProto1(tobiko.Protocol):
         return 42
 
 
+class MyProtoHandler(tobiko.CallHandler):
+
+    protocol_class = MyProto
+
+
 class ProxyTest(unit.TobikoUnitTest):
 
-    def test_call_proxy(self):
+    def handle_call(self, method: typing.Callable, *_args, **_kwargs):
+        self.assertTrue(inspect.isfunction(method))
 
-        def handle_call(method: typing.Callable, *_args, **_kwargs):
-            self.assertTrue(inspect.isfunction(method))
+    def mock_handler(self) -> typing.Callable:
+        return typing.cast(typing.Callable,
+                           mock.MagicMock(side_effect=self.handle_call))
 
-        handler = mock.MagicMock(side_effect=handle_call)
-        proxy = tobiko.call_proxy(MyProto1,
-                                  typing.cast(typing.Callable, handler))
-        self.assertIsInstance(proxy, MyProto1)
+    def test_call_handler(self):
+        handler = self.mock_handler()
+        proxy = MyProtoHandler(handler).use_as(MyProto)
+        self.assertIsInstance(proxy, MyProto)
         self.assertTrue(callable(proxy.call_one))
-        self.assertEqual(inspect.signature(MyProto1.call_one),
+        self.assertEqual(inspect.signature(MyProto.call_one),
                          inspect.signature(type(proxy).call_one))
-        self.assertIsNot(MyProto1.call_one,
+        self.assertIsNot(MyProto.call_one,
                          proxy.call_one)
         proxy.call_one()
-        handler.assert_called_with(MyProto1.call_one, 'a')
+        handler.assert_called_with(MyProto.call_one, 'a')
+
+    def test_call_proxy(self):
+        handler = self.mock_handler()
+        proxy = tobiko.call_proxy(MyProto, handler).use_as(MyProto)
+        self.assertIsInstance(proxy, MyProto)
+        self.assertTrue(callable(proxy.call_one))
+        self.assertEqual(inspect.signature(MyProto.call_one),
+                         inspect.signature(type(proxy).call_one))
+        self.assertIsNot(MyProto.call_one,
+                         proxy.call_one)
+        proxy.call_one()
+        handler.assert_called_with(MyProto.call_one, 'a')
         proxy.call_one('b')
-        handler.assert_called_with(MyProto1.call_one, 'b')
+        handler.assert_called_with(MyProto.call_one, 'b')
         proxy.call_one(arg='c')
-        handler.assert_called_with(MyProto1.call_one, 'c')
+        handler.assert_called_with(MyProto.call_one, 'c')
 
         proxy.call_two(1, 2, 3)
-        handler.assert_called_with(MyProto1.call_two, 1, 2, 3)
+        handler.assert_called_with(MyProto.call_two, 1, 2, 3)
 
         proxy.call_three(a='a', b='b')
-        handler.assert_called_with(MyProto1.call_three, a='a', b='b')
+        handler.assert_called_with(MyProto.call_three, a='a', b='b')
