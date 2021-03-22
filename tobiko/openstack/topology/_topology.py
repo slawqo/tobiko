@@ -568,11 +568,14 @@ def _is_version_matched(current, required, higher=False, lower=False):
 
 
 def verify_osp_version(version, higher=False, lower=False):
-    current_version = get_openstack_version()
-    correct_version = True
+    try:
+        current_version = get_openstack_version()
+    except Exception:
+        current_version = None
     if not current_version:
-        correct_version = False
+        return False
     else:
+        correct_version = True
         os_version = current_version.split('.')
         required_version = version.split('.')
         for version_type in range(len(required_version)):

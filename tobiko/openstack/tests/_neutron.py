@@ -15,13 +15,6 @@ from tobiko.tripleo import pacemaker
 LOG = log.getLogger(__name__)
 
 
-def get_osp_version():
-    try:
-        return topology.get_openstack_version()
-    except Exception:
-        return None
-
-
 def is_ovn_configured():
     return containers.ovn_used_on_overcloud()
 
@@ -57,13 +50,8 @@ def test_neutron_agents_are_alive(timeout=300., interval=5.):
             LOG.debug(f"Waiting for neutron service... ({ex})")
             continue  # Let retry
 
-        rhosp_version = get_osp_version()
-        rhosp_major_release = (int(rhosp_version.split('.')[0])
-                               if rhosp_version
-                               else None)
-
-        if (rhosp_major_release and rhosp_major_release <= 13 and
-                is_ovn_configured()):
+        if (topology.verify_osp_version('14.0', lower=True)
+                and is_ovn_configured()):
             LOG.debug("Neutron list agents should return an empty list with"
                       "OVN and RHOSP releases 13 or earlier")
             test_case.assertEqual([], agents)
@@ -195,10 +183,16 @@ def ovn_dbs_vip_bindings(test_case):
                                'configuration file')
         ovn_conn[db]['port'] = ovn_conn_str[db].split(':')[-1]
 
+    # ovn db sockets might be centrillized or distributed
+    # that depends on the openstack version under test
+    ovn_db_sockets_centrallized = topology.verify_osp_version(
+        '14.0', lower=True)
+
     # command to obtain sockets listening on OVN SB and DB DBs
     get_ovn_db_sockets_listening_cmd = \
         "ss -p state listening 'sport = {srcport} and src {srcip}'"
 
+    num_db_sockets = 0
     for controller in controllers:
         for db in ('nb', 'sb'):
             ovn_db_sockets_listening = sh.execute(
@@ -207,8 +201,20 @@ def ovn_dbs_vip_bindings(test_case):
                     srcip=ovn_conn[db]['ip']),
                 ssh_client=controller.ssh_client,
                 sudo=True).stdout.splitlines()
-            test_case.assertEqual(2, len(ovn_db_sockets_listening))
-            test_case.assertIn('ovsdb-server', ovn_db_sockets_listening[1])
+            if ovn_db_sockets_centrallized:
+                if 2 == len(ovn_db_sockets_listening):
+                    num_db_sockets += 1
+                    test_case.assertIn('ovsdb-server',
+                                       ovn_db_sockets_listening[1])
+            else:
+                num_db_sockets += 1
+                test_case.assertEqual(2, len(ovn_db_sockets_listening))
+                test_case.assertIn('ovsdb-server', ovn_db_sockets_listening[1])
+
+    if ovn_db_sockets_centrallized:
+        test_case.assertEqual(2, num_db_sockets)
+    else:
+        test_case.assertEqual(2 * len(controllers), num_db_sockets)
 
 
 def test_ovn_dbs_validations():

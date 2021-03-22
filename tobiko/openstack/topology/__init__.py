@@ -39,3 +39,4 @@ OpenStackTopology = _topology.OpenStackTopology
 OpenStackTopologyNode = _topology.OpenStackTopologyNode
 set_default_openstack_topology_class = (
     _topology.set_default_openstack_topology_class)
+verify_osp_version = _topology.verify_osp_version
