@@ -3,7 +3,7 @@
 - name: "pick undercloud SSH shotname from inventory"
   set_fact:
     undercloud_ssh_hostname: >-
-      {{ hostvars[undercloud_hostname].ansible_hostname |
+      {{ hostvars[undercloud_hostname].ansible_fqdn |
          default(undercloud_hostname) }}
   when:
     - (undercloud_ssh_hostname | length) == 0
