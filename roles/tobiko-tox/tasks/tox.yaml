@@ -62,4 +62,4 @@
   when: run_tox is failed
   failed_when:
     - (run_tox.stdout_lines | length) > 0
-    - run_tox.stdout_lines | regex_search('run_tests: ERROR.*run_tests.py timeout out after')
+    - run_tox.stdout | regex_search('ERROR.*run_tests.py timeout out after')
