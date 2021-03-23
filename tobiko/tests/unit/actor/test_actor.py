@@ -22,22 +22,29 @@ from tobiko.tests import unit
 from tobiko import actor
 
 
-class Greeter(tobiko.Protocol):
+@tobiko.protocol
+class Greeter:
 
     async def greet(self, whom: str, greeted: 'Greeted'):
         raise NotImplementedError
 
 
-class Greeted(tobiko.Protocol):
+@tobiko.protocol
+class Greeted:
 
     def greeted(self, whom: str, greeter: Greeter):
         raise NotImplementedError
+
+
+class GreeterRef(actor.ActorRef):
+    pass
 
 
 class GreeterActor(Greeter, actor.Actor):
 
     setup_called = False
     cleanup_called = False
+    base_ref_class = GreeterRef
 
     async def setup_actor(self):
         self.setup_called = True
@@ -53,15 +60,21 @@ class GreeterActor(Greeter, actor.Actor):
             raise ValueError("'whom' parameter can't be empty")
 
         self.log.info(f"Hello {whom}!")
-        greeted.greeted(whom=whom, greeter=self.ref.get_interface(Greeter))
+        greeted.greeted(whom=whom, greeter=self.ref.use_as(Greeter))
 
 
 class ActorTest(unit.TobikoUnitTest):
 
+    def test_greeter_ref_class(self):
+        ref_class = GreeterActor.ref_class()
+        self.assertTrue(issubclass(ref_class, actor.ActorRef))
+        self.assertTrue(issubclass(ref_class, GreeterRef))
+        self.assertTrue(issubclass(ref_class, Greeter))
+
     async def test_async_request(self):
-        actor_ref = actor.create_actor(GreeterActor)
-        self.assertIsInstance(actor_ref, actor.ActorRef)
-        greeter = actor_ref.get_interface(Greeter)
+        greeter = actor.create_actor(GreeterActor).use_as(Greeter)
+        self.assertIsInstance(greeter, actor.ActorRef)
+        self.assertIsInstance(greeter, GreeterRef)
         self.assertIsInstance(greeter, Greeter)
         greeted = mock.MagicMock(spec=Greeted)
 
@@ -70,9 +83,8 @@ class ActorTest(unit.TobikoUnitTest):
                                            greeter=greeter)
 
     async def test_async_request_failure(self):
-        actor_ref = actor.create_actor(GreeterActor)
-        self.assertIsInstance(actor_ref, actor.ActorRef)
-        greeter = actor_ref.get_interface(Greeter)
+        greeter = actor.create_actor(GreeterActor).use_as(Greeter)
+        self.assertIsInstance(greeter, actor.ActorRef)
         self.assertIsInstance(greeter, Greeter)
         greeted = mock.MagicMock(spec=Greeted)
 
