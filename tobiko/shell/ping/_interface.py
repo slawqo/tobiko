@@ -86,6 +86,9 @@ def get_ping_usage(ssh_client):
                         ssh_client=ssh_client)
     usage = ((result.stdout and str(result.stdout)) or
              (result.stderr and str(result.stderr)) or "").strip()
+    if result.exit_status != 0 and 'command not found' in usage.lower():
+        raise tobiko.SkipException(
+            'ping command not installed on this instance')
     if usage:
         LOG.debug('Got ping usage text')
     else:
