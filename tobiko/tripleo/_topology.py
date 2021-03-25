@@ -36,6 +36,7 @@ class TripleoTopology(topology.OpenStackTopology):
         neutron.OPENVSWITCH_AGENT: 'tripleo_neutron_ovs_agent',
         neutron.METADATA_AGENT: 'tripleo_neutron_metadata_agent',
         neutron.OVN_METADATA_AGENT: 'tripleo_ovn_metadata_agent',
+        neutron.NEUTRON_OVN_METADATA_AGENT: 'tripleo_ovn_metadata_agent',
         neutron.OVN_CONTROLLER: 'tripleo_ovn_controller'
     }
 
@@ -45,6 +46,7 @@ class TripleoTopology(topology.OpenStackTopology):
         neutron.OPENVSWITCH_AGENT: 'neutron_ovs_agent',
         neutron.METADATA_AGENT: 'neutron_metadata_agent',
         neutron.OVN_METADATA_AGENT: 'ovn_metadata_agent',
+        neutron.NEUTRON_OVN_METADATA_AGENT: 'ovn_metadata_agent',
         neutron.OVN_CONTROLLER: 'ovn_controller'
     }
 
