@@ -175,19 +175,6 @@ class PortLogsTest(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(PortLogsStack)
 
-    def test_nova_port_notification_on_shutoff(self):
-        self.stack.ensure_server_status('ACTIVE')
-        log_digger = topology.get_log_file_digger(
-            service_name=neutron.SERVER,
-            groups=['controller'],
-            pattern=f'Nova.+event.+response.*{self.stack.server_id}')
-
-        with log_digger:
-            # Check unplugged event is logged
-            nova.shutoff_server(self.stack.server_id)
-            new_lines = log_digger.find_new_lines()
-            self.assert_has_event(new_lines, 'network-vif-unplugged')
-
     @pytest.mark.flaky(reruns=5, reruns_delay=120)
     def test_nova_port_notification_on_activate(self):
         self.stack.ensure_server_status('SHUTOFF')
