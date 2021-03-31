@@ -28,6 +28,7 @@ CentosFlavorStackFixture = _centos.CentosFlavorStackFixture
 CentosImageFixture = _centos.CentosImageFixture
 CentosServerStackFixture = _centos.CentosServerStackFixture
 CentosExternalServerStackFixture = _centos.CentosExternalServerStackFixture
+CentosQosServerStackFixture = _centos.CentosQosServerStackFixture
 
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture

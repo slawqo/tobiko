@@ -299,6 +299,37 @@ class NetworkWithNetMtuWriteStackFixture(NetworkStackFixture):
         return dict(value_specs, mtu=self.custom_mtu_size)
 
 
+@neutron.skip_if_missing_networking_extensions('qos')
+class QosPolicyStackFixture(heat.HeatStackFixture):
+    """Heat stack with a QoS Policy and some QoS Policy Rules
+    """
+    has_qos_policy = True
+    has_bwlimit = True
+    has_dscp_marking = True
+    bwlimit_kbps = CONF.tobiko.neutron.bwlimit_kbps
+    bwlimit_burst_kbps = int(0.8 * bwlimit_kbps)
+    direction = CONF.tobiko.neutron.direction
+    dscp_mark = CONF.tobiko.neutron.dscp_mark
+
+    #: Heat template file
+    template = _hot.heat_template_file('neutron/qos.yaml')
+
+
+@neutron.skip_if_missing_networking_extensions('qos')
+class NetworkQosPolicyStackFixture(NetworkStackFixture):
+
+    #: stack with the qos policy for the network
+    qos_stack = tobiko.required_setup_fixture(QosPolicyStackFixture)
+
+    has_qos_policy = True
+
+    @property
+    def network_value_specs(self):
+        value_specs = super(NetworkQosPolicyStackFixture,
+                            self).network_value_specs
+        return dict(value_specs, qos_policy_id=self.qos_stack.qos_policy_id)
+
+
 @neutron.skip_if_missing_networking_extensions('security-group')
 class SecurityGroupsFixture(heat.HeatStackFixture):
     """Heat stack with some security groups

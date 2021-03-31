@@ -1,0 +1,86 @@
+heat_template_version: newton
+
+description: |
+  Creates a qos policy with two qos rules (dscp marking and bw limit)
+
+
+parameters:
+  has_qos_policy:
+    type: boolean
+    default: false
+
+  has_bwlimit:
+    type: boolean
+    default: false
+
+  has_dscp_marking:
+    type: boolean
+    default: false
+
+  bwlimit_kbps:
+    type: number
+
+  bwlimit_burst_kbps:
+    type: number
+    default: 0
+
+  bwlimit_direction:
+    type: string
+    default: egress
+    constraints:
+      - allowed_values: [ egress, ingress ]
+
+  dscp_mark:
+    type: number
+    constraints:
+      - allowed_values: [ 0, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 46, 48, 56 ]
+
+
+conditions:
+  has_qos_policy:
+    get_param: has_qos_policy
+
+  has_bwlimit:
+    get_param: has_bwlimit
+
+  has_dscp_marking:
+    get_param: has_dscp_marking
+
+
+resources:
+  qos_policy:
+    type: OS::Neutron::QoSPolicy
+    condition: has_qos_policy
+
+  qos_bwlimit_rule:
+    type: OS::Neutron::QoSBandwidthLimitRule
+    condition: has_bwlimit
+    properties:
+      max_burst_kbps: {get_param: bwlimit_burst_kbps}
+      max_kbps: {get_param: bwlimit_kbps}
+      direction: {get_param: bwlimit_direction}
+      policy: {get_resource: qos_policy}
+
+  qos_dscp_rule:
+    type: OS::Neutron::QoSDscpMarkingRule
+    condition: has_dscp_marking
+    properties:
+      dscp_mark: {get_param: dscp_mark}
+      policy: {get_resource: qos_policy}
+
+
+outputs:
+  qos_policy_id:
+    description: QoS Policy ID
+    value: {get_resource: qos_policy}
+    condition: has_qos_policy
+
+  qos_bwlimit_rule_id:
+    description: QoS BW limit rule ID
+    value: {get_resource: qos_bwlimit_rule}
+    condition: has_bwlimit
+
+  qos_dscp_rule_id:
+    description: QoS DSCP marking rule ID
+    value: {get_resource: qos_dscp_rule}
+    condition: has_dscp_marking

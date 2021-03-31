@@ -57,3 +57,8 @@ class CentosServerStackFixture(_nova.ServerStackFixture):
 class CentosExternalServerStackFixture(CentosServerStackFixture,
                                        _nova.ExternalServerStackFixture):
     pass
+
+
+class CentosQosServerStackFixture(CentosServerStackFixture,
+                                  _nova.QosServerStackFixture):
+    pass

@@ -405,6 +405,12 @@ class ExternalServerStackFixture(ServerStackFixture, abc.ABC):
         return self.network_stack.network_id
 
 
+class QosServerStackFixture(ServerStackFixture, abc.ABC):
+    #: stack with the network with a qos policy
+    network_stack = tobiko.required_setup_fixture(
+        _neutron.NetworkQosPolicyStackFixture)
+
+
 class PeerServerStackFixture(ServerStackFixture, abc.ABC):
     """Server witch networking access requires passing by another Nova server
     """

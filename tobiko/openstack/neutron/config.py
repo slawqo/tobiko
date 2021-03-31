@@ -55,7 +55,16 @@ OPTIONS = [
                help="Host where nameservers files are located"),
     cfg.ListOpt('nameservers_filenames',
                 default=['/etc/resolv.conf'],
-                help="File to parse for getting default nameservers list")
+                help="File to parse for getting default nameservers list"),
+    cfg.IntOpt('bwlimit_kbps',
+               default=100,
+               help="The BW limit value configured for the QoS Policy Rule"),
+    cfg.StrOpt('direction',
+               default='egress',
+               help="The direction for the QoS Policy Rule"),
+    cfg.IntOpt('dscp_mark',
+               default=40,
+               help="The DSCP marking value for the QoS Policy Rule")
 ]
 
 
