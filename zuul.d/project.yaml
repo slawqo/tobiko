@@ -24,7 +24,6 @@
       jobs:
         - tobiko-infrared
         - tobiko-infrared-centos
-        - tobiko-infrared-centos-7
         - tobiko-infrared-fedora
         - tobiko-infrared-ubuntu
         - tripleo-ci-centos-8-content-provider
