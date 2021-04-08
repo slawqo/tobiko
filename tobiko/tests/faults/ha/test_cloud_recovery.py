@@ -1,7 +1,11 @@
 from __future__ import absolute_import
 
+import typing
+
+from oslo_log import log
 import testtools
 
+import tobiko
 from tobiko.openstack import neutron
 from tobiko.openstack import tests
 from tobiko.tests.faults.ha import cloud_disruptions
@@ -11,6 +15,9 @@ from tobiko.tripleo import containers
 from tobiko.tripleo import nova
 from tobiko.tripleo import undercloud
 from tobiko.tripleo import validations
+
+
+LOG = log.getLogger(__name__)
 
 
 def overcloud_health_checks(passive_checks_only=False,
@@ -54,117 +61,157 @@ def check_overcloud_processes_health():
             procs.ovn_overcloud_processes_validations)
 
 
+class OvercloudHealthCheck(tobiko.SharedFixture):
+
+    skips: typing.FrozenSet[str] = frozenset()
+
+    @classmethod
+    def run_before(cls, **params):
+        cls.run(after=False, **params)
+
+    @classmethod
+    def run_after(cls, **params):
+        cls.run(after=True, **params)
+
+    @classmethod
+    def run(cls, after: bool, **params):
+        fixture = tobiko.get_fixture(cls)
+        params.setdefault('passive_checks_only', False)
+        params.setdefault('skip_mac_table_size_test', True)
+        skips = frozenset(k for k, v in params.items() if v)
+        if after or skips < fixture.skips:
+            # Force re-check
+            tobiko.cleanup_fixture(fixture)
+        else:
+            LOG.info("Will skip Overcloud health checks if already "
+                     f"executed: {params}")
+        fixture.skips = skips
+        tobiko.setup_fixture(fixture)
+
+    def setup_fixture(self):
+        # run validations
+        params = {name: True
+                  for name in self.skips}
+        LOG.info(f"Start executing Overcloud health checks: {params}.")
+        overcloud_health_checks(**params)
+        LOG.info(f"Overcloud health checks successfully executed: {params}.")
+
+    def cleanup_fixture(self):
+        self.skips = frozenset()
+
+
 @undercloud.skip_if_missing_undercloud
 class DisruptTripleoNodesTest(testtools.TestCase):
-
     """ HA Tests: run health check -> disruptive action -> health check
     disruptive_action: a function that runs some
-    disruptive scenarion on a overcloud"""
+    disruptive scenario on a overcloud"""
+
     def test_0vercloud_health_check(self):
-        overcloud_health_checks(skip_mac_table_size_test=False)
+        OvercloudHealthCheck.run_before(skip_mac_table_size_test=False)
 
     def test_hard_reboot_controllers_recovery(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_all_controller_nodes()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     def test_soft_reboot_computes_recovery(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_all_compute_nodes(hard_reset=False)
         # verify VM status is updated after reboot
         nova.wait_for_all_instances_status('SHUTOFF')
         # start all VM instance
         # otherwise sidecar containers will not run after computes reboot
         nova.start_all_instances()
-        overcloud_health_checks(passive_checks_only=True)
+        OvercloudHealthCheck.run_after(passive_checks_only=True)
 
     # TODO(eolivare): the following test is skipped due to rhbz#1890895
     # def test_hard_reboot_computes_recovery(self):
-    #     overcloud_health_checks()
+    #     OvercloudHealthCheck.run_before()
     #     cloud_disruptions.reset_all_compute_nodes(hard_reset=True)
     #     # verify VM status is updated after reboot
     #     nova.wait_for_all_instances_status('SHUTOFF')
     #     # start all VM instance
     #     # otherwise sidecar containers will not run after computes reboot
     #     nova.start_all_instances()
-    #     overcloud_health_checks(passive_checks_only=True)
+    #     OvercloudHealthCheck.run_after(passive_checks_only=True)
 
     def test_reboot_controller_main_vip(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_controller_main_vip()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     def test_reboot_controller_non_main_vip(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_controllers_non_main_vip()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     def test_crash_controller_main_vip(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.crash_controller_main_vip()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     def test_crash_controller_non_main_vip(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.crash_controllers_non_main_vip()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     @pacemaker.skip_if_fencing_not_deployed
     def test_network_disruptor_main_vip(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.network_disrupt_controller_main_vip()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
         cloud_disruptions.network_undisrupt_controller_main_vip()
 
     # @pacemaker.skip_if_fencing_not_deployed
     # def test_network_disruptor_non_main_vip(self):
-    #     overcloud_health_checks()
+    #     OvercloudHealthCheck.run_before()
     #     cloud_disruptions.network_disrupt_controllers_non_main_vip()
-    #     overcloud_health_checks()
+    #     OvercloudHealthCheck.run_after()
     #     cloud_disruptions.network_undisrupt_controllers_non_main_vip()
 
     @neutron.skip_unless_is_ovn()
     def test_reset_ovndb_pcs_master_resource(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_ovndb_pcs_master_resource()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     @neutron.skip_unless_is_ovn()
     def test_reset_ovndb_pcs_resource(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_ovndb_pcs_resource()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     @neutron.skip_unless_is_ovn()
     def test_reset_ovndb_master_container(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_ovndb_master_container()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     def test_kill_rabbitmq_service_one_controller(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.kill_rabbitmq_service()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     def test_kill_all_galera_services(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.kill_all_galera_services()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     def test_remove_all_grastate_galera(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.remove_all_grastate_galera()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     def test_remove_one_grastate_galera(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.remove_one_grastate_galera()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
 
     def test_request_galera_sst(self):
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_before()
         cloud_disruptions.request_galera_sst()
-        overcloud_health_checks()
+        OvercloudHealthCheck.run_after()
+
 
 # [..]
 # more tests to follow
