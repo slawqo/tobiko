@@ -48,23 +48,26 @@ def grep(pattern: str,
         raise ValueError("command and files can't be both empty or None")
 
     try:
-        result = sh.execute(command_line,
+        stdout = sh.execute(command_line,
                             ssh_client=ssh_client,
-                            **execute_params)
+                            **execute_params).stdout
     except sh.ShellCommandFailed as ex:
         if ex.exit_status > 1:
             # Some unknown problem occurred
             raise
-    else:
-        output_lines: typing.List[str] = [
-            line
-            for line in result.stdout.splitlines()
-            if blank_lines or line.strip()]
-        if output_lines:
-            return output_lines
+        stdout = ex.stdout
+
+    output_lines: typing.List[str] = [
+        line
+        for line in stdout.splitlines()
+        if blank_lines or line.strip()]
+    if output_lines:
+        return output_lines
+
+    login = ssh_client.login if ssh_client else None
     raise NoMatchingLinesFound(pattern=pattern,
                                files=files,
-                               login=ssh_client and ssh_client.login or None)
+                               login=login)
 
 
 def grep_files(pattern: str,
