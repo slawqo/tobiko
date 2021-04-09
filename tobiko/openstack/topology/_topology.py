@@ -267,9 +267,16 @@ class OpenStackTopology(tobiko.SharedFixture):
         return digger
 
     def discover_nodes(self):
+        self.discover_ssh_proxy_jump_node()
         self.discover_configured_nodes()
         self.discover_controller_nodes()
         self.discover_compute_nodes()
+
+    def discover_ssh_proxy_jump_node(self):
+        ssh_client = ssh.ssh_proxy_client()
+        if ssh_client is not None:
+            self.add_node(ssh_client=ssh_client,
+                          group='proxy_jump')
 
     def discover_configured_nodes(self):
         for address in self.config.conf.nodes or []:

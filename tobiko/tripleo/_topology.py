@@ -67,6 +67,7 @@ class TripleoTopology(topology.OpenStackTopology):
     }
 
     def discover_nodes(self):
+        self.discover_ssh_proxy_jump_node()
         self.discover_undercloud_nodes()
         self.discover_overcloud_nodes()
 
