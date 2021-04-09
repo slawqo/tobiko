@@ -18,7 +18,6 @@ import typing
 
 import netaddr
 from oslo_log import log
-import pytest
 import testtools
 
 import tobiko
@@ -175,7 +174,6 @@ class PortLogsTest(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(PortLogsStack)
 
-    @pytest.mark.flaky(reruns=5, reruns_delay=120)
     def test_nova_port_notification_on_activate(self):
         self.stack.ensure_server_status('SHUTOFF')
         log_digger = topology.get_log_file_digger(
@@ -187,7 +185,7 @@ class PortLogsTest(testtools.TestCase):
             # Check plugged event is logged
             nova.activate_server(self.stack.server_id)
             new_lines = log_digger.find_new_lines()
-            self.assert_has_event(new_lines, 'network-vif-plugged')
+        self.assert_has_event(new_lines, 'network-vif-plugged')
 
     def assert_has_event(self, lines, content: str):
         plugged_events = [

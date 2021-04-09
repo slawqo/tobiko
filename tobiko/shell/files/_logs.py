@@ -40,7 +40,7 @@ class LogFileDigger(tobiko.SharedFixture):
 
     def setup_fixture(self):
         if self.pattern is not None:
-            self.find_lines(pattern=self.pattern)
+            self.find_lines()
 
     def cleanup_fixture(self):
         self.found = None
@@ -52,6 +52,9 @@ class LogFileDigger(tobiko.SharedFixture):
             pattern = self.pattern
             if pattern is None:
                 raise ValueError(f"Invalid pattern: {pattern}")
+        elif self.pattern is not None:
+            raise NotImplementedError(
+                "Combining patterns is not supported")
 
         found = self.found
         if found is None:
@@ -73,7 +76,7 @@ class LogFileDigger(tobiko.SharedFixture):
             typing.FrozenSet[str]:
         return self.find_lines(pattern=pattern, new_lines=True)
 
-    def grep_lines(self, pattern):
+    def grep_lines(self, pattern) -> typing.List[str]:
         log_files = self.list_log_files()
         return grep.grep_files(pattern=pattern, files=log_files,
                                **self.execute_params)
@@ -87,11 +90,12 @@ class LogFileDigger(tobiko.SharedFixture):
 
 class JournalLogDigger(LogFileDigger):
 
-    def grep_lines(self, pattern):
+    def grep_lines(self, pattern) -> typing.List[str]:
         try:
             result = sh.execute(["journalctl", '--no-pager',
                                  "--unit", self.filename,
                                  "--since", "30 minutes ago",
+                                 '--output', 'short-iso',
                                  '--grep', "'%s'" % pattern],
                                 **self.execute_params)
         except sh.ShellCommandFailed as ex:
@@ -101,8 +105,13 @@ class JournalLogDigger(LogFileDigger):
                     pattern=pattern,
                     files=[self.filename],
                     login=ssh_client and ssh_client.login or None)
+            else:
+                return []
         else:
-            return result.stdout.splitlines()
+            lines = [line
+                     for line in result.stdout.splitlines()
+                     if not line.startswith('-- ')]
+            return lines
 
 
 class MultihostLogFileDigger(tobiko.SharedFixture):
@@ -151,11 +160,14 @@ class MultihostLogFileDigger(tobiko.SharedFixture):
                 **self.execute_params)
         return digger
 
-    def find_lines(self, pattern: typing.Optional[str] = None,
-                   new_lines=False):
+    def find_lines(self,
+                   pattern: typing.Optional[str] = None,
+                   new_lines: bool = False) \
+            -> typing.List[typing.Tuple[str, str]]:
+
         # ensure diggers are ready before looking for lines
         tobiko.setup_fixture(self)
-        lines = []
+        lines: typing.List[typing.Tuple[str, str]] = []
         if self.diggers is not None:
             for hostname, digger in self.diggers.items():
                 for line in digger.find_lines(pattern=pattern,
@@ -163,5 +175,19 @@ class MultihostLogFileDigger(tobiko.SharedFixture):
                     lines.append((hostname, line))
         return lines
 
-    def find_new_lines(self, pattern: typing.Optional[str] = None):
-        return self.find_lines(pattern=pattern, new_lines=True)
+    def find_new_lines(self,
+                       pattern: typing.Optional[str] = None,
+                       retry_count: typing.Optional[int] = None,
+                       retry_timeout: tobiko.Seconds = 60.,
+                       retry_interval: tobiko.Seconds = None) \
+            -> typing.List[typing.Tuple[str, str]]:
+        for _ in tobiko.retry(count=retry_count,
+                              timeout=retry_timeout,
+                              interval=retry_interval,
+                              default_interval=1.,
+                              default_timeout=60.):
+            new_lines = self.find_lines(pattern=pattern, new_lines=True)
+            if new_lines:
+                return new_lines
+
+        raise RuntimeError("Internal bug: retry loop break itself.")
