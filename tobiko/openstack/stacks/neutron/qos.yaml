@@ -24,12 +24,6 @@ parameters:
     type: number
     default: 0
 
-  bwlimit_direction:
-    type: string
-    default: egress
-    constraints:
-      - allowed_values: [ egress, ingress ]
-
   dscp_mark:
     type: number
     constraints:
@@ -58,7 +52,9 @@ resources:
     properties:
       max_burst_kbps: {get_param: bwlimit_burst_kbps}
       max_kbps: {get_param: bwlimit_kbps}
-      direction: {get_param: bwlimit_direction}
+      # direction is commented out because it is only supported since Train and
+      # its default value is "egress"
+      # direction: {get_param: bwlimit_direction}
       policy: {get_resource: qos_policy}
 
   qos_dscp_rule:
