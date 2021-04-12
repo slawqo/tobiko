@@ -217,6 +217,8 @@ class HeatStackFixture(tobiko.SharedFixture):
 
     def cleanup_stack(self):
         self.delete_stack()
+        if self.stack:
+            self.wait_for_delete_complete()
 
     def delete_stack(self, stack_id=None):
         """Deletes stack."""
