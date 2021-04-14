@@ -45,6 +45,7 @@ migrate_server = _client.migrate_server
 confirm_resize = _client.confirm_resize
 reboot_server = _client.reboot_server
 NovaServer = _client.NovaServer
+ServerType = _client.ServerType
 
 WaitForCloudInitTimeoutError = _cloud_init.WaitForCloudInitTimeoutError
 cloud_config = _cloud_init.cloud_config
