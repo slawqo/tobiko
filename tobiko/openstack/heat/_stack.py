@@ -218,7 +218,7 @@ class HeatStackFixture(tobiko.SharedFixture):
     def cleanup_stack(self):
         self.delete_stack()
         if self.stack:
-            self.wait_for_delete_complete()
+            self.wait_until_stack_deleted()
 
     def delete_stack(self, stack_id=None):
         """Deletes stack."""
@@ -269,8 +269,11 @@ class HeatStackFixture(tobiko.SharedFixture):
         start = time.time()
         while stack:
             if time.time() - start > timeout:
-                raise HeatStackDeletionFailed(name=self.stack_name,
-                                              timeout=timeout)
+                raise HeatStackDeletionFailed(
+                    name=self.stack_name,
+                    observed=stack.stack_status,
+                    expected=DELETE_COMPLETE,
+                    status_reason=stack.stack_status_reason)
             LOG.debug("Waiting for deleted stack to disappear: '%s'",
                       self.stack_name)
             time.sleep(self.wait_interval)
