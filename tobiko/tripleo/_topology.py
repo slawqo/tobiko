@@ -19,8 +19,10 @@ import typing  # noqa
 from oslo_log import log
 
 from tobiko.openstack import neutron
+from tobiko.openstack import nova
 from tobiko.openstack import topology
 from tobiko.shell import files
+from tobiko.shell import sh
 from tobiko.tripleo import _overcloud
 from tobiko.tripleo import _undercloud
 
@@ -66,6 +68,12 @@ class TripleoTopology(topology.OpenStackTopology):
         neutron.SERVER: '/var/log/containers/neutron/server.log*',
     }
 
+    def create_node(self, name, ssh_client, **kwargs):
+        return TripleoTopologyNode(topology=self,
+                                   name=name,
+                                   ssh_client=ssh_client,
+                                   **kwargs)
+
     def discover_nodes(self):
         self.discover_ssh_proxy_jump_node()
         self.discover_undercloud_nodes()
@@ -82,15 +90,18 @@ class TripleoTopology(topology.OpenStackTopology):
     def discover_overcloud_nodes(self):
         if _overcloud.has_overcloud():
             for server in _overcloud.list_overcloud_nodes():
-                config = _overcloud.overcloud_host_config(server.name)
-                ssh_client = _overcloud.overcloud_ssh_client(server.name)
-                node = self.add_node(address=config.hostname,
+                _overcloud.power_on_overcloud_node(server)
+                host_config = _overcloud.overcloud_host_config(server=server)
+                ssh_client = _overcloud.overcloud_ssh_client(
+                    hostname=server.name,
+                    host_config=host_config)
+                node = self.add_node(address=host_config.hostname,
                                      hostname=server.name,
                                      group='overcloud',
                                      ssh_client=ssh_client)
+                assert isinstance(node, TripleoTopologyNode)
+                node.overcloud_server = server
                 self.discover_overcloud_node_subgroups(node)
-        else:
-            super(TripleoTopology, self).discover_nodes()
 
     def discover_overcloud_node_subgroups(self, node):
         # set of subgroups extracted from node name
@@ -118,6 +129,31 @@ class TripleoTopology(topology.OpenStackTopology):
             LOG.warning("Unable to obtain any node subgroup from node "
                         "name: '%s'", node.name)
         return subgroups
+
+
+class TripleoTopologyNode(topology.OpenStackTopologyNode):
+
+    overcloud_server: typing.Optional[nova.NovaServer] = None
+
+    def power_on_overcloud_node(self):
+        server = self.overcloud_server
+        if server is None:
+            raise TypeError(f"Node {self.name} is not and Overcloud server")
+        self.ssh_client.close()
+        LOG.debug(f"Ensuring overcloud node {self.name} power is on...")
+        _overcloud.power_on_overcloud_node(server)
+        hostname = sh.get_hostname(ssh_client=self.ssh_client)
+        LOG.debug(f"Overcloud node {self.name} power is on ("
+                  f"hostname={hostname})")
+
+    def power_off_overcloud_node(self):
+        server = self.overcloud_server
+        if server is None:
+            raise TypeError(f"Node {self.name} is not and Overcloud server")
+        self.ssh_client.close()
+        LOG.debug(f"Ensuring overcloud node {self.name} power is off...")
+        _overcloud.power_off_overcloud_node(server)
+        LOG.debug(f"Overcloud server node {self.name} power is off.")
 
 
 def is_valid_overcloud_group_name(group_name: str, node_name: str = None):

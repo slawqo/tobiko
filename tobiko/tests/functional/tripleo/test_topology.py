@@ -21,11 +21,11 @@ from tobiko import tripleo
 from tobiko.tests.functional.openstack import test_topology
 
 
+@tripleo.skip_if_missing_undercloud
 class TripleoTopologyTest(test_topology.OpenStackTopologyTest):
 
     topology = tobiko.required_setup_fixture(tripleo.TripleoTopology)
 
-    @tripleo.skip_if_missing_undercloud
     def test_undercloud_group(self):
         ssh_client = tripleo.undercloud_ssh_client()
         name = sh.get_hostname(ssh_client=ssh_client).split('.')[0]

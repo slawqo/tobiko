@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 import io
 import os
+import typing
 
 from oslo_log import log
 import six
@@ -22,6 +23,7 @@ import six
 import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
+from tobiko.openstack import ironic
 from tobiko.openstack import nova
 from tobiko.shell import sh
 from tobiko.shell import ssh
@@ -67,17 +69,47 @@ def find_overcloud_node(**params):
     return nova.find_server(client=client, **params)
 
 
-def overcloud_ssh_client(hostname, ip_version=None, network_name=None):
-    host_config = overcloud_host_config(hostname=hostname,
-                                        ip_version=ip_version,
-                                        network_name=network_name)
+def power_on_overcloud_node(server: typing.Union[nova.ServerType]):
+    session = _undercloud.undercloud_keystone_session()
+    node_id = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname',
+                      None)
+    if node_id is None:
+        client = nova.get_nova_client(session=session)
+        nova.activate_server(client=client, server=server)
+    else:
+        client = ironic.get_ironic_client(session=session)
+        ironic.power_on_node(client=client, node=node_id)
+
+
+def power_off_overcloud_node(server: typing.Union[nova.ServerType]) \
+        -> nova.NovaServer:
+    session = _undercloud.undercloud_keystone_session()
+    node_id = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname',
+                      None)
+    if node_id is None:
+        client = nova.get_nova_client(session=session)
+        nova.shutoff_server(client=client, server=server)
+    else:
+        client = ironic.get_ironic_client(session=session)
+        ironic.power_off_node(client=client, node=node_id)
+
+
+def overcloud_ssh_client(hostname=None, ip_version=None, network_name=None,
+                         server=None, host_config=None):
+    if host_config is None:
+        host_config = overcloud_host_config(hostname=hostname,
+                                            ip_version=ip_version,
+                                            network_name=network_name,
+                                            server=server)
     return ssh.ssh_client(host=hostname, host_config=host_config)
 
 
-def overcloud_host_config(hostname, ip_version=None, network_name=None):
+def overcloud_host_config(hostname=None, ip_version=None, network_name=None,
+                          server=None):
     host_config = OvercloudHostConfig(host=hostname,
                                       ip_version=ip_version,
-                                      network_name=network_name)
+                                      network_name=network_name,
+                                      server=server)
     return tobiko.setup_fixture(host_config)
 
 
@@ -130,6 +162,7 @@ def _get_undercloud_file(ssh_client, source, destination, mode):
 
 
 class OvercloudHostConfig(tobiko.SharedFixture):
+    host = None
     hostname = None
     port = None
     username = None
@@ -137,22 +170,29 @@ class OvercloudHostConfig(tobiko.SharedFixture):
     ip_version = None
     network_name = None
     key_filename = None
+    server = None
 
-    def __init__(self, host, ip_version=None, network_name=None,
-                 **kwargs):
+    def __init__(self, host=None, ip_version=None, network_name=None,
+                 server=None, **kwargs):
         super(OvercloudHostConfig, self).__init__()
-        tobiko.check_valid_type(host, six.string_types)
-        self.host = host
+        if host:
+            self.host = host
         if ip_version:
             self.ip_version = ip_version
         if network_name:
             self.network_name = network_name
+        if server:
+            self.server = server
+            if self.host is None:
+                self.host = server.name
+        tobiko.check_valid_type(self.host, six.string_types)
         self._connect_parameters = ssh.gather_ssh_connect_parameters(**kwargs)
 
     def setup_fixture(self):
         self.hostname = str(overcloud_node_ip_address(
             name=self.host, ip_version=self.ip_version,
-            network_name=self.network_name))
+            network_name=self.network_name,
+            server=self.server))
         self.port = self.port or CONF.tobiko.tripleo.overcloud_ssh_port
         self.username = (self.username or
                          CONF.tobiko.tripleo.overcloud_ssh_username)
