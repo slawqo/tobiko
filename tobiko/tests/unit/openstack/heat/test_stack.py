@@ -261,6 +261,7 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
 
     def test_cleanup(self):
         client = MockClient()
+        client.stacks.get.return_value = None
         stack = MyStack(client=client)
         stack.cleanUp()
         client.stacks.delete.assert_called_once_with(stack.stack_name)
