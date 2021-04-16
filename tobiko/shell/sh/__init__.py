@@ -42,6 +42,7 @@ ShellStdinClosed = _exception.ShellStdinClosed
 
 execute = _execute.execute
 execute_process = _execute.execute_process
+execute_result = _execute.execute_result
 ShellExecuteResult = _execute.ShellExecuteResult
 
 HostNameError = _hostname.HostnameError

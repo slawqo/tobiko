@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import tobiko
 from tobiko import config
 from tobiko.openstack import glance
+from tobiko.openstack import nova
 from tobiko.openstack.stacks import _nova
 
 
@@ -61,4 +62,9 @@ class CentosExternalServerStackFixture(CentosServerStackFixture,
 
 class CentosQosServerStackFixture(CentosServerStackFixture,
                                   _nova.QosServerStackFixture):
-    pass
+
+    @property
+    def cloud_config(self):
+        return nova.cloud_config(
+            super(CentosQosServerStackFixture, self).cloud_config,
+            packages=['iperf3'])
