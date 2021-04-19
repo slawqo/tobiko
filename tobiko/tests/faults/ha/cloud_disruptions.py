@@ -192,6 +192,12 @@ def reboot_all_controller_nodes(reboot_method=sh.hard_reset_method,
             check_overcloud_node_responsive(controller)
 
 
+def hard_power_off_overcloud_nodes(nodes):
+    for node in nodes:
+        sh.reboot_host(ssh_client=node.ssh_client,
+                       method=sh.hard_shutdown_method)
+
+
 def get_main_vip():
     """return the ip of the overcloud main vip.
     Retreive an ip address (ipv4/ipv6) from the auth_url."""

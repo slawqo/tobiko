@@ -215,7 +215,7 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.request_galera_sst()
         OvercloudHealthCheck.run_after()
 
-    def test_controllers_shutdown(self):
+    def _test_controllers_shutdown(self, shutdown_method):
         all_nodes = topology.list_openstack_nodes(group='controller')
         if len(all_nodes) < 3:
             self.skipTest('It requires at least three controller nodes')
@@ -229,10 +229,10 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         quorum_level = math.ceil(0.5 * len(all_nodes))
         assert quorum_level >= len(all_nodes) - quorum_level
         nodes = random.sample(all_nodes, quorum_level)
+
         LOG.info(f"Power off {quorum_level} random controller nodes: "
                  f"{[node.name for node in nodes]}")
-        for node in nodes:
-            node.power_off_overcloud_node()
+        shutdown_method(nodes)
 
         random.shuffle(nodes)
         LOG.info("Power on controller nodes: "
@@ -245,6 +245,17 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         LOG.info("Verify can create VMs after controllers power on...")
         tests.test_server_creation()
 
+    def test_controllers_shutdown(self):
+
+        def shutdown_nodes(nodes):
+            for node in nodes:
+                node.power_off_overcloud_node()
+
+        self._test_controllers_shutdown(shutdown_nodes)
+
+    def test_controllers_hard_power_down(self):
+        self._test_controllers_shutdown(
+            cloud_disruptions.hard_power_off_overcloud_nodes)
 
 # [..]
 # more tests to follow
