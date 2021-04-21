@@ -14,12 +14,30 @@
 from __future__ import absolute_import
 
 from tobiko.openstack.octavia import _client
+from tobiko.openstack.octavia import _waiters
+from tobiko.openstack.octavia import _constants
+from tobiko.openstack.octavia import _validators
+from tobiko.openstack.octavia import _exceptions
 
 
 OCTAVIA_CLIENT_CLASSSES = _client.OCTAVIA_CLIENT_CLASSSES
-get_loadbalancer = _client.get_loadbalancer
 get_octavia_client = _client.get_octavia_client
 octavia_client = _client.octavia_client
 OctaviaClientFixture = _client.OctaviaClientFixture
-
 get_loadbalancer = _client.get_loadbalancer
+get_member = _client.get_member
+
+# Waiters
+wait_for_status = _waiters.wait_for_status
+
+# Validators
+check_members_balanced = _validators.check_members_balanced
+
+# Exceptions
+RequestException = _exceptions.RequestException
+TimeoutException = _exceptions.TimeoutException
+
+# Constants
+PROVISIONING_STATUS = _constants.PROVISIONING_STATUS
+ACTIVE = _constants.ACTIVE
+ERROR = _constants.ERROR

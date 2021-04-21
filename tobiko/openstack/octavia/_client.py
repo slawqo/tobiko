@@ -71,3 +71,8 @@ def get_octavia_client(session=None, shared=True, init_client=None,
 
 def get_loadbalancer(loadbalancer_id, client=None):
     return octavia_client(client).load_balancer_show(lb_id=loadbalancer_id)
+
+
+def get_member(pool_id, member_id, client=None):
+    return octavia_client(client).member_show(pool_id=pool_id,
+                                              member_id=member_id)

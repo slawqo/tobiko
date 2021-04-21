@@ -14,14 +14,16 @@
 #    under the License.
 from __future__ import absolute_import
 
+import testtools
+
 import tobiko
 from tobiko.openstack import keystone
+from tobiko.openstack import octavia
 from tobiko.openstack import stacks
-from tobiko.tests.scenario.octavia import waiters, octavia_base
 
 
 @keystone.skip_if_missing_service(name='octavia')
-class OctaviaBasicTrafficScenarioTest(octavia_base.OctaviaTest):
+class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
     """Octavia traffic scenario test.
 
     Create a load balancer with 2 members that run a server application,
@@ -56,33 +58,33 @@ class OctaviaBasicTrafficScenarioTest(octavia_base.OctaviaTest):
         self.loadbalancer_port = self.listener_stack.lb_port
         self.loadbalancer_protocol = self.listener_stack.lb_protocol
 
-        # Wait for members
-        waiters.wait_for_member_functional(self.client_stack,
-                                           self.pool_stack,
-                                           self.member1_stack, self.request)
-        waiters.wait_for_member_functional(self.client_stack,
-                                           self.pool_stack,
-                                           self.member2_stack, self.request)
+        octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
+                                status=octavia.ACTIVE,
+                                get_client=octavia.get_member,
+                                object_id=self.pool_stack.pool_id,
+                                member_id=self.member1_stack.member_id)
+
+        octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
+                                status=octavia.ACTIVE,
+                                get_client=octavia.get_member,
+                                object_id=self.pool_stack.pool_id,
+                                member_id=self.member2_stack.member_id)
 
         # Wait for LB is provisioned and ACTIVE
-        waiters.wait_for_loadbalancer_is_active(self.loadbalancer_stack)
-
-        # Check if load balancer is functional
-        waiters.wait_for_loadbalancer_functional(self.loadbalancer_stack,
-                                                 self.client_stack,
-                                                 self.loadbalancer_vip,
-                                                 self.loadbalancer_protocol,
-                                                 self.loadbalancer_port,
-                                                 self.request)
+        octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
+                                status=octavia.ACTIVE,
+                                get_client=octavia.get_loadbalancer,
+                                object_id=(
+                                    self.loadbalancer_stack.loadbalancer_id))
 
     @property
     def loadbalancer(self):
         return self.loadbalancer_stack
 
     def test_traffic(self):
-        self.check_members_balanced(self.pool_stack,
-                                    self.client_stack,
-                                    self.members_count,
-                                    self.loadbalancer_vip,
-                                    self.loadbalancer_protocol,
-                                    self.loadbalancer_port)
+        octavia.check_members_balanced(self.pool_stack,
+                                       self.client_stack,
+                                       self.members_count,
+                                       self.loadbalancer_vip,
+                                       self.loadbalancer_protocol,
+                                       self.loadbalancer_port)

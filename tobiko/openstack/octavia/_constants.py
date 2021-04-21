@@ -12,10 +12,10 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-from __future__ import absolute_import
 
-from tobiko.tests.scenario.octavia import validators
+# Octavia attributes
+PROVISIONING_STATUS = 'provisioning_status'
 
-
-class OctaviaTest(validators.Validators):
-    pass
+# Octavia provisioning status
+ACTIVE = 'ACTIVE'
+ERROR = 'ERROR'
