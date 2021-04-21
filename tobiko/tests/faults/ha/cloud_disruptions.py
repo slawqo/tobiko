@@ -37,6 +37,8 @@ network_disruption = """
 undisrupt_network = """
  sudo iptables-restore /home/heat-admin/working.iptables.rules
 """
+ban_resource = "sudo pcs resource ban {} {}"
+clear_resource = "sudo pcs resource clear {} {}"
 ovn_db_pcs_resource_restart = "sudo pcs resource restart ovn-dbs-bundle"
 kill_rabbit = "sudo kill -9 $(pgrep beam.smp)"
 kill_galera = "sudo kill -9 $(pgrep mysqld)"
@@ -57,6 +59,10 @@ class PcsDisableException(tobiko.TobikoException):
 
 class PcsEnableException(tobiko.TobikoException):
     message = "pcs enable didn't start the resource"
+
+
+class PcsBanException(tobiko.TobikoException):
+    message = "the resource wasn't banned"
 
 
 class GaleraBoostrapException(tobiko.TobikoException):
@@ -335,6 +341,54 @@ def reset_ovndb_master_container():
     containers.action_on_container('restart',
                                    partial_container_name=resource,
                                    container_host=node)
+
+
+def ban_master_resource(resource_type, resource_name):
+    """ban master resource and check that it stopped
+    and another node is promoted to master"""
+    nodes = topology.list_openstack_nodes(group='controller')
+    resource_num = pacemaker.PacemakerResourcesStatus().resource_count(
+        resource_type)
+    # repeat process for all nodes except one
+    for i in range(resource_num - 1):
+        master_node_name = pacemaker.get_resource_master_node(resource_type)
+        if not master_node_name:
+            break
+        else:
+            sh.execute(ban_resource.format(resource_name,
+                                           master_node_name[0]),
+                       ssh_client=topology.get_openstack_node(
+                           master_node_name[0]).ssh_client)
+            for attempt_number in range(60):
+                try:
+                    # check if resource banned and another slave promoted
+                    if pacemaker.PacemakerResourcesStatus().resource_banned(
+                            resource_type):
+                        # if there one resource left(master), test succeded
+                        if i == resource_num - 2:
+                            clear_resources(nodes, resource_name)
+                            time.sleep(10)
+                            return
+                        # more than 2 resources, so repeat process
+                        else:
+                            time.sleep(20)
+                            break
+                    else:
+                        raise PcsBanException()
+                except PcsBanException():
+                    LOG.info('Retrying pacemaker resource checks attempt '
+                             '{} of 60'.format(attempt_number))
+                time.sleep(1)
+    clear_resources(nodes, resource_name)
+    tobiko.fail('The resource {} was not promoted to master'.format(
+        resource_name))
+
+
+def clear_resources(nodes, resource_name):
+    for cont in range(len(nodes)):
+        sh.execute(clear_resource.format(resource_name,  'controller-{}'.
+                                         format(cont)),
+                   ssh_client=nodes[0].ssh_client)
 
 
 def kill_rabbitmq_service():
