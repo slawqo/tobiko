@@ -243,7 +243,7 @@ class FloatingIpWithL3HATest(FloatingIPTest):
     stack = tobiko.required_setup_fixture(stacks.L3haServerStackFixture)
 
 
-@topology.skip_unless_osp_version('16.1', higher=True)
+@topology.skip_unless_osp_version('16.1')
 class TestFloatingIPLogging(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(stacks.NetworkStackFixture)
@@ -297,7 +297,6 @@ class TestFloatingIPLogging(testtools.TestCase):
         self.assertIn(self.port['id'], new_logs[0][1])
         self.assertIn(self.fip['floating_ip_address'], new_logs[0][1])
 
-    @tobiko.skip('Skipped because of bz1542122')
     def test_fip_delete_detach_log(self):
         '''Test log that FIP is dettached from VM if FIP is deleted'''
         neutron.update_floating_ip(
