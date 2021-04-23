@@ -60,7 +60,7 @@ find_l3_agent_hosting_router = _client.find_l3_agent_hosting_router
 list_dhcp_agent_hosting_network = _client.list_dhcp_agent_hosting_network
 
 NoSuchPort = _client.NoSuchPort
-NoSuchFIP = _client.NoSuchPort
+NoSuchFIP = _client.NoSuchFIP
 NoSuchRouter = _client.NoSuchRouter
 NoSuchSubnet = _client.NoSuchSubnet
 
