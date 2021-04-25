@@ -17,10 +17,9 @@ from __future__ import absolute_import
 import time
 
 from oslo_log import log
+import netaddr
 
 import tobiko
-from tobiko.openstack import octavia
-from tobiko.shell import ssh
 from tobiko.shell import sh
 
 
@@ -28,34 +27,21 @@ LOG = log.getLogger(__name__)
 CURL_OPTIONS = "-f --connect-timeout 2 -g"
 
 
-def request(client_stack, server_ip_address, protocol, server_port):
-    """Perform a request on a server.
+def request(client_stack, ip_address, protocol, port, ssh_client=None):
+    ssh_client = ssh_client or client_stack.ssh_client
 
-    Returns the response in case of success, throws an RequestException
-    otherwise.
-    """
-    if ':' in server_ip_address:
-        # Add square brackets around IPv6 address to please curl
-        server_ip_address = "[{}]".format(server_ip_address)
-    cmd = "curl {} {}://{}:{}/id".format(
-        CURL_OPTIONS, protocol.lower(), server_ip_address, server_port)
+    if netaddr.IPAddress(ip_address) == 6:
+        ip_address = f"[{ip_address}]"
 
-    ssh_client = ssh.ssh_client(
-        client_stack.floating_ip_address,
-        username=client_stack.image_fixture.username)
+    cmd = f"curl {CURL_OPTIONS} {protocol.lower()}://{ip_address}:{port}/id"
 
-    ret = sh.ssh_execute(ssh_client, cmd)
-    if ret.exit_status != 0:
-        raise octavia.RequestException(command=cmd,
-                                       error=ret.stderr)
-
-    return ret.stdout
+    return sh.ssh_execute(ssh_client, cmd).stdout
 
 
 def check_members_balanced(pool_stack, client_stack,
                            members_count,
                            loadbalancer_vip, loadbalancer_protocol,
-                           loadbalancer_port):
+                           loadbalancer_port, ssh_client=None):
 
     """Check if traffic is properly balanced between members."""
 
@@ -66,7 +52,7 @@ def check_members_balanced(pool_stack, client_stack,
     for _ in range(members_count * 10):
         content = request(
             client_stack, loadbalancer_vip,
-            loadbalancer_protocol, loadbalancer_port)
+            loadbalancer_protocol, loadbalancer_port, ssh_client)
 
         if content not in replies:
             replies[content] = 0
