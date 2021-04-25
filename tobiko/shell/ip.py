@@ -91,6 +91,17 @@ def list_network_namespaces(**execute_params):
     return namespaces
 
 
+def list_network_interfaces(**execute_params):
+    interfaces = tobiko.Selection()
+    output = execute_ip(['--brief', 'address', 'list'], **execute_params)
+    if output:
+        for line in output.splitlines():
+            fields = line.strip().split()
+            interface = fields[0]
+            interfaces.append(interface)
+    return interface
+
+
 IP_COMMAND = sh.shell_command(['/sbin/ip'])
 
 
