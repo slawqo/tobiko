@@ -32,8 +32,6 @@ class RebootHostMethod(enum.Enum):
     SOFT = '/sbin/reboot',
     HARD = 'echo 1 > /proc/sys/kernel/sysrq && echo b > /proc/sysrq-trigger',
     CRASH = 'echo 1 > /proc/sys/kernel/sysrq && echo c > /proc/sysrq-trigger',
-    HARD_SHUTDOWN = \
-        'echo 1 > /proc/sys/kernel/sysrq && echo o > /proc/sysrq-trigger',
 
     def __init__(self, command: str):
         self.command = command
@@ -55,7 +53,7 @@ def reboot_host(ssh_client: ssh.SSHClientFixture,
                                  timeout=timeout,
                                  method=method)
     tobiko.setup_fixture(reboot)
-    if method != RebootHostMethod.HARD_SHUTDOWN and wait:
+    if wait:
         reboot.wait_for_operation()
     return reboot
 
