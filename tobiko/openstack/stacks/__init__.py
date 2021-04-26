@@ -17,6 +17,7 @@ from __future__ import absolute_import
 
 from tobiko.openstack.stacks import _centos
 from tobiko.openstack.stacks import _cirros
+from tobiko.openstack.stacks import _fedora
 from tobiko.openstack.stacks import _redhat
 from tobiko.openstack.stacks import _l3ha
 from tobiko.openstack.stacks import _neutron
@@ -41,6 +42,10 @@ RebootCirrosServerOperation = _cirros.RebootCirrosServerOperation
 EvacuableCirrosImageFixture = _cirros.EvacuableCirrosImageFixture
 EvacuableServerStackFixture = _cirros.EvacuableServerStackFixture
 CirrosHttpServerStackFixture = _cirros.CirrosHttpServerStackFixture
+
+FedoraFlavorStackFixture = _fedora.FedoraFlavorStackFixture
+FedoraImageFixture = _fedora.FedoraImageFixture
+FedoraServerStackFixture = _fedora.FedoraServerStackFixture
 
 RedHatFlavorStackFixture = _redhat.RedHatFlavorStackFixture
 RhelImageFixture = _redhat.RhelImageFixture
