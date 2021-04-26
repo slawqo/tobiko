@@ -77,7 +77,6 @@ RebootHostMethod = _reboot.RebootHostMethod
 crash_method = RebootHostMethod.CRASH
 hard_reset_method = RebootHostMethod.HARD
 soft_reset_method = RebootHostMethod.SOFT
-hard_shutdown_method = RebootHostMethod.HARD_SHUTDOWN
 
 ssh_process = _ssh.ssh_process
 ssh_execute = _ssh.ssh_execute
