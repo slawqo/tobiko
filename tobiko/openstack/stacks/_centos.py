@@ -43,7 +43,7 @@ class CentosFlavorStackFixture(_nova.FlavorStackFixture):
     ram = 256
 
 
-class CentosServerStackFixture(_nova.ServerStackFixture):
+class CentosServerStackFixture(_nova.CloudInitServerStackFixture):
 
     #: Glance image used to create a Nova server instance
     image_fixture = tobiko.required_setup_fixture(CentosImageFixture)

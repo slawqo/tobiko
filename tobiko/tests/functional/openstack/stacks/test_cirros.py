@@ -81,7 +81,7 @@ class CirrosServerStackTest(testtools.TestCase):
         self.assertTrue(output)
 
     def test_swap_file(self):
-        if self.stack.swap_maxsize is None:
+        if getattr(self.stack, 'swap_maxsize', None) is None:
             self.skipTest('Swap maxsize is None')
 
         cloud_config = self.stack.cloud_config

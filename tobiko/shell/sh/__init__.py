@@ -49,6 +49,8 @@ HostNameError = _hostname.HostnameError
 get_hostname = _hostname.get_hostname
 
 join_chunks = _io.join_chunks
+ShellStdout = _io.ShellStdout
+select_files = _io.select_files
 
 local_execute = _local.local_execute
 local_process = _local.local_process

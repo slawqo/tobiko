@@ -14,13 +14,15 @@
 from __future__ import absolute_import
 
 import collections
-import time
+import contextlib
+import typing
 
 from oslo_log import log
 import yaml
 
 import tobiko
 from tobiko.shell import sh
+from tobiko.shell import ssh
 
 LOG = log.getLogger(__name__)
 
@@ -77,47 +79,128 @@ class CloudConfig(dict):
         return combine_cloud_configs([self, other])
 
 
-class WaitForCloudInitTimeoutError(tobiko.TobikoException):
-    message = ("after {enlapsed_time} seconds cloud-init status of host "
-               "{hostname!r} is still {actual!r} while it is expecting to "
-               "be in {expected!r}")
+class InvalidCloudInitStatusError(tobiko.TobikoException):
+    message = ("cloud-init status of host '{hostname}' is "
+               "'{actual_status}' while it is expecting to "
+               "be in {expected_states!r}:\n"
+               "{details}")
 
 
-def get_cloud_init_status(ssh_client=None, timeout=None):
-    output = sh.execute('cloud-init status',
-                        ssh_client=ssh_client,
-                        timeout=timeout,
-                        sudo=True).stdout
-    return yaml.load(output)['status']
+class WaitForCloudInitTimeoutError(InvalidCloudInitStatusError):
+    message = ("after {timeout} seconds cloud-init status of host "
+               "'{hostname}' is still '{actual_status}' while it is "
+               "expecting to be in {expected_states!r}:\n"
+               "{details}")
 
 
-def wait_for_cloud_init_done(ssh_client=None, timeout=None,
-                             sleep_interval=None):
-    return wait_for_cloud_init_status(expected={'done'},
+COUD_INIT_TRANSIENT_STATES = {
+    'done': tuple(['running'])
+}
+
+
+def get_cloud_init_status(
+        ssh_client: typing.Optional[ssh.SSHClientFixture] = None,
+        timeout: tobiko.Seconds = None) \
+        -> str:
+    try:
+        output = sh.execute('cloud-init status',
+                            ssh_client=ssh_client,
+                            timeout=timeout,
+                            sudo=True).stdout
+    except sh.ShellCommandFailed as ex:
+        output = ex.stdout
+        if output:
+            LOG.debug(f"Cloud init status error reported:\n{ex}")
+        else:
+            raise
+
+    status = yaml.load(output)
+    tobiko.check_valid_type(status, dict)
+    tobiko.check_valid_type(status['status'], str)
+    return status['status']
+
+
+def wait_for_cloud_init_done(
+        ssh_client: typing.Optional[ssh.SSHClientFixture] = None,
+        timeout: tobiko.Seconds = None,
+        sleep_interval: tobiko.Seconds = None) \
+        -> str:
+    return wait_for_cloud_init_status('done',
                                       ssh_client=ssh_client,
                                       timeout=timeout,
                                       sleep_interval=sleep_interval)
 
 
-def wait_for_cloud_init_status(expected, ssh_client=None, timeout=None,
-                               sleep_interval=None):
-    expected = set(expected)
-    timeout = timeout and float(timeout) or 1200.
-    sleep_interval = sleep_interval and float(sleep_interval) or 5.
-    start_time = time.time()
-    actual = get_cloud_init_status(ssh_client=ssh_client, timeout=timeout)
-    while actual not in expected:
-        enlapsed_time = time.time() - start_time
-        if enlapsed_time >= timeout:
-            raise WaitForCloudInitTimeoutError(hostname=ssh_client.hostname,
-                                               actual=actual,
-                                               expected=expected,
-                                               enlapsed_time=enlapsed_time)
+def wait_for_cloud_init_status(
+        *expected_states: str,
+        transient_states: typing.Optional[typing.Container[str]] = None,
+        ssh_client: typing.Optional[ssh.SSHClientFixture] = None,
+        timeout: tobiko.Seconds = None,
+        sleep_interval: tobiko.Seconds = None) \
+        -> str:
+    hostname = getattr(ssh_client, 'hostname', None)
+    if transient_states is None:
+        transient_states = list()
+        for status in expected_states:
+            transient_states += COUD_INIT_TRANSIENT_STATES.get(status, [])
 
-        LOG.debug("Waiting cloud-init status on host %r to switch from %r to "
-                  "%r...",
-                  ssh_client.hostname, actual, expected)
-        time.sleep(sleep_interval)
-        actual = get_cloud_init_status(ssh_client=ssh_client,
-                                       timeout=timeout-enlapsed_time)
-    return actual
+    with open_cloud_init_ouput(timeout=timeout,
+                               ssh_client=ssh_client) as output:
+        for attempt in tobiko.retry(timeout=timeout,
+                                    interval=sleep_interval,
+                                    default_timeout=600.,
+                                    default_interval=5.):
+            actual_status = get_cloud_init_status(ssh_client=ssh_client,
+                                                  timeout=attempt.time_left)
+            if actual_status in expected_states:
+                return actual_status
+
+            output.readall()
+            if actual_status not in transient_states:
+                raise InvalidCloudInitStatusError(
+                    hostname=hostname,
+                    actual_status=actual_status,
+                    expected_states=expected_states,
+                    details=str(output))
+
+            try:
+                attempt.check_limits()
+            except tobiko.RetryTimeLimitError as ex:
+                raise WaitForCloudInitTimeoutError(
+                    timeout=attempt.timeout,
+                    hostname=hostname,
+                    actual_status=actual_status,
+                    expected_states=expected_states,
+                    details=str(output)) from ex
+
+            # show only the last 10 lines
+            details = '\n'.join(str(output).splitlines()[-10:])
+            LOG.debug(f"Waiting cloud-init status on host '{hostname}' to "
+                      f"switch from '{actual_status}' to any of expected "
+                      f"states ({', '.join(expected_states)})\n\n"
+                      f"{details}\n")
+
+    raise RuntimeError("Retry loop ended himself")
+
+
+CLOUD_INIT_OUTPUT_FILE = '/var/log/cloud-init-output.log'
+
+
+@contextlib.contextmanager
+def open_cloud_init_ouput(
+        cloud_init_output_file: str = CLOUD_INIT_OUTPUT_FILE,
+        tail=False,
+        follow=False,
+        **params) \
+        -> typing.Generator[sh.ShellStdout, None, None]:
+    command = ['tail']
+    if not tail:
+        # Start from the begin of the file
+        command += ['-c', '+0']
+    if follow:
+        command += ['-F']
+
+    command += [cloud_init_output_file]
+    process = sh.process(command, **params)
+    with process:
+        yield process.stdout

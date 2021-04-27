@@ -57,7 +57,7 @@ class UbuntuMinimalFlavorStackFixture(_nova.FlavorStackFixture):
     ram = 128
 
 
-class UbuntuServerStackFixture(_nova.ServerStackFixture):
+class UbuntuServerStackFixture(_nova.CloudInitServerStackFixture):
 
     #: Glance image used to create a Nova server instance
     image_fixture = tobiko.required_setup_fixture(UbuntuImageFixture)

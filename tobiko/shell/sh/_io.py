@@ -107,6 +107,17 @@ class ShellReadable(ShellIOBase):
         return (not self.closed and
                 getattr(self.delegate, 'read_ready', False))
 
+    def readall(self, size=None):
+        return join_chunks(self._readall(size))
+
+    def _readall(self, size):
+        while self.read_ready:
+            chunk = self.read(size=size)
+            if chunk:
+                yield chunk
+            else:
+                break
+
 
 class ShellWritable(ShellIOBase):
 
