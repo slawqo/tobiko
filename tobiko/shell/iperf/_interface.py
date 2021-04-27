@@ -24,43 +24,6 @@ from tobiko.shell import sh
 LOG = log.getLogger(__name__)
 
 
-def install_iperf(ssh_client):
-    def iperf_help():
-        cmd = 'iperf3 --help'
-        try:
-            return sh.execute(cmd,
-                              expect_exit_status=None,
-                              ssh_client=ssh_client)
-        except FileNotFoundError:
-            return sh.execute_result(command=cmd,
-                                     exit_status=127,
-                                     stdout='command not found')
-    result = iperf_help()
-    usage = ((result.stdout and str(result.stdout)) or
-             (result.stderr and str(result.stderr)) or "").strip()
-    if result.exit_status != 0 and 'command not found' in usage.lower():
-        install_command = '{install_tool} install -y iperf3'
-        install_tools = ('yum', 'apt')
-        for install_tool in install_tools:
-            try:
-                result = sh.execute(
-                    command=install_command.format(install_tool=install_tool),
-                    ssh_client=ssh_client,
-                    sudo=True)
-            except sh.ShellError:
-                LOG.debug(f'Unable to install iperf3 using {install_tool}')
-            else:
-                LOG.debug(f'iperf3 successfully installed with {install_tool}')
-                break
-
-        if iperf_help().exit_status != 0:
-            raise RuntimeError('iperf3 command was not installed successfully')
-    elif result.exit_status != 0:
-        raise RuntimeError('Error executing iperf3 command')
-    else:
-        LOG.debug('iperf3 already installed')
-
-
 def get_iperf_command(parameters, ssh_client):
     interface = get_iperf_interface(ssh_client=ssh_client)
     return interface.get_iperf_command(parameters)
@@ -90,7 +53,6 @@ class IperfInterfaceManager(tobiko.SharedFixture):
         except KeyError:
             pass
 
-        install_iperf(ssh_client)
         LOG.debug('Assign default iperf interface to SSH client %r',
                   ssh_client)
         self.client_interfaces[ssh_client] = self.default_interface

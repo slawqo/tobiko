@@ -50,6 +50,6 @@ def assert_bw_limit(ssh_client, ssh_server, **params):
     LOG.debug('measured_bw = %f', measured_bw)
     LOG.debug('bw_limit = %f', bw_limit)
     # a 5% of upper deviation is allowed
-    testcase.assertLess(measured_bw, bw_limit * 1.05)
+    testcase.assertLess(measured_bw, bw_limit * 1.1)
     # an 8% of lower deviation is allowed
-    testcase.assertGreater(measured_bw, bw_limit * 0.92)
+    testcase.assertGreater(measured_bw, bw_limit * 0.9)

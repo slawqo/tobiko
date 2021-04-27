@@ -57,7 +57,7 @@ OPTIONS = [
                 default=['/etc/resolv.conf'],
                 help="File to parse for getting default nameservers list"),
     cfg.IntOpt('bwlimit_kbps',
-               default=100,
+               default=1000,
                help="The BW limit value configured for the QoS Policy Rule"),
     cfg.StrOpt('direction',
                default='egress',

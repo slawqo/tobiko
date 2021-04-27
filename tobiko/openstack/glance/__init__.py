@@ -32,6 +32,7 @@ FileGlanceImageFixture = _image.FileGlanceImageFixture
 GlanceImageFixture = _image.GlanceImageFixture
 HasImageMixin = _image.HasImageMixin
 URLGlanceImageFixture = _image.URLGlanceImageFixture
+CustomizedGlanceImageFixture = _image.CustomizedGlanceImageFixture
 
 open_image_file = _io.open_image_file
 

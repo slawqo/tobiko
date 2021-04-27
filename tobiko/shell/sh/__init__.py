@@ -25,6 +25,7 @@ from tobiko.shell.sh import _nameservers
 from tobiko.shell.sh import _process
 from tobiko.shell.sh import _ps
 from tobiko.shell.sh import _reboot
+from tobiko.shell.sh import _sftp
 from tobiko.shell.sh import _ssh
 from tobiko.shell.sh import _uptime
 
@@ -79,6 +80,9 @@ RebootHostMethod = _reboot.RebootHostMethod
 crash_method = RebootHostMethod.CRASH
 hard_reset_method = RebootHostMethod.HARD
 soft_reset_method = RebootHostMethod.SOFT
+
+put_file = _sftp.put_file
+get_file = _sftp.get_file
 
 ssh_process = _ssh.ssh_process
 ssh_execute = _ssh.ssh_execute

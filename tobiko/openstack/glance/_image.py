@@ -28,6 +28,7 @@ from tobiko.config import get_bool_env
 from tobiko.openstack.glance import _client
 from tobiko.openstack.glance import _io
 from tobiko.openstack import keystone
+from tobiko.shell import sh
 
 
 LOG = log.getLogger(__name__)
@@ -326,7 +327,9 @@ class FileGlanceImageFixture(UploadGranceImageFixture):
         return os.path.join(self.real_image_dir, self.image_file)
 
     def get_image_data(self):
-        image_file = self.real_image_file
+        return self.get_image_file(image_file=self.real_image_file)
+
+    def get_image_file(self, image_file: str):
         image_size = os.path.getsize(image_file)
         LOG.debug('Uploading image %r data from file %r (%d bytes)',
                   self.image_name, image_file, image_size)
@@ -338,20 +341,19 @@ class FileGlanceImageFixture(UploadGranceImageFixture):
 
 class URLGlanceImageFixture(FileGlanceImageFixture):
 
-    image_url: typing.Optional[str] = None
+    image_url: str
 
-    def __init__(self, image_url=None, **kwargs):
+    def __init__(self, image_url: typing.Optional[str] = None, **kwargs):
         super(URLGlanceImageFixture, self).__init__(**kwargs)
-        if image_url:
-            self.image_url = image_url
-        else:
+        if image_url is None:
             image_url = self.image_url
+        else:
+            self.image_url = image_url
         tobiko.check_valid_type(image_url, str)
 
-    def get_image_data(self):
+    def get_image_file(self, image_file: str):
         http_request = requests.get(self.image_url, stream=True)
         expected_size = int(http_request.headers.get('content-length', 0))
-        image_file = self.real_image_file
         chunks = http_request.iter_content(chunk_size=io.DEFAULT_BUFFER_SIZE)
         download_image = True
         if expected_size:
@@ -373,7 +375,9 @@ class URLGlanceImageFixture(FileGlanceImageFixture):
             self._download_image_file(image_file=image_file,
                                       chunks=chunks,
                                       expected_size=expected_size)
-        return super(URLGlanceImageFixture, self).get_image_data()
+        image_file = self.customize_image_file(base_file=image_file)
+        return super(URLGlanceImageFixture, self).get_image_file(
+            image_file=image_file)
 
     def _download_image_file(self, image_file, chunks, expected_size):
         image_dir = os.path.dirname(image_file)
@@ -395,6 +399,42 @@ class URLGlanceImageFixture(FileGlanceImageFixture):
                 expected_size, actual_size)
             raise RuntimeError(message)
         os.rename(temp_file, image_file)
+
+    def customize_image_file(self, base_file: str) -> str:
+        return base_file
+
+
+class CustomizedGlanceImageFixture(URLGlanceImageFixture):
+
+    install_packages: typing.Sequence[str] = tuple()
+
+    def customize_image_file(self, base_file: str) -> str:
+        customized_file = base_file + '.1'
+        if os.path.isfile(customized_file):
+            if (os.stat(base_file).st_mtime_ns <
+                    os.stat(customized_file).st_mtime_ns):
+                LOG.debug(f"Image file is up to date '{customized_file}'")
+                return customized_file
+            else:
+                LOG.debug(f"Remove obsolete image file '{customized_file}'")
+                os.remove(customized_file)
+        work_file = sh.execute('mktemp').stdout.strip()
+        try:
+            LOG.debug(f"Copy base image file: '{base_file}' to '{work_file}'")
+            sh.put_file(base_file, work_file)
+
+            command = sh.shell_command(['virt-customize', '-a', work_file])
+            execute = False
+            for package in self.install_packages:
+                execute = True
+                command += ['--install', package]
+            if execute:
+                sh.execute(command, sudo=True)
+
+            sh.get_file(work_file, customized_file)
+            return customized_file
+        finally:
+            sh.execute(['rm', '-f', work_file])
 
 
 class InvalidGlanceImageStatus(tobiko.TobikoException):

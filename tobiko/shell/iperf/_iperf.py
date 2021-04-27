@@ -70,6 +70,5 @@ def execute_iperf_client(parameters, ssh_client):
                                            ssh_client=ssh_client)
     result = sh.execute(command=command,
                         ssh_client=ssh_client,
-                        timeout=parameters.timeout + 5.,
-                        expect_exit_status=None)
+                        timeout=parameters.timeout + 5.)
     return json.loads(result.stdout)

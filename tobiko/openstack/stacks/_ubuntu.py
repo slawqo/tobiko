@@ -85,3 +85,15 @@ class UbuntuMinimalServerStackFixture(UbuntuServerStackFixture):
 class UbuntuExternalServerStackFixture(UbuntuMinimalServerStackFixture,
                                        _nova.ExternalServerStackFixture):
     pass
+
+
+class UbuntuQosServerImageFixture(UbuntuMinimalImageFixture,
+                                  glance.CustomizedGlanceImageFixture):
+    install_packages = ['iperf3']
+
+
+class UbuntuQosServerStackFixture(UbuntuMinimalServerStackFixture,
+                                  _nova.QosServerStackFixture):
+
+    #: Glance image used to create a Nova server instance
+    image_fixture = tobiko.required_setup_fixture(UbuntuQosServerImageFixture)

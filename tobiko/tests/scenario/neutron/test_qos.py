@@ -32,7 +32,7 @@ class QoSBasicTest(testtools.TestCase):
     """Tests QoS basic functionality"""
 
     #: Resources stack with QoS Policy and QoS Rules and Advanced server
-    stack = tobiko.required_setup_fixture(stacks.CentosQosServerStackFixture)
+    stack = tobiko.required_setup_fixture(stacks.UbuntuQosServerStackFixture)
 
     def setUp(self):
         """Skip these tests if OVN is configured and OSP version is lower than
@@ -44,22 +44,18 @@ class QoSBasicTest(testtools.TestCase):
                 containers.ovn_used_on_overcloud()):
             self.skipTest("QoS not supported in this setup")
 
-    def test_qos_basic(self):
+    def test_network_qos_policy_id(self):
         '''Verify QoS Policy attached to the network corresponds with the QoS
         Policy previously created'''
         self.assertEqual(self.stack.network_stack.qos_stack.qos_policy_id,
                          self.stack.network_stack.qos_policy_id)
+
+    def test_server_qos_policy_id(self):
         self.assertIsNone(self.stack.port_details['qos_policy_id'])
 
     def test_qos_bw_limit(self):
         '''Verify BW limit using the iperf tool
-        The test is executed from the undercloud node (client) to the VM
-        instance (server)'''
-        if not tobiko.tripleo.has_undercloud():
-            # TODO(eolivare): this test does not support devstack environments
-            # yet and that should be fixed
-            tobiko.skip_test('test not supported on devstack environments')
-
-        ssh_client = None  # localhost will act as client
-        ssh_server = self.stack.peer_ssh_client
-        iperf.assert_bw_limit(ssh_client, ssh_server)
+        '''
+        self.stack.wait_for_cloud_init_done()
+        iperf.assert_bw_limit(ssh_client=None,  # localhost will act as client
+                              ssh_server=self.stack.peer_ssh_client)
