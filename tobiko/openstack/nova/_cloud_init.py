@@ -27,6 +27,14 @@ from tobiko.shell import ssh
 LOG = log.getLogger(__name__)
 
 
+CLOUD_INIT_TRANSIENT_STATES = {
+    'done': tuple(['running'])
+}
+
+CLOUD_INIT_OUTPUT_FILE = '/var/log/cloud-init-output.log'
+CLOUD_INIT_LOG_FILE = '/var/log/cloud-init.log'
+
+
 def user_data(*args, **kwargs):
     config = cloud_config(*args, **kwargs)
     if config:
@@ -82,20 +90,21 @@ class CloudConfig(dict):
 class InvalidCloudInitStatusError(tobiko.TobikoException):
     message = ("cloud-init status of host '{hostname}' is "
                "'{actual_status}' while it is expecting to "
-               "be in {expected_states!r}:\n"
-               "{details}")
+               "be in {expected_states!r}:\n\n"
+               f"--- {CLOUD_INIT_LOG_FILE} ---\n"
+               "{log_file}\n\n"
+               f"--- {CLOUD_INIT_OUTPUT_FILE} ---\n"
+               "{output_file}\n\n")
 
 
 class WaitForCloudInitTimeoutError(InvalidCloudInitStatusError):
     message = ("after {timeout} seconds cloud-init status of host "
                "'{hostname}' is still '{actual_status}' while it is "
-               "expecting to be in {expected_states!r}:\n"
-               "{details}")
-
-
-COUD_INIT_TRANSIENT_STATES = {
-    'done': tuple(['running'])
-}
+               "expecting to be in {expected_states!r}:\n\n"
+               f"--- {CLOUD_INIT_LOG_FILE} ---\n"
+               "{log_file}\n\n"
+               f"--- {CLOUD_INIT_OUTPUT_FILE} ---\n"
+               "{output_file}\n\n")
 
 
 def get_cloud_init_status(
@@ -142,10 +151,14 @@ def wait_for_cloud_init_status(
     if transient_states is None:
         transient_states = list()
         for status in expected_states:
-            transient_states += COUD_INIT_TRANSIENT_STATES.get(status, [])
+            transient_states += CLOUD_INIT_TRANSIENT_STATES.get(status, [])
 
-    with open_cloud_init_ouput(timeout=timeout,
-                               ssh_client=ssh_client) as output:
+    with open_output_file(filename=CLOUD_INIT_LOG_FILE,
+                          timeout=timeout,
+                          ssh_client=ssh_client) as log_file, \
+            open_output_file(filename=CLOUD_INIT_OUTPUT_FILE,
+                             timeout=timeout,
+                             ssh_client=ssh_client) as output_file:
         for attempt in tobiko.retry(timeout=timeout,
                                     interval=sleep_interval,
                                     default_timeout=600.,
@@ -155,13 +168,15 @@ def wait_for_cloud_init_status(
             if actual_status in expected_states:
                 return actual_status
 
-            output.readall()
+            log_file.readall()
+            output_file.readall()
             if actual_status not in transient_states:
                 raise InvalidCloudInitStatusError(
                     hostname=hostname,
                     actual_status=actual_status,
                     expected_states=expected_states,
-                    details=str(output))
+                    log_file=str(log_file),
+                    output_file=str(output_file))
 
             try:
                 attempt.check_limits()
@@ -171,27 +186,25 @@ def wait_for_cloud_init_status(
                     hostname=hostname,
                     actual_status=actual_status,
                     expected_states=expected_states,
-                    details=str(output)) from ex
+                    log_file=str(log_file),
+                    output_file=str(output_file)) from ex
 
-            # show only the last 10 lines
-            details = '\n'.join(str(output).splitlines()[-10:])
+            # show only the last log line
+            last_log_line = str(log_file).splitlines()[-1]
             LOG.debug(f"Waiting cloud-init status on host '{hostname}' to "
                       f"switch from '{actual_status}' to any of expected "
-                      f"states ({', '.join(expected_states)})\n\n"
-                      f"{details}\n")
+                      f"states ({', '.join(expected_states)}):\n\n"
+                      f"--- {CLOUD_INIT_LOG_FILE} ---\n"
+                      f"{last_log_line}\n\n")
 
     raise RuntimeError("Retry loop ended himself")
 
 
-CLOUD_INIT_OUTPUT_FILE = '/var/log/cloud-init-output.log'
-
-
 @contextlib.contextmanager
-def open_cloud_init_ouput(
-        cloud_init_output_file: str = CLOUD_INIT_OUTPUT_FILE,
-        tail=False,
-        follow=False,
-        **params) \
+def open_output_file(filename: str = CLOUD_INIT_OUTPUT_FILE,
+                     tail=False,
+                     follow=False,
+                     **process_params) \
         -> typing.Generator[sh.ShellStdout, None, None]:
     command = ['tail']
     if not tail:
@@ -200,7 +213,7 @@ def open_cloud_init_ouput(
     if follow:
         command += ['-F']
 
-    command += [cloud_init_output_file]
-    process = sh.process(command, **params)
+    command += [filename]
+    process = sh.process(command, **process_params)
     with process:
         yield process.stdout
