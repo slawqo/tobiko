@@ -79,6 +79,7 @@ class ClientTest(testtools.TestCase):
         self.assertIsNotNone(hypervisor)
 
     def test_get_console_output(self):
+        nova.activate_server(self.stack.server_id)
         output = nova.get_console_output(server=self.stack.server_id,
                                          length=50,
                                          timeout=60.)
