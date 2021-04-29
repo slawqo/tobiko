@@ -71,36 +71,29 @@ class PodmanClientFixture(tobiko.SharedFixture):
 
     def setup_client(self):
         # setup podman access via varlink
-        # W/A for osp16.2 having "podman.socket" instead of "io.podman.socket"
         podman_client_setup_cmds = \
-            """sudo test -f /var/varlink_client_access_setup ||  \
-            (export podman_service='io.podman.socket' &&  \
-            export podman_service='io.podman.socket' &&  \
-            test -e /lib/systemd/system/io.podman.socket || \
-            export podman_service='podman.socket' && \
-            test -e /lib/systemd/system/io.podman.socket || \
-            export podman_socket_file='/run/podman/podman.sock' && \
-            sudo groupadd -f podman &&  \
+            "sudo test -f /var/varlink_client_access_setup ||  \
+            (sudo groupadd -f podman &&  \
             sudo usermod -a -G podman heat-admin && \
             sudo chmod -R o=wxr /etc/tmpfiles.d && \
             sudo echo 'd /run/podman 0770 root heat-admin' >  \
             /etc/tmpfiles.d/podman.conf && \
-            sudo cp /lib/systemd/system/$podman_service \
-            /etc/systemd/system/$podman_service && \
-            sudo crudini --set /etc/systemd/system/$podman_service Socket  \
+            sudo cp /lib/systemd/system/io.podman.socket \
+            /etc/systemd/system/io.podman.socket && \
+            sudo crudini --set /etc/systemd/system/io.podman.socket Socket  \
             SocketMode 0660 && \
-            sudo crudini --set /etc/systemd/system/$podman_service Socket  \
+            sudo crudini --set /etc/systemd/system/io.podman.socket Socket  \
             SocketGroup podman && \
             sudo systemctl daemon-reload && \
             sudo systemd-tmpfiles --create && \
-            sudo systemctl enable --now $podman_service && \
+            sudo systemctl enable --now io.podman.socket && \
             sudo chmod 777 /run/podman && \
             sudo chown -R root: /run/podman && \
-            sudo chmod g+rw $podman_socket_file && \
-            sudo chmod 777 $podman_socket_file && \
+            sudo chmod g+rw /run/podman/io.podman && \
+            sudo chmod 777 /run/podman/io.podman && \
             sudo setenforce 0 && \
-            sudo systemctl start $podman_service && \
-            sudo touch /var/varlink_client_access_setup)"""
+            sudo systemctl start io.podman.socket && \
+            sudo touch /var/varlink_client_access_setup)"
 
         sh.execute(podman_client_setup_cmds, ssh_client=self.ssh_client)
 
