@@ -1,13 +1,3 @@
-# Copyright (c) 2019 Red Hat, Inc.
-#
-# All Rights Reserved.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License"); you may
-#    not use this file except in compliance with the License. You may obtain
-#    a copy of the License at
-#
-#         http://www.apache.org/licenses/LICENSE-2.0
-#
 #    Unless required by applicable law or agreed to in writing, software
 #    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -15,13 +5,22 @@
 #    under the License.
 from __future__ import absolute_import
 
+
+import subprocess
+import os
+
+from oslo_log import log
+import podman
 import podman1
+
 
 import tobiko
 from tobiko.podman import _exception
 from tobiko.podman import _shell
 from tobiko.shell import ssh
 from tobiko.shell import sh
+
+LOG = log.getLogger(__name__)
 
 
 def get_podman_client(ssh_client=None):
@@ -37,14 +36,29 @@ def list_podman_containers(client=None, **kwargs):
         return tobiko.select(containers)
 
 
+PODMAN_CLIENT_CLASSES = \
+    podman1.Client, podman.PodmanClient  # pylint: disable=E1101
+
+
 def podman_client(obj=None):
     if obj is None:
         obj = get_podman_client()
+
     if tobiko.is_fixture(obj):
         obj = tobiko.setup_fixture(obj).client
-    if isinstance(obj, podman1.Client):
+
+    if isinstance(obj, PODMAN_CLIENT_CLASSES):
         return obj
+
     raise TypeError('Cannot obtain a Podman client from {!r}'.format(obj))
+
+
+def podman_version_3():
+    podman_ver = sh.execute('rpm -q podman').stdout.split('-')[1].split('.')[0]
+    if int(podman_ver) >= 3:
+        return True
+    else:
+        return False
 
 
 class PodmanClientFixture(tobiko.SharedFixture):
@@ -70,30 +84,37 @@ class PodmanClientFixture(tobiko.SharedFixture):
         return ssh_client
 
     def setup_client(self):
-        # setup podman access via varlink
+        # podman ver3 (osp>=16.2) has different service / socket paths
+        if podman_version_3():
+            podman_service = 'podman.socket'
+            podman_socket_file = '/run/podman/podman.sock'
+        else:
+            podman_service = 'io.podman.socket'
+            podman_socket_file = '/run/podman/io.podman'
+
         podman_client_setup_cmds = \
-            "sudo test -f /var/varlink_client_access_setup ||  \
+            f"""sudo test -f /var/podman_client_access_setup ||  \
             (sudo groupadd -f podman &&  \
             sudo usermod -a -G podman heat-admin && \
             sudo chmod -R o=wxr /etc/tmpfiles.d && \
             sudo echo 'd /run/podman 0770 root heat-admin' >  \
             /etc/tmpfiles.d/podman.conf && \
-            sudo cp /lib/systemd/system/io.podman.socket \
-            /etc/systemd/system/io.podman.socket && \
-            sudo crudini --set /etc/systemd/system/io.podman.socket Socket  \
+            sudo cp /lib/systemd/system/{podman_service} \
+            /etc/systemd/system/{podman_service} && \
+            sudo crudini --set /etc/systemd/system/{podman_service} Socket  \
             SocketMode 0660 && \
-            sudo crudini --set /etc/systemd/system/io.podman.socket Socket  \
+            sudo crudini --set /etc/systemd/system/{podman_service} Socket  \
             SocketGroup podman && \
             sudo systemctl daemon-reload && \
             sudo systemd-tmpfiles --create && \
-            sudo systemctl enable --now io.podman.socket && \
+            sudo systemctl enable --now {podman_service} && \
             sudo chmod 777 /run/podman && \
             sudo chown -R root: /run/podman && \
-            sudo chmod g+rw /run/podman/io.podman && \
-            sudo chmod 777 /run/podman/io.podman && \
+            sudo chmod g+rw {podman_socket_file} && \
+            sudo chmod 777 {podman_socket_file} && \
             sudo setenforce 0 && \
-            sudo systemctl start io.podman.socket && \
-            sudo touch /var/varlink_client_access_setup)"
+            sudo systemctl start {podman_service} && \
+            sudo touch /var/podman_client_access_setup)"""
 
         sh.execute(podman_client_setup_cmds, ssh_client=self.ssh_client)
 
@@ -102,26 +123,44 @@ class PodmanClientFixture(tobiko.SharedFixture):
             self.client = client = self.create_client()
         return client
 
-    def create_client(self):
-        for _ in range(360):
-
+    def create_client(self):  # noqa: C901
+        for _ in tobiko.retry(timeout=60., interval=5.):
             try:
                 podman_remote_socket = self.discover_podman_socket()
                 username = self.ssh_client.connect_parameters['username']
                 host = self.ssh_client.connect_parameters["hostname"]
                 socket = podman_remote_socket
-                podman_remote_socket_uri = \
-                    'unix:/tmp/podman.sock_{}'.format(host)
+                podman_remote_socket_uri = f'unix:/tmp/podman.sock_{host}'
 
-                remote_uri = 'ssh://{username}@{host}{socket}'.format(
-                    username=username,
-                    host=host,
-                    socket=socket)
+                remote_uri = f'ssh://{username}@{host}{socket}'
 
-                client = podman1.Client(uri=podman_remote_socket_uri,
-                                        remote_uri=remote_uri,
-                                        identity_file='~/.ssh/id_rsa')
-                client.system.ping()
+                if podman_version_3():
+                    # check if a ssh tunnel exists, if not create one
+                    psall = str(subprocess.check_output(('ps', '-ef')))
+                    if f'ssh -L /tmp/podman.sock_{host}' not in psall:
+                        if os.path.exists(f"/tmp/podman.sock_{host}"):
+                            subprocess.call(
+                                ['rm', '-f', f'/tmp/podman.sock_{host}'])
+                        # start a background  ssh tunnel with the remote host
+                        subprocess.call(['ssh', '-L',
+                                         f'/tmp/podman.sock_{host}:'
+                                         f'/run/podman/podman.sock',
+                                         host, '-N', '-f'])
+                        for _ in tobiko.retry(timeout=60., interval=1.):
+                            if os.path.exists(f'/tmp/podman.sock_{host}'):
+                                break
+                    client = podman.PodmanClient(
+                        base_url=podman_remote_socket_uri)
+                    if client.ping():
+                        LOG.info('container_client is online')
+
+                else:
+                    client = podman1.Client(  # pylint: disable=E1101
+                        uri=podman_remote_socket_uri,
+                        remote_uri=remote_uri,
+                        identity_file='~/.ssh/id_rsa')
+                    if client.system.ping():
+                        LOG.info('container_client is online')
                 return client
             except (ConnectionRefusedError, ConnectionResetError):
                 # retry
