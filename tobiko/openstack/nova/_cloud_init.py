@@ -161,7 +161,7 @@ def wait_for_cloud_init_status(
                              ssh_client=ssh_client) as output_file:
         for attempt in tobiko.retry(timeout=timeout,
                                     interval=sleep_interval,
-                                    default_timeout=600.,
+                                    default_timeout=1200.,
                                     default_interval=5.):
             actual_status = get_cloud_init_status(ssh_client=ssh_client,
                                                   timeout=attempt.time_left)
