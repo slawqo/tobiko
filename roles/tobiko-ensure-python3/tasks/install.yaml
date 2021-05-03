@@ -34,14 +34,17 @@
     cmd: get_python_info.py --base --quiet
     executable: '{{ get_python_exe.stdout_lines | first }}'
   register: get_python_info
-  changed_when: no
+  changed_when: false
 
 
 - name: "set python_info['{{ python_command }}'] fact"
   set_fact:
     python_info: >
       {{ python_info | combine({python_command:
-                                (get_python_info.stdout | from_json)}) }}
+                                (item | from_json)}) }}
+  loop: '{{ get_python_info.stdout_lines }}'
+  when: item.startswith('{')
+  failed_when: (python_info | length) == 0
 
 
 - name: "upgrade '{{ python_command }}' packages to the latest versions"

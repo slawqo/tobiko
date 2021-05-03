@@ -50,7 +50,8 @@ def main():
     info = {'version': version,
             'executable': sys.executable,
             'executables': executables}
-    output = json.dumps(info, indent=4, sort_keys=True)
+    output = json.dumps(info)
+    assert output.startswith('{')
     print(output)
 
 
