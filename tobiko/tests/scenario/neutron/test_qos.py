@@ -56,6 +56,5 @@ class QoSBasicTest(testtools.TestCase):
     def test_qos_bw_limit(self):
         '''Verify BW limit using the iperf tool
         '''
-        self.stack.wait_for_cloud_init_done()
         iperf.assert_bw_limit(ssh_client=None,  # localhost will act as client
                               ssh_server=self.stack.peer_ssh_client)
