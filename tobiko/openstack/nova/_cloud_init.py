@@ -190,7 +190,10 @@ def wait_for_cloud_init_status(
                     output_file=str(output_file)) from ex
 
             # show only the last log line
-            last_log_line = str(log_file).splitlines()[-1]
+            try:
+                last_log_line = str(log_file).splitlines()[-1]
+            except IndexError:
+                last_log_line = ""
             LOG.debug(f"Waiting cloud-init status on host '{hostname}' to "
                       f"switch from '{actual_status}' to any of expected "
                       f"states ({', '.join(expected_states)}):\n\n"
