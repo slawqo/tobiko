@@ -14,6 +14,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import json
 import typing
 
 import netaddr
@@ -84,7 +85,8 @@ class PortTest(testtools.TestCase):
         network_id = self.stack.network_stack.network_id
         subnets = neutron.list_subnets(network_id=network_id,
                                        enable_dhcp=True)
-        LOG.debug(f"Subnets with DHCP enabled are: {subnets}")
+        LOG.debug("Subnets with DHCP enabled are:\n"
+                  f"{json.dumps(subnets, indent=4, sort_keys=True)}")
         gateway_ips = [netaddr.IPAddress(subnet['gateway_ip'])
                        for subnet in subnets]
         LOG.debug(f"Gateway IPs are: {gateway_ips}")
