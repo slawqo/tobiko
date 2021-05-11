@@ -29,7 +29,7 @@ SkipTarget = typing.Union[typing.Callable,
 SkipDecorator = typing.Callable[[SkipTarget], SkipTarget]
 
 
-def skip_test(reason: str):
+def skip_test(reason: str) -> typing.NoReturn:
     """Interrupt test case execution marking it as skipped for given reason"""
     raise SkipException(reason)
 
