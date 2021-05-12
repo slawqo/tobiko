@@ -429,7 +429,7 @@ class CustomizedGlanceImageFixture(URLGlanceImageFixture):
                 execute = True
                 command += ['--install', package]
             if execute:
-                sh.execute(command, sudo=True)
+                sh.execute(command)
 
             sh.get_file(work_file, customized_file)
             return customized_file
