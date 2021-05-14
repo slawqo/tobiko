@@ -6,7 +6,7 @@ import functools
 
 from oslo_log import log
 import pandas
-import podman as podmanlib
+import podman1
 import docker as dockerlib
 
 import tobiko
@@ -376,7 +376,7 @@ def action_on_container(action,
     # we get the specified action as function from podman lib
     if container_runtime_module == podman:
         container_function = getattr(
-            podmanlib.libs.containers.Container, '{}'.format(action))
+            podman1.libs.containers.Container, '{}'.format(action))
     else:
         container_function = getattr(
             dockerlib.models.containers.Container, '{}'.format(action))

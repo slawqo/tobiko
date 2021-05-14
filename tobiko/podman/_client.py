@@ -15,7 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import podman
+import podman1
 
 import tobiko
 from tobiko.podman import _exception
@@ -42,7 +42,7 @@ def podman_client(obj=None):
         obj = get_podman_client()
     if tobiko.is_fixture(obj):
         obj = tobiko.setup_fixture(obj).client
-    if isinstance(obj, podman.Client):
+    if isinstance(obj, podman1.Client):
         return obj
     raise TypeError('Cannot obtain a Podman client from {!r}'.format(obj))
 
@@ -118,9 +118,9 @@ class PodmanClientFixture(tobiko.SharedFixture):
                     host=host,
                     socket=socket)
 
-                client = podman.Client(uri=podman_remote_socket_uri,
-                                       remote_uri=remote_uri,
-                                       identity_file='~/.ssh/id_rsa')
+                client = podman1.Client(uri=podman_remote_socket_uri,
+                                        remote_uri=remote_uri,
+                                        identity_file='~/.ssh/id_rsa')
                 client.system.ping()
                 return client
             except (ConnectionRefusedError, ConnectionResetError):

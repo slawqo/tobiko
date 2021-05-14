@@ -2,7 +2,6 @@
 
 ansi2html                # LGPLv3+
 pandas                   # BSD
-podman                   # Apache-2.0
 pytest-cov               # MIT
 pytest-rerunfailures     # MPL-2.0
 pytest-timeout           # MIT

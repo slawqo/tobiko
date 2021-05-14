@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import contextlib
 import logging
 import os
 import shlex
@@ -127,3 +128,21 @@ def remove_file(filename):
         return True
     else:
         return False
+
+
+@contextlib.contextmanager
+def stash_dir(*target_dirs: str):
+    stashed_dirs = []
+    for target_dir in target_dirs:
+        if os.path.isdir(target_dir):
+            stashed_dir = target_dir + '.stash'
+            LOG.info(f"Renaming directory: {target_dir} -> {stashed_dir}")
+            os.rename(target_dir, stashed_dir)
+            stashed_dirs.append((stashed_dir, target_dir))
+
+    yield
+
+    for stashed_dir, target_dir in stashed_dirs:
+        if os.path.isdir(stashed_dir):
+            LOG.info(f"Restoring directory: {stashed_dir} -> {target_dir}")
+            os.rename(stashed_dir, target_dir)
