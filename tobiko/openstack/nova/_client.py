@@ -150,6 +150,22 @@ def migrate_server(server: typing.Optional[ServerType] = None,
                                                info=params)
 
 
+def live_migrate_server(server: typing.Optional[ServerType] = None,
+                        server_id: typing.Optional[str] = None,
+                        host: typing.Optional[str] = None,
+                        block_migration: typing.Union[str, bool] = True,
+                        disk_over_commit: bool = False,
+                        client: NovaClientType = None,
+                        **params):
+    server_id = get_server_id(server=server, server_id=server_id)
+    LOG.debug(f"Start server live migration (server_id='{server_id}', "
+              f"host={host}, block_migration={block_migration}, "
+              f"disk_over_commit={disk_over_commit}, info={params})")
+    return nova_client(client).servers.live_migrate(
+        server=server_id, host=host, block_migration=block_migration,
+        disk_over_commit=disk_over_commit, **params)
+
+
 def confirm_resize(server: typing.Optional[ServerType] = None,
                    server_id: typing.Optional[str] = None,
                    client: NovaClientType = None, **params):
