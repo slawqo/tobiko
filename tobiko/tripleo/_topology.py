@@ -90,7 +90,11 @@ class TripleoTopology(topology.OpenStackTopology):
     def discover_overcloud_nodes(self):
         if _overcloud.has_overcloud():
             for server in _overcloud.list_overcloud_nodes():
-                _overcloud.power_on_overcloud_node(server)
+                try:
+                    _overcloud.power_on_overcloud_node(server)
+                except Exception:
+                    LOG.exception("Error ensuring overcloud node power "
+                                  "status is on")
                 host_config = _overcloud.overcloud_host_config(server=server)
                 ssh_client = _overcloud.overcloud_ssh_client(
                     hostname=server.name,
