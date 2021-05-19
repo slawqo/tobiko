@@ -41,7 +41,6 @@ WaitForServerStatusTimeout = _client.WaitForServerStatusTimeout
 shutoff_server = _client.shutoff_server
 activate_server = _client.activate_server
 ensure_server_status = _client.ensure_server_status
-live_migrate_server = _client.live_migrate_server
 migrate_server = _client.migrate_server
 confirm_resize = _client.confirm_resize
 reboot_server = _client.reboot_server
