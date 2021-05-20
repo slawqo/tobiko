@@ -77,19 +77,20 @@ class MigrateServerStack(stacks.CirrosServerStackFixture):
 class MigrateServerTest(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(MigrateServerStack)
+    peer_stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
-    def test_migrate_server(self):
+    def test_migrate_server(self, live=False):
         """Tests cold migration actually changes hypervisor
         """
         server = self.setup_server()
         initial_hypervisor = nova.get_server_hypervisor(server)
 
-        server = self.migrate_server(server)
+        server = self.migrate_server(server, live=live)
 
         final_hypervisor = nova.get_server_hypervisor(server)
         self.assertNotEqual(initial_hypervisor, final_hypervisor)
 
-    def test_migrate_server_with_host(self):
+    def test_migrate_server_with_host(self, live=False):
         """Tests cold migration actually ends on target hypervisor
         """
         server = self.setup_server()
@@ -99,30 +100,50 @@ class MigrateServerTest(testtools.TestCase):
                 target_hypervisor = hypervisor.hypervisor_hostname
                 break
         else:
+            target_hypervisor = None
             self.skipTest("Cannot find a valid hypervisor host to migrate "
                           "server to")
 
-        server = self.migrate_server(server=server, host=target_hypervisor)
+        server = self.migrate_server(server=server, host=target_hypervisor,
+                                     live=live)
 
         final_hypervisor = nova.get_server_hypervisor(server)
         self.assertEqual(target_hypervisor, final_hypervisor)
+
+    def test_live_migrate_server(self):
+        self.test_migrate_server(live=True)
+
+    @tobiko.skip("Expected to create problems on compute nodes")
+    def test_live_migrate_server_with_host(self):
+        self.test_migrate_server_with_host(live=True)
 
     def setup_server(self):
         server = self.stack.ensure_server_status('ACTIVE')
         self.assertEqual('ACTIVE', server.status)
         return server
 
-    def migrate_server(self, server, **params):
-        self.assertEqual('ACTIVE', server.status)
-        nova.migrate_server(server, **params)
-
-        server = nova.wait_for_server_status(server, 'VERIFY_RESIZE')
-        self.assertEqual('VERIFY_RESIZE', server.status)
-        nova.confirm_resize(server)
-
-        server = nova.wait_for_server_status(
-            server, 'ACTIVE', transient_status={'VERIFY_RESIZE'})
+    def migrate_server(self, server, live=False, **params):
         self.assertEqual('ACTIVE', server.status)
 
-        ping.ping_until_received(self.stack.ip_address).assert_replied()
+        if live:
+            nova.live_migrate_server(server, **params)
+            server = nova.wait_for_server_status(
+                server, 'ACTIVE', transient_status=['MIGRATING'])
+        else:
+            nova.migrate_server(server, **params)
+
+            server = nova.wait_for_server_status(server, 'VERIFY_RESIZE')
+            self.assertEqual('VERIFY_RESIZE', server.status)
+            nova.confirm_resize(server)
+
+            server = nova.wait_for_server_status(
+                server, 'ACTIVE', transient_status=['VERIFY_RESIZE'])
+        self.assertEqual('ACTIVE', server.status)
+
+        # wait until all VM fixed IPs are reachable
+        ping.assert_reachable_hosts(self.stack.list_fixed_ips(),
+                                    timeout=900.,
+                                    ssh_client=self.peer_stack.ssh_client)
+        # check floating IP is reachable
+        ping.assert_reachable_hosts([self.stack.floating_ip_address])
         return server
