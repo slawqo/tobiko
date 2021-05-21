@@ -108,16 +108,17 @@ def pytest_html_results_table_header(cells):
 
 
 def pytest_html_results_table_row(report, cells):
-    cells.insert(2, html.td(report.description))
+    cells.insert(2, html.td(getattr(report, 'description', '')))
     cells.insert(1, html.td(datetime.utcnow(), class_="col-time"))
     cells.pop()
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(item, call):  # pylint: disable=unused-argument
+def pytest_runtest_makereport(item, call):
+    # pylint: disable=unused-argument
     outcome = yield
     report = outcome.get_result()
-    report.description = str(item.function.__doc__)
+    report.description = getattr(item.function, '__doc__', '')
 
 
 def pytest_html_report_title(report):
