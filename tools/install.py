@@ -65,7 +65,7 @@ def install_tobiko():
     pip_install(f"-e '{TOP_DIR}'")
 
 
-def install_podman1(version=''):
+def install_podman1(version='===1.6.0'):
     pip_unisntall('podman')
 
     LOG.info(f"Installing Podman... (version: {version})")

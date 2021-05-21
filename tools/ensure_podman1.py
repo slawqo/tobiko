@@ -39,7 +39,6 @@ def ensure_podman1():
         import podman1
     except ImportError:
         install.install_podman1()
-        import podman1
 
 
 if __name__ == '__main__':
