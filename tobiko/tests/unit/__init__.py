@@ -15,12 +15,9 @@ from __future__ import absolute_import
 
 from tobiko.tests.unit import _case
 from tobiko.tests.unit import _patch
-from tobiko.tests.unit.podman import _mocked_service
 
 
 TobikoUnitTest = _case.TobikoUnitTest
-
-mocked_service = _mocked_service
 
 PatchFixture = _patch.PatchFixture
 PatchMixin = _patch.PatchMixin
