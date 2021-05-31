@@ -34,14 +34,6 @@
       - ^tobiko/tests/faults/
 
 
-- job:
-    name: tobiko-infrared-centos
-    parent: tobiko-infrared
-    nodeset: tobiko-infrared-centos
-    voting: false
-    description: |
-      Run test cases using tobiko infrared plugin on CentOS
-
 - nodeset:
     name: tobiko-infrared-centos
     nodes:
@@ -49,6 +41,28 @@
         label: centos-8-stream
       - name: secondary
         label: centos-8-stream
+    groups:
+      - name: undercloud
+        nodes:
+          - secondary
+
+
+- job:
+    name: tobiko-infrared-centos-7
+    parent: tobiko-infrared
+    nodeset: tobiko-infrared-centos-7
+    voting: true
+    description: |
+      Run test cases using tobiko infrared plugin on CentOS
+
+
+- nodeset:
+    name: tobiko-infrared-centos-7
+    nodes:
+      - name: primary
+        label: centos-7
+      - name: secondary
+        label: centos-7
     groups:
       - name: undercloud
         nodes:
