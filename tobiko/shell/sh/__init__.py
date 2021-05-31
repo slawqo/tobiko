@@ -66,6 +66,7 @@ str_from_stream = _process.str_from_stream
 ShellProcessFixture = _process.ShellProcessFixture
 
 PsError = _ps.PsError
+PsProcess = _ps.PsProcess
 PsWaitTimeout = _ps.PsWaitTimeout
 list_all_processes = _ps.list_all_processes
 list_kernel_processes = _ps.list_kernel_processes

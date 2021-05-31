@@ -625,3 +625,17 @@ def check_ssh_connection(client):
             transport.send_ignore()
             return True
     return False
+
+
+SSHClientType = typing.Union[None, bool, SSHClientFixture]
+
+
+def ssh_client_fixture(obj: SSHClientType) -> \
+        typing.Optional[SSHClientFixture]:
+    if obj is None:
+        return ssh_proxy_client()
+    if obj is False:
+        return None
+    if isinstance(obj, SSHClientFixture):
+        return obj
+    raise TypeError(f"Can't get an SSHClientFixture from objeck {obj}")

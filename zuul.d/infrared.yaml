@@ -4,7 +4,7 @@
     name: tobiko-infrared
     parent: tox
     nodeset: tobiko-infrared-centos
-    timeout: 1800
+    timeout: 3600
     description: |
       Run test cases using tobiko infrared plugin
     pre-run: playbooks/infrared/pre.yaml

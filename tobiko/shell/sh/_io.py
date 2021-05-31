@@ -85,13 +85,12 @@ class ShellReadable(ShellIOBase):
     def readable(self):
         return True
 
-    def read(self, size=None):
+    def read(self, size: int = None) -> bytes:
         size = size or self.buffer_size
         try:
             chunk = self.delegate.read(size)
         except IOError:
             LOG.exception('Error reading from %r', self)
-            chunk = None
             try:
                 self.close()
             except Exception:
@@ -100,6 +99,8 @@ class ShellReadable(ShellIOBase):
 
         if chunk:
             self._data_chunks.append(chunk)
+        elif chunk is None:
+            chunk = 'b'
         return chunk
 
     @property
