@@ -50,8 +50,9 @@ class ProxyTest(unit.TobikoUnitTest):
                            mock.MagicMock(side_effect=self.handle_call))
 
     def test_call_handler(self):
+        # pylint: disable=no-member
         handler = self.mock_handler()
-        proxy = MyProtoHandler(handler).use_as(MyProto)
+        proxy: MyProto = MyProtoHandler(handler).use_as(MyProto)
         self.assertIsInstance(proxy, MyProto)
         self.assertTrue(callable(proxy.call_one))
         self.assertEqual(inspect.signature(MyProto.call_one),
