@@ -425,9 +425,10 @@ class CustomizedGlanceImageFixture(URLGlanceImageFixture):
 
             command = sh.shell_command(['virt-customize', '-a', work_file])
             execute = False
-            for package in self.install_packages:
+            if self.install_packages:
                 execute = True
-                command += ['--install', package]
+                command += ['--install', ','.join(self.install_packages)]
+
             if execute:
                 sh.execute(command)
 

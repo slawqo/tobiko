@@ -26,7 +26,9 @@ from tobiko.shell import ssh
 
 
 CURL_CONNECTION_ERRORS = {
-    7  # Connection refused
+    7,   # Connection refused
+    22,  # 404 Not Found
+    28,  # Connection timedout
 }
 
 

@@ -16,15 +16,12 @@ from __future__ import absolute_import
 import tobiko
 from tobiko import config
 from tobiko.openstack import glance
+from tobiko.openstack import nova
 from tobiko.openstack.stacks import _nova
 
 CONF = config.CONF
 
 UBUNTU_IMAGE_VERSION = 'focal'
-
-UBUNTU_IMAGE_URL = (
-    f'http://cloud-images.ubuntu.com/{UBUNTU_IMAGE_VERSION}/current/'
-    f'{UBUNTU_IMAGE_VERSION}-server-cloudimg-amd64.img')
 
 UBUNTU_IMAGE_VERSION_NUMBER = '20.04'
 
@@ -34,8 +31,8 @@ UBUNTU_MINIMAL_IMAGE_URL = (
     f'ubuntu-{UBUNTU_IMAGE_VERSION_NUMBER}-minimal-cloudimg-amd64.img')
 
 
-class UbuntuImageFixture(glance.URLGlanceImageFixture):
-    image_url = CONF.tobiko.ubuntu.image_url or UBUNTU_IMAGE_URL
+class UbuntuMinimalImageFixture(glance.URLGlanceImageFixture):
+    image_url = CONF.tobiko.ubuntu.image_url or UBUNTU_MINIMAL_IMAGE_URL
     image_name = CONF.tobiko.ubuntu.image_name
     image_file = CONF.tobiko.ubuntu.image_file
     disk_format = CONF.tobiko.ubuntu.disk_format or "qcow2"
@@ -45,55 +42,54 @@ class UbuntuImageFixture(glance.URLGlanceImageFixture):
     connection_timeout = CONF.tobiko.ubuntu.connection_timeout or 600.
 
 
-class UbuntuMinimalImageFixture(UbuntuImageFixture):
-    image_url = UBUNTU_MINIMAL_IMAGE_URL
+class UbuntuImageFixture(UbuntuMinimalImageFixture,
+                         glance.CustomizedGlanceImageFixture):
+    """Ubuntu server image running an HTTP server
+
+    The server has additional commands compared to the minimal one:
+      iperf3
+      ping
+    """
+
+    install_packages = ['iperf3', 'iputils-ping', 'nginx']
 
 
 class UbuntuFlavorStackFixture(_nova.FlavorStackFixture):
-    ram = 256
-
-
-class UbuntuMinimalFlavorStackFixture(_nova.FlavorStackFixture):
     ram = 128
+    swap = 512
 
 
-class UbuntuServerStackFixture(_nova.CloudInitServerStackFixture):
-
-    #: Glance image used to create a Nova server instance
-    image_fixture = tobiko.required_setup_fixture(UbuntuImageFixture)
-
-    #: Flavor used to create a Nova server instance
-    flavor_stack = tobiko.required_setup_fixture(UbuntuFlavorStackFixture)
-
-    #: Setup SWAP file in bytes
-    swap_maxsize = 1 * 1024 * 1024 * 1024  # 1 GB
-
-
-class UbuntuMinimalServerStackFixture(UbuntuServerStackFixture):
+class UbuntuMinimalServerStackFixture(_nova.CloudInitServerStackFixture):
 
     #: Glance image used to create a Nova server instance
     image_fixture = tobiko.required_setup_fixture(UbuntuMinimalImageFixture)
 
     #: Flavor used to create a Nova server instance
-    flavor_stack = tobiko.required_setup_fixture(
-        UbuntuMinimalFlavorStackFixture)
+    flavor_stack = tobiko.required_setup_fixture(UbuntuFlavorStackFixture)
 
-    #: Setup SWAP file in bytes
-    swap_maxsize = 512 * 1024 * 1024  # 500 MB
+
+class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture):
+    """Ubuntu server running an HTTP server
+
+    The server has additional commands compared to the minimal one:
+      iperf3
+      ping
+    """
+
+    #: Glance image used to create a Nova server instance
+    image_fixture = tobiko.required_setup_fixture(UbuntuImageFixture)
+
+    # port of running HTTP server
+    http_port = 80
+
+    @property
+    def cloud_config(self):
+        return nova.cloud_config(
+            super().cloud_config,
+            runcmd=["sh -c 'hostname > /var/www/html/id'"])
 
 
 class UbuntuExternalServerStackFixture(UbuntuMinimalServerStackFixture,
                                        _nova.ExternalServerStackFixture):
-    pass
-
-
-class UbuntuQosServerImageFixture(UbuntuMinimalImageFixture,
-                                  glance.CustomizedGlanceImageFixture):
-    install_packages = ['iperf3']
-
-
-class UbuntuQosServerStackFixture(UbuntuMinimalServerStackFixture,
-                                  _nova.QosServerStackFixture):
-
-    #: Glance image used to create a Nova server instance
-    image_fixture = tobiko.required_setup_fixture(UbuntuQosServerImageFixture)
+    """Ubuntu server with port on special external network
+    """

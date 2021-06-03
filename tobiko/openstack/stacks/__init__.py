@@ -22,13 +22,13 @@ from tobiko.openstack.stacks import _l3ha
 from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _nova
 from tobiko.openstack.stacks import _octavia
+from tobiko.openstack.stacks import _qos
 from tobiko.openstack.stacks import _ubuntu
 
 CentosFlavorStackFixture = _centos.CentosFlavorStackFixture
 CentosImageFixture = _centos.CentosImageFixture
 CentosServerStackFixture = _centos.CentosServerStackFixture
 CentosExternalServerStackFixture = _centos.CentosExternalServerStackFixture
-CentosQosServerStackFixture = _centos.CentosQosServerStackFixture
 
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture
@@ -75,13 +75,16 @@ ServerGroupStackFixture = _nova.ServerGroupStackFixture
 AffinityServerGroupStackFixture = _nova.AffinityServerGroupStackFixture
 AntiAffinityServerGroupStackFixture = _nova.AntiAffinityServerGroupStackFixture
 
+QosNetworkStackFixture = _qos.QosNetworkStackFixture
+QosPolicyStackFixture = _qos.QosPolicyStackFixture
+QosServerStackFixture = _qos.QosServerStackFixture
+
 UbuntuFlavorStackFixture = _ubuntu.UbuntuFlavorStackFixture
 UbuntuImageFixture = _ubuntu.UbuntuImageFixture
 UbuntuMinimalImageFixture = _ubuntu.UbuntuMinimalImageFixture
 UbuntuServerStackFixture = _ubuntu.UbuntuServerStackFixture
 UbuntuMinimalServerStackFixture = _ubuntu.UbuntuMinimalServerStackFixture
 UbuntuExternalServerStackFixture = _ubuntu.UbuntuExternalServerStackFixture
-UbuntuQosServerStackFixture = _ubuntu.UbuntuQosServerStackFixture
 
 OctaviaLoadbalancerStackFixture = _octavia.OctaviaLoadbalancerStackFixture
 OctaviaListenerStackFixture = _octavia.OctaviaListenerStackFixture

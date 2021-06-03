@@ -15,8 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import pytest
-
 import tobiko
 from tobiko.shell import sh
 from tobiko.openstack import stacks
@@ -44,13 +42,8 @@ class UbuntuMinimalServerStackTest(UbuntuServerStackTest):
     stack = tobiko.required_setup_fixture(
         stacks.UbuntuMinimalServerStackFixture)
 
-    @pytest.mark.skip(reason="ping not installed on image")
     def test_ping_fixed_ipv4(self):
-        pass
+        tobiko.skip_test("ping not installed on image")
 
-    @pytest.mark.skip(reason="ping not installed on image")
     def test_ping_fixed_ipv6(self):
-        pass
-
-    def _test_ping_nameservers(self, ip_version: int):
-        self.skipTest("ping not installed on Ubuntu minimal image")
+        tobiko.skip_test("ping not installed on image")

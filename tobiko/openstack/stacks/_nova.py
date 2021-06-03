@@ -82,7 +82,7 @@ class FlavorStackFixture(heat.HeatStackFixture):
     is_public = None
     name = None
     rxtx_factor = None
-    swap = None
+    swap: typing.Optional[int] = None
     vcpus = None
 
 
@@ -413,12 +413,6 @@ class ExternalServerStackFixture(ServerStackFixture, abc.ABC):
     @property
     def floating_network(self):
         return self.network_stack.network_id
-
-
-class QosServerStackFixture(ServerStackFixture, abc.ABC):
-    #: stack with the network with a qos policy
-    network_stack = tobiko.required_setup_fixture(
-        _neutron.NetworkQosPolicyStackFixture)
 
 
 class PeerServerStackFixture(ServerStackFixture, abc.ABC):

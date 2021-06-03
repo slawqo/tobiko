@@ -28,33 +28,33 @@ from tobiko.tripleo import overcloud
 LOG = log.getLogger(__name__)
 
 
-class QoSBasicTest(testtools.TestCase):
+class QoSNetworkTest(testtools.TestCase):
     """Tests QoS basic functionality"""
 
-    #: Resources stack with QoS Policy and QoS Rules and Advanced server
-    stack = tobiko.required_setup_fixture(stacks.UbuntuQosServerStackFixture)
+    #: Resources stacks with QoS Policy and QoS Rules and Advanced server
+    network = tobiko.required_setup_fixture(stacks.QosNetworkStackFixture)
+    policy = tobiko.required_setup_fixture(stacks.QosPolicyStackFixture)
+    server = tobiko.required_setup_fixture(stacks.QosServerStackFixture)
 
     def setUp(self):
-        """Skip these tests if OVN is configured and OSP version is lower than
-        16.1
-        """
-        super(QoSBasicTest, self).setUp()
+        super().setUp()
         if (overcloud.has_overcloud() and
                 topology.verify_osp_version('16.0', lower=True) and
                 containers.ovn_used_on_overcloud()):
+            # Skip these tests if OVN is configured and OSP version is lower
+            # than 16.1
             self.skipTest("QoS not supported in this setup")
 
     def test_network_qos_policy_id(self):
-        '''Verify QoS Policy attached to the network corresponds with the QoS
-        Policy previously created'''
-        self.assertEqual(self.stack.network_stack.qos_stack.qos_policy_id,
-                         self.stack.network_stack.qos_policy_id)
+        """Verify network policy ID"""
+        self.assertEqual(self.policy.qos_policy_id,
+                         self.network.qos_policy_id)
 
     def test_server_qos_policy_id(self):
-        self.assertIsNone(self.stack.port_details['qos_policy_id'])
+        """Verify server policy ID"""
+        self.assertIsNone(self.server.port_details['qos_policy_id'])
 
     def test_qos_bw_limit(self):
-        '''Verify BW limit using the iperf tool
-        '''
+        """Verify BW limit using the iperf3 tool"""
         iperf.assert_bw_limit(ssh_client=None,  # localhost will act as client
-                              ssh_server=self.stack.peer_ssh_client)
+                              ssh_server=self.server.peer_ssh_client)

@@ -22,7 +22,6 @@ import testtools
 
 import tobiko
 from tobiko.openstack import keystone
-from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
 from tobiko.shell import curl
@@ -121,24 +120,6 @@ class CirrosServerStackTest(testtools.TestCase):
             ssh_client=self.stack.ssh_client, ip_version=ip_version,
             filenames=self.nameservers_filenames)
         self.assertEqual(subnet_nameservers, server_nameservers)
-
-    def test_ping_ipv4_nameservers(self):
-        self._test_ping_nameservers(ip_version=4)
-
-    def test_ping_ipv6_nameservers(self):
-        self._test_ping_nameservers(ip_version=6)
-
-    @neutron.skip_unless_is_ovs()
-    def _test_ping_nameservers(self, ip_version: int):
-        nameservers = sh.list_nameservers(ssh_client=self.stack.ssh_client,
-                                          filenames=self.nameservers_filenames,
-                                          ip_version=ip_version)
-        if not nameservers:
-            self.skipTest(f"Target server has no IPv{ip_version} "
-                          "nameservers configured")
-        ping.assert_reachable_hosts(nameservers,
-                                    ssh_client=self.stack.ssh_client,
-                                    count=5)
 
 
 class EvacuablesServerStackTest(CirrosServerStackTest):
