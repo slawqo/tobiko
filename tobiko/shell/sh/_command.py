@@ -19,35 +19,37 @@ import shlex
 import typing  # noqa
 
 
+ShellCommandType = typing.Union['ShellCommand', str, typing.Iterable[str]]
+
+
 class ShellCommand(tuple):
 
-    def __repr__(self):
-        return "ShellCommand([{!s}])".format(', '.join(self))
+    def __repr__(self) -> str:
+        return f"ShellCommand({str(self)!r})"
 
-    def __str__(self):
-        return list_to_command_line(self)
+    def __str__(self) -> str:
+        return join_command(self)
 
-    def __add__(self, other):
-        other = shell_command(other)
-        return shell_command(tuple(self) + other)
-
-
-ShellCommandType = typing.Union[ShellCommand, str, typing.Iterable]
+    def __add__(self, other: ShellCommandType) -> 'ShellCommand':
+        return shell_command(tuple(self) + shell_command(other))
 
 
 def shell_command(command: ShellCommandType) -> ShellCommand:
     if isinstance(command, ShellCommand):
         return command
     elif isinstance(command, str):
-        return ShellCommand(shlex.split(command))
+        return ShellCommand(split_command(command))
     else:
         return ShellCommand(str(a) for a in command)
 
 
-def list_to_command_line(seq):
-    result = []
-    for arg in seq:
-        bs_buf = []
+NEED_QUOTE_CHARS = {' ', '\t', '\n', '\r', "'", '"'}
+
+
+def join_command(sequence: typing.Iterable[str]) -> str:
+    result: typing.List[str] = []
+    for arg in sequence:
+        bs_buf: typing.List[str] = []
 
         # Add a space to separate this argument from the others
         if result:
@@ -82,3 +84,7 @@ def list_to_command_line(seq):
             result.append("'")
 
     return ''.join(result)
+
+
+def split_command(command: str) -> typing.Sequence[str]:
+    return shlex.split(command)
