@@ -15,13 +15,14 @@ from __future__ import absolute_import
 
 import functools
 import inspect
-import typing  # noqa
+import typing
 
 import fixtures
 import testtools
 
 
-SkipException = testtools.TestCase.skipException  # type: typing.Type
+SkipException: typing.Type[Exception] = (
+    testtools.TestCase.skipException)
 
 SkipTarget = typing.Union[typing.Callable,
                           typing.Type[testtools.TestCase],
@@ -29,9 +30,11 @@ SkipTarget = typing.Union[typing.Callable,
 SkipDecorator = typing.Callable[[SkipTarget], SkipTarget]
 
 
-def skip_test(reason: str):
+def skip_test(reason: str, cause: Exception = None) -> typing.NoReturn:
     """Interrupt test case execution marking it as skipped for given reason"""
-    raise SkipException(reason)
+    if cause is not None:
+        reason += f"\n\n{cause}"
+    raise SkipException(reason) from cause
 
 
 def skip(reason: str) -> SkipDecorator:
