@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import shlex
+
 from oslo_log import log
 import paramiko
 from paramiko import channel
@@ -27,7 +29,6 @@ from tobiko.shell.sh import _local
 from tobiko.shell.sh import _process
 from tobiko.shell import ssh
 import typing  # noqa
-
 
 LOG = log.getLogger(__name__)
 
@@ -107,7 +108,7 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
                 process = client.get_transport().open_session()
                 if environment:
                     variables = " ".join(
-                        f"{name}='{value}'"
+                        f"{name}={shlex.quote(value)}"
                         for name, value in self.environment.items())
                     command = variables + " " + command
                 process.exec_command(command)
