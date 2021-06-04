@@ -15,7 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import fcntl
 import os
 import subprocess
 import sys
@@ -24,6 +23,7 @@ from oslo_log import log
 
 import tobiko
 from tobiko.shell.sh import _io
+from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _path
 from tobiko.shell.sh import _process
@@ -68,6 +68,7 @@ class LocalExecutePathFixture(_path.ExecutePathFixture):
 class LocalShellProcessFixture(_process.ShellProcessFixture):
 
     path_execute = tobiko.required_fixture(LocalExecutePathFixture)
+    default_shell = True
 
     def create_process(self):
         tobiko.setup_fixture(self.path_execute)
@@ -77,15 +78,23 @@ class LocalShellProcessFixture(_process.ShellProcessFixture):
         stdout = parameters.stdout and subprocess.PIPE or None
         stderr = parameters.stderr and subprocess.PIPE or None
         env = merge_dictionaries(os.environ, parameters.environment)
-        return subprocess.Popen(args=args,
-                                bufsize=parameters.buffer_size,
-                                shell=False,
-                                universal_newlines=False,
-                                env=env,
-                                cwd=parameters.current_dir,
-                                stdin=stdin,
-                                stdout=stdout,
-                                stderr=stderr)
+        try:
+            return subprocess.Popen(args=args,
+                                    bufsize=parameters.buffer_size,
+                                    shell=False,
+                                    universal_newlines=False,
+                                    env=env,
+                                    cwd=parameters.current_dir,
+                                    stdin=stdin,
+                                    stdout=stdout,
+                                    stderr=stderr)
+        except FileNotFoundError as ex:
+            LOG.debug(f"Error executing local command: args={args}")
+            raise _exception.ShellCommandFailed(command=self.command,
+                                                exit_status=-1,
+                                                stdin=parameters.stdin,
+                                                stdout=None,
+                                                stderr=str(ex)) from ex
 
     def setup_stdin(self):
         self.stdin = _io.ShellStdin(delegate=self.process.stdin,
@@ -96,7 +105,6 @@ class LocalShellProcessFixture(_process.ShellProcessFixture):
                                       buffer_size=self.parameters.buffer_size)
 
     def setup_stderr(self):
-        set_non_blocking(self.process.stderr.fileno())
         self.stderr = _io.ShellStderr(delegate=self.process.stderr,
                                       buffer_size=self.parameters.buffer_size)
 
@@ -129,11 +137,6 @@ class LocalShellProcessFixture(_process.ShellProcessFixture):
     def pid(self):
         process = self.process
         return process and process.pid or None
-
-
-def set_non_blocking(fd):
-    flag = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, flag | os.O_NONBLOCK)
 
 
 def merge_dictionaries(*dictionaries):

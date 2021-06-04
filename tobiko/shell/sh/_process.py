@@ -72,17 +72,17 @@ class ShellProcessParameters(Parameters):
     environment = None
     current_dir = None
     timeout: tobiko.Seconds = None
-    shell = None
     stdin = False
     stdout = True
     stderr = True
     buffer_size = io.DEFAULT_BUFFER_SIZE
     poll_interval = 1.
-    sudo = None
     network_namespace = None
     retry_count: typing.Optional[int] = 3
     retry_interval: tobiko.Seconds = 5.
     retry_timeout: tobiko.Seconds = 120.
+    shell: typing.Union[None, bool, str] = None
+    sudo: typing.Union[None, bool, str] = None
 
 
 class ShellProcessFixture(tobiko.SharedFixture):
@@ -92,6 +92,7 @@ class ShellProcessFixture(tobiko.SharedFixture):
     stdin = None
     stdout = None
     stderr = None
+    default_shell: typing.Union[None, bool, str] = None
 
     _exit_status = None
 
@@ -122,16 +123,16 @@ class ShellProcessFixture(tobiko.SharedFixture):
         command = _command.shell_command(self.parameters.command)
         network_namespace = self.parameters.network_namespace
         sudo = self.parameters.sudo
-
         shell = self.parameters.shell
-        if shell:
-            if shell is True:
-                shell = default_shell_command()
-            else:
-                shell = _command.shell_command(shell)
-            command = shell + [str(command)]
-        else:
-            command = _command.shell_command(command)
+        if shell is None:
+            shell = self.default_shell
+
+        if shell is not None:
+            tobiko.check_valid_type(shell, (bool, str))
+            if isinstance(shell, str):
+                command = _command.shell_command(shell) + [str(command)]
+            elif shell is True:
+                command = default_shell_command() + [str(command)]
 
         if network_namespace:
             if sudo is None:
@@ -333,7 +334,7 @@ class ShellProcessFixture(tobiko.SharedFixture):
                 poll_interval = self.parameters.poll_interval
                 LOG.debug(f"Waiting for process data {poll_interval} "
                           f"seconds... \n"
-                          f"  command: '{self.command}'\n"
+                          f"  command: {self.command}\n"
                           f"  attempt: {attempt.details}\n"
                           f"  streams: {streams}")
 
@@ -432,7 +433,7 @@ def str_from_stream(stream):
 def default_shell_command():
     from tobiko import config
     CONF = config.CONF
-    return _command.shell_command(CONF.tobiko.shell.sudo.command)
+    return _command.shell_command(CONF.tobiko.shell.command)
 
 
 def default_sudo_command():

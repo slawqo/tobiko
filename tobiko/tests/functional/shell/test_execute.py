@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 import testtools
 
 import tobiko
@@ -22,15 +24,23 @@ from tobiko import config
 from tobiko.openstack import keystone
 from tobiko.openstack import stacks
 from tobiko.shell import sh
+from tobiko.shell import ssh
 
 
 CONF = config.CONF
 
+SSH_EXPECTED_SHELL = None
+LOCAL_EXPECTED_SHELL = '/bin/sh -c'
+
 
 class ExecuteTest(testtools.TestCase):
 
-    ssh_client = None
-    shell = '/bin/sh -c'
+    @property
+    def expected_shell(self) -> typing.Optional[str]:
+        if ssh.ssh_proxy_client() is None:
+            return LOCAL_EXPECTED_SHELL
+        else:
+            return SSH_EXPECTED_SHELL
 
     def test_succeed(self, command='true', stdin=None, stdout=None,
                      stderr=None, expect_exit_status=0, **kwargs):
@@ -153,34 +163,41 @@ class ExecuteTest(testtools.TestCase):
         self.assertEqual(timeout, ex.timeout)
 
     def execute(self, **kwargs):
-        kwargs.setdefault('shell', self.shell)
-        kwargs.setdefault('ssh_client', self.ssh_client)
         return sh.execute(**kwargs)
 
     def expected_command(self, command):
         command = sh.shell_command(command)
-        if self.shell:
-            command = sh.shell_command(self.shell) + [str(command)]
+        if self.expected_shell is not None:
+            command = sh.shell_command(self.expected_shell) + [str(command)]
         return str(command)
 
 
 class LocalExecuteTest(ExecuteTest):
 
+    expected_shell = LOCAL_EXPECTED_SHELL
+
     def execute(self, **kwargs):
-        kwargs.setdefault('shell', self.shell)
         return sh.local_execute(**kwargs)
 
 
 @keystone.skip_unless_has_keystone_credentials()
 class SSHExecuteTest(ExecuteTest):
 
+    expected_shell = SSH_EXPECTED_SHELL
+
     server_stack = tobiko.required_setup_fixture(
-        stacks.CirrosServerStackFixture)
+        stacks.UbuntuMinimalServerStackFixture)
 
     @property
     def ssh_client(self):
         return self.server_stack.ssh_client
 
     def execute(self, **kwargs):
-        kwargs.setdefault('shell', self.shell)
         return sh.ssh_execute(ssh_client=self.ssh_client, **kwargs)
+
+
+@keystone.skip_unless_has_keystone_credentials()
+class CirrosSSHExecuteTest(SSHExecuteTest):
+
+    server_stack = tobiko.required_setup_fixture(
+        stacks.CirrosServerStackFixture)

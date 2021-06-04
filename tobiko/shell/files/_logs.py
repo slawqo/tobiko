@@ -17,6 +17,7 @@ from __future__ import absolute_import
 
 import collections
 import os
+import shlex
 import typing
 
 import tobiko
@@ -93,10 +94,10 @@ class JournalLogDigger(LogFileDigger):
     def grep_lines(self, pattern) -> typing.List[str]:
         try:
             result = sh.execute(["journalctl", '--no-pager',
-                                 "--unit", self.filename,
+                                 "--unit", shlex.quote(self.filename),
                                  "--since", "30 minutes ago",
                                  '--output', 'short-iso',
-                                 '--grep', "'%s'" % pattern],
+                                 '--grep', shlex.quote(pattern)],
                                 **self.execute_params)
         except sh.ShellCommandFailed as ex:
             if ex.stdout.endswith('-- No entries --\n'):
