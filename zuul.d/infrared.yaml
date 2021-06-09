@@ -81,9 +81,9 @@
     name: tobiko-infrared-fedora
     nodes:
       - name: primary
-        label: fedora-32
+        label: fedora-34
       - name: secondary
-        label: fedora-32
+        label: fedora-34
     groups:
       - name: undercloud
         nodes:
