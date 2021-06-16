@@ -269,8 +269,9 @@ class OpenStackTopology(tobiko.SharedFixture):
     def discover_nodes(self):
         self.discover_ssh_proxy_jump_node()
         self.discover_configured_nodes()
-        self.discover_controller_nodes()
-        self.discover_compute_nodes()
+        if keystone.has_keystone_credentials():
+            self.discover_controller_nodes()
+            self.discover_compute_nodes()
 
     def discover_ssh_proxy_jump_node(self):
         ssh_client = ssh.ssh_proxy_client()
