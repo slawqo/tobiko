@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import collections
+import io
 import os
 import typing  # noqa
 import urllib
@@ -75,9 +76,15 @@ class SSHConfigFixture(tobiko.SharedFixture):
             config_file = tobiko.tobiko_config_path(config_file)
             if os.path.exists(config_file):
                 LOG.debug("Parsing %r config file...", config_file)
-                with open(config_file) as f:
-                    self.config.parse(f)
-                LOG.debug("File %r parsed.", config_file)
+                try:
+                    with io.open(config_file, 'rt',
+                                 encoding="utf-8") as f:
+                        self.config.parse(f)
+                except Exception as ex:
+                    LOG.exception(f"Error parsing '{config_file}' SSH config "
+                                  f"file: {ex}")
+                else:
+                    LOG.debug("File %r parsed.", config_file)
 
     def lookup(self,
                host: typing.Optional[str] = None,
