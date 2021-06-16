@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import typing  # noqa
+import typing
 
 from tobiko import _exception
 
@@ -23,23 +23,37 @@ T = typing.TypeVar('T')
 
 class Selection(list, typing.Generic[T]):
 
-    def with_attributes(self, **attributes):
-        return self.create(
-            filter_by_attributes(self, exclude=False, **attributes))
+    def with_attributes(self, **attributes) -> 'Selection[T]':
+        return self.select(lambda obj: equal_attributes(obj, attributes))
 
-    def without_attributes(self, **attributes):
-        return self.create(
-            filter_by_attributes(self, exclude=True, **attributes))
+    def without_attributes(self, **attributes) -> 'Selection[T]':
+        return self.select(lambda obj: equal_attributes(obj, attributes,
+                                                        inverse=True))
 
-    def with_items(self, **items):
-        return self.create(filter_by_items(self, exclude=False, **items))
+    def with_items(self: 'Selection[typing.Dict]', **items) \
+            -> 'Selection[typing.Dict]':
+        return self.select(lambda obj: equal_items(obj, items))
 
-    def without_items(self, **items):
-        return self.create(filter_by_items(self, exclude=True, **items))
+    def without_items(self: 'Selection[typing.Dict]', **items) -> \
+            'Selection[typing.Dict]':
+        return self.select(lambda obj: equal_items(obj, items, inverse=True))
 
     @classmethod
-    def create(cls, objects: typing.Iterable[T]):
+    def create(cls, objects: typing.Iterable[T]) -> 'Selection[T]':
         return cls(objects)
+
+    def select(self,
+               predicate: typing.Callable[[T], bool],
+               expect=True) \
+            -> 'Selection[T]':
+        return self.create(obj
+                           for obj in self
+                           if bool(predicate(obj)) is expect)
+
+    def unselect(self,
+                 predicate: typing.Callable[[T], typing.Any]) \
+            -> 'Selection[T]':
+        return self.select(predicate, expect=False)
 
     @property
     def first(self) -> T:
@@ -56,38 +70,37 @@ class Selection(list, typing.Generic[T]):
             return self.first
 
     def __repr__(self):
-        return '{!s}({!r})'.format(type(self).__name__, list(self))
+        return f'{type(self).__name__}({list(self)!r})'
 
 
 def select(objects: typing.Iterable[T]) -> Selection[T]:
     return Selection.create(objects)
 
 
-def filter_by_attributes(objects, exclude=False, **attributes):
-    exclude = bool(exclude)
-    for obj in objects:
-        for key, value in attributes.items():
-            matching = value == getattr(obj, key)
-            if matching is exclude:
-                break
-        else:
-            yield obj
+def equal_attributes(obj,
+                     attributes: typing.Dict[str, typing.Any],
+                     inverse=False) \
+        -> bool:
+    for key, value in attributes.items():
+        matching = value == getattr(obj, key)
+        if matching is inverse:
+            return False
+    return True
 
 
-def filter_by_items(dictionaries, exclude=False, **items):
-    exclude = bool(exclude)
-    for dictionary in dictionaries:
-        for key, value in items.items():
-            matching = value == dictionary[key]
-            if matching is exclude:
-                break
-        else:
-            yield dictionary
+def equal_items(obj: typing.Dict,
+                items: typing.Dict,
+                inverse=False) -> bool:
+    for key, value in items.items():
+        matching = value == obj[key]
+        if matching is inverse:
+            return False
+    return True
 
 
 class ObjectNotFound(_exception.TobikoException):
-    "Object not found"
+    message = "Object not found"
 
 
 class MultipleObjectsFound(_exception.TobikoException):
-    "Multiple objects found: {objects!r}"
+    message = "Multiple objects found: {objects!r}"
