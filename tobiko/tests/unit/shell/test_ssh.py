@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import io
 import os
 
 import mock
@@ -61,7 +62,8 @@ class SSHClientFixtureTest(unit.TobikoUnitTest):
         for ssh_config_file in CONF.tobiko.ssh.config_files:
             ssh_config_file = tobiko.tobiko_config_path(ssh_config_file)
             if os.path.exists(ssh_config_file):
-                with open(ssh_config_file) as f:
+                with io.open(ssh_config_file, 'rt',
+                             encoding="utf-8") as f:
                     ssh_config.parse(f)
         expected_host_config = ssh_config.lookup(fixture.host)
         expected_host_config.pop('include', None)
