@@ -63,34 +63,43 @@ class SSHConnection(object):
                 self.ssh_client is not None)
 
 
+SSHConnectionKey = typing.Tuple[netaddr.IPAddress,
+                                typing.Optional[ssh.SSHClientFixture]]
+SSHConnectionDict = typing.Dict[SSHConnectionKey, SSHConnection]
+
+
 class SSHConnectionManager(tobiko.SharedFixture):
 
     config = tobiko.required_setup_fixture(_config.OpenStackTopologyConfig)
 
     def __init__(self):
         super(SSHConnectionManager, self).__init__()
-        self._connections: typing.Dict[netaddr.IPAddress, SSHConnection] = (
-            collections.OrderedDict())
+        self._connections: SSHConnectionDict = collections.OrderedDict()
 
     def cleanup_fixture(self):
         connections = list(self._connections.values())
         self._connections.clear()
         for connection in connections:
-            connection.close()
+            ssh_client = connection.ssh_client
+            if ssh_client is not None:
+                ssh_client.close()
 
     def connect(self,
                 addresses: typing.List[netaddr.IPAddress],
                 proxy_client: typing.Optional[ssh.SSHClientFixture] = None,
-                **connect_parameters) -> ssh.SSHClientFixture:
+                **connect_parameters) \
+            -> ssh.SSHClientFixture:
         if not addresses:
             raise ValueError(f"'addresses' list is empty: {addresses}")
-
-        connections = tobiko.select(
-            self.list_connections(addresses, proxy_client=proxy_client))
+        connections = self.list_connections(addresses,
+                                            proxy_client=proxy_client)
         try:
-            return connections.with_attributes(is_valid=True).first.ssh_client
+            connection = connections.with_attributes(is_valid=True).first
         except tobiko.ObjectNotFound:
             pass
+        else:
+            assert isinstance(connection.ssh_client, ssh.SSHClientFixture)
+            return connection.ssh_client
 
         for connection in connections.with_attributes(failure=None):
             # connection not tried yet
@@ -119,23 +128,24 @@ class SSHConnectionManager(tobiko.SharedFixture):
                                   failures=failures)
 
     def list_connections(
-                self, addresses: typing.List[netaddr.IPAddress],
-                proxy_client: typing.Optional[ssh.SSHClientFixture] = None
-            ) -> typing.List[SSHConnection]:
-        connections = []
-        for address in addresses:
-            connection = self.get_connection(address,
-                                             proxy_client=proxy_client)
-            connections.append(connection)
-        return connections
+            self,
+            addresses: typing.List[netaddr.IPAddress],
+            proxy_client: ssh.SSHClientFixture = None) \
+            -> tobiko.Selection[SSHConnection]:
+        # Ensure there is any address duplication
+        addresses = list(collections.OrderedDict.fromkeys(addresses))
+        return tobiko.Selection[SSHConnection](
+            self.get_connection(address, proxy_client=proxy_client)
+            for address in addresses)
 
     def get_connection(
-                self, address: netaddr.IPAddress,
-                proxy_client: typing.Optional[ssh.SSHClientFixture] = None
-            ) -> SSHConnection:
+            self,
+            address: netaddr.IPAddress,
+            proxy_client: ssh.SSHClientFixture = None) \
+            -> SSHConnection:
         tobiko.check_valid_type(address, netaddr.IPAddress)
-        if proxy_client is not None:
-            tobiko.check_valid_type(proxy_client, ssh.SSHClientFixture)
+        tobiko.check_valid_type(proxy_client, ssh.SSHClientFixture,
+                                type(None))
         connection = SSHConnection(address, proxy_client=proxy_client)
         return self._connections.setdefault((address, proxy_client),
                                             connection)
