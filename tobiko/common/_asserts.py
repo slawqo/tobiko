@@ -13,13 +13,15 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 import testtools
 
 
 FailureException = testtools.TestCase.failureException
 
 
-def fail(msg, *args, **kwargs):
+def fail(msg: str, *args, **kwargs) -> typing.NoReturn:
     """Fail immediately current test case execution, with the given message.
 
     Unconditionally raises a tobiko.FailureException as in below equivalent
