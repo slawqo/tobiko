@@ -103,7 +103,7 @@ class ShellProcessFixture(tobiko.SharedFixture):
     def init_parameters(self, **kwargs) -> ShellProcessParameters:
         return ShellProcessParameters(**kwargs)
 
-    def execute(self):
+    def execute(self) -> 'ShellProcessFixture':
         return tobiko.setup_fixture(self)
 
     def setup_fixture(self):
