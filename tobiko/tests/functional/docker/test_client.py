@@ -21,47 +21,56 @@ import testtools
 
 import tobiko
 from tobiko import docker
-from tobiko.openstack import keystone
 from tobiko.openstack import topology
+from tobiko.shell import ssh
 
 
-class DockerNodeFixture(tobiko.SharedFixture):
+class LocalDockerClientTest(testtools.TestCase):
 
-    node = None
-
-    def setup_fixture(self):
-        nodes = topology.list_openstack_nodes()
-        for node in nodes:
-            assert node.ssh_client is not None
-            if docker.is_docker_running(ssh_client=node.ssh_client):
-                self.node = node
-                break
-
-        if self.node is None:
-            nodes_text = ' '.join(node.name for node in nodes)
-            tobiko.skip_test("Docker server is not running in any of nodes "
-                             f"{nodes_text}")
-
-
-@keystone.skip_unless_has_keystone_credentials()
-class DockerClientTest(testtools.TestCase):
-
-    node = tobiko.required_setup_fixture(DockerNodeFixture)
+    sudo = False
 
     @property
-    def ssh_client(self):
-        return self.node.node.ssh_client
+    def ssh_client(self) -> ssh.SSHClientType:
+        for ssh_client in self.iter_ssh_clients():
+            if docker.is_docker_running(ssh_client=ssh_client,
+                                        sudo=self.sudo):
+                return ssh_client
+        tobiko.skip_test('Docker not installed')
+
+    @staticmethod
+    def iter_ssh_clients():
+        yield False
 
     def test_get_docker_client(self):
-        client = docker.get_docker_client(ssh_client=self.ssh_client)
+        client = docker.get_docker_client(ssh_client=self.ssh_client,
+                                          sudo=self.sudo)
         self.assertIsInstance(client, docker.DockerClientFixture)
 
     def test_connect_docker_client(self):
-        client = docker.get_docker_client(ssh_client=self.ssh_client).connect()
+        client = docker.get_docker_client(ssh_client=self.ssh_client,
+                                          sudo=self.sudo).connect()
         self.assertIsInstance(client, docker_client.DockerClient)
         client.ping()
 
     def test_list_docker_containers(self):
+        client = docker.get_docker_client(ssh_client=self.ssh_client,
+                                          sudo=self.sudo)
         for container in docker.list_docker_containers(
-                ssh_client=self.ssh_client):
+                client=client):
             self.assertIsInstance(container, containers.Container)
+
+
+class SShDockerClientTest(LocalDockerClientTest):
+
+    sudo = True
+
+    @staticmethod
+    def iter_ssh_clients():
+        ssh_client = ssh.ssh_proxy_client()
+        if isinstance(ssh_client, ssh.SSHClientFixture):
+            yield ssh_client
+
+        nodes = topology.list_openstack_nodes()
+        for node in nodes:
+            if isinstance(node.ssh_client, ssh.SSHClientFixture):
+                yield ssh_client
