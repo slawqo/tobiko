@@ -15,7 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
 import re
 import time
 import typing
@@ -23,10 +22,11 @@ import typing
 from oslo_log import log
 
 import tobiko
+from tobiko.shell.sh import _cmdline
 from tobiko.shell.sh import _command
-from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _hostname
+from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
@@ -47,36 +47,75 @@ IS_KERNEL_RE = re.compile('^\\[.*\\]$')
 _NOT_FOUND = object()
 
 
-class PsProcess(collections.namedtuple('PsProcess', ['ssh_client',
-                                                     'pid',
-                                                     'command'])):
-    """Process listed by ps command
-    """
+class PsProcessBase:
+    command: str
+    pid: int
+    ssh_client: ssh.SSHClientType
 
     @property
-    def is_kernel(self):
+    def is_kernel(self) -> bool:
         return IS_KERNEL_RE.match(self.command) is not None
 
     @property
     def command_line(self) -> typing.Optional[_command.ShellCommand]:
-        command_line = self.__dict__.get('_command_line', _NOT_FOUND)
-        if command_line is _NOT_FOUND:
-            command_line = None
-            try:
-                output = _execute.execute(f'cat /proc/{self.pid}/cmdline',
-                                          ssh_client=self.ssh_client).stdout
-            except _exception.ShellCommandFailed as ex:
-                LOG.error(f"Unable to get process command line: {ex.stderr}")
-            else:
-                line = _command.ShellCommand(output.strip().split('\0')[:-1])
-                if line[0] != self.command:
-                    LOG.error(f"Command line of process {self.pid} "
-                              "doesn't match its command "
-                              f"({self.command}): {line}")
-                else:
-                    command_line = line
-            self.__dict__['command_line'] = command_line
-        return command_line
+        try:
+            return _cmdline.get_command_line(command=self.command,
+                                             pid=self.pid,
+                                             ssh_client=self.ssh_client,
+                                             _cache_id=id(self))
+        except _cmdline.GetCommandLineError as ex:
+            LOG.error(str(ex))
+            return None
+
+
+class PsProcessTuple(typing.NamedTuple):
+    """Process listed by ps command
+    """
+    command: str
+    pid: int
+    ssh_client: ssh.SSHClientType
+
+
+class PsProcess(PsProcessTuple, PsProcessBase):
+    pass
+
+
+P = typing.TypeVar('P', bound=PsProcessBase)
+
+
+def select_processes(
+        processes: typing.Iterable[PsProcessBase],
+        command: str = None,
+        pid: int = None,
+        is_kernel: typing.Optional[bool] = False,
+        command_line: _command.ShellCommandType = None) \
+        -> tobiko.Selection[P]:
+    selection = tobiko.Selection[P](processes)
+
+    if selection and pid is not None:
+        # filter files by PID
+        selection = selection.with_attributes(pid=pid)
+
+    if selection and command_line is not None:
+        if command is None:
+            command = _command.shell_command(command_line)[0]
+
+    if selection and command is not None:
+        # filter processes by command
+        pattern = re.compile(command)
+        selection = selection.select(
+            lambda process: bool(pattern.match(str(process.command))))
+
+    if selection and is_kernel is not None:
+        # filter kernel processes
+        selection = selection.with_attributes(is_kernel=bool(is_kernel))
+
+    if selection and command_line is not None:
+        pattern = re.compile(str(command_line))
+        selection = selection.select(
+            lambda process: bool(pattern.match(str(process.command_line))))
+
+    return selection
 
 
 def list_kernel_processes(**list_params):
@@ -87,17 +126,15 @@ def list_all_processes(**list_params):
     return list_processes(is_kernel=None, **list_params)
 
 
-def list_processes(pid=None,
-                   command: typing.Optional[str] = None,
-                   is_kernel=False,
-                   ssh_client=None,
-                   command_line: typing.Optional[str] = None,
-                   **execute_params) -> tobiko.Selection[PsProcess]:
-    """Returns the number of seconds passed since last host reboot
+def list_processes(
+        pid: int = None,
+        command: str = None,
+        is_kernel: typing.Optional[bool] = False,
+        ssh_client: ssh.SSHClientType = None,
+        command_line: _command.ShellCommandType = None,
+        **execute_params) -> tobiko.Selection[PsProcess]:
+    """Returns list of running process
 
-    It reads and parses remote special file /proc/uptime and returns a floating
-    point value that represents the number of seconds passed since last host
-    reboot
     """
     result = _execute.execute('ps -A', expect_exit_status=None,
                               ssh_client=ssh_client, **execute_params)
@@ -111,33 +148,11 @@ def list_processes(pid=None,
                                     schema=PS_TABLE_SCHEMA):
         processes.append(PsProcess(ssh_client=ssh_client, **process_data))
 
-    if processes and pid:
-        # filter processes by PID
-        pid = int(pid)
-        assert pid > 0
-        processes = processes.with_attributes(pid=pid)
-
-    if processes and command is not None:
-        # filter processes by command
-        pattern = re.compile(command)
-        processes = tobiko.Selection[PsProcess](
-            process
-            for process in processes
-            if pattern.match(process.command))
-
-    if processes and is_kernel is not None:
-        # filter kernel processes
-        processes = processes.with_attributes(is_kernel=bool(is_kernel))
-
-    if processes and command_line is not None:
-        pattern = re.compile(command_line)
-        processes = tobiko.Selection[PsProcess](
-            process
-            for process in processes
-            if (process.command_line is not None and
-                pattern.match(f"{process.command_line}")))
-
-    return processes
+    return select_processes(processes,
+                            pid=pid,
+                            command=command,
+                            is_kernel=is_kernel,
+                            command_line=command_line)
 
 
 def wait_for_processes(timeout=float('inf'), sleep_interval=5.,

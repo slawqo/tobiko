@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+from tobiko.shell.sh import _cmdline
 from tobiko.shell.sh import _command
 from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
@@ -29,6 +30,8 @@ from tobiko.shell.sh import _sftp
 from tobiko.shell.sh import _ssh
 from tobiko.shell.sh import _uptime
 
+
+get_command_line = _cmdline.get_command_line
 
 ShellCommand = _command.ShellCommand
 ShellCommandType = _command.ShellCommandType
