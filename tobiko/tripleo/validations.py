@@ -13,12 +13,19 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
+
 from oslo_log import log
-from validations_libs import validation_actions
 
 from tobiko.tripleo import overcloud
 from tobiko.openstack import topology
 from tobiko.shell import sh
+
+
+# Workaround for validations-libs 1.2.0 issue
+# https://opendev.org/openstack/validations-libs/src/tag/1.2.0/validations_libs/constants.py#L25
+os.environ.setdefault('HOME', os.path.expanduser('~'))
+from validations_libs import validation_actions  # noqa
 
 
 LOG = log.getLogger(__name__)
