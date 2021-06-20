@@ -8,6 +8,7 @@ from oslo_log import log
 import tobiko
 from tobiko.openstack import neutron
 from tobiko.openstack import topology
+from tobiko.shell import ip
 from tobiko.shell import sh
 from tobiko.tripleo import containers
 from tobiko.tripleo import pacemaker
@@ -259,3 +260,37 @@ def test_ovs_bridges_mac_table_size():
                 ssh_client=node.ssh_client, sudo=True).stdout.splitlines()[0]
             test_case.assertEqual(mac_table_size.replace('"', ''),
                                   expected_mac_table_size)
+
+
+def test_ovs_namespaces_are_absent():
+    ovs_specific_namespaces = ['qrouter', 'qdhcp', 'snat', 'fip']
+    for node in topology.list_openstack_nodes():
+        if node.name.startswith('undercloud'):
+            continue
+        namespaces = ip.list_network_namespaces(
+            ssh_client=node.ssh_client, sudo=True)
+        namespaces = [namespace
+                      for namespace in namespaces
+                      if any(namespace.startswith(prefix)
+                             for prefix in ovs_specific_namespaces)]
+        test_case = tobiko.get_test_case()
+        test_case.assertEqual(
+            [], namespaces,
+            f"Unexpected namespace found on {node.name}: {*namespaces,}")
+
+
+def test_ovs_interfaces_are_absent():
+    ovs_specific_interfaces = ['qvo', 'qvb', 'qbr']
+    for node in topology.list_openstack_nodes():
+        if node.name.startswith('undercloud'):
+            continue
+        interfaces = ip.list_network_interfaces(
+            ssh_client=node.ssh_client, sudo=True)
+        interfaces = [interface
+                      for interface in interfaces
+                      if any(interface.startswith(prefix)
+                             for prefix in ovs_specific_interfaces)]
+        test_case = tobiko.get_test_case()
+        test_case.assertEqual(
+            [], interfaces,
+            f"Unexpected interface found on {node.name}: {*interfaces,}")
