@@ -35,6 +35,12 @@ class UbuntuServerStackTest(test_cirros.CirrosServerStackTest):
         self.assertTrue(python_version.startswith('Python 3.'),
                         python_version)
 
+    def test_ncat_command(self):
+        output = sh.execute('ncat --version',
+                            ssh_client=self.stack.ssh_client).stderr.strip()
+        self.assertIn('Ncat: Version', output)
+        self.assertIn('https://nmap.org/ncat', output)
+
 
 class UbuntuMinimalServerStackTest(UbuntuServerStackTest):
 
@@ -47,3 +53,6 @@ class UbuntuMinimalServerStackTest(UbuntuServerStackTest):
 
     def test_ping_fixed_ipv6(self):
         tobiko.skip_test("ping not installed on image")
+
+    def test_ncat_command(self):
+        tobiko.skip_test("ncat not installed on image")

@@ -51,7 +51,10 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
       ping
     """
 
-    install_packages = ['iperf3', 'iputils-ping', 'nginx']
+    install_packages = ['iperf3',
+                        'iputils-ping',
+                        'ncat',
+                        'nginx']
 
 
 class UbuntuFlavorStackFixture(_nova.FlavorStackFixture):
