@@ -18,9 +18,9 @@ from __future__ import absolute_import
 import collections
 import io
 import os
-import typing  # noqa
-import urllib
+from urllib import parse
 
+import netaddr
 from oslo_log import log
 import paramiko
 
@@ -38,7 +38,8 @@ def ssh_config(config_files=None):
     return tobiko.setup_fixture(fixture)
 
 
-def ssh_host_config(host=None, config_files=None):
+def ssh_host_config(host: str,
+                    config_files=None):
     return ssh_config(config_files=config_files).lookup(host)
 
 
@@ -51,6 +52,17 @@ class SSHDefaultConfigFixture(tobiko.SharedFixture):
 
     def __getattr__(self, name):
         return getattr(self.conf, name)
+
+
+def get_ssh_host_url(host: str) -> parse.ParseResult:
+    try:
+        ip_address = netaddr.IPAddress(host)
+    except netaddr.AddrFormatError:
+        pass
+    else:
+        if ip_address.version == 6:
+            host = f"[{host}]"
+    return parse.urlparse(f"ssh://{host}")
 
 
 class SSHConfigFixture(tobiko.SharedFixture):
@@ -87,12 +99,13 @@ class SSHConfigFixture(tobiko.SharedFixture):
                     LOG.debug("File %r parsed.", config_file)
 
     def lookup(self,
-               host: typing.Optional[str] = None,
-               hostname: typing.Optional[str] = None,
-               username: typing.Optional[str] = None,
-               port: typing.Optional[int] = None):
+               host: str = None,
+               hostname: str = None,
+               username: str = None,
+               port: int = None):
+
         if host and ('@' in host or ':' in host):
-            host_url = urllib.parse.urlparse(f"ssh://{host}")
+            host_url = get_ssh_host_url(host)
             hostname = hostname or host_url.hostname or None
             username = username or host_url.username or None
             port = port or host_url.port or None
