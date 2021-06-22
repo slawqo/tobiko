@@ -93,11 +93,6 @@ class EvacuableServerStackFixture(CirrosServerStackFixture):
     image_fixture = tobiko.required_setup_fixture(EvacuableCirrosImageFixture)
 
 
-class CirrosExternalServerStackFixture(CirrosServerStackFixture,
-                                       _nova.ExternalServerStackFixture):
-    pass
-
-
 class CirrosHttpServerStackFixture(CirrosPeerServerStackFixture,
                                    _nova.HttpServerStackFixture):
 

@@ -28,12 +28,10 @@ from tobiko.openstack.stacks import _ubuntu
 CentosFlavorStackFixture = _centos.CentosFlavorStackFixture
 CentosImageFixture = _centos.CentosImageFixture
 CentosServerStackFixture = _centos.CentosServerStackFixture
-CentosExternalServerStackFixture = _centos.CentosExternalServerStackFixture
 
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture
 CirrosServerStackFixture = _cirros.CirrosServerStackFixture
-CirrosExternalServerStackFixture = _cirros.CirrosExternalServerStackFixture
 CirrosPeerServerStackFixture = _cirros.CirrosPeerServerStackFixture
 CirrosDifferentHostServerStackFixture = (
     _cirros.CirrosDifferentHostServerStackFixture)

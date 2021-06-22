@@ -141,7 +141,7 @@ class DVRTest(testtools.TestCase):
 
     router_stack = tobiko.required_setup_fixture(NetworkWithNoServersStack)
     server_stack = tobiko.required_setup_fixture(
-            stacks.CirrosExternalServerStackFixture)
+            stacks.CirrosServerStackFixture)
 
     def setUp(self):
         super(DVRTest, self).setUp()

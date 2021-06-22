@@ -113,24 +113,6 @@ class PortTest(testtools.TestCase):
 # --- Test opening ports on external network ----------------------------------
 
 @stacks.skip_unless_has_external_network
-class CirrosExternalPortTest(PortTest):
-    """Test Neutron ports"""
-
-    #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(
-        stacks.CirrosExternalServerStackFixture)
-
-
-@stacks.skip_unless_has_external_network
-class CentosExternalPortTest(PortTest):
-    """Test Neutron ports"""
-
-    #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(
-        stacks.CentosExternalServerStackFixture)
-
-
-@stacks.skip_unless_has_external_network
 class UbuntuExternalPortTest(PortTest):
     """Test Neutron ports"""
 
