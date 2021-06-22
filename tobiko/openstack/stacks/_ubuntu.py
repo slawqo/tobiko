@@ -89,7 +89,7 @@ class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture):
             runcmd=["sh -c 'hostname > /var/www/html/id'"])
 
 
-class UbuntuExternalServerStackFixture(UbuntuMinimalServerStackFixture,
+class UbuntuExternalServerStackFixture(UbuntuServerStackFixture,
                                        _nova.ExternalServerStackFixture):
     """Ubuntu server with port on special external network
     """
