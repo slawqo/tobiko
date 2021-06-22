@@ -21,10 +21,9 @@ from tobiko.openstack.stacks import _nova
 
 CONF = config.CONF
 
-
 CENTOS_IMAGE_URL = (
-    'http://cloud.centos.org/centos/8/x86_64/images/'
-    'CentOS-8-GenericCloud-8.2.2004-20200611.2.x86_64.qcow2')
+    'https://cloud.centos.org/centos/8/x86_64/images/'
+    'CentOS-8-GenericCloud-8.4.2105-20210603.0.x86_64.qcow2')
 
 
 class CentosImageFixture(glance.URLGlanceImageFixture):
@@ -55,7 +54,7 @@ class Centos7ImageFixture(glance.URLGlanceImageFixture):
 
 
 class CentosFlavorStackFixture(_nova.FlavorStackFixture):
-    ram = 256
+    ram = 512
     swap = 1024
 
 
