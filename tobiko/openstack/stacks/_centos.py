@@ -38,8 +38,25 @@ class CentosImageFixture(glance.URLGlanceImageFixture):
     connection_timeout = CONF.tobiko.centos.connection_timeout or 800.
 
 
+CENTOS7_IMAGE_URL = (
+    'https://cloud.centos.org/centos/7/images/'
+    'CentOS-7-x86_64-GenericCloud.qcow2.xz')
+
+
+class Centos7ImageFixture(glance.URLGlanceImageFixture):
+    image_url = CONF.tobiko.centos7.image_url or CENTOS7_IMAGE_URL
+    image_name = CONF.tobiko.centos7.image_name
+    image_file = CONF.tobiko.centos7.image_file
+    disk_format = CONF.tobiko.centos7.disk_format or "qcow2"
+    container_format = CONF.tobiko.centos7.container_format or "bare"
+    username = CONF.tobiko.centos7.username or 'centos'
+    password = CONF.tobiko.centos7.password
+    connection_timeout = CONF.tobiko.centos7.connection_timeout or 800.
+
+
 class CentosFlavorStackFixture(_nova.FlavorStackFixture):
     ram = 256
+    swap = 1024
 
 
 class CentosServerStackFixture(_nova.CloudInitServerStackFixture):
@@ -50,5 +67,8 @@ class CentosServerStackFixture(_nova.CloudInitServerStackFixture):
     #: Flavor used to create a Nova server instance
     flavor_stack = tobiko.required_setup_fixture(CentosFlavorStackFixture)
 
-    #: Setup SWAP file in bytes
-    swap_maxsize = 1 * 1024 * 1024 * 1024  # 1 GB
+
+class Centos7ServerStackFixture(CentosServerStackFixture):
+
+    #: Glance image used to create a Nova server instance
+    image_fixture = tobiko.required_setup_fixture(Centos7ImageFixture)

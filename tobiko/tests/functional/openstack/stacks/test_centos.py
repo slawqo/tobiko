@@ -15,8 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import yaml
-
 import tobiko
 from tobiko.shell import sh
 from tobiko.openstack import keystone
@@ -34,12 +32,9 @@ class CentosServerStackTest(test_cirros.CirrosServerStackTest):
 
     def test_user_data(self):
         user_data = self.stack.user_data
-        self.assertIsInstance(user_data, str)
-        self.assertTrue(user_data.startswith('#cloud-config\n'), user_data)
-        self.assertEqual(self.stack.cloud_config,
-                         yaml.safe_load(user_data))
+        self.assertEqual('', user_data)
 
-    def test_platform_python(self):
+    def test_python(self):
         python_version = sh.execute(['/usr/libexec/platform-python',
                                      '--version'],
                                     ssh_client=self.stack.ssh_client).stdout
@@ -48,3 +43,16 @@ class CentosServerStackTest(test_cirros.CirrosServerStackTest):
 
     def test_cloud_init_done(self):
         nova.wait_for_cloud_init_done(ssh_client=self.stack.ssh_client)
+
+
+@keystone.skip_unless_has_keystone_credentials()
+class Centos7ServerStackTest(CentosServerStackTest):
+
+    #: Stack of resources with a server attached to a floating IP
+    stack = tobiko.required_setup_fixture(stacks.Centos7ServerStackFixture)
+
+    def test_python(self):
+        python_version = sh.execute(['python', '--version'],
+                                    ssh_client=self.stack.ssh_client).stderr
+        self.assertTrue(python_version.startswith('Python 2.'),
+                        python_version)
