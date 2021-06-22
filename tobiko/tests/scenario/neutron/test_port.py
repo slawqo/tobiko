@@ -83,9 +83,8 @@ class PortTest(testtools.TestCase):
     def test_ping_subnet_gateways(self):
         """Checks server can ping its gateway IPs"""
         network_id = self.stack.network_stack.network_id
-        subnets = neutron.list_subnets(network_id=network_id,
-                                       enable_dhcp=True)
-        LOG.debug("Subnets with DHCP enabled are:\n"
+        subnets = neutron.list_subnets(network_id=network_id)
+        LOG.debug("Subnets enabled are:\n"
                   f"{json.dumps(subnets, indent=4, sort_keys=True)}")
         gateway_ips = [netaddr.IPAddress(subnet['gateway_ip'])
                        for subnet in subnets]
@@ -98,7 +97,8 @@ class PortTest(testtools.TestCase):
         port_ips = neutron.list_device_ip_addresses(
             device_id=device_id or self.stack.server_id,
             network_id=network_id or self.stack.network_stack.network_id,
-            need_dhcp=self.stack.need_dhcp, ip_version=ip_version)
+            need_dhcp=self.stack.need_dhcp,
+            ip_version=ip_version)
         if port_ips:
             ping.assert_reachable_hosts(port_ips,
                                         timeout=600.,

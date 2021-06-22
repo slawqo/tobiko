@@ -406,9 +406,14 @@ class ExternalServerStackFixture(ServerStackFixture, abc.ABC):
     # external servers doesn't need floating IPs
     has_floating_ip = False
 
+    # We must rely on ways of configuring IPs without relying on DHCP
     config_drive = True
 
+    # external network servers are visible from test host
     peer_ssh_client = None
+
+    # external network DHCP could conflict with Neutron one
+    need_dhcp = False
 
     @property
     def floating_network(self):
