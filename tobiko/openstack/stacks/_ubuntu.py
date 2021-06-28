@@ -13,11 +13,13 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 import tobiko
 from tobiko import config
 from tobiko.openstack import glance
-from tobiko.openstack import nova
 from tobiko.openstack.stacks import _nova
+
 
 CONF = config.CONF
 
@@ -49,12 +51,26 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
     The server has additional commands compared to the minimal one:
       iperf3
       ping
+      ncat
+      nginx
+
+    The image will also have a running HTTPD server listening on
+    TCP port 80
     """
 
-    install_packages = ['iperf3',
-                        'iputils-ping',
-                        'ncat',
-                        'nginx']
+    @property
+    def firstboot_commands(self) -> typing.List[str]:
+        return super().firstboot_commands + [
+            'sh -c "hostname > /var/www/html/id"']
+
+    @property
+    def install_packages(self) -> typing.List[str]:
+        return super().install_packages + ['iperf3',
+                                           'iputils-ping',
+                                           'ncat',
+                                           'nginx']
+
+    http_port = 80
 
 
 class UbuntuFlavorStackFixture(_nova.FlavorStackFixture):
@@ -83,13 +99,9 @@ class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture):
     image_fixture = tobiko.required_setup_fixture(UbuntuImageFixture)
 
     # port of running HTTP server
-    http_port = 80
-
     @property
-    def cloud_config(self):
-        return nova.cloud_config(
-            super().cloud_config,
-            runcmd=["sh -c 'hostname > /var/www/html/id'"])
+    def http_port(self) -> int:
+        return self.image_fixture.http_port
 
 
 class UbuntuExternalServerStackFixture(UbuntuServerStackFixture,

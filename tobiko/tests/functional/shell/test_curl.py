@@ -23,10 +23,11 @@ import testtools
 import tobiko
 from tobiko.shell import curl
 from tobiko.shell import ssh
+from tobiko.openstack import keystone
 from tobiko.openstack import stacks
 
 
-@tobiko.skip("Flaky test case")
+@keystone.skip_unless_has_keystone_credentials()
 class TestCurl(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(stacks.UbuntuServerStackFixture)
