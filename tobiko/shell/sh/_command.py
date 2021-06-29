@@ -15,8 +15,9 @@
 #    under the License.
 from __future__ import absolute_import
 
+import re
 import shlex
-import typing  # noqa
+import typing
 
 
 ShellCommandType = typing.Union['ShellCommand', str, typing.Iterable[str]]
@@ -28,63 +29,49 @@ class ShellCommand(tuple):
         return f"ShellCommand({str(self)!r})"
 
     def __str__(self) -> str:
-        return join_command(self)
+        return join(self)
 
     def __add__(self, other: ShellCommandType) -> 'ShellCommand':
         return shell_command(tuple(self) + shell_command(other))
 
 
-def shell_command(command: ShellCommandType) -> ShellCommand:
+def shell_command(command: ShellCommandType,
+                  **shlex_params) -> ShellCommand:
     if isinstance(command, ShellCommand):
         return command
     elif isinstance(command, str):
-        return ShellCommand(split_command(command))
+        return split(command, **shlex_params)
     else:
         return ShellCommand(str(a) for a in command)
 
 
-NEED_QUOTE_CHARS = {' ', '\t', '\n', '\r', "'", '"'}
+_find_unsafe = re.compile(r'[^\w@&%+=:,.;<>/\-()\[\]|*]', re.ASCII).search
+
+_is_quoted = re.compile(r'(^\'.*\'$)|(^".*"$)', re.ASCII).search
 
 
-def join_command(sequence: typing.Iterable[str]) -> str:
-    result: typing.List[str] = []
-    for arg in sequence:
-        bs_buf: typing.List[str] = []
+def quote(s: str):
+    """Return a shell-escaped version of the string *s*."""
+    if not s:
+        return "''"
 
-        # Add a space to separate this argument from the others
-        if result:
-            result.append(' ')
+    if _is_quoted(s):
+        return s
 
-        needquote = (" " in arg) or ("\t" in arg) or not arg
-        if needquote:
-            result.append("'")
+    if _find_unsafe(s) is None:
+        return s
 
-        for c in arg:
-            if c == '\\':
-                # Don't know if we need to double yet.
-                bs_buf.append(c)
-            elif c == '"':
-                # Double backslashes.
-                result.append('\\' * len(bs_buf)*2)
-                bs_buf = []
-                result.append('\\"')
-            else:
-                # Normal char
-                if bs_buf:
-                    result.extend(bs_buf)
-                    bs_buf = []
-                result.append(c)
-
-        # Add remaining backslashes, if any.
-        if bs_buf:
-            result.extend(bs_buf)
-
-        if needquote:
-            result.extend(bs_buf)
-            result.append("'")
-
-    return ''.join(result)
+    # use single quotes, and put single quotes into double quotes
+    # the string $'b is then quoted as '$'"'"'b'
+    return "'" + s.replace("'", "'\"'\"'") + "'"
 
 
-def split_command(command: str) -> typing.Sequence[str]:
-    return shlex.split(command)
+def join(sequence: typing.Iterable[str]) -> str:
+    return ' '.join(quote(s)
+                    for s in sequence)
+
+
+def split(command: str, posix=True, **shlex_params) -> ShellCommand:
+    lex = shlex.shlex(command, posix=posix, **shlex_params)
+    lex.whitespace_split = True
+    return ShellCommand(lex)
