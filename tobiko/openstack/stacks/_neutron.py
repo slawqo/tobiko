@@ -48,7 +48,7 @@ class ExternalNetworkStackFixture(heat.HeatStackFixture):
     def external_name(self):
         return tobiko.tobiko_config().neutron.external_network
 
-    subnet_enable_dhcp: typing.Optional[bool] = None
+    subnet_enable_dhcp: typing.Optional[bool] = False
 
     _external_network: typing.Optional[NeutronNetworkType] = None
 
@@ -63,19 +63,17 @@ class ExternalNetworkStackFixture(heat.HeatStackFixture):
                 if not network['subnets']:
                     LOG.debug(f"Network '{network['id']}' has any subnet")
                     continue
-                if subnet_parameters:
-                    subnets = neutron.list_subnets(network_id=network['id'],
-                                                   **subnet_parameters)
-                    if not subnets:
-                        LOG.debug(f"Network '{network['id']}' has any valid "
-                                  f"subnet: {subnet_parameters}")
-                        continue
+                subnets = neutron.list_subnets(network_id=network['id'],
+                                               **subnet_parameters)
+                if not subnets:
+                    LOG.debug(f"Network '{network['id']}' has any valid "
+                              f"subnet: {subnet_parameters}")
+                    continue
 
                 network_dump = json.dumps(network, indent=4, sort_keys=True)
                 LOG.debug(f"Found external network for {self.fixture_name}:\n"
                           f"{network_dump}")
 
-                subnets = neutron.list_subnets(network_id=network['id'])
                 subnets_dump = json.dumps(subnets, indent=4, sort_keys=True)
                 LOG.debug(f"External subnets for {self.fixture_name}:\n"
                           f"{subnets_dump}")
