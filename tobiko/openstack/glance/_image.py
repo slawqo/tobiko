@@ -406,7 +406,13 @@ class URLGlanceImageFixture(FileGlanceImageFixture):
 
 class CustomizedGlanceImageFixture(URLGlanceImageFixture):
 
-    install_packages: typing.Sequence[str] = tuple()
+    @property
+    def firstboot_commands(self) -> typing.List[str]:
+        return []
+
+    @property
+    def install_packages(self) -> typing.List[str]:
+        return []
 
     def customize_image_file(self, base_file: str) -> str:
         customized_file = base_file + '.1'
@@ -423,19 +429,26 @@ class CustomizedGlanceImageFixture(URLGlanceImageFixture):
             LOG.debug(f"Copy base image file: '{base_file}' to '{work_file}'")
             sh.put_file(base_file, work_file)
 
-            command = sh.shell_command(['virt-customize', '-a', work_file])
-            execute = False
-            if self.install_packages:
-                execute = True
-                command += ['--install', ','.join(self.install_packages)]
-
-            if execute:
-                sh.execute(command)
+            options = self.get_virt_customize_options()
+            if options:
+                command = sh.shell_command(['virt-customize', '-a', work_file])
+                sh.execute(command + options)
 
             sh.get_file(work_file, customized_file)
             return customized_file
         finally:
             sh.execute(['rm', '-f', work_file])
+
+    def get_virt_customize_options(self) -> sh.ShellCommand:
+        options = sh.ShellCommand()
+        firstboot_commands = self.firstboot_commands
+        if firstboot_commands:
+            for cmd in firstboot_commands:
+                options += ['--firstboot-command', cmd]
+        install_packages = self.install_packages
+        if install_packages:
+            options += ['--install', ','.join(install_packages)]
+        return options
 
 
 class InvalidGlanceImageStatus(tobiko.TobikoException):
