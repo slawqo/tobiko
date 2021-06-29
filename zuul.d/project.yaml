@@ -18,6 +18,7 @@
       jobs:
         - tobiko-infrared
         - tobiko-infrared-centos-7
+        - tobiko-infrared-fedora
 
     gate: *check_pipeline
 
