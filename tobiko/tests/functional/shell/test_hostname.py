@@ -17,7 +17,6 @@ from __future__ import absolute_import
 
 import socket
 
-import six
 import testtools
 
 import tobiko
@@ -27,15 +26,13 @@ from tobiko.openstack import keystone
 from tobiko.openstack import stacks
 
 
-@keystone.skip_unless_has_keystone_credentials()
-class HostnameTest(testtools.TestCase):
+class GetHostnameTest(testtools.TestCase):
 
-    server_stack = tobiko.required_setup_fixture(
-        stacks.CirrosServerStackFixture)
-
-    def test_hostname(self, expect_hostname=None, **execute_params):
+    def test_hostname(self,
+                      expect_hostname: str = None,
+                      **execute_params):
         hostname = sh.get_hostname(**execute_params)
-        self.assertIsInstance(hostname, six.string_types)
+        self.assertIsInstance(hostname, str)
         if expect_hostname:
             self.assertEqual(expect_hostname, hostname)
         else:
@@ -45,16 +42,35 @@ class HostnameTest(testtools.TestCase):
         self.test_hostname(expect_hostname=socket.gethostname(),
                            ssh_client=False)
 
-    def test_remote_hostname(self, ssh_client=None):
-        ssh_client = ssh_client or self.server_stack.ssh_client
-        stdin, stdput, stderr = ssh_client.connect().exec_command('hostname')
-        stdin.close()
-        self.assertEqual(b'', stderr.read())
+    def test_ssh_hostname(self,
+                          ssh_client: ssh.SSHClientFixture = None):
+        fixture = ssh.ssh_client_fixture(ssh_client)
+        if fixture is None:
+            expect_hostname = socket.gethostname()
+        else:
+            stdin, stdput, stderr = fixture.connect().exec_command('hostname')
+            stdin.close()
+            self.assertEqual(b'', stderr.read())
+            expect_hostname = stdput.read().decode().strip()
         self.test_hostname(ssh_client=ssh_client,
-                           expect_hostname=stdput.read().decode().strip())
+                           expect_hostname=expect_hostname)
 
-    def test_proxy_hostname(self):
+    def test_ssh_proxy_hostname(self):
         ssh_client = ssh.ssh_proxy_client()
         if ssh_client is None:
-            self.skip('SSH proxy server not configured')
-        self.test_remote_hostname(ssh_client=ssh_client)
+            tobiko.skip_test('SSH proxy server is not configured')
+        self.test_ssh_hostname(ssh_client=ssh_client)
+
+    cirros_server = tobiko.required_setup_fixture(
+        stacks.CirrosServerStackFixture)
+
+    @keystone.skip_unless_has_keystone_credentials()
+    def test_cirros_hostname(self):
+        self.test_ssh_hostname(ssh_client=self.cirros_server.ssh_client)
+
+    ubuntu_server = tobiko.required_setup_fixture(
+        stacks.UbuntuServerStackFixture)
+
+    @keystone.skip_unless_has_keystone_credentials()
+    def test_ubuntu_hostname(self):
+        self.test_ssh_hostname(ssh_client=self.ubuntu_server.ssh_client)

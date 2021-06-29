@@ -18,20 +18,35 @@ from __future__ import absolute_import
 import socket
 
 import tobiko
+from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
+from tobiko.shell import ssh
 
 
 class HostnameError(tobiko.TobikoException):
     message = "Unable to get hostname from host: {error}"
 
 
-def get_hostname(ssh_client=None, **execute_params):
+def get_hostname(ssh_client: ssh.SSHClientType = None,
+                 **execute_params) -> str:
     if ssh_client is False:
         return socket.gethostname()
+
+    tobiko.check_valid_type(ssh_client, ssh.SSHClientFixture,
+                            type(None))
+    try:
+        result = _execute.execute('hostname',
+                                  ssh_client=ssh_client,
+                                  **execute_params)
+    except _exception.ShellCommandFailed as ex:
+        raise HostnameError(error=ex.stderr) from ex
+
+    line: str
+    for line in result.stdout.splitlines():
+        hostname = line.strip()
+        if hostname:
+            break
     else:
-        result = _execute.execute('hostname', stdin=False, stdout=True,
-                                  stderr=True, expect_exit_status=None,
-                                  ssh_client=ssh_client, **execute_params)
-        if result.exit_status or not result.stdout:
-            raise HostnameError(error=result.stderr)
-        return result.stdout.splitlines()[0].strip()
+        raise HostnameError(error=f"Invalid result: '{result}'")
+
+    return hostname
