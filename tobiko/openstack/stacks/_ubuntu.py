@@ -44,18 +44,37 @@ class UbuntuMinimalImageFixture(glance.URLGlanceImageFixture):
     connection_timeout = CONF.tobiko.ubuntu.connection_timeout or 600.
 
 
+IPERF3_SERVICE_FILE = """
+[Unit]
+Description=iperf3 server on port %i
+After=syslog.target network.target
+
+[Service]
+ExecStart=/usr/bin/iperf3 -s -p %i
+Restart=always
+RuntimeMaxSec=3600
+User=root
+
+[Install]
+WantedBy=multi-user.target
+DefaultInstance=5201
+"""
+
+
 class UbuntuImageFixture(UbuntuMinimalImageFixture,
                          glance.CustomizedGlanceImageFixture):
     """Ubuntu server image running an HTTP server
 
-    The server has additional commands compared to the minimal one:
-      iperf3
-      ping
-      ncat
-      nginx
+    The server has additional installed packages compared to
+    the minimal one:
+      - iperf3
+      - ping
+      - ncat
+      - nginx
 
-    The image will also have a running HTTPD server listening on
-    TCP port 80
+    The image will also have below running services:
+      - nginx HTTP server listening on TCP port 80
+      - iperf3 server listening on TCP port 5201
     """
 
     @property
@@ -70,7 +89,21 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
                                            'ncat',
                                            'nginx']
 
+    # port of running HTTP server
     http_port = 80
+
+    # port of running Iperf3 server
+    iperf3_port = 5201
+
+    @property
+    def run_commands(self) -> typing.List[str]:
+        run_commands = super().run_commands
+        run_commands.append(
+            f'echo "{IPERF3_SERVICE_FILE}" '
+            '> /etc/systemd/system/iperf3-server@.service')
+        run_commands.append(
+            f"systemctl enable iperf3-server@{self.iperf3_port}")
+        return run_commands
 
 
 class UbuntuFlavorStackFixture(_nova.FlavorStackFixture):
@@ -102,6 +135,10 @@ class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture):
     @property
     def http_port(self) -> int:
         return self.image_fixture.http_port
+
+    @property
+    def iperf3_port(self) -> int:
+        return self.image_fixture.iperf3_port
 
 
 class UbuntuExternalServerStackFixture(UbuntuServerStackFixture,

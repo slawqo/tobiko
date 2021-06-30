@@ -15,7 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.shell.iperf import _assert
+from tobiko.shell.iperf3 import _assert
 
 
-assert_bw_limit = _assert.assert_bw_limit
+assert_has_bandwith_limits = _assert.assert_has_bandwith_limits
