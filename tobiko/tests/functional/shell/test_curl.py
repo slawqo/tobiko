@@ -26,6 +26,7 @@ from tobiko.shell import ssh
 from tobiko.openstack import stacks
 
 
+@tobiko.skip("Flaky test case")
 class TestCurl(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(stacks.UbuntuServerStackFixture)
