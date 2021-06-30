@@ -54,7 +54,12 @@ def podman_client(obj=None):
 
 
 def podman_version_3():
-    podman_ver = sh.execute('rpm -q podman').stdout.split('-')[1].split('.')[0]
+    try:
+        stdout = sh.execute('rpm -q podman').stdout
+    except sh.ShellCommandFailed:
+        return False
+
+    podman_ver = stdout.split('-')[1].split('.')[0]
     if int(podman_ver) >= 3:
         return True
     else:
