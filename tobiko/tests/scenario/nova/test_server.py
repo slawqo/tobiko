@@ -110,6 +110,7 @@ class MigrateServerTest(testtools.TestCase):
         final_hypervisor = nova.get_server_hypervisor(server)
         self.assertEqual(target_hypervisor, final_hypervisor)
 
+    @tobiko.skip("Expected to create problems on compute nodes")
     def test_live_migrate_server(self):
         self.test_migrate_server(live=True)
 
