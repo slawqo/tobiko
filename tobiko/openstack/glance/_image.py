@@ -414,6 +414,14 @@ class CustomizedGlanceImageFixture(URLGlanceImageFixture):
     def install_packages(self) -> typing.List[str]:
         return []
 
+    @property
+    def run_commands(self) -> typing.List[str]:
+        return []
+
+    @property
+    def write_files(self) -> typing.Dict[str, str]:
+        return {}
+
     def customize_image_file(self, base_file: str) -> str:
         customized_file = base_file + '.1'
         if os.path.isfile(customized_file):
@@ -441,13 +449,26 @@ class CustomizedGlanceImageFixture(URLGlanceImageFixture):
 
     def get_virt_customize_options(self) -> sh.ShellCommand:
         options = sh.ShellCommand()
+
         firstboot_commands = self.firstboot_commands
         if firstboot_commands:
             for cmd in firstboot_commands:
                 options += ['--firstboot-command', cmd]
+
         install_packages = self.install_packages
         if install_packages:
             options += ['--install', ','.join(install_packages)]
+
+        run_commands = self.run_commands
+        if run_commands:
+            for cmd in run_commands:
+                options += ['--run-command', cmd]
+
+        write_files = self.write_files
+        if write_files:
+            for filename, content in write_files.items():
+                options += ['--write', f'{filename}:{content}']
+
         return options
 
 
