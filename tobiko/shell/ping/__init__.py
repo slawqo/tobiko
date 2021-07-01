@@ -31,6 +31,8 @@ LocalPingError = _exception.LocalPingError
 ConnectPingError = _exception.ConnectPingError
 PingFailed = _exception.PingFailed
 PingError = _exception.PingError
+ReachableHostsException = _exception.ReachableHostsException
+UnreachableHostsException = _exception.UnreachableHostsException
 PingException = _exception.PingException
 SendToPingError = _exception.SendToPingError
 UnknowHostError = _exception.UnknowHostError
@@ -51,6 +53,7 @@ ping_until_delivered = _ping.ping_until_delivered
 ping_until_undelivered = _ping.ping_until_undelivered
 ping_until_received = _ping.ping_until_received
 ping_until_unreceived = _ping.ping_until_unreceived
+wait_for_ping_hosts = _ping.wait_for_ping_hosts
 
 TRANSMITTED = _ping.TRANSMITTED
 UNDELIVERED = _ping.UNDELIVERED

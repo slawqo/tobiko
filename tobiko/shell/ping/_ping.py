@@ -58,6 +58,40 @@ PingHostsResultType = typing.Tuple[tobiko.Selection[PingHostType],
                                    tobiko.Selection[PingHostType]]
 
 
+def wait_for_ping_hosts(hosts: typing.Iterable[PingHostType],
+                        check_unreachable=False,
+                        retry_count: int = None,
+                        retry_timeout: tobiko.Seconds = None,
+                        retry_interval: tobiko.Seconds = None,
+                        **params) \
+        -> None:
+    for attempt in tobiko.retry(count=retry_count,
+                                timeout=retry_timeout,
+                                interval=retry_interval,
+                                default_timeout=300.,
+                                default_interval=5.):
+        reachable, unreachable = ping_hosts(hosts, **params)
+        if check_unreachable:
+            hosts = reachable
+        else:
+            hosts = unreachable
+        if hosts:
+            try:
+                attempt.check_limits()
+            except tobiko.RetryLimitError:
+                if check_unreachable:
+                    raise _exception.ReachableHostsException(
+                        hosts=hosts, timeout=attempt.timeout) from None
+                else:
+                    raise _exception.UnreachableHostsException(
+                        hosts=hosts, timeout=attempt.timeout) from None
+        else:
+            break
+
+    else:
+        raise RuntimeError('Broken retry loop')  # This is a bug
+
+
 def ping_hosts(hosts: typing.Iterable[PingHostType],
                count: typing.Optional[int] = None,
                **params) -> PingHostsResultType:

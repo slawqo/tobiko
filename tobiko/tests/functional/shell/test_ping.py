@@ -158,6 +158,36 @@ class PingTest(testtools.TestCase):
         expected_unreachable = [i for i in ips if i not in reachable_ips]
         self.assertEqual(expected_unreachable, unreachable_ips)
 
+    def test_assert_reachable_hosts(self):
+        ping.assert_reachable_hosts(['127.0.0.1'], count=3,
+                                    **self.execute_params)
+
+    def test_assert_unreachable_hosts(self):
+        ping.assert_unreachable_hosts(['0.1.2.3'], count=3,
+                                      **self.execute_params)
+
+    def test_assert_reachable_hosts_failure(self):
+        ex = self.assertRaises(
+            ping.UnreachableHostsException,
+            ping.assert_reachable_hosts,
+            ['0.1.2.3'], count=3,
+            retry_count=1,
+            retry_timeout=1.,
+            **self.execute_params)
+        self.assertEqual(['0.1.2.3'], ex.hosts)
+        self.assertEqual(1., ex.timeout)
+
+    def test_assert_unreachable_hosts_failure(self):
+        ex = self.assertRaises(
+            ping.ReachableHostsException,
+            ping.assert_unreachable_hosts,
+            ['127.0.0.1'], count=3,
+            retry_count=1,
+            retry_timeout=1.,
+            **self.execute_params)
+        self.assertEqual(['127.0.0.1'], ex.hosts)
+        self.assertEqual(1., ex.timeout)
+
 
 @ssh.skip_unless_has_ssh_proxy_jump
 class ProxyPingTest(PingTest):
