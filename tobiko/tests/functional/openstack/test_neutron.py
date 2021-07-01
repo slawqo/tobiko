@@ -133,7 +133,7 @@ class NeutronApiTest(testtools.TestCase):
 class PortTest(testtools.TestCase):
 
     #: Stack of resources with a network with a gateway router
-    stack = tobiko.required_setup_fixture(stacks.CentosServerStackFixture)
+    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
     def test_list_port_addresses(self, ip_version=None):
         port = neutron.find_port(device_id=self.stack.server_id)
