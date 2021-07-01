@@ -35,6 +35,9 @@ class IpTest(testtools.TestCase):
     cirros_stack = tobiko.required_setup_fixture(
         stacks.CirrosServerStackFixture)
 
+    fedora_stack = tobiko.required_setup_fixture(
+        stacks.FedoraServerStackFixture)
+
     ubuntu_stack = tobiko.required_setup_fixture(
         stacks.UbuntuServerStackFixture)
 
@@ -44,7 +47,7 @@ class IpTest(testtools.TestCase):
     def test_list_ip_addresses(self, ip_version=None, scope=None,
                                **execute_params):
         if not os.path.isfile('/bin/ip'):
-            self.skip("'bin/ip' command not found")
+            self.skipTest("'bin/ip' command not found")
         ips = ip.list_ip_addresses(ip_version=ip_version, scope=scope,
                                    **execute_params)
         self.assertIsInstance(ips, tobiko.Selection)
@@ -85,13 +88,16 @@ class IpTest(testtools.TestCase):
     def test_list_ip_addresses_with_cirros_server(self):
         self.test_list_ip_addresses(ssh_client=self.cirros_stack.ssh_client)
 
+    def test_list_ip_addresses_with_fedora_server(self):
+        self.test_list_ip_addresses(ssh_client=self.fedora_stack.ssh_client)
+
     def test_list_ip_addresses_with_ubuntu_server(self):
         self.test_list_ip_addresses(ssh_client=self.ubuntu_stack.ssh_client)
 
     def test_list_ip_addresses_with_proxy_ssh_client(self):
         ssh_client = ssh.ssh_proxy_client()
         if ssh_client is None:
-            self.skip('SSH proxy server not configured')
+            self.skipTest('SSH proxy server not configured')
         self.test_list_ip_addresses(ssh_client=ssh_client)
 
     def test_list_ip_addresses_with_proxy_ssh_client_and_host_scope(
@@ -130,7 +136,7 @@ class IpTest(testtools.TestCase):
 
     def test_list_namespaces(self, **execute_params):
         if not os.path.isfile('/bin/ip'):
-            self.skip("'bin/ip' command not found")
+            self.skipTest("'bin/ip' command not found")
         namespaces = ip.list_network_namespaces(**execute_params)
         self.assertIsInstance(namespaces, list)
         for namespace in namespaces:
@@ -140,13 +146,16 @@ class IpTest(testtools.TestCase):
     def test_list_namespaces_with_centos_server(self):
         self.test_list_namespaces(ssh_client=self.centos_stack.ssh_client)
 
+    def test_list_namespaces_with_fedora_server(self):
+        self.test_list_namespaces(ssh_client=self.fedora_stack.ssh_client)
+
     def test_list_namespaces_with_ubuntu_server(self):
         self.test_list_namespaces(ssh_client=self.ubuntu_stack.ssh_client)
 
     def test_list_namespaces_with_proxy_ssh_client(self):
         ssh_client = ssh.ssh_proxy_client()
         if ssh_client is None:
-            self.skip('SSH proxy server not configured')
+            self.skipTest('SSH proxy server not configured')
         self.test_list_namespaces(ssh_client=ssh_client)
 
     def test_list_namespaces_with_failing_command(self):

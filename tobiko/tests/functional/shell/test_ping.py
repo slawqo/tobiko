@@ -227,6 +227,11 @@ class CentosPingTest(CirrosPingTest):
     stack = tobiko.required_setup_fixture(stacks.CentosServerStackFixture)
 
 
+class FedoraPingTest(CirrosPingTest):
+
+    stack = tobiko.required_setup_fixture(stacks.FedoraServerStackFixture)
+
+
 class UbuntuPingTest(CirrosPingTest):
 
     stack = tobiko.required_setup_fixture(stacks.UbuntuServerStackFixture)
