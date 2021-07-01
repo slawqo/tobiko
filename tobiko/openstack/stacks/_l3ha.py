@@ -15,11 +15,9 @@ from __future__ import absolute_import
 
 import tobiko
 from tobiko.openstack import neutron
-from tobiko.openstack.stacks import _centos
 from tobiko.openstack.stacks import _cirros
 from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _nova
-from tobiko.openstack.stacks import _ubuntu
 
 
 @neutron.skip_if_missing_networking_extensions('l3-ha')
@@ -46,14 +44,4 @@ class L3haSameHostServerStackFixture(
 
 class L3haDifferentHostServerStackFixture(
         L3haPeerServerStackFixture, _nova.DifferentHostServerStackFixture):
-    pass
-
-
-class L3haCentosServerStackFixture(_centos.CentosServerStackFixture,
-                                   L3haServerStackFixture):
-    pass
-
-
-class L3haUbuntuServerStackFixture(_ubuntu.UbuntuServerStackFixture,
-                                   L3haServerStackFixture):
     pass

@@ -48,8 +48,6 @@ RedHatServerStackFixture = _redhat.RedHatServerStackFixture
 
 L3haNetworkStackFixture = _l3ha.L3haNetworkStackFixture
 L3haServerStackFixture = _l3ha.L3haServerStackFixture
-L3haUbuntuServerStackFixture = _l3ha.L3haUbuntuServerStackFixture
-L3haCentosServerStackFixture = _l3ha.L3haCentosServerStackFixture
 L3haPeerServerStackFixture = _l3ha.L3haPeerServerStackFixture
 L3haDifferentHostServerStackFixture = _l3ha.L3haDifferentHostServerStackFixture
 L3haSameHostServerStackFixture = _l3ha.L3haSameHostServerStackFixture
