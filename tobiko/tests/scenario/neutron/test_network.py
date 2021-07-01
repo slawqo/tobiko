@@ -43,9 +43,9 @@ class NetworkTest(testtools.TestCase):
 
     def test_ping(self):
         """Test ICMP connectivity to floating IP address"""
-        ping.ping_until_received(
-            self.stack.ip_address,
-            ssh_client=self.stack.peer_stack.ssh_client).assert_replied()
+        ping.assert_reachable_hosts(
+            [self.stack.ip_address],
+            ssh_client=self.stack.peer_stack.ssh_client)
 
     # --- test l3_ha extension ------------------------------------------------
 

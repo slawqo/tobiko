@@ -38,20 +38,21 @@ class CirrosServerStackTest(testtools.TestCase):
 
     nameservers_filenames: typing.Optional[typing.Sequence[str]] = None
 
+    @property
+    def peer_ssh_client(self):
+        return self.stack.ssh_client
+
     def test_ping_floating_ip(self):
         """Test connectivity to floating IP address"""
-        ping.ping_until_received(
-            self.stack.floating_ip_address).assert_replied()
+        ping.assert_reachable_hosts([self.stack.floating_ip_address])
 
     def test_ping_fixed_ipv4(self):
-        ping.ping_until_received(
-            self.get_fixed_ip(ip_version=4),
-            ssh_client=self.stack.ssh_client).assert_replied()
+        ping.assert_reachable_hosts([self.get_fixed_ip(ip_version=4)],
+                                    ssh_client=self.peer_ssh_client)
 
     def test_ping_fixed_ipv6(self):
-        ping.ping_until_received(
-            self.get_fixed_ip(ip_version=6),
-            ssh_client=self.stack.ssh_client).assert_replied()
+        ping.assert_reachable_hosts([self.get_fixed_ip(ip_version=6)],
+                                    ssh_client=self.peer_ssh_client)
 
     def get_fixed_ip(self, ip_version: int):
         try:
@@ -141,18 +142,12 @@ class CirrosPeerServerStackTest(CirrosServerStackTest):
     #: Stack of resources with an HTTP server
     stack = tobiko.required_setup_fixture(stacks.CirrosPeerServerStackFixture)
 
+    @property
+    def peer_ssh_client(self):
+        return self.stack.peer_stack.ssh_client
+
     def test_ping_floating_ip(self):
         self.skipTest(f"Server '{self.stack.server_id}' has any floating IP")
-
-    def test_ping_fixed_ipv4(self):
-        ping.ping_until_received(
-            self.get_fixed_ip(ip_version=4),
-            ssh_client=self.stack.peer_stack.ssh_client).assert_replied()
-
-    def test_ping_fixed_ipv6(self):
-        ping.ping_until_received(
-            self.get_fixed_ip(ip_version=6),
-            ssh_client=self.stack.peer_stack.ssh_client).assert_replied()
 
 
 class HttpServerStackTest(CirrosPeerServerStackTest):

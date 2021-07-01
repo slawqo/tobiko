@@ -21,6 +21,7 @@ import tobiko
 from tobiko.openstack import stacks
 from tobiko.openstack import topology
 from tobiko.shell import iperf
+from tobiko.shell import ping
 from tobiko.tripleo import containers
 from tobiko.tripleo import overcloud
 
@@ -44,6 +45,9 @@ class QoSNetworkTest(testtools.TestCase):
             # Skip these tests if OVN is configured and OSP version is lower
             # than 16.1
             self.skipTest("QoS not supported in this setup")
+
+    def test_ping(self):
+        ping.assert_reachable_hosts([self.server.floating_ip_address],)
 
     def test_network_qos_policy_id(self):
         """Verify network policy ID"""

@@ -49,8 +49,7 @@ class FloatingIPTest(testtools.TestCase):
 
     def test_ping(self):
         """Test ICMP connectivity to floating IP address"""
-        ping.ping_until_received(
-            self.stack.floating_ip_address).assert_replied()
+        ping.assert_reachable_hosts([self.stack.floating_ip_address])
 
     # --- test port-security extension ---------------------------------------
 
@@ -155,10 +154,9 @@ class FloatingIPWithPortSecurityTest(FloatingIPTest):
         # Wait for server instance to get ready by logging in
         self.stack.ssh_client.connect()
 
-        # Check can't reach secured port via floating IP
-        ping.ping(self.stack.floating_ip_address,
-                  count=5,
-                  check=False).assert_not_replied()
+        # Expect port security to throw away ICMP packages
+        ping.assert_unreachable_hosts([self.stack.floating_ip_address],
+                                      count=5, check=False)
 
     @ping.skip_if_missing_fragment_ping_option
     @neutron.skip_if_missing_networking_extensions('net-mtu')
