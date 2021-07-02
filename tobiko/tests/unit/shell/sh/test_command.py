@@ -20,7 +20,7 @@ from tobiko.shell import sh
 from tobiko.tests import unit
 
 
-SPECIAL_CHARS = r'@&%+=:,.;<>/-()[]*|'
+SPECIAL_CHARS = r'@&%+=:,.;<>/-()[]*|~'
 
 
 class ShellCommandTest(unit.TobikoUnitTest):

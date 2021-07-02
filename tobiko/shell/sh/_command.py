@@ -45,7 +45,7 @@ def shell_command(command: ShellCommandType,
         return ShellCommand(str(a) for a in command)
 
 
-_find_unsafe = re.compile(r'[^\w@&%+=:,.;<>/\-()\[\]|*]', re.ASCII).search
+_find_unsafe = re.compile(r'[^\w@&%+=:,.;<>/\-()\[\]|*~]', re.ASCII).search
 
 _is_quoted = re.compile(r'(^\'.*\'$)|(^".*"$)', re.ASCII).search
 
