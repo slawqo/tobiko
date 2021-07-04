@@ -66,3 +66,29 @@ def wait_for_status(status_key, status, get_client, object_id,
 
         LOG.debug(f"Waiting for {get_client.__name__} {status_key} to get "
                   f"from '{response[status_key]}' to '{status}'...")
+
+
+def wait_for_active_members_and_lb(members, pool_id, loadbalancer_id):
+    for member_id in members:
+        octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
+                                status=octavia.ACTIVE,
+                                get_client=octavia.get_member,
+                                object_id=pool_id, member_id=member_id)
+
+    # Wait for LB is provisioned and ACTIVE
+    octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
+                            status=octavia.ACTIVE,
+                            get_client=octavia.get_loadbalancer,
+                            object_id=loadbalancer_id)
+
+
+def wait_for_lb_to_be_updated_and_active(loadbalancer_id):
+    octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
+                            status=octavia.PENDING_UPDATE,
+                            get_client=octavia.get_loadbalancer,
+                            object_id=loadbalancer_id)
+
+    octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
+                            status=octavia.ACTIVE,
+                            get_client=octavia.get_loadbalancer,
+                            object_id=loadbalancer_id)
