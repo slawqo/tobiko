@@ -18,6 +18,7 @@ from tobiko.openstack.neutron import _client
 from tobiko.openstack.neutron import _cidr
 from tobiko.openstack.neutron import _extension
 from tobiko.openstack.neutron import _port
+from tobiko.openstack.neutron import _quota_set
 from tobiko.openstack.neutron import _network
 from tobiko.openstack.neutron import _router
 
@@ -78,6 +79,10 @@ find_port_ip_address = _port.find_port_ip_address
 list_port_ip_addresses = _port.list_port_ip_addresses
 find_device_ip_address = _port.find_device_ip_address
 list_device_ip_addresses = _port.list_device_ip_addresses
+
+get_neutron_quota_set = _quota_set.get_neutron_quota_set
+set_neutron_quota_set = _quota_set.set_neutron_quota_set
+ensure_neutron_quota_limits = _quota_set.ensure_neutron_quota_limits
 
 NeutronNetworkFixture = _network.NeutronNetworkFixture
 NoSuchNetwork = _network.NoSuchNetwork
