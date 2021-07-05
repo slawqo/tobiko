@@ -17,12 +17,12 @@ from tobiko.openstack.heat import _client
 from tobiko.openstack.heat import _template
 from tobiko.openstack.heat import _stack
 
-
 heat_client = _client.heat_client
 default_heat_client = _client.default_heat_client
 get_heat_client = _client.get_heat_client
-heat_client = _client.heat_client
+HeatClient = _client.HeatClient
 HeatClientFixture = _client.HeatClientFixture
+HeatClientType = _client.HeatClientType
 
 heat_template = _template.heat_template
 heat_template_file = _template.heat_template_file
@@ -33,7 +33,6 @@ HeatStackFixture = _stack.HeatStackFixture
 heat_stack_parameters = _stack.heat_stack_parameters
 INIT_IN_PROGRESS = _stack.INIT_IN_PROGRESS
 INIT_COMPLETE = _stack.INIT_COMPLETE
-INIT_IN_PROGRESS = _stack.INIT_IN_PROGRESS
 CREATE_IN_PROGRESS = _stack.CREATE_IN_PROGRESS
 CREATE_COMPLETE = _stack.CREATE_COMPLETE
 CREATE_FAILED = _stack.CREATE_FAILED

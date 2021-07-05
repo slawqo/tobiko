@@ -13,34 +13,44 @@
 #    under the License.
 from __future__ import absolute_import
 
-from heatclient.v1 import client as heatclient
+import typing
+
+from heatclient.v1 import client as v1_client
 
 import tobiko
 from tobiko.openstack import _client
 
 
+HeatClient = typing.Union[v1_client.Client]
+
+
 class HeatClientFixture(_client.OpenstackClientFixture):
 
-    def init_client(self, session):
-        return heatclient.Client(session=session,
-                                 endpoint_type='public',
-                                 service_type='orchestration')
+    def init_client(self, session) -> HeatClient:
+        return v1_client.Client(session=session,
+                                endpoint_type='public',
+                                service_type='orchestration')
 
 
 class HeatClientManager(_client.OpenstackClientManager):
 
-    def create_client(self, session):
+    def create_client(self, session) -> HeatClientFixture:
         return HeatClientFixture(session=session)
 
 
 CLIENTS = HeatClientManager()
 
 
-def heat_client(obj=None):
+HeatClientType = typing.Union[None,
+                              HeatClient,
+                              HeatClientFixture]
+
+
+def heat_client(obj: HeatClientType = None) -> HeatClient:
     if obj is None:
         return default_heat_client()
 
-    if isinstance(obj, heatclient.Client):
+    if isinstance(obj, v1_client.Client):
         return obj
 
     fixture = tobiko.get_fixture(obj)
@@ -51,12 +61,12 @@ def heat_client(obj=None):
     raise TypeError(message)
 
 
-def default_heat_client():
+def default_heat_client() -> HeatClient:
     return get_heat_client()
 
 
 def get_heat_client(session=None, shared=True, init_client=None,
-                    manager=None):
+                    manager=None) -> HeatClient:
     manager = manager or CLIENTS
     fixture = manager.get_client(session=session, shared=shared,
                                  init_client=init_client)
