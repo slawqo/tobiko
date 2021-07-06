@@ -44,7 +44,7 @@ class FloatingIPTest(testtools.TestCase):
 
     def test_ssh(self):
         """Test SSH connectivity to floating IP address"""
-        hostname = sh.get_hostname(ssh_client=self.stack.ssh_client)
+        hostname = sh.ssh_hostname(ssh_client=self.stack.ssh_client)
         self.assertEqual(self.stack.server_name.lower(), hostname)
 
     def test_ping(self):

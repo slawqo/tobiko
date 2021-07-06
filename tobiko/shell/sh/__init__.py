@@ -51,6 +51,7 @@ ShellExecuteResult = _execute.ShellExecuteResult
 
 HostNameError = _hostname.HostnameError
 get_hostname = _hostname.get_hostname
+ssh_hostname = _hostname.ssh_hostname
 
 join_chunks = _io.join_chunks
 ShellStdout = _io.ShellStdout
