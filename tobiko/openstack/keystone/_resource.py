@@ -33,7 +33,7 @@ def get_project_id(
     if project is not None:
         return get_keystone_resource_id(project)
     if session is not None:
-        return session.auth.auth_ref.project_id
+        return session.get_project_id()
     raise ValueError("'project' and 'session' can't be None ata the same "
                      "time.")
 
@@ -44,7 +44,7 @@ def get_user_id(
     if user is not None:
         return get_keystone_resource_id(user)
     if session is not None:
-        return session.auth.auth_ref.user_id
+        return session.get_user_id()
     raise ValueError("'project' and 'session' can't be None ata the same "
                      "time.")
 
