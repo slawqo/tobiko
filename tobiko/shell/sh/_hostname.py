@@ -16,6 +16,8 @@
 from __future__ import absolute_import
 
 import socket
+import typing
+import weakref
 
 import tobiko
 from tobiko.shell.sh import _exception
@@ -27,13 +29,36 @@ class HostnameError(tobiko.TobikoException):
     message = "Unable to get hostname from host: {error}"
 
 
+HOSTNAMES_CACHE: typing.MutableMapping[typing.Optional[ssh.SSHClientFixture],
+                                       str] = weakref.WeakKeyDictionary()
+
+
 def get_hostname(ssh_client: ssh.SSHClientType = None,
+                 cached=True,
                  **execute_params) -> str:
-    if ssh_client is False:
+    ssh_client = ssh.ssh_client_fixture(ssh_client)
+    if ssh_client is None:
         return socket.gethostname()
 
-    tobiko.check_valid_type(ssh_client, ssh.SSHClientFixture,
-                            type(None))
+    if cached:
+        try:
+            hostname = HOSTNAMES_CACHE[ssh_client]
+        except KeyError:
+            pass
+        else:
+            return hostname
+
+    hostname = ssh_hostname(ssh_client=ssh_client,
+                            **execute_params)
+    if cached:
+        HOSTNAMES_CACHE[ssh_client] = hostname
+    return hostname
+
+
+def ssh_hostname(ssh_client: ssh.SSHClientFixture,
+                 **execute_params) \
+        -> str:
+    tobiko.check_valid_type(ssh_client, ssh.SSHClientFixture)
     try:
         result = _execute.execute('hostname',
                                   ssh_client=ssh_client,
@@ -48,5 +73,4 @@ def get_hostname(ssh_client: ssh.SSHClientType = None,
             break
     else:
         raise HostnameError(error=f"Invalid result: '{result}'")
-
     return hostname
