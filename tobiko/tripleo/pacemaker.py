@@ -224,27 +224,6 @@ class PacemakerResourcesStatus(object):
         # exhausted all retries
         tobiko.fail('pcs cluster is not in a healthy state')
 
-    def resource_banned(self, resource_type):
-        self.pcs_df = get_pcs_resources_table()
-        nodes_num = self.resource_count(resource_type)
-        master_num = self.resource_count_in_state(
-            resource_type, "Master")
-        slave_num = self.resource_count_in_state(
-            resource_type, "Slave")
-        banned_num = self.resource_count_in_state(
-            resource_type, "Stopped")
-        if (master_num == 1 and banned_num >= 1) and\
-                (slave_num == nodes_num - master_num - banned_num):
-            LOG.info("""pcs status check: resource has been banned successfully
-            and another one has been promoted""")
-            return True
-        elif banned_num == 0:
-            LOG.info("pcs status check: resource has not been banned")
-            return False
-        else:
-            LOG.info("pcs status check: resource is in not in a healthy state")
-            return False
-
 
 def get_overcloud_nodes_running_pcs_resource(resource=None,
                                              resource_type=None,
@@ -274,7 +253,7 @@ def get_overcloud_nodes_running_pcs_resource(resource=None,
 
 
 def get_resource_master_node(resource_type=None):
-    return get_overcloud_nodes_running_pcs_resource(
+    get_overcloud_nodes_running_pcs_resource(
         resource_type=resource_type, resource_state='Master')
 
 

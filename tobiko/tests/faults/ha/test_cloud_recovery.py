@@ -245,17 +245,6 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         LOG.info("Verify can create VMs after controllers power on...")
         tests.test_server_creation()
 
-    def test_ban_redis(self):
-        OvercloudHealthCheck.run_before()
-        cloud_disruptions.ban_master_resource("(ocf::heartbeat:redis):",
-                                              "redis-bundle")
-        OvercloudHealthCheck.run_after()
-
-    def test_ban_ovs(self):
-        OvercloudHealthCheck.run_before()
-        cloud_disruptions.ban_master_resource("(ocf::ovn:ovndb-servers):",
-                                              "ovn-dbs-bundle")
-        OvercloudHealthCheck.run_after()
 
 # [..]
 # more tests to follow
