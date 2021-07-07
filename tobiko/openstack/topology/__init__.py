@@ -17,12 +17,15 @@ from tobiko.openstack.topology import _assert
 from tobiko.openstack.topology import _exception
 from tobiko.openstack.topology import _neutron
 from tobiko.openstack.topology import _topology
+from tobiko.openstack.topology import _sh
 
 assert_reachable_nodes = _assert.assert_reachable_nodes
 assert_unreachable_nodes = _assert.assert_unreachable_nodes
 
 NoSuchOpenStackTopologyNodeGroup = _exception.NoSuchOpenStackTopologyNodeGroup
 NoSuchOpenStackTopologyNode = _exception.NoSuchOpenStackTopologyNode
+
+list_nodes_processes = _sh.list_nodes_processes
 
 UnknowOpenStackContainerNameError = _topology.UnknowOpenStackContainerNameError
 UnknowOpenStackServiceNameError = _topology.UnknowOpenStackServiceNameError

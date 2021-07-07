@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import random
+
 import testtools
 
 import tobiko
@@ -43,7 +45,7 @@ class OpenStackTopologyTest(testtools.TestCase):
     def test_ssh_client(self):
         for node in self.topology.nodes:
             self.assertIsNotNone(node.ssh_client)
-            hostname = sh.get_hostname(
+            hostname = sh.ssh_hostname(
                 ssh_client=node.ssh_client).split('.')[0]
             self.assertEqual(node.name, hostname)
 
@@ -87,6 +89,44 @@ class OpenStackTopologyTest(testtools.TestCase):
         actual_nodes = self.test_list_openstack_topology(
             hostnames=[node.name for node in expected_nodes])
         self.assertEqual(expected_nodes, actual_nodes)
+
+    def test_list_nodes_processes(self):
+        node = random.choice(topology.list_openstack_nodes())
+        filename = sh.execute(
+            'mktemp', ssh_client=node.ssh_client).stdout.strip()
+        self.addCleanup(sh.execute, f"rm -f '{filename}'",
+                        ssh_client=node.ssh_client)
+        command_line = sh.shell_command(f"tail -F '{filename}'")
+        process = sh.process(command_line,
+                             ssh_client=node.ssh_client)
+
+        # Process isn't listed before creation
+        processes = topology.list_nodes_processes(
+            command_line=command_line,
+            hostnames=[node.hostname])
+        self.assertEqual([], processes,
+                         'Process listed before executing it')
+
+        # Process is listed after creation
+        process.execute()
+        self.addCleanup(process.kill)
+        processes = topology.list_nodes_processes(
+            command_line=command_line,
+            hostnames=[node.hostname])
+        self.assertEqual(command_line, processes.unique.command_line)
+        self.assertIs(node.ssh_client, processes.unique.ssh_client)
+
+        # Process isn't listed after kill
+        sh.execute(f"kill -9 {processes.unique.pid}",
+                   ssh_client=node.ssh_client)
+        for attempt in tobiko.retry(timeout=30., interval=5.):
+            processes = topology.list_nodes_processes(
+                command_line=command_line,
+                hostnames=[node.hostname])
+            if not processes:
+                break
+            if attempt.is_last:
+                self.fail("Process listed after killing it")
 
 
 def node_name_from_hostname(hostname):
