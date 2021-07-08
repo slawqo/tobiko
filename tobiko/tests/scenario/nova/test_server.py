@@ -125,6 +125,10 @@ class MigrateServerTest(testtools.TestCase):
 
     def migrate_server(self, server, live=False, **params):
         self.assertEqual('ACTIVE', server.status)
+        # wait until all VM fixed IPs are reachable
+        ping.assert_reachable_hosts(self.stack.list_fixed_ips(),
+                                    timeout=900.,
+                                    ssh_client=self.peer_stack.ssh_client)
 
         if live:
             nova.live_migrate_server(server, **params)
