@@ -21,8 +21,8 @@ from tobiko.openstack.stacks import _centos
 
 CONF = config.CONF
 
-RHEL_IMAGE_MAJOR_VERSION = '8.2'
-RHEL_IMAGE_MINOR_VERSION = '501'
+RHEL_IMAGE_MAJOR_VERSION = '8.4'
+RHEL_IMAGE_MINOR_VERSION = '1239'
 
 RHEL_IMAGE_URL = ('http://download.devel.redhat.com/brewroot/packages/'
                   f'rhel-guest-image/{RHEL_IMAGE_MAJOR_VERSION}/'
