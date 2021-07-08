@@ -13,13 +13,18 @@
     tox_command_line: '{{ tox_command_line.split() | join(" ") }}'
 
 
+- name: "combine environment variables"
+  set_fact:
+    tox_env: '{{ tox_environment | from_yaml | combine(tox_constrain_env) }}'
+
+
 - name: "show tox variables"
   debug:
     msg:
       tox_command_line: '{{ tox_command_line }}'
       tox_description: '{{ tox_description }}'
       tox_dir: '{{ tox_dir }}'
-      tox_environment: '{{ tox_environment | combine(tox_constrain_env) }}'
+      tox_env: '{{ tox_env }}'
       tox_expected_rcs: '{{ tox_expected_rcs }}'
 
 
@@ -29,7 +34,7 @@
     cmd: '{{ tox_command_line }}'
   register:
     run_tox
-  environment: '{{ tox_environment | combine(tox_constrain_env) }}'
+  environment: '{{ tox_env }}'
   failed_when: run_tox.rc != tox_succeeded_rc
   ignore_errors: yes
 
