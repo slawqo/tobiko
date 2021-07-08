@@ -15,7 +15,8 @@
 from __future__ import absolute_import
 
 import re
-import typing  # noqa
+import sys
+import typing
 
 from oslo_log import log
 import pytest
@@ -201,7 +202,8 @@ class BaseAgentTest(testtools.TestCase):
                        sudo=True)
 
     def get_cmd_pids(self, process_name, command_filter, hosts=None,
-                     timeout=120, interval=2, min_pids_per_host=1) -> \
+                     timeout=120, interval=2, min_pids_per_host=1,
+                     max_pids_per_host=sys.maxsize) -> \
             typing.Dict[str, frozenset]:
         '''Search for PIDs that match creteria on requested hosts
 
@@ -216,23 +218,30 @@ class BaseAgentTest(testtools.TestCase):
         :param interval: Time to wait between searching attempts
         :param min_pids_per_host: Minimum amount of processes to be found
         :type min_pids_per_host: int
+        :param max_pids_per_host: Maximum amount of processes to be found
+        :type max_pids_per_host: int
         :return: Dictionary with hostnames as a key and list of PIDs as value
         :rtype: dict
         '''
         hosts = hosts or self.hosts
         self.assertNotEqual([], hosts, "Host list is empty")
-
+        self.assertGreater(min_pids_per_host, 0)
+        self.assertGreater(max_pids_per_host, 0)
+        self.assertGreaterEqual(max_pids_per_host, min_pids_per_host)
+        # pylint: disable=range-builtin-not-iterating
+        pids_count_range = range(min_pids_per_host, max_pids_per_host + 1)
         pids_per_host = {}
         for host in hosts:
             LOG.debug(f'Search for {process_name} process on {host}')
-            retry = tobiko.retry(timeout=timeout, interval=interval)
-            for _ in retry:
+            for attempt in tobiko.retry(timeout=timeout, interval=interval):
                 pids = self.list_pids(host, command_filter, process_name)
-                if len(pids) >= min_pids_per_host:
+                if len(pids) in pids_count_range or attempt.is_last:
                     pids_per_host[host] = frozenset(pids)
                     LOG.debug(f"Process '{process_name}' is running "
                               f"on host '{host}' (PIDs={pids!r})")
                     break
+            else:
+                raise RuntimeError("Broken retry loop")
         return pids_per_host
 
     def list_pids(self, host, command_filter, process_name):
