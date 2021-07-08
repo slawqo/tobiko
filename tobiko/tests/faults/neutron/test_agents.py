@@ -39,6 +39,10 @@ LOG = log.getLogger(__name__)
 AgentType = typing.Dict[str, typing.Any]
 AgentListType = typing.List[AgentType]
 
+STOP = "stop"
+START = "start"
+RESTART = "restart"
+
 
 class BaseAgentTest(testtools.TestCase):
 
@@ -94,6 +98,46 @@ class BaseAgentTest(testtools.TestCase):
                                   'name': oc_container['container_name']}
                     self.agents.append(agent_info)
 
+    def _do_agent_action(self, action: str,
+                         hosts: typing.Optional[typing.List[str]] = None):
+        '''Do action on network agent on hosts
+
+        It ensures that given operation, like START, STOP or RESTART of the
+        service is done using systemd service or container.
+
+        :parm action: String with action to do, it can be one of the following:
+                      start, stop, restart
+        :parm hosts: List of hostnames to do action on
+        :type hosts: list of strings
+        '''
+        hosts = hosts or self.hosts
+        self.assertNotEqual([], hosts, "Host list is empty")
+
+        for host in hosts:
+            ssh_client = topology.get_openstack_node(hostname=host).ssh_client
+            is_systemd = topology.check_systemd_monitors_agent(host,
+                                                               self.agent_name)
+            if is_systemd:
+                LOG.debug(f"{action} service '{self.service_name}' on "
+                          f"host '{host}'...")
+                sh.execute(f"systemctl {action} {self.service_name}",
+                           ssh_client=ssh_client,
+                           sudo=True)
+                LOG.debug(f"{action} of the service '{self.service_name}' "
+                          f"on host '{host}' done.")
+            else:
+                if self.container_name == '':
+                    self.container_name = self.get_agent_container_name(
+                        self.agent_name)
+                LOG.debug(f'{action} container {self.container_name} on '
+                          f"host '{host}'...")
+                sh.execute(f'{self.container_runtime_name} {action} '
+                           f'{self.container_name}',
+                           ssh_client=ssh_client,
+                           sudo=True)
+                LOG.debug(f'{action} of the container {self.container_name} '
+                          f"on host '{host}' done.")
+
     def stop_agent(self, hosts: typing.Optional[typing.List[str]] = None):
         '''Stop network agent on hosts
 
@@ -105,34 +149,9 @@ class BaseAgentTest(testtools.TestCase):
         :type hosts: list of strings
         '''
         hosts = hosts or self.hosts
-        self.assertNotEqual([], hosts, "Host list is empty")
-
-        for host in hosts:
-            ssh_client = topology.get_openstack_node(hostname=host).ssh_client
-            is_systemd = topology.check_systemd_monitors_agent(host,
-                                                               self.agent_name)
-            if is_systemd:
-                LOG.debug(f"Stopping service '{self.service_name}' on "
-                          f"host '{host}'...")
-                sh.execute(f"systemctl stop {self.service_name}",
-                           ssh_client=ssh_client,
-                           sudo=True)
-                LOG.debug(f"Service '{self.service_name}' stopped on host "
-                          f"'{host}'.")
-            else:
-                if self.container_name == '':
-                    self.container_name = self.get_agent_container_name(
-                        self.agent_name)
-                LOG.debug(f'Stopping container {self.container_name} on '
-                          f"host '{host}'...")
-                sh.execute(f'{self.container_runtime_name} stop '
-                           f'{self.container_name}',
-                           ssh_client=ssh_client,
-                           sudo=True)
-                LOG.debug(f'Container {self.container_name} has been stopped '
-                          f"on host '{host}'...")
-            # Schedule auto-restart of service at the end of this test case
-            self.addCleanup(self.start_agent, hosts=[host, ])
+        self._do_agent_action(STOP, hosts)
+        # Schedule auto-restart of service at the end of this test case
+        self.addCleanup(self.start_agent, hosts=hosts)
 
     def start_agent(self, hosts: typing.Optional[typing.List[str]] = None):
         '''Start network agent on hosts
@@ -143,29 +162,17 @@ class BaseAgentTest(testtools.TestCase):
         :parm hosts: List of hostnames to start agent on
         :type hosts: list of strings
         '''
-        hosts = hosts or self.hosts
-        self.assertNotEqual([], hosts, "Host list is empty")
+        self._do_agent_action(START, hosts)
 
-        for host in hosts:
-            ssh_client = topology.get_openstack_node(hostname=host).ssh_client
-            is_systemd = topology.check_systemd_monitors_agent(host,
-                                                               self.agent_name)
-            if is_systemd:
-                LOG.debug(f"Starting service '{self.service_name}' on "
-                          f"host '{host}'...")
-                sh.execute(f"systemctl start {self.service_name}",
-                           ssh_client=ssh_client,
-                           sudo=True)
-            else:
-                if self.container_name == '':
-                    self.container_name = self.get_agent_container_name(
-                        self.agent_name)
-                LOG.debug(f'Starting container {self.container_name} on '
-                          f"host '{host}'...")
-                sh.execute(f'{self.container_runtime_name} start '
-                           f'{self.container_name}',
-                           ssh_client=ssh_client,
-                           sudo=True)
+    def restart_agent(self, hosts: typing.Optional[typing.List[str]] = None):
+        '''Restart network agent on hosts
+
+        It ensures system service is restarted.
+
+        :parm hosts: List of hostnames to start agent on
+        :type hosts: list of strings
+        '''
+        self._do_agent_action(RESTART, hosts)
 
     def restart_agent_container(
             self, hosts: typing.Optional[typing.List[str]] = None):
@@ -341,11 +348,11 @@ class DHCPAgentTest(BaseAgentTest):
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
-    def test_stop_dhcp_agent(self):
+    def test_restart_dhcp_agent(self):
         '''Test that dnsmasq processes are not broken after DHCP agent restart
 
-        Dnsmasq processes should stay alive if DHCP agent is turned off and
-        then restarted once DHCP agent is returned to active state.
+        Dnsmasq processes should be restarted once DHCP agent is returned
+        to active state.
         '''
         self.agents = neutron.list_dhcp_agent_hosting_network(
             self.stack.network)
@@ -354,11 +361,8 @@ class DHCPAgentTest(BaseAgentTest):
             f"'{self.stack.network}'")
         pids = self.get_cmd_pids("dnsmasq", self.stack.network)
 
-        self.stop_agent()
-        self.assertEqual(pids, self.get_cmd_pids("dnsmasq",
-                                                 self.stack.network))
+        self.restart_agent()
 
-        self.start_agent()
         self.wait_processes_destroyed(self.stack.network, pids)
         new_pids = self.get_cmd_pids("dnsmasq", self.stack.network)
         self.assertNotEqual(pids, new_pids)
