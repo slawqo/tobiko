@@ -104,8 +104,7 @@ class RetryAttempt(object):
 
     @property
     def details(self) -> str:
-        details = []
-        details.append(f"number={self.number}")
+        details = [f"number={self.number}"]
         if self.count is not None:
             details.append(f"count={self.count}")
         details.append(f"elapsed_time={self.elapsed_time}")
@@ -115,13 +114,22 @@ class RetryAttempt(object):
             details.append(f"interval={self.interval}")
         return ', '.join(details)
 
+    @property
+    def is_last(self):
+        try:
+            self.check_limits()
+        except RetryLimitError:
+            return True
+        else:
+            return False
+
     def __repr__(self):
         return f"retry_attempt({self.details})"
 
 
-def retry_attempt(number: int,
-                  start_time: float,
-                  elapsed_time: float,
+def retry_attempt(number: int = 0,
+                  start_time: float = 0.,
+                  elapsed_time: float = 0.,
                   count: typing.Optional[int] = None,
                   timeout: _time.Seconds = None,
                   interval: _time.Seconds = None) -> RetryAttempt:

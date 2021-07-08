@@ -358,3 +358,15 @@ class RetryTest(unit.TobikoUnitTest):
         self.assertEqual([], result.errors)
         self.assertEqual({"Not the right day!": [test_case]},
                          result.skip_reasons)
+
+    def test_attempt_is_last_with_count(self):
+        self.assertFalse(tobiko.retry_attempt(number=2,
+                                              count=3).is_last)
+        self.assertTrue(tobiko.retry_attempt(number=2,
+                                             count=2).is_last)
+
+    def test_attempt_is_last_with_timeout(self):
+        self.assertFalse(tobiko.retry_attempt(elapsed_time=2.,
+                                              timeout=3.).is_last)
+        self.assertTrue(tobiko.retry_attempt(elapsed_time=2.,
+                                             timeout=2.).is_last)
