@@ -15,7 +15,7 @@ tox_step_index: 0
 tox_report_name:
   "{{ test_report_name }}{% if tox_step_index %}_{{ '{:02d}'.format(tox_step_index | int) }}{% endif %}{% if tox_step_name %}_{{ tox_step_name }}{% endif %}{% if tox_envlist %}_{{ tox_envlist }}{% endif %}"
 
-tox_run_tests_timeout: 14400  # 4 hours
+tox_run_tests_timeout: 18000  # 5 hours
 
 tox_constraints_file: '{{ remote_constraints_file }}'
 

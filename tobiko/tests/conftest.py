@@ -22,6 +22,7 @@ from oslo_log import log
 from py.xml import html  # pylint: disable=no-name-in-module,import-error
 import pytest
 
+import tobiko
 
 LOG = log.getLogger(__name__)
 
@@ -47,7 +48,6 @@ def configure_metadata(config):
 
 
 def configure_caplog(config):
-    import tobiko
     tobiko_config = tobiko.tobiko_config()
 
     if tobiko_config.logging.capture_log is True:
@@ -93,8 +93,40 @@ def set_default_inicfg(config, key, default):
         LOG.debug(f"Keep existing inicfg: {key} = {value}")
 
 
+class TestRunnerTimeoutManager(tobiko.SharedFixture):
+    timeout: tobiko.Seconds = None
+    deadline: tobiko.Seconds = None
+
+    def setup_fixture(self):
+        tobiko_config = tobiko.tobiko_config()
+        self.timeout = tobiko_config.testcase.test_runner_timeout
+        if self.timeout is None:
+            LOG.info('Test runner timeout is disabled')
+        else:
+            LOG.info('Test runner timeout is enabled: '
+                     f'timeout is {self.timeout} seconds')
+            self.deadline = tobiko.time() + self.timeout
+
+    @classmethod
+    def check_test_runner_timeout(cls):
+        self = tobiko.setup_fixture(cls)
+        if self.deadline is not None:
+            time_left = self.deadline - tobiko.time()
+            if time_left <= 0.:
+                pytest.skip(
+                    f"Test runner execution timed out after {self.timeout} "
+                    f"seconds",
+                    allow_module_level=True)
+            else:
+                LOG.debug('Test runner timeout is enabled: '
+                          f'{time_left} seconds left')
+
+
+def check_test_runner_timeout():
+    TestRunnerTimeoutManager.check_test_runner_timeout()
+
+
 def configure_timeout(config):
-    import tobiko
     tobiko_config = tobiko.tobiko_config()
     default = tobiko_config.testcase.timeout
     if default is not None and default > 0.:
@@ -128,7 +160,7 @@ def pytest_html_report_title(report):
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_call(item):
     # pylint: disable=protected-access
-    import tobiko
+    check_test_runner_timeout()
     tobiko.push_test_case(item._testcase)
     try:
         yield

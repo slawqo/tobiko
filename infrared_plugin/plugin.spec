@@ -117,6 +117,10 @@ subparsers:
             type: Value
             help: Test case timeout in seconds
             ansible_variable: test_case_timeout
+          test-runner-timeout:
+            type: Value
+            help: Test runner timeout in seconds
+            ansible_variable: test_runner_timeout
           undercloud_host:
             type: Value
             help: inventory hostname of the undercloud host
