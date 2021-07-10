@@ -66,7 +66,11 @@ TESTCASE_OPTIONS = [
     cfg.FloatOpt('timeout',
                  default=None,
                  help=("Timeout (in seconds) used for interrupting test case "
-                       "execution"))]
+                       "execution")),
+    cfg.FloatOpt('test_runner_timeout',
+                 default=None,
+                 help=("Timeout (in seconds) used for interrupting test "
+                       "runner execution"))]
 
 
 def workspace_config_files(project=None, prog=None):

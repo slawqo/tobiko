@@ -15,33 +15,51 @@ from __future__ import absolute_import
 
 import os
 import sys
-import typing  # noqa
+import typing
 
+from oslo_log import log
 import testtools
 
 from tobiko.common import _exception
+from tobiko.common import _time
 
+
+LOG = log.getLogger(__name__)
 
 os.environ.setdefault('PYTHON', sys.executable)
 
 
+class TestCaseEntry(typing.NamedTuple):
+    test_case: testtools.TestCase
+    start_time: float
+
+
 class TestCasesManager(object):
 
+    start_time: _time.Seconds = None
+
     def __init__(self):
-        self._test_cases: typing.List[testtools.TestCase] = []
+        self._test_cases: typing.List[TestCaseEntry] = []
 
     def get_test_case(self) -> testtools.TestCase:
         try:
-            return self._test_cases[-1]
+            return self._test_cases[-1].test_case
         except IndexError:
             return DUMMY_TEST_CASE
 
     def pop_test_case(self) -> testtools.TestCase:
-        return self._test_cases.pop()
+        entry = self._test_cases.pop()
+        elapsed_time = _time.time() - entry.start_time
+        LOG.debug(f"Exit test case '{entry.test_case.id()}' after "
+                  f"{elapsed_time} seconds")
+        return entry.test_case
 
     def push_test_case(self, test_case: testtools.TestCase):
         _exception.check_valid_type(test_case, testtools.TestCase)
-        self._test_cases.append(test_case)
+        entry = TestCaseEntry(test_case=test_case,
+                              start_time=_time.time())
+        self._test_cases.append(entry)
+        LOG.debug(f"Enter test case '{test_case.id()}'")
 
 
 TEST_CASES = TestCasesManager()

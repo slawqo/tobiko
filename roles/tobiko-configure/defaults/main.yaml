@@ -8,13 +8,15 @@ test_default_conf:
 
   testcase:
     timeout: "{{ test_case_timeout }}"
+    test_runner_timeout: "{{ test_runner_timeout }}"
 
   tripleo:
     undercloud_ssh_hostname: "{{ undercloud_ssh_hostname }}"
 
 test_log_debug: false
 
-test_case_timeout: 7200.
+test_case_timeout: 1800.
+test_runner_timeout: 14400.
 
 # OpenStack client credentials
 stackrc_file: '{{ ansible_user_dir }}/overcloudrc'
