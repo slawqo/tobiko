@@ -125,6 +125,15 @@ class OctaviaPoolStackFixture(heat.HeatStackFixture):
 
     hm_type = 'HTTP'
 
+    # healthmonitor attributes
+    hm_delay = 3
+
+    hm_max_retries = 4
+
+    hm_timeout = 3
+
+    hm_type = 'HTTP'
+
     @property
     def listener_id(self):
         return self.listener.listener_id
