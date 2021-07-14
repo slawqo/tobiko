@@ -38,8 +38,8 @@ undisrupt_network = """
  sudo iptables-restore /home/heat-admin/working.iptables.rules
 """
 ovn_db_pcs_resource_restart = "sudo pcs resource restart ovn-dbs-bundle"
-kill_rabbit = "sudo kill -9 $(pgrep beam.smp)"
-kill_galera = "sudo kill -9 $(pgrep mysqld)"
+kill_rabbit = "sudo pkill -9 beam.smp"
+kill_galera = "sudo pkill -9 mysqld"
 remove_grastate = "sudo rm -rf /var/lib/mysql/grastate.dat"
 check_bootstrap = """ps -eo lstart,cmd | grep -v grep|
 grep wsrep-cluster-address=gcomm://"""
