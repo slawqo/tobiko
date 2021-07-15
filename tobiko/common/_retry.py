@@ -118,7 +118,7 @@ class RetryAttempt(object):
     def is_last(self):
         try:
             self.check_limits()
-        except RetryLimitError:
+        except Exception:
             return True
         else:
             return False
