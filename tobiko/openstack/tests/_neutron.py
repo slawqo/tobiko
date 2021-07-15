@@ -280,7 +280,7 @@ def test_ovs_namespaces_are_absent():
 
 
 def test_ovs_interfaces_are_absent():
-    ovs_specific_interfaces = ['qvo', 'qvb', 'qbr']
+    ovs_specific_interfaces = ['qvo', 'qvb', 'qbr', 'qr', 'qg', 'fg', 'sg']
     for node in topology.list_openstack_nodes():
         if node.name.startswith('undercloud'):
             continue
