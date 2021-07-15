@@ -196,8 +196,8 @@ class OpenStackTopology(tobiko.SharedFixture):
         _connection.SSHConnectionManager)
 
     # In Devstack based env logs can be accessed by journalctl
-    file_digger_class: typing.Type
-    file_digger_class = files.JournalLogDigger
+    file_digger_class: typing.Type[files.LogFileDigger] = \
+        files.JournalLogDigger
 
     # This is dict which handles mapping of the log file and systemd_unit (if
     # needed) for the OpenStack services.
@@ -490,12 +490,12 @@ def get_openstack_topology(topology_class: typing.Type = None) -> \
 
 def get_log_file_digger(
         service_name: str,
-        pattern: typing.Optional[str] = None,
-        groups: typing.Optional[typing.List[str]] = None,
-        topology: typing.Optional[OpenStackTopology] = None,
+        pattern: str = None,
+        groups: typing.List[str] = None,
+        topology: OpenStackTopology = None,
         sudo=True,
-        **execute_params) -> \
-            files.MultihostLogFileDigger:
+        **execute_params) \
+        -> files.MultihostLogFileDigger:
     if topology is None:
         topology = get_openstack_topology()
     return topology.get_log_file_digger(service_name=service_name,
