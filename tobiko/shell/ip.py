@@ -99,7 +99,7 @@ def list_network_interfaces(**execute_params):
             fields = line.strip().split()
             interface = fields[0]
             interfaces.append(interface)
-    return interface
+    return interfaces
 
 
 IP_COMMAND = sh.shell_command(['/sbin/ip'])
