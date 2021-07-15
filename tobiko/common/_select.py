@@ -63,6 +63,13 @@ class Selection(list, typing.Generic[T]):
             raise ObjectNotFound()
 
     @property
+    def last(self) -> T:
+        if self:
+            return self[-1]
+        else:
+            raise ObjectNotFound()
+
+    @property
     def unique(self) -> T:
         if len(self) > 1:
             raise MultipleObjectsFound(list(self))
