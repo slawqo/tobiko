@@ -1,0 +1,8 @@
+---
+
+test_workflow_steps:
+  - tox_description: 'create workload resources for ML2OVS to ML2OVN migration'
+    tox_envlist: ovn_migration
+    tox_step_name: create_resources
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: no
