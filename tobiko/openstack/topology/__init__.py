@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 from tobiko.openstack.topology import _exception
+from tobiko.openstack.topology import _neutron
 from tobiko.openstack.topology import _topology
 
 
@@ -40,3 +41,7 @@ OpenStackTopologyNode = _topology.OpenStackTopologyNode
 set_default_openstack_topology_class = (
     _topology.set_default_openstack_topology_class)
 verify_osp_version = _topology.verify_osp_version
+
+NeutronNovaResponse = _neutron.NeutronNovaResponse
+NeutronNovaResponseReader = _neutron.NeutronNovaResponseReader
+read_neutron_nova_responses = _neutron.read_neutron_nova_responses
