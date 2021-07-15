@@ -30,57 +30,81 @@ SkipTarget = typing.Union[typing.Callable,
 SkipDecorator = typing.Callable[[SkipTarget], SkipTarget]
 
 
-def skip_test(reason: str, cause: Exception = None) -> typing.NoReturn:
+def skip_test(reason: str,
+              cause: Exception = None,
+              bugzilla: int = None) -> typing.NoReturn:
     """Interrupt test case execution marking it as skipped for given reason"""
+    if bugzilla is not None:
+        reason += f'\nhttps://bugzilla.redhat.com/show_bug.cgi?id={bugzilla}\n'
     if cause is not None:
-        reason += f"\n\n{cause}"
+        reason += f"\n\n{cause}\n"
     raise SkipException(reason) from cause
 
 
-def skip(reason: str) -> SkipDecorator:
+def skip(reason: str,
+         bugzilla: int = None) -> SkipDecorator:
     """Mark test case for being skipped for a given reason"""
-    return _skip_unless(reason, None, True)
+    return _skip_decorator(reason=reason, bugzilla=bugzilla)
 
 
-def skip_if(reason: str, function: typing.Callable, *args, **kwargs) -> \
+def skip_if(reason: str,
+            predicate: typing.Callable,
+            *args,
+            bugzilla: int = None,
+            **kwargs) -> \
         SkipDecorator:
     """Mark test case for being skipped for a given reason if it matches"""
-    return _skip_unless(reason, function, False, *args, **kwargs)
+    predicate = _get_skip_predicate(predicate, *args, **kwargs)
+    return _skip_decorator(reason=reason,
+                           unless=False,
+                           bugzilla=bugzilla,
+                           predicate=predicate)
 
 
-def skip_unless(reason: str, function: typing.Callable, *args, **kwargs) -> \
+def skip_unless(reason: str,
+                predicate: typing.Callable,
+                *args,
+                bugzilla: int = None,
+                **kwargs) -> \
         SkipDecorator:
     """Mark test case for being skipped for a given reason unless it matches"""
-    return _skip_unless(reason, function, True, *args, **kwargs)
+    predicate = _get_skip_predicate(predicate, *args, **kwargs)
+    return _skip_decorator(reason=reason,
+                           bugzilla=bugzilla,
+                           predicate=predicate)
 
 
-def _skip_unless(reason: str, function: typing.Optional[typing.Callable],
-                 unless: bool, *args, **kwargs) -> SkipDecorator:
+def _skip_decorator(reason: str,
+                    unless: bool = True,
+                    bugzilla: int = None,
+                    predicate: typing.Callable = None) \
+        -> SkipDecorator:
     """Mark test case for being skipped for a given reason unless it matches"""
-
     def decorator(obj: SkipTarget) -> SkipTarget:
-        method = _get_decorated_method(obj)
+        method = _get_skip_method(obj)
 
         @functools.wraps(method)
-        def skipping_unless(*_args, **_kwargs):
-            if function is not None:
-                return_value = function(*args, **kwargs)
+        def wrapper(*args, **kwargs):
+            _reason = reason
+            cause: typing.Optional[Exception] = None
+            if predicate is not None:
+                return_value = predicate()
                 if unless is bool(return_value):
-                    return method(*_args, **_kwargs)
+                    return method(*args, **kwargs)
                 if '{return_value' in reason:
-                    skip_test(reason.format(return_value=return_value))
-            skip_test(reason)
+                    _reason = reason.format(return_value=return_value)
+            skip_test(reason=_reason, cause=cause, bugzilla=bugzilla)
 
         if obj is method:
-            return skipping_unless
+            return wrapper
         else:
-            setattr(obj, method.__name__, skipping_unless)
+            setattr(obj, method.__name__, wrapper)
             return obj
 
     return decorator
 
 
-def _get_decorated_method(obj: typing.Any) -> typing.Callable:
+def _get_skip_method(obj: SkipTarget) -> typing.Callable:
     if inspect.isclass(obj):
         setup_method = getattr(obj, 'setUp', None)
         if callable(setup_method):
@@ -91,3 +115,11 @@ def _get_decorated_method(obj: typing.Any) -> typing.Callable:
         return obj
     else:
         raise TypeError(f"Object {obj} is not a class or a function")
+
+
+def _get_skip_predicate(func: typing.Callable, *args, **kwargs) \
+        -> typing.Callable:
+    if args or kwargs:
+        return functools.partial(func, *args, **kwargs)
+    else:
+        return func
