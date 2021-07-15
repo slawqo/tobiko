@@ -22,7 +22,7 @@ from tobiko.shell import sh
 
 CONF = config.CONF
 
-CIRROS_IMAGE_VERSION = '0.5.1'
+CIRROS_IMAGE_VERSION = '0.5.2'
 
 CIRROS_IMAGE_URL = (
     'http://download.cirros-cloud.net/{version}/'
