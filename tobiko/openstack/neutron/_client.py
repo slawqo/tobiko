@@ -127,13 +127,6 @@ def list_subnets(client=None, ip_version: typing.Optional[int] = None,
     return tobiko.select(subnets)
 
 
-def list_agents(client=None, **params):
-    agents = neutron_client(client).list_agents(**params)
-    if isinstance(agents, collections.Mapping):
-        agents = agents['agents']
-    return tobiko.select(agents)
-
-
 def list_subnet_cidrs(client=None, **params):
     return tobiko.select(netaddr.IPNetwork(subnet['cidr'])
                          for subnet in list_subnets(client=client, **params))
@@ -204,35 +197,6 @@ def get_subnet(subnet, client=None, **params):
         return neutron_client(client).show_subnet(subnet, **params)['subnet']
     except neutronclient.exceptions.NotFound as ex:
         raise NoSuchSubnet(id=subnet) from ex
-
-
-def list_l3_agent_hosting_routers(router, client=None, **params):
-    agents = neutron_client(client).list_l3_agent_hosting_routers(
-        router, **params)
-    if isinstance(agents, collections.Mapping):
-        agents = agents['agents']
-    return tobiko.select(agents)
-
-
-def find_l3_agent_hosting_router(router, client=None, unique=False,
-                                 default=_RAISE_ERROR, **params):
-    agents = list_l3_agent_hosting_routers(router=router, client=client,
-                                           **params)
-    if default is _RAISE_ERROR or agents:
-        if unique:
-            return agents.unique
-        else:
-            return agents.first
-    else:
-        return default
-
-
-def list_dhcp_agent_hosting_network(network, client=None, **params):
-    agents = neutron_client(client).list_dhcp_agent_hosting_networks(
-        network, **params)
-    if isinstance(agents, collections.Mapping):
-        agents = agents['agents']
-    return tobiko.select(agents)
 
 
 class NoSuchPort(tobiko.ObjectNotFound):
