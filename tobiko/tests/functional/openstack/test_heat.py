@@ -18,11 +18,14 @@ from __future__ import absolute_import
 import os
 import random
 import string
+import typing
 
 import testtools
 
 import tobiko
 from tobiko.openstack import heat
+from tobiko.openstack import neutron
+from tobiko.openstack import nova
 
 
 TEMPLATE_DIRS = [os.path.dirname(__file__)]
@@ -66,3 +69,49 @@ class HeatStackFixtureTest(testtools.TestCase):
         self.assertEqual(tobiko.get_fixture_name(MyStack), stack_0.stack_name)
         self.assertEqual(tobiko.get_fixture_name(MyStack) + '-1',
                          stack_1.stack_name)
+
+
+class EnsureNeutronQuotaLimitsFixture(MyStack):
+
+    requirements = {'network': 100, 'subnet': 100, 'router': 10}
+
+    @property
+    def neutron_required_quota_set(self) -> typing.Dict[str, int]:
+        return self.requirements
+
+
+class EnsureNovaQuotaLimitsFixture(MyStack):
+
+    requirements = {'cores': 20, 'instances': 10}
+
+    @property
+    def nova_required_quota_set(self) -> typing.Dict[str, int]:
+        return self.requirements
+
+
+class EnsureQuotaLimitsTest(testtools.TestCase):
+
+    def test_ensure_neutron_quota_limits(self):
+        stack = EnsureNeutronQuotaLimitsFixture(stack_name=self.id())
+        self.useFixture(stack)
+        quota_set = neutron.get_neutron_quota_set(detail=True)
+        for name, requirement in stack.requirements.items():
+            quota = quota_set[name]
+            self.assertGreaterEqual(quota['limit'],
+                                    requirement +
+                                    max(0, quota['used']) -
+                                    max(0, quota['reserved']))
+
+    def test_ensure_nova_quota_limits(self):
+        stack = EnsureNovaQuotaLimitsFixture(stack_name=self.id())
+        self.useFixture(stack)
+        quota_set = nova.get_nova_quota_set(detail=True)
+        for name, requirement in stack.requirements.items():
+            quota = getattr(quota_set, name)
+            if quota['limit'] > 0:
+                self.assertGreaterEqual(quota['limit'],
+                                        requirement +
+                                        max(0, quota['in_use']) -
+                                        max(0, quota['reserved']))
+            else:
+                self.assertEqual(quota['limit'], -1)

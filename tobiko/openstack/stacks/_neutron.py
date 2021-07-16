@@ -31,9 +31,6 @@ from tobiko.shell import sh
 from tobiko.shell import ssh
 
 
-LOG = log.getLogger(__name__)
-
-
 CONF = config.CONF
 LOG = log.getLogger(__name__)
 
@@ -281,6 +278,18 @@ class NetworkStackFixture(heat.HeatStackFixture):
     @property
     def gateway_network_details(self):
         return neutron.get_network(self.gateway_network_id)
+
+    @property
+    def neutron_required_quota_set(self) -> typing.Dict[str, int]:
+        requirements = super().neutron_required_quota_set
+        requirements['network'] += 1
+        if self.has_ipv4:
+            requirements['subnet'] += 1
+        if self.has_ipv6:
+            requirements['subnet'] += 1
+        if self.has_gateway:
+            requirements['router'] += 1
+        return requirements
 
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
