@@ -13,7 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
-import typing  # noqa
+import collections
+import typing
 
 import tobiko
 from tobiko.openstack.neutron import _client
@@ -34,7 +35,44 @@ NEUTRON_OVN_METADATA_AGENT = 'neutron-ovn-metadata-agent'
 
 
 class AgentNotFoundOnHost(tobiko.TobikoException):
-    message = ("Agent {agent_type!s} not found on the host {host!s}")
+    message = "Agent {agent_type!s} not found on the host {host!s}"
+
+
+NeutronAgentType = typing.Dict[str, typing.Any]
+
+
+def list_agents(client=None, **params) \
+        -> tobiko.Selection[NeutronAgentType]:
+    agents = _client.neutron_client(client).list_agents(**params)
+    if isinstance(agents, collections.Mapping):
+        agents = agents['agents']
+    return tobiko.Selection[NeutronAgentType](agents)
+
+
+def list_l3_agent_hosting_routers(router, client=None, **params):
+    agents = _client.neutron_client(client).list_l3_agent_hosting_routers(
+        router, **params)
+    if isinstance(agents, collections.Mapping):
+        agents = agents['agents']
+    return tobiko.select(agents)
+
+
+def find_l3_agent_hosting_router(router, client=None, unique=False,
+                                 **list_params):
+    agents = list_l3_agent_hosting_routers(router=router, client=client,
+                                           **list_params)
+    if unique:
+        return agents.unique
+    else:
+        return agents.first
+
+
+def list_dhcp_agent_hosting_network(network, client=None, **params):
+    agents = _client.neutron_client(client).list_dhcp_agent_hosting_networks(
+        network, **params)
+    if isinstance(agents, collections.Mapping):
+        agents = agents['agents']
+    return tobiko.select(agents)
 
 
 class NetworkingAgentFixture(tobiko.SharedFixture):
@@ -42,7 +80,7 @@ class NetworkingAgentFixture(tobiko.SharedFixture):
     agents = None
 
     def setup_fixture(self):
-        self.agents = _client.list_agents()
+        self.agents = list_agents()
 
 
 def list_networking_agents(**attributes):

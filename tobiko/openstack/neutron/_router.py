@@ -19,7 +19,7 @@ import json
 from oslo_log import log
 
 import tobiko
-from tobiko.openstack.neutron import _client
+from tobiko.openstack.neutron import _agent
 
 
 LOG = log.getLogger(__name__)
@@ -35,7 +35,7 @@ def wait_for_master_and_backup_agents(
                                 interval=interval,
                                 default_timeout=300.,
                                 default_interval=5.):
-        router_agents = _client.list_l3_agent_hosting_routers(router_id)
+        router_agents = _agent.list_l3_agent_hosting_routers(router_id)
         master_agents = router_agents.with_items(ha_state='active')
         if master_agents:
             LOG.debug(
