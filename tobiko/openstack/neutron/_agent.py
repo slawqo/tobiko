@@ -114,17 +114,25 @@ def skip_if_missing_networking_agents(binary: typing.Optional[str] = None,
                           **params)
 
 
+def skip_unless_missing_networking_agents(
+        binary: typing.Optional[str] = None,
+        count: int = 1, **params) \
+        -> DecoratorType:
+    if binary is not None:
+        params['binary'] = binary
+    message = "found {return_value!r} agent(s)"
+    if params:
+        message += " with {!s}".format(
+            ', '.join("{!s}={!r}".format(k, v) for k, v in params.items()))
+    return tobiko.skip_unless(message, missing_networking_agents, count=count,
+                              **params)
+
+
 def skip_unless_is_ovn():
-    '''Skip the test if OVN is not configured'''
-    from tobiko.tripleo import overcloud
-    from tobiko.tripleo import containers
-    if overcloud.has_overcloud():
-        message = "OVN is not configured"
-        return tobiko.skip_unless(message, containers.ovn_used_on_overcloud)
-    else:
-        return skip_if_missing_networking_agents(OVN_CONTROLLER)
+    """Skip the test if OVN is not configured"""
+    return skip_unless_missing_networking_agents(OPENVSWITCH_AGENT)
 
 
 def skip_unless_is_ovs():
-    '''Skip the test if openvswitch agent does not exist'''
+    """Skip the test if openvswitch agent does exist"""
     return skip_if_missing_networking_agents(OPENVSWITCH_AGENT)

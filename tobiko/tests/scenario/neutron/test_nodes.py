@@ -21,10 +21,13 @@ from tobiko.openstack import neutron
 from tobiko.openstack import tests
 
 
+@neutron.skip_unless_is_ovn()
 class NodeTest(testtools.TestCase):
 
-    @neutron.skip_unless_is_ovn()
     @pytest.mark.ovn_migration
-    def test_ovs_objects_are_absent_on_node(self):
+    def test_ovs_namespaces_are_absent(self):
         tests.test_ovs_namespaces_are_absent()
+
+    @pytest.mark.ovn_migration
+    def test_ovs_interfaces_are_absent(self):
         tests.test_ovs_interfaces_are_absent()
