@@ -35,9 +35,8 @@ class HeatTemplateFileTest(openstack.OpenstackTest):
                                            template_dirs=template_dirs)
         self.assertIsInstance(template, heat.HeatTemplateFileFixture)
         self.assertEqual(template_file, template.template_file)
-        self.assertIsNone(template.template)
-        self.assertIsNone(template.template_files)
-        self.assertIsNone(template.template_yaml)
+        self.assertEqual({}, template.template)
+        self.assertEqual({}, template.template_files)
 
         tobiko.setup_fixture(template)
         template_files, template_dict = template_utils.get_template_contents(
