@@ -38,9 +38,8 @@ class NeutronAgentTest(openstack.OpenstackTest):
 
     def test_neutron_agents_are_alive_when_no_agents(self):
         self.patch_list_agents(return_value=[])
-        ex = self.assertRaises(self.failureException,
-                               tests.test_neutron_agents_are_alive)
-        self.assertEqual('Neutron has no agents', str(ex))
+        agents = tests.test_neutron_agents_are_alive()
+        self.assertEqual([], agents)
 
     def test_neutron_agents_are_alive_when_unhealthy(self):
         self.patch_list_agents(return_value=[{'alive': False}])

@@ -37,38 +37,29 @@ def build_ovn_db_show_dict(ovn_db_show_str):
     return ovn_master_db_dict
 
 
-def test_neutron_agents_are_alive(timeout=300., interval=5.):
-    test_case = tobiko.get_test_case()
+def test_neutron_agents_are_alive(timeout=300., interval=5.) \
+        -> tobiko.Selection[neutron.NeutronAgentType]:
     for attempt in tobiko.retry(timeout=timeout, interval=interval):
         LOG.debug("Look for unhealthy Neutron agents...")
         try:
             # get Neutron agent list
             agents = neutron.list_agents()
         except neutron.ServiceUnavailable as ex:
-            attempt.check_limits()
-            # retry because Neutron server could still be unavailable after
-            # a disruption
-            LOG.debug(f"Waiting for neutron service... ({ex})")
-            continue  # Let retry
-
-        if (topology.verify_osp_version('14.0', lower=True)
-                and is_ovn_configured()):
-            LOG.debug("Neutron list agents should return an empty list with"
-                      "OVN and RHOSP releases 13 or earlier")
-            test_case.assertEqual([], agents)
-            return agents
-
-        if not agents:
-            test_case.fail("Neutron has no agents")
+            if attempt.is_last:
+                raise
+            else:
+                # retry because Neutron server could still be unavailable
+                # after a disruption
+                LOG.debug(f"Waiting for neutron service... ({ex})")
+                continue  # Let retry
 
         dead_agents = agents.with_items(alive=False)
         if dead_agents:
             dead_agents_details = json.dumps(agents, indent=4, sort_keys=True)
-            try:
-                test_case.fail("Unhealthy agent(s) found:\n"
-                               f"{dead_agents_details}\n")
-            except tobiko.FailureException:
-                attempt.check_limits()
+            if attempt.is_last:
+                tobiko.fail("Unhealthy agent(s) found:\n"
+                            f"{dead_agents_details}\n")
+            else:
                 # retry because some Neutron agent could still be unavailable
                 # after a disruption
                 LOG.debug("Waiting for Neutron agents to get alive...\n"
@@ -76,7 +67,11 @@ def test_neutron_agents_are_alive(timeout=300., interval=5.):
                 continue
 
         LOG.debug(f"All {len(agents)} Neutron agents are alive.")
-        return agents
+        break
+    else:
+        raise RuntimeError("Retry loop broken")
+
+    return agents
 
 
 def ovn_dbs_are_synchronized(test_case):
