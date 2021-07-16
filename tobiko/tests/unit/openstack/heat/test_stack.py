@@ -161,7 +161,7 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
             client.stacks.create.assert_not_called()
 
         if call_sleep:
-            sleep.assert_has_calls([mock.call(stack.wait_interval)])
+            sleep.assert_called()
 
     def test_setup_with_stack_name(self):
         self.test_setup(stack_name='my-stack-name')
