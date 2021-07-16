@@ -253,10 +253,10 @@ class WaitForServerStatusTimeout(WaitForServerStatusError):
                "{server_status} to {status} status after {timeout} seconds")
 
 
-NOVA_SERVER_TRANSIENT_STATUS: typing.Dict[str, typing.List[str]] = {
-    'ACTIVE': ['BUILD', 'SHUTOFF', 'REBOOT'],
-    'SHUTOFF': ['ACTIVE'],
-    'VERIFY_RESIZE': ['RESIZE'],
+NOVA_SERVER_TRANSIENT_STATUS: typing.Dict[str, typing.Set[str]] = {
+    'ACTIVE': {'BUILD', 'SHUTOFF', 'REBOOT'},
+    'SHUTOFF': {'ACTIVE'},
+    'VERIFY_RESIZE': {'RESIZE'},
 }
 
 
@@ -266,7 +266,7 @@ def wait_for_server_status(
         client: NovaClientType = None,
         timeout: tobiko.Seconds = None,
         sleep_time: tobiko.Seconds = None,
-        transient_status: typing.Optional[typing.List[str]] = None) -> \
+        transient_status: typing.Optional[typing.Container[str]] = None) -> \
             NovaServer:
     if transient_status is None:
         transient_status = NOVA_SERVER_TRANSIENT_STATUS.get(status) or []
@@ -295,6 +295,8 @@ def wait_for_server_status(
         LOG.debug(f"Waiting for server {server_id} status to get from "
                   f"{_server.status} to {status} "
                   f"(progress={progress}%)")
+    else:
+        raise RuntimeError("Broken retry loop")
 
     return _server
 
