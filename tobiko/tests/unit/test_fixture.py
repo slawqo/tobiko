@@ -473,3 +473,21 @@ class SharedFixtureTest(unit.TobikoUnitTest):
             fixture.cleanUp()
             fixture.cleanup_fixture.assert_has_calls(
                 [mock.call()] * call_count)
+
+    def test_fixture_name(self):
+        fixture = tobiko.get_fixture(MyFixture)
+        self.assertEqual(f'{__name__}.{MyFixture.__qualname__}',
+                         fixture.fixture_name)
+
+    def test_fixture_name_with_fixture_id(self):
+        fixture = tobiko.get_fixture(MyFixture, fixture_id=10)
+        self.assertEqual(f'{__name__}.{MyFixture.__qualname__}-10',
+                         fixture.fixture_name)
+
+    def test_fixture_id(self):
+        fixture = tobiko.get_fixture(MyFixture)
+        self.assertIsNone(fixture.fixture_id)
+
+    def test_fixture_id_with_fixture_id(self):
+        fixture = tobiko.get_fixture(MyFixture, fixture_id=12)
+        self.assertEqual(12, fixture.fixture_id)
