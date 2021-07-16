@@ -13,6 +13,9 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
+import sys
+
 from tobiko.common import _asserts
 from tobiko.common import _cached
 from tobiko.common import _config
@@ -30,6 +33,15 @@ from tobiko.common import _skip
 from tobiko.common import _testcase
 from tobiko.common import _time
 from tobiko.common import _utils
+
+
+TOBIKO_PACKAGE_DIR = os.path.dirname(os.path.realpath(__file__))
+
+# Ensure any tobiko package subdir is in sys.path
+for path_dir in list(sys.path):
+    path_dir = os.path.realpath(path_dir)
+    if path_dir.startswith(TOBIKO_PACKAGE_DIR):
+        sys.path.remove(path_dir)
 
 
 details_content = _detail.details_content
