@@ -46,12 +46,3 @@
 
 - name: "show resulting '{{ test_conf_file }}' file"
   debug: var=read_test_conf_file.stdout_lines
-
-
-# TODO (fressi): move it to a Tobiko python fixture
-- name: Set permissive quotas for instances and cores
-  shell: |
-    source "{{ stackrc_file }}"
-    openstack quota set --instances -1 admin
-    openstack quota set --cores -1 admin
-  ignore_errors: yes
