@@ -28,7 +28,6 @@ import tobiko
 from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack import heat
-from tobiko.openstack import keystone
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack.stacks import _hot
@@ -105,10 +104,6 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
 
     #: whenever the server will use config-drive to get metadata
     config_drive = False
-
-    def create_stack(self, retry=None):
-        self.ensure_quota_limits()
-        super(ServerStackFixture, self).create_stack(retry=retry)
 
     @property
     def image_fixture(self) -> glance.GlanceImageFixture:
@@ -349,18 +344,12 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
 
         return server
 
-    def ensure_quota_limits(self):
-        """Ensures Nova quota limits before creating a new server
-        """
-        project = keystone.get_project_id(
-            session=self.client.http_client.session)
-        user = keystone.get_user_id(
-            session=self.client.http_client.session)
-        nova.ensure_nova_quota_limits(
-            project=project,
-            user=user,
-            instances=1,
-            cores=self.flavor_stack.vcpus or 1)
+    @property
+    def nova_required_quota_set(self) -> typing.Dict[str, int]:
+        requirements = super().nova_required_quota_set
+        requirements['instances'] += 1
+        requirements['cores'] += (self.flavor_stack.vcpus or 1)
+        return requirements
 
     user_data = None
 
