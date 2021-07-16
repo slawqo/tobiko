@@ -206,8 +206,8 @@ class MigrateServerTest(testtools.TestCase):
                 target_hypervisor = hypervisor.hypervisor_hostname
                 break
         else:
-            self.skipTest("Cannot find a valid hypervisor host to migrate "
-                          "server to")
+            tobiko.skip_test("Cannot find a valid hypervisor host to migrate "
+                             "server to")
 
         server = self.migrate_server(server=server, host=target_hypervisor)
 
