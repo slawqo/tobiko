@@ -14,18 +14,24 @@
 #    under the License.
 from __future__ import absolute_import
 
+import time
+
 from oslo_log import log
 import testtools
 
 import tobiko
+from tobiko import config
 from tobiko.openstack import keystone
-from tobiko.openstack import stacks
 from tobiko.openstack import neutron
+from tobiko.openstack import stacks
+from tobiko.shell import ip
 from tobiko.shell import iperf3
 from tobiko.shell import ping
 from tobiko.shell import sh
+from tobiko.shell import tcpdump
 
 
+CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
@@ -39,8 +45,34 @@ class QoSNetworkTest(testtools.TestCase):
     policy = tobiko.required_setup_fixture(stacks.QosPolicyStackFixture)
     server = tobiko.required_setup_fixture(stacks.QosServerStackFixture)
 
-    def test_ping(self):
+    def test_ping_dscp(self):
+        capture_file = sh.execute('mktemp', sudo=True).stdout.strip()
+        interface = ip.get_network_main_route_device(
+            self.server.floating_ip_address)
+
+        # IPv4 tcpdump DSCP filters explanation:
+        # ip[1] refers to the byte 1 (the TOS byte) of the IP header
+        # 0xfc = 11111100 is the mask to get only DSCP value from the ToS
+        # As DSCP mark is most significant 6 bits we do right shift (>>)
+        # twice in order to divide by 4 and compare with the decimal value
+        # See details at http://darenmatthews.com/blog/?p=1199
+        dscp_mark = CONF.tobiko.neutron.dscp_mark
+        capture_filter = (f"'(ip src {self.server.floating_ip_address} and "
+                          f"(ip[1] & 0xfc) >> 2 == {dscp_mark})'")
+
+        # start a capture
+        process = tcpdump.start_capture(
+            capture_file=capture_file,
+            interface=interface,
+            capture_filter=capture_filter,
+            capture_timeout=60)
+        time.sleep(1)
+        # send a ping to the server
         ping.assert_reachable_hosts([self.server.floating_ip_address],)
+        # stop tcpdump and get the pcap capture
+        pcap = tcpdump.get_pcap(process, capture_file=capture_file)
+        # check the capture is not empty
+        tcpdump.assert_pcap_is_not_empty(pcap=pcap)
 
     def test_network_qos_policy_id(self):
         """Verify network policy ID"""

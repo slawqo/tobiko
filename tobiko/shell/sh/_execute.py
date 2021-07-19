@@ -114,6 +114,7 @@ class ShellExecuteResult(collections.namedtuple(
 
 
 def _indent(text, space='    ', newline='\n'):
+    text = str(text)
     return space + (newline + space).join(text.split(newline))
 
 
