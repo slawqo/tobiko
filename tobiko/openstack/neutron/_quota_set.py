@@ -13,8 +13,12 @@
 #    under the License.
 from __future__ import absolute_import
 
+import json
+import typing
+
 from oslo_log import log
 
+import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack.neutron import _client
 
@@ -46,44 +50,72 @@ def set_neutron_quota_set(project: keystone.ProjectType = None,
 
 def ensure_neutron_quota_limits(project: keystone.ProjectType = None,
                                 client: _client.NeutronClientType = None,
-                                **required: int):
+                                retry_timeout: tobiko.Seconds = None,
+                                retry_interval: tobiko.Seconds = None,
+                                **required_quotas: int) -> None:
+    if not required_quotas:
+        return
     client = _client.neutron_client(client)
     project = keystone.get_project_id(project=project,
                                       session=client.httpclient.session)
-
-    quota_set = get_neutron_quota_set(project=project, client=client,
-                                      detail=True)
-    actual_limits = {}
-    increment_limits = {}
-    for name, needed in required.items():
-        quota = quota_set[name]
-        limit: int = quota['limit']
-        if limit > 0:
-            in_use: int = max(0, quota['used']) + max(0, quota['reserved'])
-            required_limit = in_use + needed
-            if required_limit >= limit:
-                actual_limits[name] = limit
-                increment_limits[name] = required_limit + 5
-
-    if increment_limits:
-        LOG.info(f"Increment Neutron quota limit(s) (project={project}): "
-                 f"{actual_limits} -> {increment_limits}...")
-        try:
-            set_neutron_quota_set(project=project, client=client,
-                                  **increment_limits)
-        except Exception:
-            LOG.exception("Unable to ensure neutron quota set limits: "
-                          f"{increment_limits}")
-
-        quota_set = get_neutron_quota_set(project=project, client=client,
-                                          detail=True)
-        new_limits = {name: quota_set[name]['limit']
-                      for name in increment_limits.keys()}
-
-        if new_limits == actual_limits:
-            LOG.error(f"Neutron quota limit not changed (project={project})")
+    for attempt in tobiko.retry(timeout=retry_timeout,
+                                interval=retry_interval,
+                                default_timeout=60.,
+                                default_interval=3.):
+        actual_limits, expected_limits = get_neutron_quota_limits_increase(
+            project=project, client=client, extra_increase=10//attempt.number,
+            **required_quotas)
+        if expected_limits:
+            if attempt.is_last:
+                raise EnsureNeutronQuotaLimitsError(
+                    project=project,
+                    actual_limits=actual_limits,
+                    expected_limits=expected_limits)
+            LOG.info(f"Increase Neutron quota limit(s) (project={project}): "
+                     f"{actual_limits} -> {expected_limits}...")
+            try:
+                set_neutron_quota_set(project=project, client=client,
+                                      **expected_limits)
+            except Exception as ex:
+                if attempt.is_last:
+                    raise
+                LOG.exception("Unable to ensure Neutron quota set limits: "
+                              f"{expected_limits}: {ex}")
         else:
-            LOG.info(f"Neutron quota limit changed (project={project}): "
-                     f"{actual_limits} -> {new_limits}...")
+            LOG.debug(f"Required quota limits are OK: {required_quotas}")
+            break
+    else:
+        raise RuntimeError("Broken retry loop")
 
-    return quota_set
+
+class EnsureNeutronQuotaLimitsError(tobiko.TobikoException):
+    message = ("Neutron quota limits lower than "
+               "expected (project={project}): "
+               "{actual_limits} != {expected_limits}")
+
+
+def get_neutron_quota_limits_increase(
+        project: keystone.ProjectType = None,
+        client: _client.NeutronClientType = None,
+        extra_increase=0,
+        **required_quotas: int) \
+        -> typing.Tuple[typing.Dict[str, int],
+                        typing.Dict[str, int]]:
+    quota_set = get_neutron_quota_set(project=project,
+                                      client=client,
+                                      detail=True)
+    LOG.debug("Got quota set:\n"
+              f"{json.dumps(quota_set, indent=4, sort_keys=True)}")
+    actual_limits: typing.Dict[str, int] = {}
+    expected_limits: typing.Dict[str, int] = {}
+    for name, needed in required_quotas.items():
+        quota = quota_set[name]
+        limit = int(quota['limit'])
+        if limit >= 0:
+            used = max(0, int(quota['used']))
+            reserved = max(0, int(quota['reserved']))
+            required_limit = used + reserved + needed
+            if required_limit > limit:
+                actual_limits[name] = limit
+                expected_limits[name] = required_limit + extra_increase
+    return actual_limits, expected_limits
