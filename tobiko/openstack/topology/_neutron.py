@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import json
+import ast
 import re
 import typing
 
@@ -56,8 +56,8 @@ class NeutronNovaResponseReader(tobiko.SharedFixture):
                 new_lines=hasattr(self, 'responses')):
             found = message_pattern.search(line)
             assert found is not None
-            response_text = line[found.end():].strip().replace('\'', '"')
-            response_data = json.loads(response_text)
+            response_text = line[found.end():].strip()
+            response_data = ast.literal_eval(response_text)
             assert isinstance(response_data, dict)
             response = NeutronNovaResponse(
                 hostname=hostname,
