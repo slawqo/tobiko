@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import collections
+import re
 import typing
 
 import tobiko
@@ -84,6 +85,8 @@ class SelectionTest(unit.TobikoUnitTest):
         self.assertEqual([], selection.with_attributes(number=2))
         self.assertEqual([b], selection.with_attributes(number=1, text='b'))
         self.assertEqual([], selection.with_attributes(number=1, text='a'))
+        self.assertEqual([a, b],
+                         selection.with_attributes(text=re.compile('(a|b)')))
 
     def test_without_attribute(self):
         a = Obj(0, 'a')
@@ -98,6 +101,9 @@ class SelectionTest(unit.TobikoUnitTest):
         self.assertEqual([a, b, c], selection.without_attributes(number=2))
         self.assertEqual([a], selection.without_attributes(number=1, text='b'))
         self.assertEqual([], selection.without_attributes(number=1, text='a'))
+        self.assertEqual([c],
+                         selection.without_attributes(
+                             text=re.compile('(a|b)')))
 
     def test_with_items(self):
         a = {'number': 0, 'text': 'a'}
@@ -112,6 +118,8 @@ class SelectionTest(unit.TobikoUnitTest):
         self.assertEqual([], selection.with_items(number=2))
         self.assertEqual([b], selection.with_items(number=1, text='b'))
         self.assertEqual([], selection.with_items(number=1, text='a'))
+        self.assertEqual([a, b],
+                         selection.with_items(text=re.compile('(a|b)')))
 
     def test_without_items(self):
         a = {'number': 0, 'text': 'a'}
@@ -126,6 +134,8 @@ class SelectionTest(unit.TobikoUnitTest):
         self.assertEqual([a, b, c], selection.without_items(number=2))
         self.assertEqual([a], selection.without_items(number=1, text='b'))
         self.assertEqual([], selection.without_items(number=1, text='a'))
+        self.assertEqual([c],
+                         selection.without_items(text=re.compile('(a|b)')))
 
     def test_select(self):
         a = Obj(0, 'a')
