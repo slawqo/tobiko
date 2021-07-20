@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import collections
+import re
 import typing
 
 import tobiko
@@ -101,9 +102,14 @@ DecoratorType = typing.Callable[[typing.Union[typing.Callable, typing.Type]],
                                 typing.Union[typing.Callable, typing.Type]]
 
 
-def skip_if_missing_networking_agents(binary: typing.Optional[str] = None,
-                                      count: int = 1, **params) -> \
-        DecoratorType:
+AgentBinaryType = typing.Union[str, typing.Pattern[str]]
+
+
+def skip_if_missing_networking_agents(
+        binary: AgentBinaryType = None,
+        count: int = 1,
+        **params) \
+        -> DecoratorType:
     if binary is not None:
         params['binary'] = binary
     message = "missing {return_value!r} agent(s)"
@@ -115,8 +121,9 @@ def skip_if_missing_networking_agents(binary: typing.Optional[str] = None,
 
 
 def skip_unless_missing_networking_agents(
-        binary: typing.Optional[str] = None,
-        count: int = 1, **params) \
+        binary: AgentBinaryType = None,
+        count: int = 1,
+        **params) \
         -> DecoratorType:
     if binary is not None:
         params['binary'] = binary
@@ -126,6 +133,12 @@ def skip_unless_missing_networking_agents(
             ', '.join("{!s}={!r}".format(k, v) for k, v in params.items()))
     return tobiko.skip_unless(message, missing_networking_agents, count=count,
                               **params)
+
+
+def skip_if_is_old_ovn():
+    """Skip the test if OVN is not configured"""
+    binary = re.compile(f'({OPENVSWITCH_AGENT}|{OVN_CONTROLLER})')
+    return skip_if_missing_networking_agents(binary)
 
 
 def skip_unless_is_ovn():
