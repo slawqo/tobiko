@@ -36,7 +36,7 @@ CONFIG_MODULES = ['tobiko.openstack.glance.config',
                   'tobiko.openstack.topology.config',
                   'tobiko.shell.ssh.config',
                   'tobiko.shell.ping.config',
-                  'tobiko.shell.iperf.config',
+                  'tobiko.shell.iperf3.config',
                   'tobiko.shell.sh.config',
                   'tobiko.tripleo.config']
 

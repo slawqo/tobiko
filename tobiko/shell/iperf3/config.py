@@ -17,24 +17,21 @@ import itertools
 
 from oslo_config import cfg
 
-GROUP_NAME = "iperf"
+
+GROUP_NAME = "iperf3"
 OPTIONS = [
     cfg.IntOpt('port',
-               default=1234,
+               default=None,
                help="Port number"),
     cfg.StrOpt('protocol',
-               default='tcp',
+               default=None,
                choices=['tcp', 'udp'],
                help="tcp and udp values are supported"),
-    cfg.StrOpt('output_format',
-               default='json',
-               choices=['', 'json'],
-               help="output format"),
     cfg.IntOpt('bitrate',
-               default=20000000,
+               default=20000000,  # 20 Mb
                help="target bit rate"),
     cfg.BoolOpt('download',
-                default=True,
+                default=None,
                 help="direction download (True) or upload (False)"),
     cfg.IntOpt('timeout',
                default=10,

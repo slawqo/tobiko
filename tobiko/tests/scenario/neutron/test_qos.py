@@ -21,8 +21,9 @@ import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack import stacks
 from tobiko.openstack import neutron
-from tobiko.shell import iperf
+from tobiko.shell import iperf3
 from tobiko.shell import ping
+from tobiko.shell import sh
 
 
 LOG = log.getLogger(__name__)
@@ -52,5 +53,22 @@ class QoSNetworkTest(testtools.TestCase):
 
     def test_qos_bw_limit(self):
         """Verify BW limit using the iperf3 tool"""
-        iperf.assert_bw_limit(ssh_client=None,  # localhost will act as client
-                              ssh_server=self.server.peer_ssh_client)
+        # localhost will act as client
+        bandwidth_limit = self.policy.bwlimit_kbps * 1000.
+        for attempt in tobiko.retry(timeout=100., interval=5.):
+            try:
+                iperf3.assert_has_bandwith_limits(
+                    address=self.server.ip_address,
+                    min_bandwith=bandwidth_limit * 0.9,
+                    max_bandwith=bandwidth_limit * 1.1,
+                    port=self.server.iperf3_port,
+                    download=True)
+                break
+            except sh.ShellCommandFailed as err:
+                if ('unable to connect to server: Connection refused'
+                        in str(err)):
+                    attempt.check_limits()
+                    LOG.debug('iperf command failed because the iperf server '
+                              'was not ready yet - retrying...')
+                else:
+                    raise err
