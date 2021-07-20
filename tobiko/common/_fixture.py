@@ -17,6 +17,7 @@ import json
 import os
 import inspect
 import sys
+import typing
 
 import fixtures
 from oslo_log import log
@@ -38,7 +39,9 @@ def is_fixture(obj):
             (inspect.isclass(obj) and issubclass(obj, fixtures.Fixture)))
 
 
-def get_fixture(obj, fixture_id=None, manager=None):
+def get_fixture(obj: typing.Any,
+                fixture_id: typing.Any = None,
+                manager: 'FixtureManager' = None):
     '''Returns a fixture identified by given :param obj:
 
     It returns registered fixture for given :param obj:. If none has been
@@ -52,15 +55,22 @@ def get_fixture(obj, fixture_id=None, manager=None):
       - the class of the fixture. It must be a subclass of fixtures.Fixture
         sub-class.
 
+    :param fixture_id
+      - an identifier that allows to instanciate and identify other fixtures
+        than default one (fixture_id=None) for given fixture class
+
+    :param manager
+      - (optional) a FixtureManager instance
+
     :returns: an instance of fixture class identified by obj, or obj itself
     if it is instance of fixtures.Fixture class.
 
     '''
     if isinstance(obj, fixtures.Fixture):
         return obj
-    else:
-        manager = manager or FIXTURES
-        return manager.get_fixture(obj, fixture_id=fixture_id)
+    if manager is None:
+        manager = FIXTURES
+    return manager.get_fixture(obj, fixture_id=fixture_id)
 
 
 def get_fixture_name(obj):
@@ -255,7 +265,9 @@ def get_required_fixture_properties(cls):
             if isinstance(member, RequiredFixtureProperty)]
 
 
-def init_fixture(obj, name):
+def init_fixture(obj: typing.Any,
+                 name: str,
+                 fixture_id: typing.Any = None):
     if inspect.isclass(obj) and issubclass(obj, fixtures.Fixture):
         try:
             obj = obj()
@@ -265,6 +277,7 @@ def init_fixture(obj, name):
     if isinstance(obj, fixtures.Fixture):
         obj.__tobiko_fixture__ = True
         obj.__tobiko_fixture_name__ = name
+        obj.__tobiko_fixture_id__ = fixture_id
         return obj
 
     raise TypeError(f"Invalid fixture object type: '{obj!r}'")
@@ -286,6 +299,10 @@ def required_setup_fixture(obj, **params):
 
     '''
     return RequiredSetupFixtureProperty(obj, **params)
+
+
+def get_fixture_id(obj: typing.Any) -> typing.Any:
+    return getattr(obj, '__tobiko_fixture_id__', None)
 
 
 def get_object_name(obj):
@@ -333,19 +350,26 @@ class FixtureManager(object):
     def __init__(self):
         self.fixtures = {}
 
-    def get_fixture(self, obj, fixture_id=None, init=None):
+    def get_fixture(self,
+                    obj: typing.Any,
+                    fixture_id: typing.Any = None):
         name, obj = get_name_and_object(obj)
         if fixture_id:
-            name += '-' + str(fixture_id)
+            name += f'-{fixture_id}'
         fixture = self.fixtures.get(name)
         if fixture is None:
-            init = init or self.init_fixture
-            self.fixtures[name] = fixture = init(obj=obj, name=name)
+            self.fixtures[name] = fixture = self.init_fixture(
+                obj=obj, name=name, fixture_id=fixture_id)
             assert isinstance(fixture, fixtures.Fixture)
         return fixture
 
-    def init_fixture(self, obj, name):
-        return init_fixture(obj=obj, name=name)
+    @staticmethod
+    def init_fixture(obj: typing.Any,
+                     name: str,
+                     fixture_id: typing.Any):
+        return init_fixture(obj=obj,
+                            name=name,
+                            fixture_id=fixture_id)
 
     def remove_fixture(self, obj, fixture_id=None):
         name = get_object_name(obj)
@@ -381,14 +405,15 @@ class SharedFixture(fixtures.Fixture):
 
     __tobiko_fixture__ = True
     __tobiko_fixture_name__ = None
+    __tobiko_fixture_id__ = None
 
     def __init__(self):
         # make sure class states can be used before setUp
         self._clear_cleanups()
 
     @classmethod
-    def get(cls, manager=None):
-        return get_fixture(cls, manager=manager)
+    def get(cls, manager=None, fixture_id=None):
+        return get_fixture(cls, manager=manager, fixture_id=fixture_id)
 
     def _remove_state(self):
         # make sure class states can be used after cleanUp
@@ -427,6 +452,10 @@ class SharedFixture(fixtures.Fixture):
     @property
     def fixture_name(self):
         return get_fixture_name(self)
+
+    @property
+    def fixture_id(self):
+        return get_fixture_id(self)
 
     def setup_fixture(self):
         pass

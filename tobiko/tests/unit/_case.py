@@ -48,14 +48,16 @@ class PatchEnvironFixture(tobiko.SharedFixture):
 
 class FixtureManagerPatch(tobiko.FixtureManager, _patch.PatchFixture):
 
-    def init_fixture(self, obj, name):
-        fixture = super(FixtureManagerPatch, self).init_fixture(
-            obj=obj, name=name)
+    def init_fixture(self, obj, name, fixture_id):
+        fixture = super().init_fixture(obj=obj,
+                                       name=name,
+                                       fixture_id=fixture_id)
         self.addCleanup(tobiko.cleanup_fixture, fixture)
         return fixture
 
     def setup_fixture(self):
-        self.patch(inspect.getmodule(tobiko.FixtureManager), 'FIXTURES',
+        self.patch(inspect.getmodule(tobiko.FixtureManager),
+                   'FIXTURES',
                    self)
 
 
