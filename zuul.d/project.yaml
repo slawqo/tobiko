@@ -4,8 +4,11 @@
       - build-openstack-docs-pti
       - build-release-notes-jobs-python3
       - check-requirements
-      - devstack-tobiko-gate
+      - devstack-tobiko
+      - devstack-tobiko-ceph
       - devstack-tobiko-faults
+      - devstack-tobiko-octavia
+      - devstack-tobiko-ovs
       - docs-on-readthedocs
       - openstack-cover-jobs
       - openstack-lower-constraints-jobs
