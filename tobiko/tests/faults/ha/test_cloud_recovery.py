@@ -138,12 +138,12 @@ class DisruptTripleoNodesTest(testtools.TestCase):
     #     nova.start_all_instances()
     #     OvercloudHealthCheck.run_after(passive_checks_only=True)
 
-    def test_reboot_controller_main_vip(self):
+    def test_z99_reboot_controller_main_vip(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_controller_main_vip()
         OvercloudHealthCheck.run_after()
 
-    def test_reboot_controller_non_main_vip(self):
+    def test_z99_reboot_controller_non_main_vip(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_controllers_non_main_vip()
         OvercloudHealthCheck.run_after()
