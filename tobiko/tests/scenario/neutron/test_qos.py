@@ -18,17 +18,18 @@ from oslo_log import log
 import testtools
 
 import tobiko
+from tobiko.openstack import keystone
 from tobiko.openstack import stacks
-from tobiko.openstack import topology
+from tobiko.openstack import neutron
 from tobiko.shell import iperf
 from tobiko.shell import ping
-from tobiko.tripleo import containers
-from tobiko.tripleo import overcloud
 
 
 LOG = log.getLogger(__name__)
 
 
+@keystone.skip_unless_has_keystone_credentials()
+@neutron.skip_if_is_old_ovn()
 class QoSNetworkTest(testtools.TestCase):
     """Tests QoS basic functionality"""
 
@@ -36,15 +37,6 @@ class QoSNetworkTest(testtools.TestCase):
     network = tobiko.required_setup_fixture(stacks.QosNetworkStackFixture)
     policy = tobiko.required_setup_fixture(stacks.QosPolicyStackFixture)
     server = tobiko.required_setup_fixture(stacks.QosServerStackFixture)
-
-    def setUp(self):
-        super().setUp()
-        if (overcloud.has_overcloud() and
-                topology.verify_osp_version('16.0', lower=True) and
-                containers.ovn_used_on_overcloud()):
-            # Skip these tests if OVN is configured and OSP version is lower
-            # than 16.1
-            self.skipTest("QoS not supported in this setup")
 
     def test_ping(self):
         ping.assert_reachable_hosts([self.server.floating_ip_address],)
