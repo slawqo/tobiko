@@ -1,5 +1,25 @@
 ---
 
+- project-template:
+    name: tobiko-infrared
+    description: |
+      Infrared jobs intended to gate infrared Tobiko plugin changes
+    check:
+      jobs:
+        - tobiko-infrared
+        - tobiko-infrared-centos-7
+    gate:
+      jobs:
+        - tobiko-infrared
+        - tobiko-infrared-centos-7
+    periodic:
+      jobs:
+        - tobiko-infrared
+        - tobiko-infrared-centos-7
+        - tobiko-infrared-fedora
+        - tobiko-infrared-ubuntu
+
+
 - job:
     name: tobiko-infrared
     parent: tox
@@ -12,6 +32,7 @@
     required-projects:
       - name: openstack/requirements
       - name: x/tobiko
+    voting: true
     vars:
       ensure_pip_from_packages_with_python2: no
       test_collect_dir: '{{ zuul_output_dir }}/logs'
@@ -55,7 +76,6 @@
     description: |
       Run test cases using tobiko infrared plugin on CentOS
 
-
 - nodeset:
     name: tobiko-infrared-centos-7
     nodes:
@@ -67,7 +87,6 @@
       - name: undercloud
         nodes:
           - secondary
-
 
 - job:
     name: tobiko-infrared-fedora
