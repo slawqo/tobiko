@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import re
 import typing
 
 from tobiko import _exception
@@ -88,8 +89,8 @@ def equal_attributes(obj,
                      attributes: typing.Dict[str, typing.Any],
                      inverse=False) \
         -> bool:
-    for key, value in attributes.items():
-        matching = value == getattr(obj, key)
+    for key, matcher in attributes.items():
+        matching = match(matcher, getattr(obj, key))
         if matching is inverse:
             return False
     return True
@@ -98,11 +99,21 @@ def equal_attributes(obj,
 def equal_items(obj: typing.Dict,
                 items: typing.Dict,
                 inverse=False) -> bool:
-    for key, value in items.items():
-        matching = value == obj[key]
+    for key, matcher in items.items():
+        matching = match(matcher, obj[key])
         if matching is inverse:
             return False
     return True
+
+
+PatternType = type(re.compile("", 0))
+
+
+def match(matcher: typing.Any, value: typing.Any) -> bool:
+    if isinstance(matcher, PatternType):
+        return matcher.match(value) is not None
+    else:
+        return matcher == value
 
 
 class ObjectNotFound(_exception.TobikoException):
