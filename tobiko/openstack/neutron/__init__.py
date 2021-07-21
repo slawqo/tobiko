@@ -42,6 +42,8 @@ skip_if_missing_networking_agents = _agent.skip_if_missing_networking_agents
 skip_unless_is_ovn = _agent.skip_unless_is_ovn
 skip_unless_is_ovs = _agent.skip_unless_is_ovs
 skip_if_is_old_ovn = _agent.skip_if_is_old_ovn
+has_ovn = _agent.has_ovn
+has_ovs = _agent.has_ovs
 
 NeutronClientFixture = _client.NeutronClientFixture
 ServiceUnavailable = _client.ServiceUnavailable

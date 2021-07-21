@@ -89,13 +89,25 @@ def list_networking_agents(**attributes):
         NetworkingAgentFixture).agents.with_items(**attributes)
 
 
-def missing_networking_agents(count=1, **params):
-    agents = list_networking_agents(**params)
-    return max(0, count - len(agents))
+def count_networking_agents(**params) -> int:
+    return len(list_networking_agents(**params))
 
 
-def has_networking_agents(count=1, **params):
-    return not missing_networking_agents(count=count, **params)
+def missing_networking_agents(count=1, **params) -> int:
+    actual_count = count_networking_agents(**params)
+    return max(0, count - actual_count)
+
+
+def has_networking_agents(**params) -> bool:
+    return count_networking_agents(**params) > 0
+
+
+def has_ovn() -> bool:
+    return not has_ovs()
+
+
+def has_ovs() -> bool:
+    return has_networking_agents(binary=OPENVSWITCH_AGENT)
 
 
 DecoratorType = typing.Callable[[typing.Union[typing.Callable, typing.Type]],

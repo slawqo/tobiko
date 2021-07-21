@@ -8,8 +8,8 @@ import pandas
 import six
 
 import tobiko
+from tobiko.openstack import neutron
 from tobiko.openstack import topology
-from tobiko.tripleo import containers
 from tobiko.tripleo import overcloud
 from tobiko.shell import sh
 
@@ -167,7 +167,7 @@ class OvercloudProcessesStatus(object):
         expected overcloud node or nodes
         :return: Bool
         """
-        if not containers.ovn_used_on_overcloud():
+        if not neutron.has_ovn():
             LOG.info("Networking OVN not configured")
             return True
 
