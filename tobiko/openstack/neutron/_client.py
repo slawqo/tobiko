@@ -23,6 +23,7 @@ import tobiko
 from tobiko.openstack import _client
 
 
+NeutronClientException = neutronclient.exceptions.NeutronClientException
 ServiceUnavailable = neutronclient.exceptions.ServiceUnavailable
 
 
