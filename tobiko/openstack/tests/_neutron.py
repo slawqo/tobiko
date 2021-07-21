@@ -44,7 +44,8 @@ def test_neutron_agents_are_alive(timeout=300., interval=5.) \
         try:
             # get Neutron agent list
             agents = neutron.list_agents()
-        except neutron.ServiceUnavailable as ex:
+        except (neutron.ServiceUnavailable,
+                neutron.NeutronClientException) as ex:
             if attempt.is_last:
                 raise
             else:

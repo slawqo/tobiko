@@ -45,6 +45,7 @@ skip_if_is_old_ovn = _agent.skip_if_is_old_ovn
 
 NeutronClientFixture = _client.NeutronClientFixture
 ServiceUnavailable = _client.ServiceUnavailable
+NeutronClientException = _client.NeutronClientException
 neutron_client = _client.neutron_client
 get_neutron_client = _client.get_neutron_client
 find_subnet = _client.find_subnet
