@@ -20,10 +20,10 @@ from oslo_log import log
 import tobiko
 from tobiko import config
 from tobiko.openstack import heat
-from tobiko.openstack.stacks import _centos
 from tobiko.openstack.stacks import _cirros
 from tobiko.openstack.stacks import _hot
 from tobiko.openstack.stacks import _neutron
+from tobiko.openstack.stacks import _ubuntu
 
 
 CONF = config.CONF
@@ -34,53 +34,6 @@ class OctaviaVipNetworkStackFixture(_neutron.NetworkStackFixture):
     # Load Balancer VIP network must use port security (required by neutron to
     # support allowed address pairs on ports)
     port_security_enabled = True
-
-
-class OctaviaMemberNetworkStackFixture(_neutron.NetworkStackFixture):
-    pass
-
-
-class OctaviaCentosServerStackFixture(_centos.CentosServerStackFixture):
-    network_stack = tobiko.required_setup_fixture(
-        OctaviaMemberNetworkStackFixture)
-
-    @property
-    def user_data(self):
-        # Launch a webserver on port 80 that replies the server name to the
-        # client
-        return ("#cloud-config\n"
-                "packages:\n"
-                "- httpd\n"
-                "runcmd:\n"
-                "- [ sh, -c, \"hostname > /var/www/html/id\" ]\n"
-                "- [ systemctl, enable, --now, httpd ]\n")
-
-
-class OctaviaCirrosServerStackFixture(_cirros.CirrosServerStackFixture):
-    network_stack = tobiko.required_setup_fixture(
-        OctaviaMemberNetworkStackFixture)
-
-    @property
-    def user_data(self):
-        # Launch a webserver on port 80 that replies the server name to the
-        # client
-        # This webserver relies on the nc command which may fail if multiple
-        # clients connect at the same time. For concurrency testing,
-        # OctaviaCentosServerStackFixture is more suited to handle multiple
-        # requests.
-
-        return (
-            "#!/bin/sh\n"
-            "sudo nc -k -p 80 -e echo -e \"HTTP/1.1 200 OK\r\n"
-            "Content-Length: $(hostname | head -c-1 | wc -c )\r\n"
-            "Server: $(hostname)\r\n"
-            "Content-type: text/html; charset=utf-8\r\n"
-            "Connection: close\r\n\r\n"
-            "$(hostname)\"\n")
-
-
-class OctaviaServerStackFixture(OctaviaCirrosServerStackFixture):
-    pass
 
 
 class OctaviaLoadbalancerStackFixture(heat.HeatStackFixture):
@@ -144,7 +97,10 @@ class OctaviaMemberServerStackFixture(heat.HeatStackFixture):
 
     pool = tobiko.required_setup_fixture(OctaviaPoolStackFixture)
 
-    server_stack = tobiko.required_setup_fixture(OctaviaServerStackFixture)
+    @property
+    def server_stack(self):
+        return tobiko.setup_fixture(_ubuntu.UbuntuServerStackFixture,
+                                    fixture_id=self.fixture_id)
 
     application_port = 80
 
@@ -176,14 +132,3 @@ class OctaviaMemberServerStackFixture(heat.HeatStackFixture):
 class OctaviaClientServerStackFixture(_cirros.CirrosServerStackFixture):
     network_stack = tobiko.required_setup_fixture(
         OctaviaVipNetworkStackFixture)
-
-
-class OctaviaOtherServerStackFixture(
-        OctaviaServerStackFixture):
-    pass
-
-
-class OctaviaOtherMemberServerStackFixture(
-        OctaviaMemberServerStackFixture):
-    server_stack = tobiko.required_setup_fixture(
-        OctaviaOtherServerStackFixture)
