@@ -10,14 +10,9 @@ from tobiko.openstack import neutron
 from tobiko.openstack import topology
 from tobiko.shell import ip
 from tobiko.shell import sh
-from tobiko.tripleo import containers
 from tobiko.tripleo import pacemaker
 
 LOG = log.getLogger(__name__)
-
-
-def is_ovn_configured():
-    return containers.ovn_used_on_overcloud()
 
 
 def build_ovn_db_show_dict(ovn_db_show_str):
@@ -76,6 +71,7 @@ def test_neutron_agents_are_alive(timeout=300., interval=5.) \
 
 
 def ovn_dbs_are_synchronized(test_case):
+    from tobiko.tripleo import containers
     # declare commands
     search_container_cmd = (
         "%s ps --format '{{.Names}}' -f name=ovn-dbs-bundle" %
@@ -215,7 +211,7 @@ def ovn_dbs_vip_bindings(test_case):
 
 
 def test_ovn_dbs_validations():
-    if not is_ovn_configured():
+    if not neutron.has_ovn():
         LOG.debug('OVN not configured. OVN DB sync validations skipped')
         return
 
@@ -231,7 +227,7 @@ def test_ovs_bridges_mac_table_size():
     expected_mac_table_size = '50000'
     get_mac_table_size_cmd = ('ovs-vsctl get bridge {br_name} '
                               'other-config:mac-table-size')
-    if is_ovn_configured():
+    if neutron.has_ovn():
         get_br_mappings_cmd = ('ovs-vsctl get Open_vSwitch . '
                                'external_ids:ovn-bridge-mappings')
     else:

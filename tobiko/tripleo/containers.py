@@ -12,6 +12,7 @@ import docker as dockerlib
 import tobiko
 from tobiko import podman
 from tobiko import docker
+from tobiko.openstack import neutron
 from tobiko.openstack import topology
 from tobiko.shell import sh
 from tobiko.shell import ssh
@@ -218,15 +219,9 @@ def assert_all_tripleo_containers_running():
     assert_ovn_containers_running()
 
 
-@functools.lru_cache()
-def ovn_used_on_overcloud():
-    return list_containers_df()['container_name'].\
-            str.contains('ovn').any(axis=None)
-
-
 def assert_ovn_containers_running():
     # specific OVN verifications
-    if ovn_used_on_overcloud():
+    if neutron.has_ovn():
         ovn_controller_containers = ['ovn_controller',
                                      'ovn-dbs-bundle-{}-'.
                                      format(container_runtime_name)]
@@ -252,7 +247,7 @@ def run_container_config_validations():
     # TODO add here any generic configuration validation
     config_checkings = []
 
-    if ovn_used_on_overcloud():
+    if neutron.has_ovn():
         ovn_config_checkings = \
             [{'node_group': 'controller',
               'container_name': 'neutron_api',
