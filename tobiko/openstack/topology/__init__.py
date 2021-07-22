@@ -13,10 +13,13 @@
 #    under the License.
 from __future__ import absolute_import
 
+from tobiko.openstack.topology import _assert
 from tobiko.openstack.topology import _exception
 from tobiko.openstack.topology import _neutron
 from tobiko.openstack.topology import _topology
 
+assert_reachable_nodes = _assert.assert_reachable_nodes
+assert_unreachable_nodes = _assert.assert_unreachable_nodes
 
 NoSuchOpenStackTopologyNodeGroup = _exception.NoSuchOpenStackTopologyNodeGroup
 NoSuchOpenStackTopologyNode = _exception.NoSuchOpenStackTopologyNode
