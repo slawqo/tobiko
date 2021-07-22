@@ -83,22 +83,19 @@ def wait_for_node_power_state(
         _node = get_node(node_id=node_id, client=client)
         if _node.power_state == power_state:
             break
-
         if _node.power_state not in transient_status:
             raise WaitForNodePowerStateError(
                 node_id=node_id,
                 node_power_state=_node.power_state,
                 power_state=power_state)
-        try:
-            attempt.check_time_left()
-        except tobiko.RetryTimeLimitError as ex:
+        if attempt.is_last:
             raise WaitForNodePowerStateTimeout(
                 node_id=node_id,
                 node_power_state=_node.power_state,
                 power_state=power_state,
-                timeout=timeout) from ex
+                timeout=timeout)
 
-        LOG.debug(f"Waiting for baremetal node {node_id} power state to get "
+        LOG.debug(f"Waiting for Ironic node '{node_id}' power state to get "
                   f"from {_node.power_state} to {power_state}...")
     else:
         raise RuntimeError("Retry look break before timing out")
