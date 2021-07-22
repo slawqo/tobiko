@@ -43,8 +43,7 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
         stacks.OctaviaMemberServerStackFixture)
 
     member2_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaMemberServerStackFixture,
-        fixture_id=1)
+        stacks.OctaviaOtherMemberServerStackFixture)
 
     client_stack = tobiko.required_setup_fixture(
         stacks.OctaviaClientServerStackFixture)
