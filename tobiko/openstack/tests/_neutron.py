@@ -73,11 +73,12 @@ def test_neutron_agents_are_alive(timeout=300., interval=5.) \
 def ovn_dbs_are_synchronized(test_case):
     from tobiko.tripleo import containers
     # declare commands
+    runtime_name = containers.get_container_runtime_name()
     search_container_cmd = (
         "%s ps --format '{{.Names}}' -f name=ovn-dbs-bundle" %
-        containers.container_runtime_name)
+        runtime_name)
     container_cmd_prefix = ('%s exec -uroot {container}' %
-                            containers.container_runtime_name)
+                            runtime_name)
     ovndb_sync_cmd = ('ovs-appctl -t /var/run/openvswitch/{ovndb_ctl_file} '
                       'ovsdb-server/sync-status')
     ovndb_show_cmd = '{ovndb} show'

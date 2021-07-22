@@ -1,13 +1,14 @@
 from __future__ import absolute_import
 
+import abc
 import functools
 import os
+import re
 import time
 import typing
 
 from oslo_log import log
 import pandas
-import docker as dockerlib
 
 import tobiko
 from tobiko import podman
@@ -23,57 +24,136 @@ from tobiko.tripleo import topology as tripleo_topology
 LOG = log.getLogger(__name__)
 
 
-def get_container_runtime_module():
-    """check what container runtime is running
-    and return a handle to it"""
-    # TODO THIS LOCKS SSH CLIENT TO CONTROLLER
-    ssh_client = topology.list_openstack_nodes(group='controller')[
-        0].ssh_client
-    if docker.is_docker_running(ssh_client=ssh_client):
-        return docker
-    else:
-        return podman
+class ContainerRuntime(abc.ABC):
+    runtime_name: str
+    version_pattern: typing.Pattern
+
+    def match_version(self, version: str) -> bool:
+        for version_line in version.splitlines():
+            if self.version_pattern.match(version_line) is not None:
+                return True
+        return False
+
+    def get_client(self, ssh_client):
+        for attempt in tobiko.retry(timeout=60.0,
+                                    interval=5.0):
+            try:
+                client = self._get_client(ssh_client=ssh_client)
+                break
+            # TODO chose a better exception type
+            except Exception:
+                if attempt.is_last:
+                    raise
+                LOG.debug('Unable to connect to docker server',
+                          exc_info=1)
+                ssh.reset_default_ssh_port_forward_manager()
+        else:
+            raise RuntimeError("Broken retry loop")
+        return client
+
+    def _get_client(self, ssh_client):
+        raise NotImplementedError
+
+    def list_containers(self, ssh_client):
+        raise NotImplementedError
 
 
-def get_container_runtime_name():
-    return container_runtime_module.__name__.rsplit('.', 1)[1]
+class DockerContainerRuntime(ContainerRuntime):
+    runtime_name = 'docker'
+    version_pattern = re.compile('Docker version .*')
+
+    def _get_client(self, ssh_client):
+        return docker.get_docker_client(ssh_client=ssh_client,
+                                        sudo=True).connect()
+
+    def list_containers(self, ssh_client):
+        client = self.get_client(ssh_client=ssh_client)
+        return docker.list_docker_containers(client=client)
 
 
-if overcloud.has_overcloud():
-    container_runtime_module = get_container_runtime_module()
-    container_runtime_name = get_container_runtime_name()
+class PodmanContainerRuntime(ContainerRuntime):
+    runtime_name = 'podman'
+    version_pattern = re.compile('Podman version .*')
+
+    def _get_client(self, ssh_client):
+        return podman.get_podman_client(ssh_client=ssh_client).connect()
+
+    def list_containers(self, ssh_client):
+        client = self.get_client(ssh_client=ssh_client)
+        return podman.list_podman_containers(client=client)
+
+
+DOCKER_RUNTIME = DockerContainerRuntime()
+PODMAN_RUNTIME = PodmanContainerRuntime()
+CONTAINER_RUNTIMES = [PODMAN_RUNTIME, DOCKER_RUNTIME]
+
+
+class ContainerRuntimeFixture(tobiko.SharedFixture):
+
+    runtime: typing.Optional[ContainerRuntime] = None
+
+    def setup_fixture(self):
+        if overcloud.has_overcloud():
+            self.runtime = self.get_runtime()
+
+    def cleanup_fixture(self):
+        self.runtime = None
+
+    @staticmethod
+    def get_runtime() -> typing.Optional[ContainerRuntime]:
+        """check what container runtime is running
+        and return a handle to it"""
+        # TODO THIS LOCKS SSH CLIENT TO CONTROLLER
+        for node in topology.list_openstack_nodes(group='controller'):
+            try:
+                result = sh.execute('podman --version || docker --version',
+                                    ssh_client=node.ssh_client)
+            except sh.ShellCommandFailed:
+                continue
+            for runtime in CONTAINER_RUNTIMES:
+                for version in [result.stdout, result.stderr]:
+                    if runtime.match_version(version):
+                        return runtime
+        raise RuntimeError(
+            "Unable to find any container runtime in any overcloud "
+            "controller node")
+
+
+def get_container_runtime() -> ContainerRuntime:
+    runtime = tobiko.setup_fixture(ContainerRuntimeFixture).runtime
+    return runtime
+
+
+def get_container_runtime_name() -> str:
+    return get_container_runtime().runtime_name
+
+
+def is_docker() -> bool:
+    return get_container_runtime().runtime_name == 'docker'
+
+
+def is_podman() -> bool:
+    return get_container_runtime().runtime_name == 'podman'
+
+
+def has_container_runtime() -> bool:
+    return get_container_runtime() is not None
+
+
+def skip_unless_has_container_runtime():
+    return tobiko.skip_unless('Container runtime not found',
+                              has_container_runtime)
 
 
 @functools.lru_cache()
 def list_node_containers(ssh_client):
     """returns a list of containers and their run state"""
-    client = get_container_client(ssh_client=ssh_client)
-    if container_runtime_module == podman:
-        return container_runtime_module.list_podman_containers(client=client)
-
-    elif container_runtime_module == docker:
-        return container_runtime_module.list_docker_containers(client=client)
+    return get_container_runtime().list_containers(ssh_client=ssh_client)
 
 
 def get_container_client(ssh_client=None):
     """returns a list of containers and their run state"""
-
-    for attempt in tobiko.retry(
-            timeout=60.0,
-            interval=5.0):
-        try:
-            if container_runtime_module == podman:
-                return container_runtime_module.get_podman_client(
-                    ssh_client=ssh_client).connect()
-            elif container_runtime_module == docker:
-                return container_runtime_module.get_docker_client(
-                    ssh_client=ssh_client).connect()
-        except dockerlib.errors.DockerException:
-            LOG.debug('Unable to connect to docker API')
-            attempt.check_limits()
-            ssh.reset_default_ssh_port_forward_manager()
-    # no successful connection to docker/podman API has been performed
-    raise RuntimeError('Unable to connect to container mgmt tool')
+    return get_container_runtime().get_client(ssh_client=ssh_client)
 
 
 def list_containers_df(group=None):
@@ -93,13 +173,13 @@ def list_containers(group=None):
     # AttributeError: module 'tobiko.openstack.topology' has no
     # attribute 'container_runtime'
 
+    if group is None:
+        group = 'overcloud'
     containers_list = tobiko.Selection()
-    if group:
-        openstack_nodes = topology.list_openstack_nodes(group=group)
-    else:
-        openstack_nodes = topology.list_openstack_nodes(group='overcloud')
+    openstack_nodes = topology.list_openstack_nodes(group=group)
 
     for node in openstack_nodes:
+        LOG.debug(f"List containers for node {node.name}")
         node_containers_list = list_node_containers(ssh_client=node.ssh_client)
         containers_list.extend(node_containers_list)
     return containers_list
@@ -222,6 +302,7 @@ def assert_all_tripleo_containers_running():
 def assert_ovn_containers_running():
     # specific OVN verifications
     if neutron.has_ovn():
+        container_runtime_name = get_container_runtime_name()
         ovn_controller_containers = ['ovn_controller',
                                      'ovn-dbs-bundle-{}-'.
                                      format(container_runtime_name)]
@@ -275,6 +356,7 @@ def run_container_config_validations():
                                      'expected_value': 'openvswitch'}]}]
         config_checkings += ovs_config_checkings
 
+    container_runtime_name = get_container_runtime_name()
     for config_check in config_checkings:
         for node in topology.list_openstack_nodes(
                 group=config_check['node_group']):
@@ -320,18 +402,17 @@ def comparable_container_keys(container, include_container_objects=False):
             container._client._context.hostname),  # pylint: disable=W0212
             container.data['names'], container.data['status'])
 
-    if container_runtime_module == podman and include_container_objects:
+    if is_podman() and include_container_objects:
         return con_host_name_stat_obj_tuple
-
-    elif container_runtime_module == podman:
+    elif is_podman():
         return con_host_name_stat_tuple
 
-    elif container_runtime_module == docker and include_container_objects:
+    elif is_docker() and include_container_objects:
         return (container.attrs['Config']['Hostname'],
                 container.attrs['Name'].strip('/'),
                 container.attrs['State']['Status'],
                 container)
-    elif container_runtime_module == docker:
+    elif is_docker() == docker:
         return (container.attrs['Config']['Hostname'],
                 container.attrs['Name'].strip('/'),
                 container.attrs['State']['Status'])

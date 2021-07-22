@@ -69,7 +69,7 @@ class BaseAgentTest(testtools.TestCase):
     @property
     def container_runtime_name(self):
         if overcloud.has_overcloud():
-            return containers.container_runtime_name
+            return containers.get_container_runtime_name()
         else:
             return 'docker'
 
