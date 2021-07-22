@@ -73,12 +73,16 @@ def power_on_overcloud_node(server: typing.Union[nova.ServerType]):
     session = _undercloud.undercloud_keystone_session()
     node_id = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname',
                       None)
-    if node_id is None:
-        client = nova.get_nova_client(session=session)
-        nova.activate_server(client=client, server=server)
-    else:
+    if node_id is not None:
         client = ironic.get_ironic_client(session=session)
-        ironic.power_on_node(client=client, node=node_id)
+        try:
+            ironic.power_on_node(client=client, node=node_id)
+            return
+        except ironic.WaitForNodePowerStateError:
+            LOG.exception(f"Failed powering on Ironic node: '{node_id}'")
+
+    client = nova.get_nova_client(session=session)
+    nova.activate_server(client=client, server=server)
 
 
 def power_off_overcloud_node(server: typing.Union[nova.ServerType]) \
@@ -86,12 +90,16 @@ def power_off_overcloud_node(server: typing.Union[nova.ServerType]) \
     session = _undercloud.undercloud_keystone_session()
     node_id = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname',
                       None)
-    if node_id is None:
-        client = nova.get_nova_client(session=session)
-        nova.shutoff_server(client=client, server=server)
-    else:
+    if node_id is not None:
         client = ironic.get_ironic_client(session=session)
-        ironic.power_off_node(client=client, node=node_id)
+        try:
+            ironic.power_off_node(client=client, node=node_id)
+            return
+        except ironic.WaitForNodePowerStateError:
+            LOG.exception(f"Failed powering off Ironic node: '{node_id}'")
+
+    client = nova.get_nova_client(session=session)
+    nova.shutoff_server(client=client, server=server)
 
 
 def overcloud_ssh_client(hostname=None, ip_version=None, network_name=None,

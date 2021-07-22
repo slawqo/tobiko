@@ -21,3 +21,5 @@ get_ironic_client = _client.get_ironic_client
 power_off_node = _node.power_off_node
 power_on_node = _node.power_on_node
 IronicNodeType = _node.IronicNodeType
+WaitForNodePowerStateError = _node.WaitForNodePowerStateError
+WaitForNodePowerStateTimeout = _node.WaitForNodePowerStateTimeout
