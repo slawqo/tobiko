@@ -1,25 +1,28 @@
 
 from __future__ import absolute_import
 
-import time
-import random
-import urllib.parse
-import re
 from datetime import datetime
+import math
+import random
+import re
+import time
+import urllib.parse
 
 from oslo_log import log
 
 import tobiko
-from tobiko.shell import sh
 from tobiko.openstack import glance
+from tobiko.openstack import keystone
+from tobiko.openstack import stacks
 from tobiko.openstack import tests
 from tobiko.openstack import topology
-from tobiko.tripleo import topology as tripleo_topology
-from tobiko.openstack import keystone
-from tobiko.tripleo import pacemaker
+from tobiko.tests.faults.ha import test_cloud_recovery
+from tobiko.shell import ping
+from tobiko.shell import sh
 from tobiko.tripleo import containers
 from tobiko.tripleo import nova
-from tobiko.tests.faults.ha import test_cloud_recovery
+from tobiko.tripleo import pacemaker
+from tobiko.tripleo import topology as tripleo_topology
 
 
 LOG = log.getLogger(__name__)
@@ -514,3 +517,59 @@ def check_iha_evacuation_network_disruption():
 
 def check_iha_evacuation_hard_reset_shutoff_instance():
     check_iha_evacuation(failover_type=sh.hard_reset_method, vm_type='shutoff')
+
+
+def test_controllers_shutdown():
+    test_case = tobiko.get_test_case()
+
+    all_nodes = topology.list_openstack_nodes(group='controller')
+    if len(all_nodes) < 3:
+        tobiko.skip_test('It requires at least three controller nodes')
+
+    all_node_names = [node.name for node in all_nodes]
+    LOG.info("Ensure all controller nodes are running: "
+             f"{all_node_names}")
+    for node in all_nodes:
+        node.power_on_overcloud_node()
+    topology.assert_reachable_nodes(all_nodes)
+
+    LOG.debug('Check VM is running while all controllers nodes are on')
+    nova_server = tobiko.setup_fixture(stacks.CirrosServerStackFixture)
+    nova_server_ip = nova_server.ip_address
+    ping.assert_reachable_hosts([nova_server_ip])
+
+    quorum_level = math.ceil(0.5 * len(all_nodes))
+    assert quorum_level >= len(all_nodes) - quorum_level
+    nodes = random.sample(all_nodes, quorum_level)
+    node_names = [node.name for node in nodes]
+    LOG.info(f"Power off {quorum_level} random controller nodes: "
+             f"{node_names}")
+    for node in nodes:
+        node.power_off_overcloud_node()
+        test_case.addCleanup(node.power_on_overcloud_node)
+    topology.assert_unreachable_nodes(nodes, retry_count=1)
+    topology.assert_reachable_nodes(node
+                                    for node in all_nodes
+                                    if node not in nodes)
+
+    LOG.debug('Check whenever VM is still running while some "'
+              '"controllers nodes are off')
+    reachable, unreachable = ping.ping_hosts([nova_server_ip],
+                                             count=1)
+    if reachable:
+        LOG.debug(f"VM ips are reachable: {reachable}")
+    if unreachable:
+        LOG.debug(f"VM is are unreachable: {unreachable}")
+    # TODO what do we expect here: VM reachable or unreachable?
+
+    random.shuffle(nodes)
+    LOG.info(f"Power on controller nodes: {node_names}")
+    for node in nodes:
+        node.power_on_overcloud_node()
+
+    LOG.debug("Check all controller nodes are running again: "
+              f"{all_node_names}")
+    topology.assert_reachable_nodes(all_nodes, retry_timeout=600.)
+
+    LOG.debug('Check VM is running while all controllers nodes are on')
+    ping.assert_reachable_hosts([nova_server_ip])

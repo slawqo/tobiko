@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-import math
-import random
 import typing
 
 from oslo_log import log
@@ -10,7 +8,6 @@ import testtools
 import tobiko
 from tobiko.openstack import neutron
 from tobiko.openstack import tests
-from tobiko.openstack import topology
 from tobiko.tests.faults.ha import cloud_disruptions
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import processes
@@ -216,35 +213,9 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         OvercloudHealthCheck.run_after()
 
     def test_controllers_shutdown(self):
-        all_nodes = topology.list_openstack_nodes(group='controller')
-        if len(all_nodes) < 3:
-            self.skipTest('It requires at least three controller nodes')
-        LOG.info("Ensure all controller nodes are running...")
-        for node in all_nodes:
-            node.power_on_overcloud_node()
-
-        LOG.info("Verify can create VMs before controllers power off...")
-        tests.test_server_creation()
-
-        quorum_level = math.ceil(0.5 * len(all_nodes))
-        assert quorum_level >= len(all_nodes) - quorum_level
-        nodes = random.sample(all_nodes, quorum_level)
-        LOG.info(f"Power off {quorum_level} random controller nodes: "
-                 f"{[node.name for node in nodes]}")
-        for node in nodes:
-            node.power_off_overcloud_node()
-
-        random.shuffle(nodes)
-        LOG.info("Power on controller nodes: "
-                 f"{[node.name for node in nodes]}")
-        for node in nodes:
-            node.power_on_overcloud_node()
-
-        LOG.info("Wait until pacemaker resources will be healthy again...")
-        check_pacemaker_resources_health()
-        LOG.info("Verify can create VMs after controllers power on...")
-        tests.test_server_creation()
-
+        OvercloudHealthCheck.run_before()
+        cloud_disruptions.test_controllers_shutdown()
+        OvercloudHealthCheck.run_after()
 
 # [..]
 # more tests to follow
