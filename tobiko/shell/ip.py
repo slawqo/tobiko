@@ -102,6 +102,15 @@ def list_network_interfaces(**execute_params):
     return interfaces
 
 
+def get_network_main_route_device(dest_ip, **execute_params):
+    output = execute_ip(['route', 'get', dest_ip], **execute_params)
+    if output:
+        for line in output.splitlines():
+            fields = line.strip().split()
+            device_index = fields.index('dev') + 1
+            return fields[device_index]
+
+
 IP_COMMAND = sh.shell_command(['/sbin/ip'])
 
 

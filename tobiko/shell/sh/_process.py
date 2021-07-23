@@ -425,7 +425,12 @@ def merge_dictionaries(*dictionaries):
 
 def str_from_stream(stream):
     if stream is not None:
-        return str(stream)
+        try:
+            return str(stream)
+        except UnicodeDecodeError:
+            LOG.exception('Unable to decode as a string - '
+                          'Returning the raw data')
+            return stream.data
     else:
         return None
 

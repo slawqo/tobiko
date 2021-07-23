@@ -1,6 +1,7 @@
 # Additional requirements not in openstack/requirements project
 
 ansi2html                # LGPLv3+
+dpkt                     # BSD
 pandas                   # BSD
 podman-py                # Apache-2.0
 pytest-cov               # MIT
