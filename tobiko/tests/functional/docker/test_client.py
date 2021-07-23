@@ -25,21 +25,42 @@ from tobiko.openstack import topology
 from tobiko.shell import ssh
 
 
+class DockerSSHClientFixture(tobiko.SharedFixture):
+
+    ssh_client: ssh.SSHClientFixture
+
+    def setup_fixture(self):
+        self.ssh_client = self.get_ssh_client()
+
+    def get_ssh_client(self) -> ssh.SSHClientFixture:
+        for ssh_client in self.iter_ssh_clients():
+            if docker.is_docker_running(ssh_client=ssh_client,
+                                        sudo=True):
+                return ssh_client
+        tobiko.skip_test('Docker is not running')
+
+    @staticmethod
+    def iter_ssh_clients():
+        ssh_client = ssh.ssh_proxy_client()
+        if isinstance(ssh_client, ssh.SSHClientFixture):
+            yield ssh_client
+
+        nodes = topology.list_openstack_nodes()
+        for node in nodes:
+            if isinstance(node.ssh_client, ssh.SSHClientFixture):
+                yield node.ssh_client
+
+
 class LocalDockerClientTest(testtools.TestCase):
 
     sudo = False
 
     @property
     def ssh_client(self) -> ssh.SSHClientType:
-        for ssh_client in self.iter_ssh_clients():
-            if docker.is_docker_running(ssh_client=ssh_client,
-                                        sudo=self.sudo):
-                return ssh_client
-        tobiko.skip_test('Docker not installed')
-
-    @staticmethod
-    def iter_ssh_clients():
-        yield False
+        if docker.is_docker_running(ssh_client=False,
+                                    sudo=self.sudo):
+            return False
+        tobiko.skip_test('Docker is not running')
 
     def test_get_docker_client(self):
         client = docker.get_docker_client(ssh_client=self.ssh_client,
@@ -60,17 +81,10 @@ class LocalDockerClientTest(testtools.TestCase):
             self.assertIsInstance(container, containers.Container)
 
 
-class SShDockerClientTest(LocalDockerClientTest):
+class SSHDockerClientTest(LocalDockerClientTest):
 
     sudo = True
 
-    @staticmethod
-    def iter_ssh_clients():
-        ssh_client = ssh.ssh_proxy_client()
-        if isinstance(ssh_client, ssh.SSHClientFixture):
-            yield ssh_client
-
-        nodes = topology.list_openstack_nodes()
-        for node in nodes:
-            if isinstance(node.ssh_client, ssh.SSHClientFixture):
-                yield ssh_client
+    @property
+    def ssh_client(self) -> ssh.SSHClientType:
+        return tobiko.setup_fixture(DockerSSHClientFixture).ssh_client
