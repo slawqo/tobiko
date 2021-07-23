@@ -1,12 +1,12 @@
 from __future__ import absolute_import
 
+import functools
 import os
 import time
-import functools
+import typing
 
 from oslo_log import log
 import pandas
-import podman1
 import docker as dockerlib
 
 import tobiko
@@ -375,26 +375,34 @@ def get_overcloud_container(container_name=None, container_host=None,
         tobiko.fail('container {} not found!'.format(container_name))
 
 
-def action_on_container(action,
-                        container_name=None, container_host=None,
+def action_on_container(action: str,
+                        container_name=None,
+                        container_host=None,
                         partial_container_name=None):
     """take a container snd preform an action on it
     actions are as defined in : podman/libs/containers.py:14/164"""
+
+    LOG.debug(f"Executing '{action}' action on container "
+              f"'{container_name}@{container_host}'...")
     container = get_overcloud_container(
         container_name=container_name,
         container_host=container_host,
         partial_container_name=partial_container_name)
+
+    container_class: typing.Type = type(container)
     # we get the specified action as function from podman lib
-    if container_runtime_module == podman:
-        container_function = getattr(
-            podman1.libs.containers.Container,  # pylint: disable=E1101
-            '{}'.format(action))
-    else:
-        container_function = getattr(
-            dockerlib.models.containers.Container, '{}'.format(action))
-    LOG.info('action_on_container: executing : {} on {}'.format(action,
-                                                                container))
-    return container_function(container)
+    action_method: typing.Optional[typing.Callable] = getattr(
+        container_class, action, None)
+    if action_method is None:
+        raise TypeError(f"Unsupported container action for class :"
+                        f" {container_class}")
+    if not callable(action_method):
+        raise TypeError(
+            f"Attribute '{container_class.__qualname__}.{action}' value "
+            f" is not a method: {action_method!r}")
+    LOG.debug(f"Calling '{action_method}' action on container "
+              f"'{container}'")
+    return action_method(container)
 
 
 def get_container_states_list(containers_list,
