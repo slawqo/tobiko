@@ -38,7 +38,9 @@ def get_docker_client(base_urls: typing.List[str] = None,
 
 def list_docker_containers(client=None, **kwargs):
     try:
-        containers = docker_client(client).containers.list(all=True, **kwargs)
+        containers = docker_client(client).containers.list(all=True,
+                                                           sparse=True,
+                                                           **kwargs)
     except _exception.DockerUrlNotFoundError:
         return tobiko.Selection()
     else:
