@@ -60,7 +60,7 @@ class ContainerRuntime(abc.ABC):
 
 class DockerContainerRuntime(ContainerRuntime):
     runtime_name = 'docker'
-    version_pattern = re.compile('Docker version .*')
+    version_pattern = re.compile('Docker version .*', re.IGNORECASE)
 
     def _get_client(self, ssh_client):
         return docker.get_docker_client(ssh_client=ssh_client,
@@ -73,7 +73,7 @@ class DockerContainerRuntime(ContainerRuntime):
 
 class PodmanContainerRuntime(ContainerRuntime):
     runtime_name = 'podman'
-    version_pattern = re.compile('Podman version .*')
+    version_pattern = re.compile('Podman version .*', re.IGNORECASE)
 
     def _get_client(self, ssh_client):
         return podman.get_podman_client(ssh_client=ssh_client).connect()

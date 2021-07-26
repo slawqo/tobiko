@@ -66,7 +66,7 @@ class LocalPsTest(testtools.TestCase):
         processes = sh.list_processes(command_line='cat -',
                                       ssh_client=self.ssh_client)
         for process in processes:
-            self.assertTrue('cat', process.command)
+            self.assertEqual('cat', process.command)
             self.assertEqual(('cat', '-'), process.command_line)
         cat_process.kill()
         sh.wait_for_processes(command_line='cat -',
