@@ -383,39 +383,40 @@ def comparable_container_keys(container, include_container_objects=False):
     'container_state, container object if specified'
      """
     # Differenciate between podman_ver3 with podman-py from earlier api
-    if podman.Podman_Version_3():
+    if is_podman():
+        if podman.Podman_Version_3():
+            con_host_name_stat_obj_tuple = (tripleo_topology.ip_to_hostname(
+                container.client.base_url.rsplit('_')[1]), container.attrs[
+                'Names'][0], container.attrs['State'], container)
 
-        con_host_name_stat_obj_tuple = (tripleo_topology.ip_to_hostname(
-            container.client.base_url.rsplit('_')[1]), container.attrs[
-            'Names'][0], container.attrs['State'], container)
+            con_host_name_stat_tuple = (tripleo_topology.ip_to_hostname(
+                container.client.base_url.rsplit('_')[1]), container.attrs[
+                'Names'][0], container.attrs['State'])
+        else:
 
-        con_host_name_stat_tuple = (tripleo_topology.ip_to_hostname(
-            container.client.base_url.rsplit('_')[1]), container.attrs[
-            'Names'][0], container.attrs['State'])
-    else:
+            con_host_name_stat_obj_tuple = (tripleo_topology.ip_to_hostname(
+                container._client._context.hostname),  # pylint: disable=W0212
+                container.data['names'], container.data['status'], container)
 
-        con_host_name_stat_obj_tuple = (tripleo_topology.ip_to_hostname(
-            container._client._context.hostname),  # pylint: disable=W0212
-            container.data['names'], container.data['status'], container)
+            con_host_name_stat_tuple = (tripleo_topology.ip_to_hostname(
+                container._client._context.hostname),  # pylint: disable=W0212
+                container.data['names'], container.data['status'])
 
-        con_host_name_stat_tuple = (tripleo_topology.ip_to_hostname(
-            container._client._context.hostname),  # pylint: disable=W0212
-            container.data['names'], container.data['status'])
+        if include_container_objects:
+            return con_host_name_stat_obj_tuple
+        else:
+            return con_host_name_stat_tuple
 
-    if is_podman() and include_container_objects:
-        return con_host_name_stat_obj_tuple
-    elif is_podman():
-        return con_host_name_stat_tuple
-
-    elif is_docker() and include_container_objects:
-        return (container.attrs['Config']['Hostname'],
-                container.attrs['Name'].strip('/'),
-                container.attrs['State']['Status'],
-                container)
-    elif is_docker() == docker:
-        return (container.attrs['Config']['Hostname'],
-                container.attrs['Name'].strip('/'),
-                container.attrs['State']['Status'])
+    elif is_docker():
+        if include_container_objects:
+            return (container.client.api.ssh_client.hostname,
+                    container.attrs['Labels']['name'],
+                    container.attrs['State'],
+                    container)
+        else:
+            return (container.client.api.ssh_client.hostname,
+                    container.attrs['Labels']['name'],
+                    container.attrs['State'])
 
 
 @functools.lru_cache()
