@@ -33,43 +33,72 @@ def discover_docker_urls(
         ssh_client: ssh.SSHClientType = None,
         default_url='unix:/var/run/docker.sock',
         check_urls=True,
-        sudo=False):
+        sudo=False) \
+        -> typing.List[str]:
+    last_error: typing.Optional[Exception] = None
     urls = []
-    processes = sh.list_processes(command='^dockerd',
-                                  ssh_client=ssh_client,
-                                  sudo=sudo)
+    try:
+        urls += list_docker_urls(ssh_client=ssh_client,
+                                 sudo=sudo)
+    except _exception.DockerUrlNotFoundError as ex:
+        last_error = ex
+    if default_url not in urls:
+        urls.append(default_url)
+    if check_urls:
+        urls = select_valid_urls(ssh_client=ssh_client,
+                                 urls=urls,
+                                 sudo=sudo,
+                                 last_error=last_error)
+    return urls
+
+
+def list_docker_urls(
+        ssh_client: ssh.SSHClientType,
+        sudo=False) \
+        -> typing.List[str]:
+    urls = []
+    try:
+        processes = sh.list_processes(command='^dockerd',
+                                      ssh_client=ssh_client,
+                                      sudo=sudo)
+    except sh.PsError as ex:
+        raise _exception.DockerUrlNotFoundError(
+            "Docker demon is not running") from ex
 
     for process in processes:
         if process.command_line:
             urls += urls_from_command_line(process.command_line)
-
-    urls.append(default_url)
     urls = list(collections.OrderedDict.fromkeys(urls))
-
-    error: typing.Optional[Exception] = None
-    if check_urls:
-        valid_urls = []
-        for url in urls:
-            parsed_url = parse.urlparse(url)
-            if (parsed_url.scheme == 'unix' and
-                    parsed_url.path.startswith('/')):
-                try:
-                    sh.execute(f"test -r '{parsed_url.path}'",
-                               ssh_client=ssh_client,
-                               sudo=sudo)
-                except sh.ShellCommandFailed as ex:
-                    LOG.exception(
-                        f"Can't read from socket: {parsed_url.path}")
-                    ex.__cause__ = error
-                    error = ex
-                else:
-                    valid_urls.append(url)
-
-        if not valid_urls:
-            raise _exception.DockerUrlNotFoundError(
-                "Docker is not running") from error
-        urls = valid_urls
     return urls
+
+
+def select_valid_urls(
+        ssh_client: ssh.SSHClientType,
+        urls: typing.List[str],
+        sudo=False,
+        last_error: Exception = None) \
+        -> typing.List[str]:
+    valid_urls = []
+    for url in urls:
+        parsed_url = parse.urlparse(url)
+        if (parsed_url.scheme == 'unix' and
+                parsed_url.path.startswith('/')):
+            try:
+                sh.execute(f"test -r '{parsed_url.path}'",
+                           ssh_client=ssh_client,
+                           sudo=sudo)
+            except sh.ShellCommandFailed as ex:
+                LOG.exception(
+                    f"Can't read from socket: {parsed_url.path}")
+                ex.__cause__ = last_error
+                last_error = ex
+            else:
+                valid_urls.append(url)
+
+    if not valid_urls:
+        raise _exception.DockerUrlNotFoundError(
+            "Docker is not running") from last_error
+    return valid_urls
 
 
 def urls_from_command_line(command_line: sh.ShellCommand,
