@@ -202,6 +202,10 @@ def assert_containers_running(group, expected_containers, full_name=True):
     """assert that all containers specified in the list are running
     on the specified openstack group(controller or compute etc..)"""
 
+    if is_docker():
+        LOG.info('not checking common containers since we are on docker')
+        return
+
     failures = []
 
     openstack_nodes = topology.list_openstack_nodes(group=group)
