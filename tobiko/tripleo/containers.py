@@ -299,6 +299,15 @@ def assert_all_tripleo_containers_running():
     assert_ovn_containers_running()
 
 
+def osp13_container_name_short_format(container_name_long_format):
+    """This takes a long format container name :
+    'rhosp13/openstack-neutron-l3-agent'
+    and turns it into : neutron_l3_agent
+    """
+    return re.sub('-', '_', re.sub('rhosp13/openstack-', '',
+                                   container_name_long_format))
+
+
 def assert_ovn_containers_running():
     # specific OVN verifications
     if neutron.has_ovn():
@@ -410,12 +419,14 @@ def comparable_container_keys(container, include_container_objects=False):
     elif is_docker():
         if include_container_objects:
             return (container.client.api.ssh_client.hostname,
-                    container.attrs['Labels']['name'],
+                    osp13_container_name_short_format(container.attrs[
+                                                          'Labels']['name']),
                     container.attrs['State'],
                     container)
         else:
             return (container.client.api.ssh_client.hostname,
-                    container.attrs['Labels']['name'],
+                    osp13_container_name_short_format(container.attrs[
+                                                          'Labels']['name']),
                     container.attrs['State'])
 
 
