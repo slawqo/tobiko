@@ -14,7 +14,6 @@ from tobiko.tripleo import processes
 from tobiko.tripleo import containers
 from tobiko.tripleo import nova
 from tobiko.tripleo import undercloud
-from tobiko.tripleo import validations
 
 
 LOG = log.getLogger(__name__)
@@ -42,7 +41,6 @@ def overcloud_health_checks(passive_checks_only=False,
     # after any overcloud node is rebooted
     if not skip_mac_table_size_test:
         tests.test_ovs_bridges_mac_table_size()
-    validations.run_post_deployment_validations()
 
 
 # check vm create with ssh and ping checks
