@@ -67,6 +67,15 @@ class PsProcessBase:
             LOG.error(str(ex))
             return None
 
+    def kill(self, signal: int = None, **execute_params):
+        command_line = _command.shell_command("kill")
+        if signal is not None:
+            command_line += f"-s {signal}"
+        command_line += str(self.pid)
+        _execute.execute(command_line,
+                         ssh_client=self.ssh_client,
+                         **execute_params)
+
 
 class PsProcessTuple(typing.NamedTuple):
     """Process listed by ps command

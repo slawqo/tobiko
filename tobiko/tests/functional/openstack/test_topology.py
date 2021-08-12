@@ -117,8 +117,7 @@ class OpenStackTopologyTest(testtools.TestCase):
         self.assertIs(node.ssh_client, processes.unique.ssh_client)
 
         # Process isn't listed after kill
-        sh.execute(f"kill -9 {processes.unique.pid}",
-                   ssh_client=node.ssh_client)
+        processes.unique.kill()
         for attempt in tobiko.retry(timeout=30., interval=5.):
             processes = topology.list_nodes_processes(
                 command_line=command_line,
