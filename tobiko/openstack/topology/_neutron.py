@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import ast
+import datetime
 import re
 import typing
 
@@ -25,6 +26,7 @@ from tobiko.shell import files
 
 class NeutronNovaResponse(typing.NamedTuple):
     hostname: str
+    timestamp: float
     name: str
     server_uuid: str
     status: str
@@ -32,11 +34,15 @@ class NeutronNovaResponse(typing.NamedTuple):
     tag: str
     line: str
 
+    def __lt__(self, other):
+        return self.timestamp < other.timestamp
+
 
 class NeutronNovaResponseReader(tobiko.SharedFixture):
     log_digger: files.MultihostLogFileDigger
     groups = ['controller']
     message_pattern = r'Nova event response: '
+    datetime_pattern = re.compile(r'(\d{4}-\d{2}-\d{2} [0-9:.]+) .+')
     service_name = neutron.SERVER
     responses: tobiko.Selection[NeutronNovaResponse]
 
@@ -47,6 +53,14 @@ class NeutronNovaResponseReader(tobiko.SharedFixture):
                 groups=self.groups,
                 pattern=self.message_pattern))
         self.read_responses()
+
+    def _get_log_timestamp(self,
+                           log: str) -> float:
+        found = self.datetime_pattern.match(log)
+        if not found:
+            return 0.0
+        return datetime.datetime.strptime(
+            found.group(1), "%Y-%m-%d %H:%M:%S.%f").timestamp()
 
     def read_responses(self) \
             -> tobiko.Selection[NeutronNovaResponse]:
@@ -62,8 +76,10 @@ class NeutronNovaResponseReader(tobiko.SharedFixture):
             response = NeutronNovaResponse(
                 hostname=hostname,
                 line=line,
+                timestamp=self._get_log_timestamp(line[:found.start()]),
                 **response_data)
             responses.append(response)
+        responses.sort()
         if hasattr(self, 'responses'):
             self.responses.extend(responses)
         else:
