@@ -24,7 +24,6 @@ import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
-from tobiko.shell import curl
 from tobiko.shell import ping
 from tobiko.shell import sh
 
@@ -148,37 +147,3 @@ class CirrosPeerServerStackTest(CirrosServerStackTest):
 
     def test_ping_floating_ip(self):
         self.skipTest(f"Server '{self.stack.server_id}' has any floating IP")
-
-
-class HttpServerStackTest(CirrosPeerServerStackTest):
-
-    #: Stack of resources with an HTTP server
-    stack = tobiko.required_setup_fixture(stacks.CirrosHttpServerStackFixture)
-
-    def test_server_port_ipv4(self):
-        self._test_server_port(ip_version=4)
-
-    def test_server_port_ipv6(self):
-        self._test_server_port(ip_version=6)
-
-    def _test_server_port(self, ip_version: int):
-        scheme = self.stack.http_request_scheme
-        ip_address = self.get_fixed_ip(ip_version=ip_version)
-        port = self.stack.http_server_port
-        ssh_client = self.stack.peer_stack.ssh_client
-        reply = curl.execute_curl(scheme=scheme,
-                                  hostname=ip_address,
-                                  port=port,
-                                  ssh_client=ssh_client,
-                                  connect_timeout=5.,
-                                  retry_count=10,
-                                  retry_timeout=60.)
-        self.assertEqual(self.stack.server_name, reply)
-
-    def test_send_http_request_ipv4(self):
-        reply = self.stack.send_http_request(ip_version=4)
-        self.assertEqual(self.stack.server_name, reply)
-
-    def test_send_http_request_ipv6(self):
-        reply = self.stack.send_http_request(ip_version=6)
-        self.assertEqual(self.stack.server_name, reply)
