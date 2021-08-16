@@ -35,6 +35,10 @@ OPTIONS = [
                default=None,
                choices=['', '4', '6'],
                help="Limit connectivity to cloud to IPv4 o IPv6"),
+    cfg.StrOpt('log_datetime_pattern',
+               default=r"(\d{4}-\d{2}-\d{2} [0-9:.]+) .+",
+               help="Regex to be used to parse date and time from "
+                    "the OpenStack services' log lines. "),
 ]
 
 
