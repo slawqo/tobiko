@@ -71,7 +71,7 @@ class HeatStackFixture(tobiko.SharedFixture):
     client: _client.HeatClientType = None
     retry_create_stack = 1
     wait_interval: float = 5
-    wait_timeout: float = 300.
+    wait_timeout: float = 600.
     template: _template.HeatTemplateFixture
     stack: typing.Optional[stacks.Stack] = None
     stack_name: typing.Optional[str] = None
