@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import time
 
 from oslo_log import log
+import pytest
 import testtools
 
 import tobiko
@@ -45,6 +46,7 @@ class QoSNetworkTest(testtools.TestCase):
     policy = tobiko.required_setup_fixture(stacks.QosPolicyStackFixture)
     server = tobiko.required_setup_fixture(stacks.QosServerStackFixture)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=120)
     def test_ping_dscp(self):
         capture_file = sh.execute('mktemp', sudo=True).stdout.strip()
         interface = ip.get_network_main_route_device(
