@@ -42,7 +42,7 @@ class ShellExecuteStatus(enum.Enum):
 
 def execute_result(command, exit_status=None, timeout=None,
                    status=None, login=None, stdin=None, stdout=None,
-                   stderr=None):
+                   stderr=None, decode_streams=True):
     command = str(command)
     if exit_status is not None:
         exit_status = int(exit_status)
@@ -50,9 +50,14 @@ def execute_result(command, exit_status=None, timeout=None,
         timeout = float(timeout)
     if status is not None:
         status = ShellExecuteStatus(status)
-    stdin = _process.str_from_stream(stdin)
-    stdout = _process.str_from_stream(stdout)
-    stderr = _process.str_from_stream(stderr)
+    if decode_streams:
+        stdin = _process.str_from_stream(stdin)
+        stdout = _process.str_from_stream(stdout)
+        stderr = _process.str_from_stream(stderr)
+    else:
+        stdin = _process.bytes_from_stream(stdin)
+        stdout = _process.bytes_from_stream(stdout)
+        stderr = _process.bytes_from_stream(stderr)
     return ShellExecuteResult(command=command,
                               exit_status=exit_status,
                               timeout=timeout,
@@ -120,7 +125,7 @@ def _indent(text, space='    ', newline='\n'):
 
 def execute(command, environment=None, timeout=None, shell=None,
             stdin=None, stdout=None, stderr=None, ssh_client=None,
-            expect_exit_status=0, **kwargs):
+            expect_exit_status=0, decode_streams=True, **kwargs):
     """Execute command inside a remote or local shell
 
     :param command: command argument list
@@ -153,10 +158,12 @@ def execute(command, environment=None, timeout=None, shell=None,
     return execute_process(process=process,
                            stdin=stdin,
                            login=login,
-                           expect_exit_status=expect_exit_status)
+                           expect_exit_status=expect_exit_status,
+                           decode_streams=decode_streams)
 
 
-def execute_process(process, stdin, expect_exit_status, login=None):
+def execute_process(process, stdin, expect_exit_status, login=None,
+                    decode_streams=True):
     error = None
     status = None
     try:
@@ -186,7 +193,8 @@ def execute_process(process, stdin, expect_exit_status, login=None):
                             login=login,
                             stdin=process.stdin,
                             stdout=process.stdout,
-                            stderr=process.stderr)
+                            stderr=process.stderr,
+                            decode_streams=decode_streams)
     if error:
         LOG.info("Command error:\n%s\n", result.details)
         error.result = result

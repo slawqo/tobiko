@@ -435,6 +435,13 @@ def str_from_stream(stream):
         return None
 
 
+def bytes_from_stream(stream):
+    if stream is not None:
+        return stream.data
+    else:
+        return None
+
+
 def default_shell_command():
     from tobiko import config
     CONF = config.CONF

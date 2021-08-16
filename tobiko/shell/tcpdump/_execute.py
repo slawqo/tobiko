@@ -65,7 +65,9 @@ def get_pcap(process,
              ssh_client: ssh.SSHClientType = None) -> dpkt.pcap.Reader:
     stop_capture(process)
 
-    stdout = sh.execute(
-        f'cat {capture_file}', ssh_client=ssh_client, sudo=True).stdout
+    stdout = sh.execute(f"cat '{capture_file}'",
+                        ssh_client=ssh_client,
+                        sudo=True,
+                        decode_streams=False).stdout
     pcap = dpkt.pcap.Reader(io.BytesIO(stdout))
     return pcap
