@@ -219,7 +219,7 @@ class ShellProcessFixture(tobiko.SharedFixture):
             message = "object {!r} has not attribute {!r}".format(self, name)
             raise AttributeError(message) from ex
 
-    def kill(self):
+    def kill(self, sudo=False):
         raise NotImplementedError
 
     def poll_exit_status(self):

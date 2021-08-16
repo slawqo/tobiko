@@ -56,7 +56,7 @@ def start_capture(capture_file: str,
 
 
 def stop_capture(process):
-    process.kill()
+    process.kill(sudo=True)
     process.close()
 
 

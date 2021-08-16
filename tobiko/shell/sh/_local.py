@@ -121,11 +121,14 @@ class LocalShellProcessFixture(_process.ShellProcessFixture):
             assert exit_status is not None
             return exit_status
 
-    def kill(self):
+    def kill(self, sudo=False):
         process = self.process
         LOG.debug('Killing local process: %r', self.command)
         try:
-            process.kill()
+            if sudo:
+                _execute.execute(f"kill '{self.pid}'", sudo=True)
+            else:
+                process.kill()
         except Exception:
             LOG.exception('Failed killing local process: %r (PID=%r)',
                           self.command, self.pid)

@@ -175,7 +175,7 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
         else:
             return None
 
-    def kill(self):
+    def kill(self, sudo=False):
         process = self.process
         LOG.debug('Killing remote process: %r', self.command)
         try:
