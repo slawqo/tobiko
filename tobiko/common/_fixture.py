@@ -473,9 +473,10 @@ class FixtureProperty(property):
 
 class RequiredFixtureProperty(object):
 
-    def __init__(self, fixture, **params):
+    def __init__(self, fixture, setup=True, **params):
         self.fixture = fixture
         self.fixture_params = params
+        self.setup = setup
 
     def __get__(self, instance, _):
         if instance is None:
@@ -484,7 +485,15 @@ class RequiredFixtureProperty(object):
             return self.get_fixture(instance)
 
     def get_fixture(self, _instance):
-        return get_fixture(self.fixture, **self.fixture_params)
+        fixture = get_fixture(self.fixture, **self.fixture_params)
+        if self.setup:
+            setup_fixture(fixture)
+            if (hasattr(_instance, 'addCleanup') and
+                    hasattr(_instance, 'getDetails')):
+                _instance.addCleanup(_detail.gather_details,
+                                     fixture.getDetails(),
+                                     _instance.getDetails())
+        return fixture
 
     @property
     def __tobiko_required_fixtures__(self):
