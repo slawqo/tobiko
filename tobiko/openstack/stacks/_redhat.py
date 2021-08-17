@@ -13,12 +13,17 @@
 #    under the License.
 from __future__ import absolute_import
 
+import functools
+
+from oslo_log import log
+import requests
+
 import tobiko
 from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack.stacks import _centos
 
-
+LOG = log.getLogger(__name__)
 CONF = config.CONF
 
 RHEL_IMAGE_MAJOR_VERSION = '8.4'
@@ -31,6 +36,31 @@ RHEL_IMAGE_URL = ('http://download.devel.redhat.com/brewroot/packages/'
                   f'{RHEL_IMAGE_MINOR_VERSION}.x86_64.qcow2')
 
 
+def skip_unless_has_rhel_image():
+    return tobiko.skip_unless('RHEL image not found',
+                              has_rhel_image)
+
+
+@functools.lru_cache()
+def has_rhel_image() -> bool:
+    image_url = tobiko.get_fixture(RhelImageFixture).image_url
+    try:
+        response = requests.get(image_url, stream=True)
+    except requests.exceptions.ConnectionError as ex:
+        LOG.debug(f'RHEL image file not found at {image_url}: {ex}',
+                  exc_info=1)
+        return False
+
+    if response.status_code == 404:
+        LOG.debug(f'RHEL image file not found at {image_url}')
+        return False
+
+    response.raise_for_status()
+    LOG.debug(f'RHEL image file found at {image_url}')
+    return True
+
+
+@skip_unless_has_rhel_image()
 class RhelImageFixture(glance.URLGlanceImageFixture):
 
     image_url = CONF.tobiko.rhel.image_url or RHEL_IMAGE_URL
@@ -52,8 +82,7 @@ class RedHatServerStackFixture(_centos.CentosServerStackFixture):
     #: Glance image used to create a Nova server instance
     # (alternative is given for cases the RHEL image is failed to be
     # set up)
-    image_fixture = tobiko.required_setup_fixture(
-        RhelImageFixture, alternative=_centos.CentosImageFixture)
+    image_fixture = tobiko.required_setup_fixture(RhelImageFixture)
 
     #: Flavor used to create a Nova server instance
     flavor_stack = tobiko.required_setup_fixture(RedHatFlavorStackFixture)

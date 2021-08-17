@@ -353,6 +353,12 @@ class URLGlanceImageFixture(FileGlanceImageFixture):
 
     def get_image_file(self, image_file: str):
         http_request = requests.get(self.image_url, stream=True)
+        try:
+            http_request.raise_for_status()
+        except requests.exceptions.HTTPError:
+            LOG.exception("Error getting image file from URL: "
+                          f"{self.image_url}")
+            raise
         expected_size = int(http_request.headers.get('content-length', 0))
         chunks = http_request.iter_content(chunk_size=io.DEFAULT_BUFFER_SIZE)
         download_image = True
