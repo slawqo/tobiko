@@ -388,6 +388,12 @@ class RequiredFixtureTest(unit.TobikoUnitTest):
         fixture.setup_fixture.assert_not_called()
         fixture.cleanup_fixture.assert_not_called()
 
+    def test_required_fixture_with_type(self):
+        fixture = type(self).required_fixture
+        self.assertIsInstance(fixture, MyRequiredFixture)
+        fixture.setup_fixture.assert_called()
+        fixture.cleanup_fixture.assert_not_called()
+
 
 class SharedFixtureTest(unit.TobikoUnitTest):
 
