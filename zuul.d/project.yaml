@@ -8,6 +8,7 @@
       - devstack-tobiko-ceph
       - devstack-tobiko-faults
       - devstack-tobiko-glance
+      - devstack-tobiko-minimal
       - devstack-tobiko-octavia
       - devstack-tobiko-ovs
       - docs-on-readthedocs
