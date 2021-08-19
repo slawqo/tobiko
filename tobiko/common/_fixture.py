@@ -26,6 +26,7 @@ import testtools
 
 import tobiko
 from tobiko.common import _detail
+from tobiko.common import _deprecation
 from tobiko.common import _exception
 
 
@@ -294,6 +295,10 @@ def required_fixture(obj, **params):
     return RequiredFixtureProperty(obj, **params)
 
 
+@_deprecation.deprecated(
+    deprecated_in='0.4.7',
+    removed_in='0.4.8',
+    details='use tobiko.required_fixture function instead')
 def required_setup_fixture(obj, **params):
     '''Creates a property that sets up fixture identified by given :param obj:
 

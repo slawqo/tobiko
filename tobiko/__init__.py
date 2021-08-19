@@ -19,6 +19,7 @@ import sys
 from tobiko.common import _asserts
 from tobiko.common import _cached
 from tobiko.common import _config
+from tobiko.common import _deprecation
 from tobiko.common import _detail
 from tobiko.common import _exception
 from tobiko.common import _fixture
@@ -44,13 +45,15 @@ for path_dir in list(sys.path):
         sys.path.remove(path_dir)
 
 
+cached = _cached.cached
+CachedProperty = _cached.CachedProperty
+
+deprecated = _deprecation.deprecated
+
 details_content = _detail.details_content
 
 FailureException = _asserts.FailureException
 fail = _asserts.fail
-
-cached = _cached.cached
-CachedProperty = _cached.CachedProperty
 
 tobiko_config = _config.tobiko_config
 tobiko_config_dir = _config.tobiko_config_dir
