@@ -316,80 +316,76 @@ class MyRequiredFixture(MyBaseFixture):
     pass
 
 
-class MyRequiredSetupFixture(MyBaseFixture):
-    pass
-
-
-class ListRequiredFixtureTest(unit.TobikoUnitTest):
+class RequiredFixtureTest(unit.TobikoUnitTest):
 
     required_fixture = tobiko.required_fixture(MyRequiredFixture)
-    required_setup_fixture = tobiko.required_setup_fixture(
-        MyRequiredSetupFixture)
+    required_fixture_no_setup = tobiko.required_fixture(
+      MyRequiredFixture, setup=False)
 
-    def test_with_module(self):
+    def test_list_required_fixtures_with_module(self):
         module = sys.modules[__name__]
         result = tobiko.list_required_fixtures([module])
         self.assertEqual([], result)
 
-    def test_with_module_name(self):
+    def test_list_required_fixtures_with_module_name(self):
         result = tobiko.list_required_fixtures([__name__])
         self.assertEqual([], result)
 
-    def test_with_testcase_type(self):
-        result = tobiko.list_required_fixtures([ListRequiredFixtureTest])
-        self.assertEqual([canonical_name(MyRequiredFixture),
-                          canonical_name(MyRequiredSetupFixture)], result)
+    def test_list_required_fixtures_with_testcase_type(self):
+        result = tobiko.list_required_fixtures([RequiredFixtureTest])
+        self.assertEqual([canonical_name(MyRequiredFixture)], result)
 
-    def test_with_testcase_name(self):
+    def test_list_required_fixtures_with_testcase_name(self):
         result = tobiko.list_required_fixtures(
-            [canonical_name(ListRequiredFixtureTest)])
-        self.assertEqual([canonical_name(MyRequiredFixture),
-                          canonical_name(MyRequiredSetupFixture)], result)
+            [canonical_name(RequiredFixtureTest)])
+        self.assertEqual([canonical_name(MyRequiredFixture)], result)
 
-    def test_with_unbound_method(self, fixture=MyFixture, fixture2=MyFixture2):
+    def test_list_required_fixtures_with_unbound_method(
+            self, fixture=MyFixture, fixture2=MyFixture2):
+        cls = RequiredFixtureTest
         result = tobiko.list_required_fixtures(
-            [ListRequiredFixtureTest.test_with_unbound_method])
+            [cls.test_list_required_fixtures_with_unbound_method])
         self.assertEqual([canonical_name(fixture),
                           canonical_name(fixture2),
-                          canonical_name(MyRequiredFixture),
-                          canonical_name(MyRequiredSetupFixture)], result)
+                          canonical_name(MyRequiredFixture)], result)
 
-    def test_with_bound_method(self, fixture=MyFixture, fixture2=MyFixture2):
-        result = tobiko.list_required_fixtures([self.test_with_bound_method])
+    def test_list_required_fixtures_with_bound_method(
+            self, fixture=MyFixture, fixture2=MyFixture2):
+        result = tobiko.list_required_fixtures([
+            self.test_list_required_fixtures_with_bound_method])
         self.assertEqual([canonical_name(fixture),
                           canonical_name(fixture2),
-                          canonical_name(MyRequiredFixture),
-                          canonical_name(MyRequiredSetupFixture)], result)
+                          canonical_name(MyRequiredFixture)], result)
 
-    def test_with_method_name(self, fixture=MyFixture, fixture2=MyFixture2):
+    def test_list_required_fixtures_with_method_name(
+            self, fixture=MyFixture, fixture2=MyFixture2):
         result = tobiko.list_required_fixtures([self.id()])
         self.assertEqual([canonical_name(fixture),
                           canonical_name(fixture2),
-                          canonical_name(MyRequiredFixture),
-                          canonical_name(MyRequiredSetupFixture)], result)
+                          canonical_name(MyRequiredFixture)], result)
 
-    def test_with_fixture_name(self):
+    def test_list_required_fixtures_with_fixture_name(self):
         result = tobiko.list_required_fixtures([canonical_name(MyFixture)])
         self.assertEqual([canonical_name(MyFixture)], result)
 
-    def test_with_fixture(self):
+    def test_list_required_fixtures_with_fixture(self):
         result = tobiko.list_required_fixtures([MyFixture()])
         self.assertEqual([canonical_name(MyFixture)], result)
 
-    def test_with_fixture_type(self):
+    def test__list_required_fixtures_with_fixture_type(self):
         result = tobiko.list_required_fixtures([MyFixture])
         self.assertEqual([canonical_name(MyFixture)], result)
 
-    def test_required_fixture_property(self):
+    def test_required_fixture_with_instance(self):
         fixture = self.required_fixture
         self.assertIsInstance(fixture, MyRequiredFixture)
-        fixture.setup_fixture.assert_not_called()
+        fixture.setup_fixture.assert_called()
         fixture.cleanup_fixture.assert_not_called()
 
-    def test_required_setup_fixture_property(self):
-        fixture = self.required_setup_fixture
-        self.assertIsInstance(fixture, MyRequiredSetupFixture)
-        fixture.setup_fixture.assert_called_once_with()
+    def test_required_fixture_with_no_setup(self):
+        fixture = self.required_fixture_no_setup
+        self.assertIsInstance(fixture, MyRequiredFixture)
+        fixture.setup_fixture.assert_not_called()
         fixture.cleanup_fixture.assert_not_called()
 
 

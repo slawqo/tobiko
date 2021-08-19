@@ -32,7 +32,8 @@ CONF = config.CONF
 
 class SSHClientFixtureTest(unit.TobikoUnitTest):
 
-    fixture = tobiko.required_fixture(ssh.SSHClientFixture)
+    fixture = tobiko.required_fixture(ssh.SSHClientFixture,
+                                      setup=False)
 
     expected_host = None
     expected_proxy_client = None
