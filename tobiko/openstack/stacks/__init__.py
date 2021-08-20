@@ -41,6 +41,8 @@ CirrosSameHostServerStackFixture = _cirros.CirrosSameHostServerStackFixture
 RebootCirrosServerOperation = _cirros.RebootCirrosServerOperation
 EvacuableCirrosImageFixture = _cirros.EvacuableCirrosImageFixture
 EvacuableServerStackFixture = _cirros.EvacuableServerStackFixture
+ExtraDhcpOptsCirrosServerStackFixture = (
+    _cirros.ExtraDhcpOptsCirrosServerStackFixture)
 
 FedoraFlavorStackFixture = _fedora.FedoraFlavorStackFixture
 FedoraImageFixture = _fedora.FedoraImageFixture

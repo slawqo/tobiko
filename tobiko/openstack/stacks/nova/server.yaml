@@ -41,6 +41,11 @@ parameters:
     description: Security groups to subscrive server port
     default: []
 
+  use_extra_dhcp_opts:
+    type: boolean
+    description: A set of zero or more extra DHCP option pairs
+    default: false
+
   has_floating_ip:
     type: boolean
     description: Whenever server has floating IP associated
@@ -72,6 +77,8 @@ conditions:
   has_floating_ip:
     get_param: has_floating_ip
 
+  use_extra_dhcp_opts:
+    get_param: use_extra_dhcp_opts
 
 resources:
 
@@ -82,6 +89,20 @@ resources:
       network: {get_param: network}
       port_security_enabled: {get_param: port_security_enabled}
       security_groups: {get_param: security_groups}
+      value_specs:
+        # TODO(eolivare): I tried a different approach to define
+        # extra_dhcp_opts, but it did not work: providing a list of
+        # dictionaries from the python class
+        # ExtraDhcpOptsCirrosServerStackFixture would have been my preferred
+        # option but I got the following error from neutron:
+        # No valid key specs matched for: ...
+        # Apparently heat does not parse correctly the list of dictionaries and
+        # instead it provides a list of strings to neutron
+        extra_dhcp_opts:
+          if:
+            - 'use_extra_dhcp_opts'
+            - [{'opt_name': 'domain-name', 'opt_value': '"tobiko.domain"'}]
+            - []
 
   server_name:
     type: OS::Heat::RandomString

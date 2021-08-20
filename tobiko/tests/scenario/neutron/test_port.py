@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import json
+import re
 import typing
 
 import netaddr
@@ -24,6 +25,7 @@ import testtools
 import tobiko
 from tobiko.shell import ping
 from tobiko.shell import ip
+from tobiko.shell import sh
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
@@ -195,3 +197,26 @@ class PortLogsTest(testtools.TestCase):
             responses_text = ''.join(f'\t{r}\n' for r in responses)
             tobiko.fail(f"Unexpected events found after '{name}':\n"
                         f"{responses_text}")
+
+
+class ExtraDhcpOptsPortTest(PortTest):
+    """Test extra-dhcp-options port parameter"""
+    stack = tobiko.required_setup_fixture(
+        stacks.ExtraDhcpOptsCirrosServerStackFixture)
+
+    def test_extra_dhcp_opts(self):
+        extra_dhcp_options = neutron.get_port_extra_dhcp_opts(
+            self.stack.port_id)
+        for option in extra_dhcp_options:
+            if 'domain-name' == option['opt_name']:
+                domain = option['opt_value'].replace('"', '')
+                break
+        else:
+            tobiko.fail('No extra-dhcp-opt found for domain-name')
+
+        vm_resolv_conf = sh.execute('cat /etc/resolv.conf',
+                                    ssh_client=self.stack.ssh_client).stdout
+        self.assertIsNotNone(
+            re.search(r'^search\s+{domain}$'.format(domain=domain),
+                      vm_resolv_conf,
+                      re.MULTILINE))

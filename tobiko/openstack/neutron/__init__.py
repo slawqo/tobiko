@@ -53,6 +53,7 @@ get_neutron_client = _client.get_neutron_client
 find_subnet = _client.find_subnet
 find_port = _client.find_port
 list_ports = _client.list_ports
+get_port_extra_dhcp_opts = _client.get_port_extra_dhcp_opts
 create_port = _client.create_port
 delete_port = _client.delete_port
 list_subnets = _client.list_subnets
