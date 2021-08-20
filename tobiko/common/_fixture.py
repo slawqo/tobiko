@@ -303,7 +303,7 @@ def required_setup_fixture(obj, **params):
     '''Creates a property that sets up fixture identified by given :param obj:
 
     '''
-    return RequiredSetupFixtureProperty(obj, **params)
+    return required_fixture(obj, setup=True, **params)
 
 
 def get_fixture_id(obj: typing.Any) -> typing.Any:
@@ -503,15 +503,3 @@ class RequiredFixtureProperty(object):
     @property
     def __tobiko_required_fixtures__(self):
         return [self.fixture]
-
-
-class RequiredSetupFixtureProperty(RequiredFixtureProperty):
-
-    def get_fixture(self, _instance):
-        fixture = setup_fixture(self.fixture, **self.fixture_params)
-        if (hasattr(_instance, 'addCleanup') and
-                hasattr(_instance, 'getDetails')):
-            _instance.addCleanup(_detail.gather_details,
-                                 fixture.getDetails(),
-                                 _instance.getDetails())
-        return fixture
