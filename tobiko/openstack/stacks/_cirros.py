@@ -91,3 +91,7 @@ class EvacuableServerStackFixture(CirrosServerStackFixture):
 
     #: Glance image used to create a Nova server instance
     image_fixture = tobiko.required_setup_fixture(EvacuableCirrosImageFixture)
+
+
+class ExtraDhcpOptsCirrosServerStackFixture(CirrosServerStackFixture):
+    use_extra_dhcp_opts = True

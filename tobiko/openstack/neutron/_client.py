@@ -115,6 +115,11 @@ def list_ports(client=None, **params):
     return tobiko.select(ports)
 
 
+def get_port_extra_dhcp_opts(port_id, client=None, **params):
+    port = neutron_client(client).show_port(port_id, **params)['port']
+    return port['extra_dhcp_opts']
+
+
 NeutronSubnetType = typing.Dict[str, typing.Any]
 
 
