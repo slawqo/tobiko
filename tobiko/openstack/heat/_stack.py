@@ -592,7 +592,7 @@ def check_stack_status(stack: stacks.Stack,
             CREATE_IN_PROGRESS in expected_status or
             CREATE_COMPLETE in expected_status):
         raise HeatStackCreationFailed(
-            name=stack.name,
+            name=stack.stack_name,
             observed=stack_status,
             expected=expected_status,
             status_reason=stack.stack_status_reason)
