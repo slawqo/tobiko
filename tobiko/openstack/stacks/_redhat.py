@@ -86,3 +86,8 @@ class RedHatServerStackFixture(_centos.CentosServerStackFixture):
 
     #: Flavor used to create a Nova server instance
     flavor_stack = tobiko.required_setup_fixture(RedHatFlavorStackFixture)
+
+
+class RedHatTrunkServerStackFixture(
+        RedHatServerStackFixture, _centos.CentosTrunkServerStackFixture):
+    pass

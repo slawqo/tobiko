@@ -64,7 +64,16 @@ OPTIONS = [
                help="The direction for the QoS Policy Rule"),
     cfg.IntOpt('dscp_mark',
                default=40,
-               help="The DSCP marking value for the QoS Policy Rule")
+               help="The DSCP marking value for the QoS Policy Rule"),
+    cfg.StrOpt('trunk_subport_segmentation_type',
+               default='vlan',
+               help="Trunk subport segmentation type"),
+    cfg.IntOpt('trunk_subport_segmentation_id',
+               default=101,
+               help="Trunk subport segmentation ID"),
+    cfg.StrOpt('trunk_subport_subnet_cidr',
+               default='192.168.101.0/24',
+               help="The CIDR block for trunk subport subnet")
 ]
 
 

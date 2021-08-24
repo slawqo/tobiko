@@ -30,6 +30,7 @@ CentosFlavorStackFixture = _centos.CentosFlavorStackFixture
 CentosImageFixture = _centos.CentosImageFixture
 CentosServerStackFixture = _centos.CentosServerStackFixture
 Centos7ServerStackFixture = _centos.Centos7ServerStackFixture
+CentosTrunkServerStackFixture = _centos.CentosTrunkServerStackFixture
 
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture
@@ -51,6 +52,7 @@ FedoraServerStackFixture = _fedora.FedoraServerStackFixture
 RedHatFlavorStackFixture = _redhat.RedHatFlavorStackFixture
 RhelImageFixture = _redhat.RhelImageFixture
 RedHatServerStackFixture = _redhat.RedHatServerStackFixture
+RedHatTrunkServerStackFixture = _redhat.RedHatTrunkServerStackFixture
 
 L3haNetworkStackFixture = _l3ha.L3haNetworkStackFixture
 L3haServerStackFixture = _l3ha.L3haServerStackFixture

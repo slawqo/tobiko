@@ -525,3 +525,11 @@ class AntiAffinityServerGroupStackFixture(tobiko.SharedFixture):
     @property
     def scheduler_group(self):
         return self.server_group_stack.anti_affinity_server_group_id
+
+
+@neutron.skip_if_missing_networking_extensions('trunk')
+class TrunkServerStackFixture(CloudInitServerStackFixture):
+    has_trunk = True
+    segmentation_id = CONF.tobiko.neutron.trunk_subport_segmentation_id
+    segmentation_type = CONF.tobiko.neutron.trunk_subport_segmentation_type
+    trunk_subport_cidr = CONF.tobiko.neutron.trunk_subport_subnet_cidr

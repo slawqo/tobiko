@@ -71,3 +71,27 @@ class Centos7ServerStackFixture(CentosServerStackFixture):
 
     #: Glance image used to create a Nova server instance
     image_fixture = tobiko.required_setup_fixture(Centos7ImageFixture)
+
+
+class CentosTrunkServerStackFixture(
+        CentosServerStackFixture, _nova.TrunkServerStackFixture):
+
+    interface = 'eth0'
+
+    @property
+    def user_data(self):
+        return ("#cloud-config\n"
+                "write_files:\n"
+                "- path: {path}/ifcfg-{interface}.{index}\n"
+                "  owner: \"root\"\n"
+                "  permissions: \"777\"\n"
+                "  content: |\n"
+                "    DEVICE=\"{interface}.{index}\"\n"
+                "    BOOTPROTO=\"none\"\n"
+                "    ONBOOT=\"yes\"\n"
+                "    VLAN=\"yes\"\n"
+                "    PERSISTENT_DHCLIENT=\"no\"\n"
+                "runcmd:\n"
+                "- [ sh, -c , \"systemctl restart NetworkManager\" ]".format(
+                    path='/etc/sysconfig/network-scripts/',
+                    interface=self.interface, index=self.trunk_subport_vlan))

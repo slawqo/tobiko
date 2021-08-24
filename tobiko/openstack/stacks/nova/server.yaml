@@ -72,6 +72,24 @@ parameters:
     default: ''
     description: Optional user_data to be passed to the server
 
+  has_trunk:
+    type: boolean
+    default: false
+
+  trunk_subport_cidr:
+    type: string
+    default: ''
+
+  segmentation_type:
+    type: string
+    description: Segmentation type for trunk subport
+    default: ''
+
+  segmentation_id:
+    type: number
+    description: Segmentation ID for trunk subport
+    default: 0
+
 conditions:
 
   has_floating_ip:
@@ -79,6 +97,9 @@ conditions:
 
   use_extra_dhcp_opts:
     get_param: use_extra_dhcp_opts
+
+  has_trunk:
+    get_param: has_trunk
 
 resources:
 
@@ -133,6 +154,34 @@ resources:
       floating_network: {get_param: floating_network}
       port_id: {get_resource: port}
 
+  trunk_subport_network:
+    type: OS::Neutron::Net
+    condition: has_trunk
+
+  trunk_subport_subnet:
+    type: OS::Neutron::Subnet
+    condition: has_trunk
+    properties:
+      network: {get_resource: trunk_subport_network}
+      cidr: {get_param: trunk_subport_cidr}
+
+  trunk_subport:
+    type: OS::Neutron::Port
+    condition: has_trunk
+    properties:
+      network: {get_resource: trunk_subport_network}
+      mac_address: {get_attr: [port, mac_address]}
+
+  trunk:
+    type: OS::Neutron::Trunk
+    description: Trunk port connected to the server
+    condition: has_trunk
+    properties:
+      port: {get_resource: port}
+      sub_ports:
+        - {port: {get_resource: trunk_subport},
+           segmentation_type: {get_param: segmentation_type},
+           segmentation_id: {get_param: segmentation_id}}
 
 outputs:
 
