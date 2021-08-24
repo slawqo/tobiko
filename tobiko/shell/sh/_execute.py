@@ -162,8 +162,12 @@ def execute(command, environment=None, timeout=None, shell=None,
                            decode_streams=decode_streams)
 
 
-def execute_process(process, stdin, expect_exit_status, login=None,
-                    decode_streams=True):
+def execute_process(process: _process.ShellProcessFixture,
+                    stdin=None,
+                    expect_exit_status=0,
+                    login=None,
+                    decode_streams=True) \
+        -> ShellExecuteResult:
     error = None
     status = None
     try:

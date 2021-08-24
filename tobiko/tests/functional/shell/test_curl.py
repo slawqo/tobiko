@@ -66,3 +66,18 @@ class TestCurl(testtools.TestCase):
                 return ip_address
         self.skipTest(f"Server {self.stack.server_id} has any "
                       f"IPv{ip_version} address.")
+
+    def test_get_url_header(self,
+                            url: str = None,
+                            location: bool = None,
+                            ssh_client: ssh.SSHClientType = None):
+        if url is None:
+            url = tobiko.get_fixture(stacks.CirrosImageFixture).image_url
+        header = curl.get_url_header(url=url,
+                                     location=location,
+                                     ssh_client=ssh_client)
+        self.assertIn('date', header)
+        return header
+
+    def test_get_url_header_with_location(self):
+        self.test_get_url_header(location=True)

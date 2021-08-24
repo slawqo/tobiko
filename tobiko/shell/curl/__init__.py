@@ -16,6 +16,9 @@
 from __future__ import absolute_import
 
 from tobiko.shell.curl import _execute
+from tobiko.shell.curl import _process
 
 
 execute_curl = _execute.execute_curl
+
+get_url_header = _process.get_url_header
