@@ -55,6 +55,7 @@ find_port = _client.find_port
 list_ports = _client.list_ports
 get_port_extra_dhcp_opts = _client.get_port_extra_dhcp_opts
 create_port = _client.create_port
+update_port = _client.update_port
 delete_port = _client.delete_port
 list_subnets = _client.list_subnets
 list_subnet_cidrs = _client.list_subnet_cidrs

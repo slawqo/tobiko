@@ -184,6 +184,11 @@ def create_port(client=None, **params):
     return port['port']
 
 
+def update_port(port_id, client=None, **params):
+    port = neutron_client(client).update_port(port_id, body={'port': params})
+    return port['port']
+
+
 def delete_port(port, client=None):
     try:
         neutron_client(client).delete_port(port)

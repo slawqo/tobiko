@@ -19,6 +19,7 @@ import re
 import typing
 
 import netaddr
+from neutron_lib import constants
 from oslo_log import log
 import testtools
 
@@ -33,6 +34,8 @@ from tobiko.openstack import topology
 
 
 LOG = log.getLogger(__name__)
+IPV4 = constants.IP_VERSION_4
+IPV6 = constants.IP_VERSION_6
 
 
 class PortTest(testtools.TestCase):
@@ -220,3 +223,53 @@ class ExtraDhcpOptsPortTest(PortTest):
             re.search(r'^search\s+{domain}$'.format(domain=domain),
                       vm_resolv_conf,
                       re.MULTILINE))
+
+
+@neutron.skip_unless_is_ovn()
+class ExtraDhcpOptsPortLoggingTest(testtools.TestCase):
+
+    stack = tobiko.required_setup_fixture(stacks.NetworkStackFixture)
+
+    def test_extra_dhcp_opts_logs_unsupported_options(self):
+        # initialize logs that match the pattern
+        topology.assert_ovn_unsupported_dhcp_option_messages()
+
+        wrong_ipv4_option = 'wrong-ipv4-option'
+        wrong_ipv6_option = 'bananas'
+        a_valid_ipv4_option_used_for_ipv6 = 'log-server'
+        extra_dhcp_opts = [
+            {'opt_value': '1.1.1.1',
+             'opt_name': a_valid_ipv4_option_used_for_ipv6,
+             'ip_version': IPV6},
+            {'opt_value': 'ipv6.domain',
+             'opt_name': 'domain-search',
+             'ip_version': IPV6},
+            {'opt_value': '1600',
+             'opt_name': 'mtu',
+             'ip_version': IPV4},
+            {'opt_value': 'blablabla',
+             'opt_name': wrong_ipv4_option,
+             'ip_version': IPV4}]
+        # create port with extra-dhcp-opts
+        port = neutron.create_port(**{'network_id': self.stack.network_id,
+                                      'extra_dhcp_opts': extra_dhcp_opts})
+        self.addCleanup(neutron.delete_port, port['id'])
+        # find new logs that match the pattern
+        invalid_options = [wrong_ipv4_option,
+                           a_valid_ipv4_option_used_for_ipv6]
+        # assert every invalid dhcp option is logged
+        topology.assert_ovn_unsupported_dhcp_option_messages(
+            unsupported_options=invalid_options,
+            port_uuid=port['id'])
+
+        extra_dhcp_opts.append({'opt_value': '1.1.1.1',
+                                'opt_name': wrong_ipv6_option,
+                                'ip_version': IPV6})
+        # update port with new extra-dhcp-opts
+        port = neutron.update_port(port['id'],
+                                   **{'extra_dhcp_opts': extra_dhcp_opts})
+        invalid_options.append(wrong_ipv6_option)
+        # assert every invalid dhcp option is logged
+        topology.assert_ovn_unsupported_dhcp_option_messages(
+            unsupported_options=invalid_options,
+            port_uuid=port['id'])
