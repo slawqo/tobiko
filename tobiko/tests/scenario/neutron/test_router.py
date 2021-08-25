@@ -97,19 +97,27 @@ class RouterTest(testtools.TestCase):
         self._check_routers_namespace_on_host(router_agent['host'])
 
     def _check_routers_namespace_on_host(self, hostname, state="master"):
-        router_namespace = "qrouter-%s" % self.router['id']
-        agent_host = topology.get_openstack_node(hostname=hostname)
-        namespaces = ip.list_network_namespaces(
-            ssh_client=agent_host.ssh_client)
-        self.assertIn(router_namespace, namespaces)
-        namespace_ips = ip.list_ip_addresses(
-            scope='global', network_namespace=router_namespace,
-            ssh_client=agent_host.ssh_client)
+        namespace_ips = self._get_router_ips_from_namespaces(hostname)
         missing_ips = set(self.router_ips) - set(namespace_ips)
         if state == "master":
             self.assertFalse(missing_ips)
         else:
             self.assertTrue(missing_ips)
+
+    def _get_router_ips_from_namespaces(self, hostname):
+        agent_host = topology.get_openstack_node(hostname=hostname)
+        router_namespaces = ["qrouter-%s" % self.router['id']]
+        if self.router.get('distributed'):
+            router_namespaces.append("snat-%s" % self.router['id'])
+        host_namespaces = ip.list_network_namespaces(
+            ssh_client=agent_host.ssh_client)
+        ips = []
+        for router_namespace in router_namespaces:
+            self.assertIn(router_namespace, host_namespaces)
+            ips += ip.list_ip_addresses(
+                scope='global', network_namespace=router_namespace,
+                ssh_client=agent_host.ssh_client)
+        return ips
 
 
 @neutron.skip_if_missing_networking_extensions('l3-ha')
