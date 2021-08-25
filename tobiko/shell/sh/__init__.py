@@ -29,6 +29,7 @@ from tobiko.shell.sh import _reboot
 from tobiko.shell.sh import _sftp
 from tobiko.shell.sh import _ssh
 from tobiko.shell.sh import _uptime
+from tobiko.shell.sh import _wc
 
 
 get_command_line = _cmdline.get_command_line
@@ -94,3 +95,5 @@ ssh_execute = _ssh.ssh_execute
 SSHShellProcessFixture = _ssh.SSHShellProcessFixture
 
 get_uptime = _uptime.get_uptime
+
+get_file_size = _wc.get_file_size
