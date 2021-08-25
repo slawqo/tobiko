@@ -15,12 +15,16 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.shell.curl import _execute
-from tobiko.shell.curl import _process
+from tobiko.shell import sh
+from tobiko.shell import ssh
 
 
-execute_curl = _execute.execute_curl
-
-CurlProcessFixture = _process.CurlProcessFixture
-download_file = _process.download_file
-get_url_header = _process.get_url_header
+def get_file_size(filename: str,
+                  ssh_client: ssh.SSHClientType = None,
+                  sudo: bool = None) \
+        -> int:
+    output = sh.execute(f'wc -c "{filename}"',
+                        ssh_client=ssh_client,
+                        sudo=sudo).stdout.strip()
+    size, _ = output.split(' ', 1)
+    return int(size)

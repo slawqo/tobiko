@@ -22,6 +22,7 @@ import testtools
 
 import tobiko
 from tobiko.shell import curl
+from tobiko.shell import sh
 from tobiko.shell import ssh
 from tobiko.openstack import keystone
 from tobiko.openstack import stacks
@@ -81,3 +82,22 @@ class TestCurl(testtools.TestCase):
 
     def test_get_url_header_with_location(self):
         self.test_get_url_header(location=True)
+
+    def test_download_file(self,
+                           url: str = None,
+                           output_filename: str = None,
+                           wait: bool = None) \
+            -> curl.CurlProcessFixture:
+        if url is None:
+            url = tobiko.get_fixture(stacks.CirrosImageFixture).image_url
+        header = self.test_get_url_header(url=url, location=True)
+        process = curl.download_file(url=url,
+                                     output_filename=output_filename,
+                                     wait=wait)
+        result = process.wait()
+        self.assertIsInstance(result, sh.ShellExecuteResult)
+        self.assertEqual(0, result.exit_status)
+
+        self.assertEqual(int(header['content-length']),
+                         sh.get_file_size(process.output_filename))
+        return process
