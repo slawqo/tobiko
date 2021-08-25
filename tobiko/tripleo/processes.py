@@ -60,7 +60,7 @@ root    |     11|      2| 0.0|     0|00:00:05|migration/0    |[migration/0]
                      'PROCESS_ARGS']
     table['overcloud_node'] = hostname
 
-    LOG.debug("Got overcloud nodes processes status :\n%s", table)
+    LOG.debug("Successfully got overcloud nodes processes status table")
     return table
 
 
