@@ -30,7 +30,9 @@ from tobiko.shell import sh
 @keystone.skip_unless_has_keystone_credentials()
 class OpenStackTopologyTest(testtools.TestCase):
 
-    topology = tobiko.required_setup_fixture(topology.OpenStackTopology)
+    @property
+    def topology(self) -> topology.OpenStackTopology:
+        return topology.get_openstack_topology()
 
     def test_get_openstack_topology(self):
         topology_class = type(self.topology)
