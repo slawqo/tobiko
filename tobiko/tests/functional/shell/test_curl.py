@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os.path
 import typing
 
 import netaddr
@@ -29,7 +30,7 @@ from tobiko.openstack import stacks
 
 
 @keystone.skip_unless_has_keystone_credentials()
-class TestCurl(testtools.TestCase):
+class TestCurlExecute(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(stacks.UbuntuServerStackFixture)
 
@@ -68,6 +69,9 @@ class TestCurl(testtools.TestCase):
         self.skipTest(f"Server {self.stack.server_id} has any "
                       f"IPv{ip_version} address.")
 
+
+class TestCurl(testtools.TestCase):
+
     def test_get_url_header(self,
                             url: str = None,
                             location: bool = None,
@@ -77,27 +81,49 @@ class TestCurl(testtools.TestCase):
         header = curl.get_url_header(url=url,
                                      location=location,
                                      ssh_client=ssh_client)
+        self.assertIsInstance(header, curl.CurlHeader)
         self.assertIn('date', header)
         return header
 
     def test_get_url_header_with_location(self):
         self.test_get_url_header(location=True)
 
+    def test_get_url_header_with_no_location(self):
+        self.test_get_url_header(location=True)
+
     def test_download_file(self,
                            url: str = None,
-                           output_filename: str = None,
-                           wait: bool = None) \
+                           cached: bool = False,
+                           download_dir: str = None,
+                           **params) \
             -> curl.CurlProcessFixture:
         if url is None:
             url = tobiko.get_fixture(stacks.CirrosImageFixture).image_url
+        if download_dir is None:
+            download_dir = sh.make_temp_dir()
         header = self.test_get_url_header(url=url, location=True)
         process = curl.download_file(url=url,
-                                     output_filename=output_filename,
-                                     wait=wait)
-        result = process.wait()
-        self.assertIsInstance(result, sh.ShellExecuteResult)
-        self.assertEqual(0, result.exit_status)
+                                     cached=cached,
+                                     download_dir=download_dir,
+                                     **params)
+        try:
+            result = process.wait()
+        except RuntimeError:
+            if not cached:
+                raise
+        else:
+            self.assertIsInstance(result, sh.ShellExecuteResult)
+            self.assertEqual(0, result.exit_status)
 
-        self.assertEqual(int(header['content-length']),
-                         sh.get_file_size(process.output_filename))
+        if process.file_name is not None:
+            self.assertEqual(header.content_length,
+                             sh.get_file_size(process.file_name))
         return process
+
+    def test_download_file_with_cached(self):
+        process_1 = self.test_download_file(cached=True)
+        self.assertTrue(process_1.executed)
+        download_dir = os.path.dirname(process_1.file_name)
+        process_2 = self.test_download_file(cached=True,
+                                            download_dir=download_dir)
+        self.assertFalse(process_2.executed)

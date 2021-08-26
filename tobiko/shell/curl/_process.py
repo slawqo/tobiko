@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
 import os
 import typing
 
@@ -38,29 +39,32 @@ class CurlProcessFixture(tobiko.SharedFixture):
                  url: str,
                  continue_at: int = None,
                  create_dirs: bool = None,
-                 head: bool = None,
+                 file_name: str = None,
+                 head_only: bool = None,
+                 headers_file_name: str = None,
                  location: bool = None,
                  max_redirs: int = None,
-                 output_filename: str = None,
                  ssh_client: ssh.SSHClientType = None,
                  sudo: bool = None):
         super().__init__()
         tobiko.check_valid_type(continue_at, int, type(None))
         tobiko.check_valid_type(create_dirs, bool, type(None))
-        tobiko.check_valid_type(head, bool, type(None))
+        tobiko.check_valid_type(head_only, bool, type(None))
         tobiko.check_valid_type(location, bool, type(None))
         tobiko.check_valid_type(max_redirs, int, type(None))
-        tobiko.check_valid_type(output_filename, str, type(None))
+        tobiko.check_valid_type(file_name, str, type(None))
+        tobiko.check_valid_type(headers_file_name, str, type(None))
         tobiko.check_valid_type(ssh_client, ssh.SSHClientFixture, bool,
                                 type(None))
         tobiko.check_valid_type(sudo, bool, type(None))
         tobiko.check_valid_type(url, str)
         self.continue_at = continue_at
         self.create_dirs = create_dirs
-        self.head = head
+        self.head_only = head_only
+        self.headers_file_name = headers_file_name
         self.location = location
         self.max_redirs = max_redirs
-        self.output_filename = output_filename
+        self.file_name = file_name
         self.ssh_client = ssh_client
         self.sudo = sudo
         self.url = url
@@ -90,10 +94,15 @@ class CurlProcessFixture(tobiko.SharedFixture):
             raise RuntimeError("Curl process not stated") from None
 
     def setup_fixture(self):
-        self._process = sh.process(self.command,
-                                   ssh_client=self.ssh_client,
-                                   sudo=self.sudo)
-        self.useFixture(self.process)
+        if self.create_dirs and self.headers_file_name is not None:
+            headers_dir = os.path.dirname(self.headers_file_name)
+            sh.execute(f'mkdir -p "{headers_dir}"',
+                       ssh_client=self.ssh_client,
+                       sudo=self.sudo)
+        process = sh.process(self.command,
+                             ssh_client=self.ssh_client,
+                             sudo=self.sudo)
+        self._process = self.useFixture(process)
 
     def start(self) -> 'CurlProcessFixture':
         return tobiko.setup_fixture(self)
@@ -137,10 +146,14 @@ class CurlProcessFixture(tobiko.SharedFixture):
 
     @property
     def result(self) -> sh.ShellExecuteResult:
-        try:
+        if self.executed:
             return self._result
-        except AttributeError:
+        else:
             raise RuntimeError("Process not terminated") from None
+
+    @property
+    def executed(self) -> bool:
+        return hasattr(self, '_result')
 
     def get_options(self) -> sh.ShellCommand:
         options = sh.ShellCommand()
@@ -151,50 +164,76 @@ class CurlProcessFixture(tobiko.SharedFixture):
                 options += f"-C '{self.continue_at}'"
         if self.create_dirs:
             options += '--create-dirs'
-        if self.head:
+        if self.head_only:
             options += '-I'
+        if self.headers_file_name:
+            options += f'-D "{self.headers_file_name}"'
         if self.location:
             options += '-L'
         if self.max_redirs is not None:
             options += f"--max-redirs '{self.max_redirs}'"
-        if self.output_filename:
-            options += f"-o '{self.output_filename}'"
+        if self.file_name:
+            options += f"-o '{self.file_name}'"
         return options
 
     def open_output_file(self):
-        tobiko.check_valid_type(self.output_filename, str)
-        assert self.output_filename
+        tobiko.check_valid_type(self.file_name, str)
+        assert self.file_name
 
 
 def curl_process(url: str,
                  continue_at: int = None,
                  create_dirs: bool = None,
-                 head: bool = None,
+                 head_only: bool = None,
+                 headers_file_name: str = None,
                  location: bool = None,
                  max_redirs: int = None,
-                 output_filename: str = None,
+                 file_name: str = None,
                  ssh_client: ssh.SSHClientType = None,
                  sudo: bool = None) \
         -> CurlProcessFixture:
     return CurlProcessFixture(url=url,
                               continue_at=continue_at,
                               create_dirs=create_dirs,
-                              head=head,
+                              head_only=head_only,
+                              headers_file_name=headers_file_name,
                               location=location,
                               max_redirs=max_redirs,
-                              output_filename=output_filename,
+                              file_name=file_name,
                               ssh_client=ssh_client,
                               sudo=sudo)
 
 
+class CurlHeader(collections.UserDict):
+
+    def __init__(self,
+                 head_line: typing.Optional[str],
+                 *args,
+                 **kwargs):
+        self.head_line = head_line
+        super(CurlHeader, self).__init__(*args, **kwargs)
+
+    @property
+    def content_length(self) -> typing.Optional[int]:
+        length = self.get('content-length')
+        if length is None:
+            return None
+        else:
+            return int(length)
+
+    def __repr__(self):
+        entries = super().__repr__()
+        return f"CurlHeader({self.head_line!r}, {entries})"
+
+
 def get_url_header(url: str,
-                   location: bool = None,
+                   location: typing.Optional[bool] = True,
                    max_redirs: int = None,
                    ssh_client: ssh.SSHClientType = None,
                    retry_timeout: tobiko.Seconds = None,
                    retry_interval: tobiko.Seconds = None,
                    retry_count: int = None,
-                   **process_params) -> typing.Dict[str, str]:
+                   **process_params) -> CurlHeader:
     headers = list_url_headers(url=url,
                                location=location,
                                max_redirs=max_redirs,
@@ -207,82 +246,146 @@ def get_url_header(url: str,
 
 
 def list_url_headers(url: str,
-                     location: bool = None,
+                     location: typing.Optional[bool] = True,
                      max_redirs: int = None,
                      ssh_client: ssh.SSHClientType = None,
                      retry_timeout: tobiko.Seconds = None,
                      retry_interval: tobiko.Seconds = None,
                      retry_count: int = None,
                      sudo: bool = None) \
-        -> tobiko.Selection[typing.Dict[str, str]]:
-    if location is None:
-        location = True
+        -> tobiko.Selection[CurlHeader]:
     process = curl_process(url=url,
                            location=location,
-                           head=True,
+                           head_only=True,
                            max_redirs=max_redirs,
                            ssh_client=ssh_client,
                            sudo=sudo)
     result = process.execute(retry_count=retry_count,
                              retry_timeout=retry_timeout,
                              retry_interval=retry_interval)
-    headers = tobiko.Selection[typing.Dict[str, str]]()
-    header: typing.Dict[str, str] = {}
-    line: str
-    header_lines = result.stdout.splitlines()
-    for line in header_lines:
+    return parse_headers(result.stdout)
+
+
+def read_headers_file(headers_file_name: str,
+                      ssh_client: ssh.SSHClientType = None,
+                      sudo: bool = None) \
+        -> tobiko.Selection[CurlHeader]:
+    result = sh.execute(f'cat "{headers_file_name}"',
+                        ssh_client=ssh_client,
+                        sudo=sudo)
+    return parse_headers(result.stdout)
+
+
+def parse_headers(headers_text: str) \
+        -> tobiko.Selection[CurlHeader]:
+    headers = tobiko.Selection[CurlHeader]()
+    entries: typing.Dict[str, str] = {}
+    line_number = 0
+    head_line: typing.Optional[str] = None
+    for line in headers_text.splitlines():
         line = line.strip()
+        line_number += 1
         if not line:
-            if header:
-                headers.append(header)
-                header = {}
+            if entries:
+                headers.append(CurlHeader(head_line, entries))
+                head_line = None
+                entries = {}
         elif ':' in line:
             key, value = line.split(':', 1)
-            header[key.lower().strip()] = value.strip()
-    if header:
-        headers.append(header)
+            entries[key.lower().strip()] = value.strip()
+        elif len(entries) == 0:
+            head_line = line
+        else:
+            raise ValueError(f'Invalid line {line_number} in header: {line}\n"'
+                             f'"{headers_text}')
+    if entries:
+        headers.append(CurlHeader(head_line, entries))
     return headers
 
 
-def default_download_dirname() -> str:
+def default_download_dir() -> str:
     return '~/.tobiko/download'
 
 
 def download_file(url: str,
-                  output_filename: str = None,
-                  download_dirname: str = None,
+                  file_name: str = None,
+                  cached: bool = False,
+                  check: bool = True,
+                  download_dir: str = None,
                   continue_at: int = None,
                   create_dirs: bool = None,
-                  location: bool = None,
+                  headers_file_name: str = None,
+                  location: typing.Optional[bool] = True,
                   max_redirs: int = None,
-                  wait=True,
+                  wait: bool = True,
                   retry_count: int = None,
                   retry_timeout: tobiko.Seconds = None,
                   retry_interval: tobiko.Seconds = None,
                   ssh_client: ssh.SSHClientType = None,
-                  sudo: bool = None):
-    if location is None:
-        location = True
-    if output_filename is None:
-        if download_dirname is None:
-            download_dirname = default_download_dirname()
+                  sudo: bool = None) \
+        -> CurlProcessFixture:
+    if file_name is None:
+        if download_dir is None:
+            download_dir = default_download_dir()
             create_dirs = True
-        output_filename = os.path.join(download_dirname,
-                                       os.path.basename(url))
+        file_name = os.path.join(download_dir,
+                                 os.path.basename(url))
+    if headers_file_name is None:
+        headers_file_name = file_name + '.headers'
+        create_dirs = True
+
     process = curl_process(url=url,
-                           output_filename=output_filename,
+                           file_name=file_name,
+                           headers_file_name=headers_file_name,
                            continue_at=continue_at,
                            create_dirs=create_dirs,
                            location=location,
                            max_redirs=max_redirs,
                            ssh_client=ssh_client,
                            sudo=sudo)
-    LOG.debug(f"Downloading file ('{url}' -> '{output_filename}')...")
-    if wait:
-        process.execute(retry_count=retry_count,
-                        retry_timeout=retry_timeout,
-                        retry_interval=retry_interval)
-        LOG.debug(f"File download complete ('{url}' -> '{output_filename}').")
-    else:
+    if cached:
+        try:
+            assert_downleaded_file(file_name=file_name,
+                                   headers_file_name=headers_file_name,
+                                   ssh_client=ssh_client,
+                                   sudo=sudo)
+        except tobiko.FailureException:
+            pass
+        else:
+            LOG.debug(f"File '{url}' already downloaded.")
+            return process
+
+    LOG.debug(f"Downloading file ('{url}' -> '{file_name}')...")
+    if not wait:
         process.start()
+        return process
+
+    process.execute(retry_count=retry_count,
+                    retry_timeout=retry_timeout,
+                    retry_interval=retry_interval)
+    LOG.debug(f"File download complete ('{url}' -> '{file_name}').")
+    if check:
+        assert_downleaded_file(file_name=file_name,
+                               headers_file_name=headers_file_name,
+                               ssh_client=ssh_client,
+                               sudo=sudo)
     return process
+
+
+def assert_downleaded_file(file_name: str,
+                           headers_file_name: str,
+                           ssh_client: ssh.SSHClientType = None,
+                           sudo: bool = None):
+    try:
+        header = read_headers_file(headers_file_name=headers_file_name,
+                                   ssh_client=ssh_client,
+                                   sudo=sudo)[-1]
+    except sh.ShellCommandFailed as ex:
+        tobiko.fail(f"Error reading headers file '{headers_file_name}': {ex}")
+    else:
+        file_size = header.content_length
+        if file_size is not None:
+            sh.assert_file_size(file_size=header.content_length,
+                                file_name=file_name,
+                                ssh_client=ssh_client,
+                                sudo=sudo)
