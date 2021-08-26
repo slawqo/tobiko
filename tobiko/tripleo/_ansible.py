@@ -52,7 +52,7 @@ class TripleoAnsibleInventoryFixture(tobiko.SharedFixture):
         tripleo = _config.get_tripleo_config()
         self.inventory_file = inventory_file = tobiko.tobiko_config_path(
             tripleo.inventory_file)
-        if inventory_file and not os.path.isfile(inventory_file):
+        if inventory_file is not None and not os.path.isfile(inventory_file):
             content = read_tripleo_ansible_inventory()
             with io.open(inventory_file, 'w') as fd:
                 fd.write(content)
@@ -80,6 +80,6 @@ def read_tripleo_ansible_inventory():
     tripleo = _config.get_tripleo_config()
     ssh_client = _undercloud.undercloud_ssh_client()
     script = READ_TRIPLEO_ANSIBLE_INVENTORY_SCRIPT.format(
-        undercloud_rcfile=tripleo.undercloud_rcfile,
+        undercloud_rcfile=tripleo.undercloud_rcfile[0],
         overcloud_ssh_username=tripleo.overcloud_ssh_username)
     return sh.execute('/bin/bash', stdin=script, ssh_client=ssh_client).stdout

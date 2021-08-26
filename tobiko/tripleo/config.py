@@ -54,7 +54,14 @@ OPTIONS = [
                help=("Default IP address version to be used to connect to "
                      "overcloud nodes ")),
     cfg.StrOpt('overcloud_network_name',
-               help="Name of network used to connect to overcloud nodes")]
+               help="Name of network used to connect to overcloud nodes"),
+
+    # Other options
+    cfg.StrOpt('inventory_file',
+               default='tripleo-hosts.yaml',
+               help="path to where to export tripleo inventory file"),
+
+]
 
 
 def register_tobiko_options(conf):
