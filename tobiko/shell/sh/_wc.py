@@ -15,16 +15,27 @@
 #    under the License.
 from __future__ import absolute_import
 
+import tobiko
 from tobiko.shell import sh
 from tobiko.shell import ssh
 
 
-def get_file_size(filename: str,
+def get_file_size(file_name: str,
                   ssh_client: ssh.SSHClientType = None,
                   sudo: bool = None) \
         -> int:
-    output = sh.execute(f'wc -c "{filename}"',
+    output = sh.execute(f'wc -c "{file_name}"',
                         ssh_client=ssh_client,
                         sudo=sudo).stdout.strip()
     size, _ = output.split(' ', 1)
     return int(size)
+
+
+def assert_file_size(file_size: int,
+                     file_name: str,
+                     ssh_client: ssh.SSHClientType = None,
+                     sudo: bool = None):
+    size = get_file_size(file_name=file_name,
+                         ssh_client=ssh_client,
+                         sudo=sudo)
+    tobiko.get_test_case().assertEqual(file_size, size)

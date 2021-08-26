@@ -99,4 +99,5 @@ SSHShellProcessFixture = _ssh.SSHShellProcessFixture
 
 get_uptime = _uptime.get_uptime
 
+assert_file_size = _wc.assert_file_size
 get_file_size = _wc.get_file_size
