@@ -129,6 +129,10 @@ subparsers:
             type: Value
             help: hostname or IP address to be used to connect to undercloud host
             ansible_variable: undercloud_ssh_hostname
+          overcloud-ssh-username:
+            type: Value
+            help: user name to be used to connect to TripleO Overcloud hosts
+            ansible_variable: overcloud_ssh_username
 
       - title: Run stage
         options:
