@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 
+import typing
+
 from oslo_log import log
 import pandas
-import six
 
 import tobiko
 from tobiko.tripleo import overcloud
@@ -34,18 +35,24 @@ cloud-init.service|loaded|active|exited|Initialcloud-initjob(metadataservicecr)
 
     :return: dataframe of overcloud node services
     """
-
     ssh_client = overcloud.overcloud_ssh_client(hostname)
-    output = sh.execute(
-        "systemctl -a --no-pager --plain --no-legend|grep -v not-found|"
-        "sed \'s/\\s\\s/|/g\'|sed \'s/||*/DELIM/g\'|sed \'s@ @@g\'|"
-        "sed \'s/DELIM$//g\'",
-        ssh_client=ssh_client).stdout
-    stream = six.StringIO(output)
-    table = pandas.read_csv(stream, sep='DELIM', header=None, skiprows=0)
+    units = sh.list_systemd_units(all=True,
+                                  ssh_client=ssh_client).without_attributes(
+        load='not-found')
+
+    data: typing.Dict[str, list] = {'UNIT': [],
+                                    'loaded_state': [],
+                                    'active_state': [],
+                                    'low_level_state': [],
+                                    'UNIT_DESCRIPTION': []}
+    for unit in units:
+        data['UNIT'].append(unit.unit)
+        data['loaded_state'].append(unit.load)
+        data['active_state'].append(unit.active)
+        data['low_level_state'].append(unit.sub)
+        data['UNIT_DESCRIPTION'].append(unit.description)
+    table = pandas.DataFrame.from_dict(data)
     table.replace(to_replace=' ', value="", regex=True, inplace=True)
-    table.columns = ['UNIT', 'loaded_state', 'active_state',
-                     'low_level_state', 'UNIT_DESCRIPTION']
     table['overcloud_node'] = hostname
 
     LOG.debug("Got overcloud nodes services status :\n%s", table)
