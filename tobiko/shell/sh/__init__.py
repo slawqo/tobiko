@@ -29,6 +29,7 @@ from tobiko.shell.sh import _ps
 from tobiko.shell.sh import _reboot
 from tobiko.shell.sh import _sftp
 from tobiko.shell.sh import _ssh
+from tobiko.shell.sh import _systemctl
 from tobiko.shell.sh import _uptime
 from tobiko.shell.sh import _wc
 
@@ -96,6 +97,8 @@ get_file = _sftp.get_file
 ssh_process = _ssh.ssh_process
 ssh_execute = _ssh.ssh_execute
 SSHShellProcessFixture = _ssh.SSHShellProcessFixture
+
+list_systemd_units = _systemctl.list_systemd_units
 
 get_uptime = _uptime.get_uptime
 
