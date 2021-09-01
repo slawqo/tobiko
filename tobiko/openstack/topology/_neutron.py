@@ -18,10 +18,15 @@ import datetime
 import re
 import typing
 
+from oslo_log import log
+
 import tobiko
 from tobiko.openstack import neutron
 from tobiko.openstack.topology import _topology
 from tobiko.shell import files
+
+
+LOG = log.getLogger(__name__)
 
 
 class NeutronNovaResponse(typing.NamedTuple):
@@ -38,13 +43,12 @@ class NeutronNovaResponse(typing.NamedTuple):
         return self.timestamp < other.timestamp
 
 
-class NeutronNovaResponseReader(tobiko.SharedFixture):
+class NeutronNovaCommonReader(tobiko.SharedFixture):
     log_digger: files.MultihostLogFileDigger
-    groups = ['controller']
-    message_pattern = r'Nova event response: '
+    groups: typing.List[str]
+    message_pattern: str
     datetime_pattern = re.compile(r'(\d{4}-\d{2}-\d{2} [0-9:.]+) .+')
     service_name = neutron.SERVER
-    responses: tobiko.Selection[NeutronNovaResponse]
 
     def setup_fixture(self):
         self.log_digger = self.useFixture(
@@ -55,12 +59,21 @@ class NeutronNovaResponseReader(tobiko.SharedFixture):
         self.read_responses()
 
     def _get_log_timestamp(self,
-                           log: str) -> float:
-        found = self.datetime_pattern.match(log)
+                           log_line: str) -> float:
+        found = self.datetime_pattern.match(log_line)
         if not found:
             return 0.0
         return datetime.datetime.strptime(
             found.group(1), "%Y-%m-%d %H:%M:%S.%f").timestamp()
+
+    def read_responses(self):
+        raise NotImplementedError
+
+
+class NeutronNovaResponseReader(NeutronNovaCommonReader):
+    groups = ['controller']
+    message_pattern = r'Nova event response: '
+    responses: tobiko.Selection[NeutronNovaResponse]
 
     def read_responses(self) \
             -> tobiko.Selection[NeutronNovaResponse]:
@@ -100,3 +113,74 @@ def read_neutron_nova_responses(
     if attributes and responses:
         responses = responses.with_attributes(**attributes)
     return responses
+
+
+class UnsupportedDhcpOptionMessage(typing.NamedTuple):
+    port_uuid: str
+    unsupported_dhcp_option: str
+    timestamp: float
+    line: str
+
+    def __lt__(self, other):
+        return self.timestamp < other.timestamp
+
+
+@neutron.skip_unless_is_ovn()
+class OvnUnsupportedDhcpOptionReader(NeutronNovaCommonReader):
+    groups = ['controller']
+    message_pattern = (
+        'The DHCP option .* on port .* is not suppported by OVN, ignoring it')
+    responses: tobiko.Selection[UnsupportedDhcpOptionMessage]
+
+    def read_responses(self) \
+            -> tobiko.Selection[UnsupportedDhcpOptionMessage]:
+        def _get_port_uuid(line):
+            port_pattern = 'on port (.*) is not suppported by OVN'
+            return re.findall(port_pattern, line)[0]
+
+        def _get_dhcp_option(line):
+            dhcp_opt_pattern = 'The DHCP option (.*) on port'
+            return re.findall(dhcp_opt_pattern, line)[0]
+
+        responses = tobiko.Selection[UnsupportedDhcpOptionMessage]()
+        message_pattern = re.compile(self.message_pattern)
+        for _, line in self.log_digger.find_lines(
+                new_lines=hasattr(self, 'responses')):
+            found = message_pattern.search(line)
+            assert found is not None
+            response = UnsupportedDhcpOptionMessage(
+                line=line,
+                timestamp=self._get_log_timestamp(line[:found.start()]),
+                port_uuid=_get_port_uuid(line),
+                unsupported_dhcp_option=_get_dhcp_option(line))
+            responses.append(response)
+        responses.sort()
+        if hasattr(self, 'responses'):
+            self.responses.extend(responses)
+        else:
+            self.responses = responses
+        return responses
+
+
+def assert_ovn_unsupported_dhcp_option_messages(
+        reader: OvnUnsupportedDhcpOptionReader = None,
+        new_lines=True,
+        unsupported_options: typing.Optional[typing.List] = None,
+        **attributes):
+    if reader is None:
+        reader = tobiko.setup_fixture(OvnUnsupportedDhcpOptionReader)
+    # find new logs that match the pattern
+    responses = reader.read_responses()
+    if not new_lines:
+        responses = reader.responses
+    if attributes and responses:
+        responses = responses.with_attributes(**attributes)
+
+    # assert one line matches per unsupported dhcp option
+    test_case = tobiko.get_test_case()
+    for unsupported_option in unsupported_options or []:
+        messages_unsupported_option = responses.with_attributes(
+            unsupported_dhcp_option=unsupported_option)
+        test_case.assertEqual(1, len(messages_unsupported_option))
+        LOG.debug('Found one match for unsupported dhcp option '
+                  f'{unsupported_option}')

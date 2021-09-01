@@ -51,3 +51,5 @@ verify_osp_version = _topology.verify_osp_version
 NeutronNovaResponse = _neutron.NeutronNovaResponse
 NeutronNovaResponseReader = _neutron.NeutronNovaResponseReader
 read_neutron_nova_responses = _neutron.read_neutron_nova_responses
+assert_ovn_unsupported_dhcp_option_messages = (
+    _neutron.assert_ovn_unsupported_dhcp_option_messages)
