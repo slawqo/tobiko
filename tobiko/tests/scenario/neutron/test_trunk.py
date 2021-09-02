@@ -33,6 +33,7 @@ class TrunkTest(testtools.TestCase):
     stack = tobiko.required_setup_fixture(
         stacks.CentosTrunkServerStackFixture)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=120)
     @pytest.mark.ovn_migration
     def test_trunk_fip_after_reboot(self):
         ping.assert_reachable_hosts([self.stack.floating_ip_address])
