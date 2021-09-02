@@ -378,3 +378,12 @@ def get_list_env(name, separator=','):
         return value.split(separator)
     else:
         return []
+
+
+def is_prevent_create() -> bool:
+    return get_bool_env('TOBIKO_PREVENT_CREATE') is True
+
+
+def skip_if_prevent_create(reason='TOBIKO_PREVENT_CREATE is True'):
+    return tobiko.skip_if(reason=reason,
+                          predicate=is_prevent_create)

@@ -48,12 +48,8 @@ class ServerStackResourcesTest(testtools.TestCase):
         self.assertEqual(port.physical_resource_id, port_data['id'])
 
 
+@config.skip_if_prevent_create()
 class ServerCreationTest(testtools.TestCase):
-
-    def setUp(self):
-        testtools.TestCase.setUp(self)
-        if config.get_bool_env('TOBIKO_PREVENT_CREATE'):
-            self.skip('TOBIKO_PREVENT_CREATE is true')
 
     def test_server_creation(self):
         tests.test_server_creation()
