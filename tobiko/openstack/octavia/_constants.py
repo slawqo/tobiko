@@ -19,3 +19,16 @@ PROVISIONING_STATUS = 'provisioning_status'
 # Octavia provisioning status
 ACTIVE = 'ACTIVE'
 ERROR = 'ERROR'
+PENDING_UPDATE = 'PENDING_UPDATE'
+
+# Octavia services
+WORKER_SERVICE = 'tripleo_octavia_worker.service'
+HOUSEKEEPING_SERVICE = 'tripleo_octavia_housekeeping.service'
+HM_SERVICE = 'tripleo_octavia_health_manager.service'
+API_SERVICE = 'tripleo_octavia_api.service'
+
+# Octavia containers
+WORKER_CONTAINER = 'octavia_worker'
+HOUSEKEEPING_CONTAINER = 'octavia_housekeeping'
+HM_CONTAINER = 'octavia_health_manager'
+API_CONTAINER = 'octavia_api'

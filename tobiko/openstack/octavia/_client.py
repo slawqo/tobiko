@@ -13,11 +13,15 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 from octaviaclient.api.v2 import octavia
 
 import tobiko
 from tobiko.openstack import _client
 from tobiko.openstack import keystone
+from tobiko.openstack import nova
+from tobiko.openstack import topology
 
 
 OCTAVIA_CLIENT_CLASSSES = octavia.OctaviaAPI,
@@ -76,3 +80,57 @@ def get_loadbalancer(loadbalancer_id, client=None):
 def get_member(pool_id, member_id, client=None):
     return octavia_client(client).member_show(pool_id=pool_id,
                                               member_id=member_id)
+
+
+def list_amphorae(loadbalancer_id: str, client=None):
+    return octavia_client(client).amphora_list(
+        loadbalancer_id=loadbalancer_id)['amphorae']
+
+
+def list_amphoras_compute_nodes(load_balancer_id: str, client=None):
+    """List the compute nodes which host the LB amphoras
+
+    This function finds the Overcloud compute nodes which
+    host the amphoras and returns a list of their instances.
+    """
+
+    hostnames = set()
+    for amphora in list_amphorae(loadbalancer_id=load_balancer_id,
+                                 client=client):
+        server = nova.get_server(amphora['compute_id'])
+        hostnames.add(getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname'))
+    return list(hostnames)
+
+
+def get_amphoras_compute_nodes(load_balancer_id: str, client=None):
+    """Gets the hostnames/compute nodes which host the LB amphoras
+
+    This function finds the Overcloud compute nodes which
+    host the amphoras and returns a list of their instances.
+    """
+
+    hostnames = list_amphoras_compute_nodes(load_balancer_id=load_balancer_id,
+                                            client=client)
+    return topology.list_openstack_nodes(hostnames=hostnames)
+
+
+def get_amphora_vm(
+        loadbalancer_id: str, client=None) -> typing.Optional[nova.NovaServer]:
+
+    """Gets the LB's amphora virtual machine.
+
+    When the Octavia's topology is SINGLE, it returns
+    the amphora's only vm.
+    When the Octavia's topology is ACTIVE_STANDBY,
+    it returns the first amphora's vm.
+    It might be MASTER or BACKUP.
+    """
+
+    amphora_vm_id = list_amphorae(loadbalancer_id, client)[0]['compute_id']
+
+    err_msg = ("Could not find amphora_vm_id for any amphora in " +
+               f"LB {loadbalancer_id}")
+    tobiko_test_case = tobiko.get_test_case()
+    tobiko_test_case.assertTrue(amphora_vm_id, err_msg)
+
+    return nova.get_server(server_id=amphora_vm_id)
