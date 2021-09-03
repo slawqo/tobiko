@@ -45,6 +45,7 @@ class CentosServerStackTest(test_cirros.CirrosServerStackTest):
         nova.wait_for_cloud_init_done(ssh_client=self.stack.ssh_client)
 
 
+@tobiko.skip("Can't SSH to CentOS 7 server")
 @keystone.skip_unless_has_keystone_credentials()
 class Centos7ServerStackTest(CentosServerStackTest):
 
