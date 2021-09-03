@@ -86,7 +86,7 @@ def check_if_process_running_on_overcloud(process):
         return False
 
 
-class OvercloudServicesStatus(object):
+class OvercloudServicesStatus(tobiko.SharedFixture):
     """
     class to handle services checks,
     checks that all of these are running in the overcloud:
@@ -94,14 +94,29 @@ class OvercloudServicesStatus(object):
     'pacemaker.service','rpcbind.service','sshd.service'
 
     """
-    def __init__(self):
-        self.services_to_check = ['corosync.service', 'iptables.service',
-                                  'network.service', 'ntpd.service',
-                                  'pacemaker.service', 'rpcbind.service',
-                                  'sshd.service']
 
+    SERVICES_TO_CHECK: typing.List[str] = [
+        'corosync.service',
+        'iptables.service',
+        'network.service',
+        # Not found on OSP 16
+        # 'ntpd.service',
+        'pacemaker.service',
+        'rpcbind.service',
+        'sshd.service']
+
+    def __init__(self,
+                 services_to_check: typing.List[str] = None):
+        super().__init__()
+        if services_to_check is None:
+            services_to_check = self.SERVICES_TO_CHECK
+        self.services_to_check = services_to_check
+
+    oc_services_df: typing.Any
+
+    def setup_fixture(self):
         self.oc_services_df = overcloud.get_overcloud_nodes_dataframe(
-                                            get_overcloud_node_services_table)
+            get_overcloud_node_services_table)
 
     @property
     def basic_overcloud_services_running(self):
@@ -110,6 +125,7 @@ class OvercloudServicesStatus(object):
         running
         :return: Bool
         """
+        tobiko.setup_fixture(self)
         for service_name in self.services_to_check:
             if not self.oc_services_df.query('UNIT=="{}"'.format(
                     service_name)).empty:
