@@ -112,6 +112,7 @@ class L3haSameHostNetworkTest(SameHostNetworkTest):
 @neutron.skip_if_missing_networking_extensions('l3-ha')
 @neutron.skip_if_missing_networking_agents(binary='neutron-l3-agent',
                                            count=2)
+@nova.skip_if_missing_hypervisors(count=2, state='up', status='enabled')
 class L3haDifferentHostNetworkTest(DifferentHostNetworkTest):
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_setup_fixture(
