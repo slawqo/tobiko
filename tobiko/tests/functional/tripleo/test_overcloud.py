@@ -112,14 +112,15 @@ class OvercloudServicesTest(testtools.TestCase):
     across the overcloud nodes
     """
 
+    services_status: services.OvercloudServicesStatus = (
+        tobiko.required_fixture(services.OvercloudServicesStatus))
+
     def test_get_services_resource_table(self):
-        oss = services.OvercloudServicesStatus()
-        self.assertIsInstance(oss.oc_services_df,
+        self.assertIsInstance(self.services_status.oc_services_df,
                               pd.DataFrame)
 
     def test_overcloud_services(self):
-        oss = services.OvercloudServicesStatus()
-        self.assertTrue(oss.basic_overcloud_services_running)
+        self.assertTrue(self.services_status.basic_overcloud_services_running)
 
     def test_get_overcloud_nodes_running_pcs_resource(self):
         nodes_list = pacemaker.get_overcloud_nodes_running_pcs_resource(
