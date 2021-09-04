@@ -31,7 +31,8 @@ from tobiko.tripleo import undercloud
 @neutron.skip_if_missing_networking_agents(neutron.L3_AGENT)
 class OpenvswitchTest(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack: stacks.ServerStackFixture = tobiko.required_fixture(
+        stacks.CirrosServerStackFixture)
 
     def setUp(self):
         super(OpenvswitchTest, self).setUp()
@@ -72,6 +73,7 @@ class OpenvswitchTest(testtools.TestCase):
         raise neutron.AgentNotFoundOnHost(agent_type="neutron-ovs-agent",
                                           host=hostname)
 
+    @stacks.NetworkStackFixture.skip_if_router_is_distributed()
     @undercloud.skip_if_missing_undercloud
     def test_recreate_physical_bridge(self):
         # Check if vm is reachable before test

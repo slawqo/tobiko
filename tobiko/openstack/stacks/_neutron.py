@@ -291,6 +291,21 @@ class NetworkStackFixture(heat.HeatStackFixture):
             requirements['router'] += 1
         return requirements
 
+    def is_router_distributed(self) -> bool:
+        if self.has_gateway:
+            tobiko.setup_fixture(self)
+            return bool(self.gateway_details.get('distributed'))
+        else:
+            return False
+
+    @classmethod
+    def skip_if_router_is_distributed(cls, reason: str = None):
+        fixture = tobiko.get_fixture(cls)
+        if reason is None:
+            reason = "Distributed router is not supported"
+        return tobiko.skip_if(reason=reason,
+                              predicate=fixture.is_router_distributed)
+
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-writable')
 class NetworkWithNetMtuWriteStackFixture(NetworkStackFixture):
