@@ -22,6 +22,7 @@ from tobiko.openstack.openstackclient import _port
 from tobiko.openstack.openstackclient import _security_group
 from tobiko.openstack.openstackclient import _security_group_rule
 from tobiko.openstack.openstackclient import _subnet
+from tobiko.openstack.openstackclient import _log
 
 
 OSPCliError = _exception.OSPCliAuthError
@@ -61,3 +62,9 @@ subnet_create = _subnet.subnet_create
 subnet_delete = _subnet.subnet_delete
 subnet_set = _subnet.subnet_set
 subnet_unset = _subnet.subnet_unset
+
+network_loggable_resources_list = _log.network_loggable_resources_list
+network_log_create = _log.network_log_create
+network_log_show = _log.network_log_show
+network_log_list = _log.network_log_list
+network_log_delete = _log.network_log_delete
