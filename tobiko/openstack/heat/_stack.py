@@ -69,9 +69,12 @@ class HeatStackFixture(tobiko.SharedFixture):
     """Manages Heat stacks."""
 
     client: _client.HeatClientType = None
-    retry_create_stack = 1
-    wait_interval: float = 5
-    wait_timeout: float = 600.
+    retry_count: int = 1
+    retry_timeout: float = 1200.
+    min_retry_interval: float = 0.1
+    max_retry_interval: float = 3.
+    wait_interval: tobiko.Seconds = 5
+    wait_timeout: tobiko.Seconds = 600.
     template: _template.HeatTemplateFixture
     stack: typing.Optional[stacks.Stack] = None
     stack_name: typing.Optional[str] = None
@@ -97,17 +100,8 @@ class HeatStackFixture(tobiko.SharedFixture):
                                                 stack=self)
         if client is not None:
             self.client = client
-        if config.get_bool_env('TOBIKO_PREVENT_CREATE'):
-            self.retry_create_stack = 0
         if wait_interval is not None:
             self.wait_interval = wait_interval
-
-    def _get_retry_value(self, retry) -> int:
-        if retry is None:
-            retry = self.retry_create_stack
-            if retry is None:
-                retry = 1
-        return int(retry)
 
     def setup_fixture(self):
         self.setup_stack_name()
@@ -154,30 +148,39 @@ class HeatStackFixture(tobiko.SharedFixture):
     def get_stack_parameters(self):
         return tobiko.reset_fixture(self.parameters).values
 
-    retry_create_min_sleep = 0.1
-    retry_create_max_sleep = 3.
+    def create_stack(self, retry: tobiko.Retry = None) -> stacks.Stack:
+        if config.get_bool_env('TOBIKO_PREVENT_CREATE'):
+            stack = self.validate_created_stack()
+        else:
+            for attempt in tobiko.retry(retry,
+                                        count=self.retry_count,
+                                        timeout=self.retry_timeout,
+                                        interval=0.):
+                try:
+                    stack = self.try_create_stack()
+                    break
+                except InvalidStackError:
+                    LOG.exception(f"Error creating stack '{self.stack_name}'",
+                                  exc_info=1)
+                    if attempt.is_last:
+                        raise
 
-    def create_stack(self, retry=None) -> stacks.Stack:
-        for attempt in tobiko.retry(count=self._get_retry_value(retry),
-                                    interval=0.,
-                                    timeout=self.wait_timeout):
-            try:
-                return self.try_create_stack()
-            except tobiko.TobikoException:
-                attempt.check_limits()
-                # It uses a random time sleep to make conflicting concurrent
-                # creations less probable to occur
-                sleep_time = random_sleep_time(
-                    min_time=self.retry_create_min_sleep,
-                    max_time=self.retry_create_max_sleep)
-                LOG.debug(f"Failed creating stack '{self.stack_name}' "
-                          f"(attempt {attempt.number} of {attempt.count})."
-                          f'It will retry after {sleep_time} seconds',
-                          exc_info=1)
-                time.sleep(sleep_time)
+                    assert attempt.count is not None
+                    assert attempt.timeout is not None
 
-        raise RuntimeError("It is expected check_limits to re-raise"
-                           "exception before reaching here")
+                    # It uses a random time sleep to make conflicting
+                    # concurrent creations less probable to occur
+                    sleep_time = random_sleep_time(
+                        min_time=self.min_retry_interval,
+                        max_time=self.max_retry_interval)
+                    LOG.debug(f"Failed creating stack '{self.stack_name}' "
+                              f"(attempt {attempt.number} of "
+                              f"{attempt.count}). It will retry after "
+                              f"{sleep_time} seconds", exc_info=1)
+                    time.sleep(sleep_time)
+            else:
+                raise RuntimeError('Retry loop broken')
+        return stack
 
     #: valid status expected to be the stack after exiting from create_stack
     # method
@@ -188,25 +191,28 @@ class HeatStackFixture(tobiko.SharedFixture):
             expected_status=self.expected_creted_status,
             check=True)
 
-    def try_create_stack(self):
+    def try_create_stack(self) -> stacks.Stack:
         stack = self.wait_for_stack_status(
             expected_status={CREATE_COMPLETE, CREATE_FAILED,
                              CREATE_IN_PROGRESS, DELETE_COMPLETE,
                              DELETE_FAILED})
 
-        stack_status = getattr(stack, 'stack_status', DELETE_COMPLETE)
-        if stack_status in {CREATE_IN_PROGRESS, CREATE_COMPLETE}:
-            LOG.debug(f"Stack already created (name='{self.stack_name}', "
-                      f"id='{stack.id}').")
-            return stack
-        if stack_status.endswith('_FAILED'):
-            LOG.debug('Delete existing failed stack: %r (id=%r)',
-                      self.stack_name, stack.id)
-            self.delete_stack(stack_id=stack.id)
+        if stack is not None:
+            stack_status = stack.stack_status
+            if stack_status in {CREATE_IN_PROGRESS, CREATE_COMPLETE}:
+                LOG.debug(f"Stack already created (name='{self.stack_name}', "
+                          f"id='{stack.id}').")
+                return self.validate_created_stack()
+
+            if stack_status.endswith('_FAILED'):
+                LOG.debug(f"Stack '{self.stack_name}' (id='{stack.id}') "
+                          f"found in '{stack_status}' status (reason="
+                          f"'{stack.stack_status_reason}'). Deleting it...")
+                self.delete_stack(stack_id=stack.id)
+
+            self.wait_until_stack_deleted()
 
         # Cleanup cached objects
-        if stack is not None:
-            self.wait_until_stack_deleted()
         assert self.stack is None
         self._outputs = self._resources = None
 
@@ -219,7 +225,7 @@ class HeatStackFixture(tobiko.SharedFixture):
 
         LOG.debug('Begin creating stack %r...', self.stack_name)
         try:
-            created_id = self.client.stacks.create(
+            stack_id: str = self.setup_client().stacks.create(
                 stack_name=self.stack_name,
                 template=self.template.template_yaml,
                 parameters=parameters)['stack']['id']
@@ -227,23 +233,25 @@ class HeatStackFixture(tobiko.SharedFixture):
             LOG.debug(f"Stack '{self.stack_name}' already created")
             return self.validate_created_stack()
 
-        LOG.debug(f'New stack being created: name={self.stack_name}, '
-                  f'id={created_id}.')
-        invalid_id: typing.Optional[str] = created_id
+        LOG.debug(f"New stack being created: name='{self.stack_name}', "
+                  f"id='{stack_id}'.")
         try:
             stack = self.validate_created_stack()
-            if stack.id == created_id:
-                LOG.debug('Stack successfully created "'
-                          f"(name={self.stack_name}, id={created_id}).")
-                invalid_id = None
-            else:
-                LOG.debug('Duplicate stack created "'
-                          f"(name={self.stack_name}, id={created_id})...")
-        finally:
-            if invalid_id is not None:
-                LOG.debug(f'Deleting invalid stack (name={self.stack_name}, "'
-                          f'"id={invalid_id})...')
-                self.delete_stack(stack_id=invalid_id)
+        except InvalidStackError as ex:
+            LOG.debug(f'Deleting invalid stack (name={self.stack_name}, "'
+                      f'"id={stack_id}): {ex}')
+            self.delete_stack(stack_id=stack_id)
+            raise
+
+        if stack_id != stack.id:
+            LOG.debug(f'Deleting duplicate stack (name={self.stack_name}, "'
+                      f'"id={stack_id})')
+            self.delete_stack(stack_id=stack_id)
+            del stack_id
+
+        LOG.debug('Stack successfully created "'
+                  f"(name={self.stack_name}, id={stack.id}).")
+        return stack
 
     _resources = None
 
@@ -342,7 +350,7 @@ class HeatStackFixture(tobiko.SharedFixture):
                 break
 
             assert stack.stack_status == DELETE_COMPLETE
-            if attempt.time_left == 0.:
+            if attempt.is_last:
                 raise HeatStackDeletionFailed(
                     name=self.stack_name,
                     observed=stack.stack_status,
@@ -385,7 +393,7 @@ class HeatStackFixture(tobiko.SharedFixture):
                             f"status: '{stack_status}'")
                 break
 
-            if attempt.time_left == 0.:
+            if attempt.is_last:
                 LOG.warning(f"Timed out waiting for stack '{self.stack_name}' "
                             f"status to change from '{stack_status}' to "
                             f"'{expected_status}'.")
@@ -397,6 +405,9 @@ class HeatStackFixture(tobiko.SharedFixture):
         else:
             raise RuntimeError('Retry loop broken')
 
+        if stack is not None:
+            self._log_stack_status(stack)
+
         if check:
             if stack is None:
                 if DELETE_COMPLETE not in expected_status:
@@ -407,6 +418,19 @@ class HeatStackFixture(tobiko.SharedFixture):
         return stack
 
     _outputs = None
+
+    def _log_stack_status(self, stack):
+        if stack is None:
+            LOG.debug(f"Stack '{self.stack_name}' doesn't exist")
+        else:
+            stack_status_reason = stack.stack_status_reason
+            if stack_status_reason:
+                LOG.info(f"Stack '{self.stack_name}' status is "
+                         f"'{stack.stack_status}'. Reason:\n"
+                         f"\t{stack_status_reason}")
+            else:
+                LOG.debug(f"Stack '{self.stack_name}' status is "
+                          f"'{stack.stack_status}'.")
 
     def get_stack_outputs(self):
         outputs = self._outputs
@@ -612,11 +636,19 @@ def check_stack_status(stack: stacks.Stack,
         status_reason=stack.stack_status_reason)
 
 
-class HeatStackNotFound(tobiko.TobikoException):
+class HeatStackError(tobiko.TobikoException):
+    message = "error creating stack '{name}'"
+
+
+class HeatStackNotFound(HeatStackError):
     message = "stack {name!r} not found"
 
 
-class InvalidHeatStackStatus(tobiko.TobikoException):
+class InvalidStackError(HeatStackError):
+    message = "invalid stack {name!r}"
+
+
+class InvalidHeatStackStatus(InvalidStackError):
     message = ("stack {name!r} status {observed!r} not in {expected!r}\n"
                "{status_reason!s}")
 
