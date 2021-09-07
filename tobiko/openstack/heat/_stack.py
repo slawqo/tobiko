@@ -159,7 +159,8 @@ class HeatStackFixture(tobiko.SharedFixture):
 
     def create_stack(self, retry=None) -> stacks.Stack:
         for attempt in tobiko.retry(count=self._get_retry_value(retry),
-                                    interval=0.):
+                                    interval=0.,
+                                    timeout=self.wait_timeout):
             try:
                 return self.try_create_stack()
             except tobiko.TobikoException:
