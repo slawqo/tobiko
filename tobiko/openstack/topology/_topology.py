@@ -15,7 +15,7 @@ from __future__ import absolute_import
 
 import collections
 import re
-import typing  # noqa
+import typing
 import weakref
 
 import netaddr
@@ -40,21 +40,31 @@ from tobiko.openstack.topology import _exception
 LOG = log.getLogger(__name__)
 
 
-def list_openstack_nodes(topology=None, group=None, hostnames=None, **kwargs):
+PatternType = type(re.compile(r'.*'))
+OpenstackGroupNameType = typing.Union[str, typing.Pattern]
+OpenstackGroupNamesType = typing.Union[OpenstackGroupNameType, typing.Iterable[
+    OpenstackGroupNameType]]
+
+
+def list_openstack_nodes(topology: 'OpenStackTopology' = None,
+                         group: OpenstackGroupNamesType = None,
+                         hostnames=None, **kwargs):
     topology = topology or get_openstack_topology()
     if group is None:
         nodes = topology.nodes
     elif isinstance(group, str):
         nodes = topology.get_group(group=group)
+    elif isinstance(group, PatternType):
+        nodes = topology.get_groups(groups=[group])
     else:
+        assert isinstance(group, collections.Iterable)
         nodes = topology.get_groups(groups=group)
 
     if hostnames:
         names = {node_name_from_hostname(hostname)
                  for hostname in hostnames}
-        nodes = [node
-                 for node in nodes
-                 if node.name in names]
+        nodes = nodes.select(lambda node: node.name in names)
+
     if kwargs:
         nodes = nodes.with_attributes(**kwargs)
     return nodes
@@ -412,18 +422,29 @@ class OpenStackTopology(tobiko.SharedFixture):
     def create_group() -> tobiko.Selection[OpenStackTopologyNode]:
         return tobiko.Selection()
 
-    def get_group(self, group) -> tobiko.Selection[OpenStackTopologyNode]:
+    def get_group(self, group: str) \
+            -> tobiko.Selection[OpenStackTopologyNode]:
+        tobiko.check_valid_type(group, str)
         try:
-            return self._groups[group]
+            return tobiko.Selection(self._groups[group])
         except KeyError as ex:
             raise _exception.NoSuchOpenStackTopologyNodeGroup(
                 group=group) from ex
 
-    def get_groups(self, groups) -> tobiko.Selection[OpenStackTopologyNode]:
-        nodes: tobiko.Selection[OpenStackTopologyNode] = tobiko.Selection()
-        for group in groups:
-            nodes.extend(self.get_group(group))
-        return nodes
+    def list_group_names(self,
+                         *matchers: 'MatchStringType') \
+            -> typing.List[str]:
+        group_names: typing.List[str] = list(self._groups.keys())
+        if matchers and group_names:
+            group_names = match_strings(group_names, *matchers)
+        return group_names
+
+    def get_groups(self, groups: typing.Iterable['MatchStringType']) -> \
+            tobiko.Selection[OpenStackTopologyNode]:
+        node_names: typing.Set[str] = set()
+        for group in self.list_group_names(*groups):
+            node_names.update(node.name for node in self.get_group(group))
+        return self.nodes.select(lambda node: node.name in node_names)
 
     @property
     def groups(self) -> typing.List[str]:
@@ -600,3 +621,23 @@ def skip_unless_osp_version(version, higher=False, lower=False):
     skip_msg = "OSP version doesn't match the requirement"
     return tobiko.skip_unless(skip_msg, verify_osp_version,
                               version, higher, lower)
+
+
+MatchStringType = typing.Union[str, typing.Pattern]
+
+
+def match_strings(strings: typing.Iterable[str],
+                  *matchers: MatchStringType) -> \
+        typing.List[str]:
+    matching: typing.List[str] = []
+    for matcher in matchers:
+        tobiko.check_valid_type(matcher, str, PatternType)
+        if isinstance(matcher, str):
+            if matcher in strings:
+                matching.append(matcher)
+        else:
+            assert isinstance(matcher, PatternType)
+            for string in strings:
+                if matcher.match(string):
+                    matching.append(string)
+    return matching
