@@ -15,7 +15,9 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
 import random
+import re
 
 import testtools
 
@@ -25,6 +27,9 @@ from tobiko.openstack import nova
 from tobiko.openstack import topology
 from tobiko.shell import ping
 from tobiko.shell import sh
+
+
+PatternType = type(re.compile(r''))
 
 
 @keystone.skip_unless_has_keystone_credentials()
@@ -74,9 +79,23 @@ class OpenStackTopologyTest(testtools.TestCase):
         nodes = topology.list_openstack_nodes(
             topology=self.topology, group=group, hostnames=hostnames)
         self.assertTrue(set(nodes).issubset(set(self.topology.nodes)))
+        self.assertEqual(len(set(nodes)), len(nodes),
+                         f"Repeated node found: {nodes}")
         for node in nodes:
-            if group:
+            if isinstance(group, str):
                 self.assertIn(group, node.groups)
+            elif isinstance(group, PatternType):
+                for actual_group in node.groups:
+                    if group.match(actual_group):
+                        break
+                else:
+                    self.fail(f"Any node {node.name} group matches "
+                              f"'{group}': {node.groups}")
+            elif isinstance(group, collections.Iterable):
+                matching_groups = set(group) & set(node.groups)
+                self.assertNotEqual(set(), matching_groups,
+                                    f"Any group of node {node.name} "
+                                    f"matches '{group}': {node.groups}")
             if hostnames:
                 hostnames = [node_name_from_hostname(h)
                              for h in hostnames]
@@ -84,7 +103,27 @@ class OpenStackTopologyTest(testtools.TestCase):
         return nodes
 
     def test_list_openstack_topology_with_group(self):
-        self.test_list_openstack_topology(group='compute')
+        group = self.topology.groups[0]
+        expected_nodes = set(self.topology.get_group(group))
+        actual_nodes = set(self.test_list_openstack_topology(group=group))
+        self.assertEqual(expected_nodes, actual_nodes)
+
+    def test_list_openstack_topology_with_group_pattern(self):
+        groups = list(self.topology.groups)[:2]
+        pattern = re.compile('|'.join(groups))
+        expected_nodes = set()
+        for group in groups:
+            expected_nodes.update(self.topology.get_group(group))
+        actual_nodes = set(self.test_list_openstack_topology(group=pattern))
+        self.assertEqual(expected_nodes, actual_nodes)
+
+    def test_list_openstack_topology_with_groups(self):
+        groups = list(self.topology.groups)[:2]
+        expected_nodes = set()
+        for group in groups:
+            expected_nodes.update(self.topology.get_group(group))
+        actual_nodes = set(self.test_list_openstack_topology(group=groups))
+        self.assertEqual(expected_nodes, actual_nodes)
 
     def test_list_openstack_topology_with_hostnames(self):
         expected_nodes = self.topology.nodes[0::2]
