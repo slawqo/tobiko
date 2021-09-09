@@ -241,7 +241,7 @@ class FloatingIpWithL3HATest(FloatingIPTest):
     stack = tobiko.required_setup_fixture(stacks.L3haServerStackFixture)
 
 
-@topology.skip_unless_osp_version('16.1')
+@topology.skip_unless_osp_version('16.1', higher=True)
 class TestFloatingIPLogging(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(stacks.NetworkStackFixture)
