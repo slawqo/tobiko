@@ -70,6 +70,7 @@ def skip_unless(reason: str,
     """Mark test case for being skipped for a given reason unless it matches"""
     predicate = _get_skip_predicate(predicate, *args, **kwargs)
     return _skip_decorator(reason=reason,
+                           unless=True,
                            bugzilla=bugzilla,
                            predicate=predicate)
 

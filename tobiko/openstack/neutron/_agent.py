@@ -98,8 +98,8 @@ def missing_networking_agents(count=1, **params) -> int:
     return max(0, count - actual_count)
 
 
-def has_networking_agents(**params) -> bool:
-    return count_networking_agents(**params) > 0
+def has_networking_agents(count=1, **params) -> bool:
+    return count_networking_agents(**params) >= count
 
 
 def has_ovn() -> bool:
@@ -134,17 +134,15 @@ def skip_if_missing_networking_agents(
 
 def skip_unless_missing_networking_agents(
         binary: AgentBinaryType = None,
-        count: int = 1,
         **params) \
         -> DecoratorType:
     if binary is not None:
         params['binary'] = binary
-    message = "found {return_value!r} agent(s)"
+    message = "has {return_value!r} agent(s)"
     if params:
         message += " with {!s}".format(
             ', '.join("{!s}={!r}".format(k, v) for k, v in params.items()))
-    return tobiko.skip_unless(message, missing_networking_agents, count=count,
-                              **params)
+    return tobiko.skip_if(message, count_networking_agents, **params)
 
 
 def skip_if_is_old_ovn():
