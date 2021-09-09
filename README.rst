@@ -79,7 +79,7 @@ References
 ----------
 
 * Free software: Apache License, Version 2.0
-* Documentation: https://tobiko.readthedocs.io/en/latest/
+* Documentation: https://tobiko.readthedocs.io/
 * Release notes: https://docs.openstack.org/releasenotes/tobiko/
 * Source code: https://opendev.org/x/tobiko
 * Bugs: https://storyboard.openstack.org/#!/project/x/tobiko
