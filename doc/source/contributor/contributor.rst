@@ -13,7 +13,7 @@ to run Tobiko test cases against a remote OpenStack cloud
 
 .. sidebar:: See also
 
-    To just execute Tobiko test cases pelase read
+    To just execute Tobiko test cases please read
     :ref:`tobiko-quick-start-guide`.
 
     To install Tobiko inside a virutalenv please read
