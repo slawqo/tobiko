@@ -80,8 +80,8 @@ def parse_ip_address(text: str) -> typing.Tuple[netaddr.IPAddress, int]:
     return netaddr.IPAddress(address), prefix_len
 
 
-def list_network_namespaces(**execute_params):
-    namespaces = tobiko.Selection()
+def list_network_namespaces(**execute_params) -> typing.List[str]:
+    namespaces: typing.List[str] = []
     output = execute_ip(['-o', 'netns', 'list'], **execute_params)
     if output:
         for line in output.splitlines():
@@ -91,8 +91,8 @@ def list_network_namespaces(**execute_params):
     return namespaces
 
 
-def list_network_interfaces(**execute_params):
-    interfaces = tobiko.Selection()
+def list_network_interfaces(**execute_params) -> typing.List[str]:
+    interfaces: typing.List[str] = []
     output = execute_ip(['--brief', 'address', 'list'], **execute_params)
     if output:
         for line in output.splitlines():
@@ -115,7 +115,7 @@ IP_COMMAND = sh.shell_command(['/sbin/ip'])
 
 
 def execute_ip(ifconfig_args, ip_command=None, ignore_errors=False,
-               **execute_params):
+               **execute_params) -> str:
     if ip_command:
         ip_command = sh.shell_command(ip_command)
     else:
