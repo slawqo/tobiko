@@ -18,5 +18,5 @@ class NetworkNamespaceFixture(tobiko.SharedFixture):
                 ignore_errors=True,
                 ssh_client=node.ssh_client)
             if network_namespaces:
-                self.network_namespace = network_namespaces.first
+                self.network_namespace = network_namespaces[0]
                 self.ssh_client = node.ssh_client
