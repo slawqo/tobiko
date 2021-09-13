@@ -23,7 +23,6 @@ import tobiko
 from tobiko.openstack import neutron
 from tobiko.openstack import openstackclient
 from tobiko.openstack import stacks
-from tobiko.openstack import topology
 
 
 LOG = log.getLogger(__name__)
@@ -120,10 +119,8 @@ class BaseCliTest(testtools.TestCase):
         return f'{self.__class__.__name__}-{random_string}'
 
 
-@neutron.skip_unless_is_ovs()
-@topology.skip_unless_osp_version('16.1', higher=True)
 @neutron.skip_if_missing_networking_extensions('logging')
-class NeutronOvsLogCliTest(BaseCliTest):
+class NeutronLogCliTest(BaseCliTest):
 
     LOGS_AMOUNT = 2
 
@@ -202,13 +199,6 @@ class NeutronOvsLogCliTest(BaseCliTest):
         for log_name in log_names:
             for _log in logs:
                 self.assertNotEqual(_log['name'], log_name, err_msg)
-
-
-@neutron.skip_unless_is_ovn()
-@topology.skip_unless_osp_version('16.2', higher=True)
-@neutron.skip_if_missing_networking_extensions('logging')
-class NeutronOvnLogCliTest(NeutronOvsLogCliTest):
-    pass
 
 
 class NeutronNetworkCliTest(BaseCliTest):
