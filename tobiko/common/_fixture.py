@@ -484,7 +484,10 @@ class RequiredFixtureProperty(object):
         self.setup = setup
 
     def __get__(self, instance, _):
-        return self.get_fixture(instance)
+        if instance is None:
+            return self
+        else:
+            return self.get_fixture(instance)
 
     def get_fixture(self, _instance):
         fixture = get_fixture(self.fixture, **self.fixture_params)
