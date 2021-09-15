@@ -14,6 +14,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+from oslo_log import log
 import pytest
 import testtools
 
@@ -21,25 +22,37 @@ import tobiko
 from tobiko import config
 from tobiko.openstack import nova
 from tobiko.openstack import stacks
-from tobiko.shell import ping
 
 
 CONF = config.CONF
+LOG = log.getLogger(__name__)
 
 
-class TrunkTest(testtools.TestCase):
+class CentosRebootTrunkServerStackFixture(
+        stacks.CentosTrunkServerStackFixture):
+    pass
+
+
+class CentosTrunkTest(testtools.TestCase):
     """Tests trunk functionality"""
 
-    stack = tobiko.required_setup_fixture(
-        stacks.CentosTrunkServerStackFixture)
+    stack = tobiko.required_fixture(CentosRebootTrunkServerStackFixture)
 
-    @pytest.mark.flaky(reruns=3, reruns_delay=120)
     @pytest.mark.ovn_migration
-    def test_trunk_fip_after_reboot(self):
-        ping.assert_reachable_hosts([self.stack.floating_ip_address])
-        server = nova.shutoff_server(self.stack.server_id)
-        self.assertEqual('SHUTOFF', server.status)
-        ping.assert_unreachable_hosts([self.stack.ip_address])
-        server = nova.activate_server(self.stack.server_id)
-        self.assertEqual('ACTIVE', server.status)
-        ping.assert_reachable_hosts([self.stack.ip_address])
+    def test_after_server_reboot(self):
+        self.shutoff_server()
+        self.activate_server()
+
+    def test_after_server_shutoff(self):
+        self.activate_server()
+        self.shutoff_server()
+
+    def activate_server(self) -> nova.NovaServer:
+        server = self.stack.ensure_server_status('ACTIVE')
+        self.stack.assert_is_reachable()
+        return server
+
+    def shutoff_server(self) -> nova.NovaServer:
+        server = self.stack.ensure_server_status('SHUTOFF')
+        self.stack.assert_is_unreachable()
+        return server
