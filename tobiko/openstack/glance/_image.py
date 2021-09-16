@@ -431,6 +431,9 @@ class CustomizedGlanceImageFixture(URLGlanceImageFixture):
     def write_files(self) -> typing.Dict[str, str]:
         return {}
 
+    username: str = ''
+    password: str = ''
+
     def customize_image_file(self, base_file: str) -> str:
         customized_file = base_file + '.1'
         if os.path.isfile(customized_file):
@@ -467,6 +470,11 @@ class CustomizedGlanceImageFixture(URLGlanceImageFixture):
         install_packages = self.install_packages
         if install_packages:
             options += ['--install', ','.join(install_packages)]
+
+        username = self.username
+        password = self.password
+        if username and password:
+            options += f'--password "{username}:password:{password}"'
 
         run_commands = self.run_commands
         if run_commands:
