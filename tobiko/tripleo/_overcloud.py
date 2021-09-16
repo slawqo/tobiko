@@ -76,7 +76,7 @@ def power_on_overcloud_node(server: typing.Union[nova.ServerType]):
     if node_id is not None:
         client = ironic.get_ironic_client(session=session)
         try:
-            ironic.power_on_node(client=client, node=node_id)
+            ironic.power_on_node(client=client, node=node_id, timeout=60)
             return
         except ironic.WaitForNodePowerStateError:
             LOG.exception(f"Failed powering on Ironic node: '{node_id}'")
@@ -93,7 +93,7 @@ def power_off_overcloud_node(server: typing.Union[nova.ServerType]) \
     if node_id is not None:
         client = ironic.get_ironic_client(session=session)
         try:
-            ironic.power_off_node(client=client, node=node_id)
+            ironic.power_off_node(client=client, node=node_id, timeout=60)
             return
         except ironic.WaitForNodePowerStateError:
             LOG.exception(f"Failed powering off Ironic node: '{node_id}'")
