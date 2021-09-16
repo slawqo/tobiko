@@ -33,6 +33,7 @@ from tobiko.openstack import nova
 from tobiko.openstack.stacks import _hot
 from tobiko.openstack.stacks import _neutron
 from tobiko.shell import curl
+from tobiko.shell import ping
 from tobiko.shell import sh
 from tobiko.shell import ssh
 
@@ -313,8 +314,9 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
                                        length=self.max_console_output_length)
 
     def ensure_server_status(
-            self, status: str,
-            retry_count: typing.Optional[int] = None,
+            self,
+            status: str,
+            retry_count: int = None,
             retry_timeout: tobiko.Seconds = None,
             retry_interval: tobiko.Seconds = None):
         self.ssh_client.close()
@@ -341,6 +343,8 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
             else:
                 assert server.status == status
                 break
+        else:
+            raise RuntimeError('Broken retry loop')
 
         return server
 
@@ -350,6 +354,12 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         requirements['instances'] += 1
         requirements['cores'] += (self.flavor_stack.vcpus or 1)
         return requirements
+
+    def assert_is_reachable(self):
+        ping.assert_reachable_hosts([self.ip_address])
+
+    def assert_is_unreachable(self):
+        ping.assert_unreachable_hosts([self.ip_address])
 
     user_data = None
 
