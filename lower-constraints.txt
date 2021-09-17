@@ -21,6 +21,7 @@ python-neutronclient==7.2.1
 python-novaclient==17.2.1
 python-octaviaclient==2.2.0
 python-openstackclient==5.4.0
+PyYAML==5.4.1
 six==1.15.0
 sshtunnel==0.3.1
 stestr==3.1.0
