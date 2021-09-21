@@ -39,15 +39,21 @@ INETS = {
 }
 
 
-def list_ip_addresses(ip_version: typing.Optional[int] = None,
-                      scope: str = None, **execute_params) -> \
+def list_ip_addresses(ip_version: int = None,
+                      device: str = None,
+                      scope: str = None,
+                      **execute_params) -> \
         tobiko.Selection[netaddr.IPAddress]:
     inets = INETS.get(ip_version)
     if inets is None:
         error = "invalid IP version: {!r}".format(ip_version)
         raise IpError(error=error)
 
-    output = execute_ip(['-o', 'address', 'list'], **execute_params)
+    command = ['-o', 'address', 'list']
+    if device is not None:
+        tobiko.check_valid_type(device, str)
+        command.append(device)
+    output = execute_ip(command, **execute_params)
 
     ips: tobiko.Selection[netaddr.IPAddress] = tobiko.Selection()
     if output:
