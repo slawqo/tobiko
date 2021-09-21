@@ -13,7 +13,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import tobiko
 from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack.stacks import _nova

@@ -20,7 +20,6 @@ import testtools
 
 import tobiko
 from tobiko import config
-from tobiko.openstack import nova
 from tobiko.openstack import stacks
 
 
@@ -28,31 +27,33 @@ CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
-class CentosRebootTrunkServerStackFixture(
-        stacks.CentosTrunkServerStackFixture):
+class RebootTrunkServerStackFixture(stacks.UbuntuServerStackFixture):
     pass
 
 
-class CentosTrunkTest(testtools.TestCase):
+class TrunkTest(testtools.TestCase):
     """Tests trunk functionality"""
 
-    stack = tobiko.required_fixture(CentosRebootTrunkServerStackFixture)
+    stack = tobiko.required_fixture(RebootTrunkServerStackFixture)
+
+    vlan_proxy_stack = tobiko.required_fixture(
+        stacks.VlanProxyServerStackFixture)
+
+    @property
+    def vlan_proxy_ssh_client(self):
+        return self.vlan_proxy_stack.ssh_client
+
+    def test_activate_server(self):
+        self.stack.ensure_server_status('ACTIVE')
+        self.stack.assert_is_reachable()
+        self.stack.assert_vlan_is_reachable(ip_version=4)
+
+    def test_shutoff_server(self):
+        self.stack.ensure_server_status('SHUTOFF')
+        self.stack.assert_is_unreachable()
+        self.stack.assert_vlan_is_unreachable(ip_version=4)
 
     @pytest.mark.ovn_migration
-    def test_after_server_reboot(self):
-        self.shutoff_server()
-        self.activate_server()
-
-    def test_after_server_shutoff(self):
-        self.activate_server()
-        self.shutoff_server()
-
-    def activate_server(self) -> nova.NovaServer:
-        server = self.stack.ensure_server_status('ACTIVE')
-        self.stack.assert_is_reachable()
-        return server
-
-    def shutoff_server(self) -> nova.NovaServer:
-        server = self.stack.ensure_server_status('SHUTOFF')
-        self.stack.assert_is_unreachable()
-        return server
+    def test_shutoff_then_activate_server(self):
+        self.test_shutoff_server()
+        self.test_activate_server()

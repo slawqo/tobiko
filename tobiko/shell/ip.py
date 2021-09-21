@@ -76,6 +76,22 @@ def list_ip_addresses(ip_version: int = None,
     return ips
 
 
+def find_ip_address(ip_version: int = None,
+                    device: str = None,
+                    scope: str = None,
+                    unique: bool = False,
+                    **execute_params) -> \
+        netaddr.IPAddress:
+    ips = list_ip_addresses(ip_version=ip_version,
+                            device=device,
+                            scope=scope,
+                            **execute_params)
+    if unique:
+        return ips.unique
+    else:
+        return ips.first
+
+
 def parse_ip_address(text: str) -> typing.Tuple[netaddr.IPAddress, int]:
     if '/' in text:
         # Remove netmask prefix length

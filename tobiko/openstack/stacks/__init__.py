@@ -25,12 +25,13 @@ from tobiko.openstack.stacks import _nova
 from tobiko.openstack.stacks import _octavia
 from tobiko.openstack.stacks import _qos
 from tobiko.openstack.stacks import _ubuntu
+from tobiko.openstack.stacks import _vlan
+
 
 CentosFlavorStackFixture = _centos.CentosFlavorStackFixture
 CentosImageFixture = _centos.CentosImageFixture
 CentosServerStackFixture = _centos.CentosServerStackFixture
 Centos7ServerStackFixture = _centos.Centos7ServerStackFixture
-CentosTrunkServerStackFixture = _centos.CentosTrunkServerStackFixture
 
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture
@@ -52,7 +53,6 @@ FedoraServerStackFixture = _fedora.FedoraServerStackFixture
 RedHatFlavorStackFixture = _redhat.RedHatFlavorStackFixture
 RhelImageFixture = _redhat.RhelImageFixture
 RedHatServerStackFixture = _redhat.RedHatServerStackFixture
-RedHatTrunkServerStackFixture = _redhat.RedHatTrunkServerStackFixture
 
 L3haNetworkStackFixture = _l3ha.L3haNetworkStackFixture
 L3haServerStackFixture = _l3ha.L3haServerStackFixture
@@ -80,6 +80,16 @@ ServerGroupStackFixture = _nova.ServerGroupStackFixture
 AffinityServerGroupStackFixture = _nova.AffinityServerGroupStackFixture
 AntiAffinityServerGroupStackFixture = _nova.AntiAffinityServerGroupStackFixture
 
+OctaviaLoadbalancerStackFixture = _octavia.OctaviaLoadbalancerStackFixture
+OctaviaListenerStackFixture = _octavia.OctaviaListenerStackFixture
+OctaviaPoolStackFixture = _octavia.OctaviaPoolStackFixture
+OctaviaMemberServerStackFixture = _octavia.OctaviaMemberServerStackFixture
+OctaviaServerStackFixture = _octavia.OctaviaServerStackFixture
+OctaviaClientServerStackFixture = _octavia.OctaviaClientServerStackFixture
+OctaviaOtherServerStackFixture = _octavia.OctaviaOtherServerStackFixture
+OctaviaOtherMemberServerStackFixture = (
+    _octavia.OctaviaOtherMemberServerStackFixture)
+
 QosNetworkStackFixture = _qos.QosNetworkStackFixture
 QosPolicyStackFixture = _qos.QosPolicyStackFixture
 QosServerStackFixture = _qos.QosServerStackFixture
@@ -91,12 +101,5 @@ UbuntuServerStackFixture = _ubuntu.UbuntuServerStackFixture
 UbuntuMinimalServerStackFixture = _ubuntu.UbuntuMinimalServerStackFixture
 UbuntuExternalServerStackFixture = _ubuntu.UbuntuExternalServerStackFixture
 
-OctaviaLoadbalancerStackFixture = _octavia.OctaviaLoadbalancerStackFixture
-OctaviaListenerStackFixture = _octavia.OctaviaListenerStackFixture
-OctaviaPoolStackFixture = _octavia.OctaviaPoolStackFixture
-OctaviaMemberServerStackFixture = _octavia.OctaviaMemberServerStackFixture
-OctaviaServerStackFixture = _octavia.OctaviaServerStackFixture
-OctaviaClientServerStackFixture = _octavia.OctaviaClientServerStackFixture
-OctaviaOtherServerStackFixture = _octavia.OctaviaOtherServerStackFixture
-OctaviaOtherMemberServerStackFixture = (
-    _octavia.OctaviaOtherMemberServerStackFixture)
+VlanNetworkStackFixture = _vlan.VlanNetworkStackFixture
+VlanProxyServerStackFixture = _vlan.VlanProxyServerStackFixture

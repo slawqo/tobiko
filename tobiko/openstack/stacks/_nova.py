@@ -218,6 +218,8 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
     def fixed_ipv6(self):
         return self.find_fixed_ip(ip_version=6)
 
+    has_vlan = False
+
     #: Schedule on different host that this Nova server instance ID
     different_host = None
 
@@ -353,6 +355,12 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         requirements = super().nova_required_quota_set
         requirements['instances'] += 1
         requirements['cores'] += (self.flavor_stack.vcpus or 1)
+        return requirements
+
+    @property
+    def neutron_required_quota_set(self) -> typing.Dict[str, int]:
+        requirements = super().neutron_required_quota_set
+        requirements['port'] += 1
         return requirements
 
     def assert_is_reachable(self):
@@ -535,11 +543,3 @@ class AntiAffinityServerGroupStackFixture(tobiko.SharedFixture):
     @property
     def scheduler_group(self):
         return self.server_group_stack.anti_affinity_server_group_id
-
-
-@neutron.skip_if_missing_networking_extensions('trunk')
-class TrunkServerStackFixture(CloudInitServerStackFixture):
-    has_trunk = True
-    segmentation_id = CONF.tobiko.neutron.trunk_subport_segmentation_id
-    segmentation_type = CONF.tobiko.neutron.trunk_subport_segmentation_type
-    trunk_subport_cidr = CONF.tobiko.neutron.trunk_subport_subnet_cidr
