@@ -5,6 +5,7 @@ import json
 import re
 import typing
 
+from keystoneauth1 import exceptions
 from oslo_log import log
 
 import tobiko
@@ -42,7 +43,8 @@ def test_neutron_agents_are_alive(timeout=300., interval=5.) \
             # get Neutron agent list
             agents = neutron.list_agents()
         except (neutron.ServiceUnavailable,
-                neutron.NeutronClientException) as ex:
+                neutron.NeutronClientException,
+                exceptions.connection.ConnectFailure) as ex:
             if attempt.is_last:
                 raise
             else:
