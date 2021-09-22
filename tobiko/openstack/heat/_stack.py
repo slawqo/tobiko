@@ -69,10 +69,10 @@ class HeatStackFixture(tobiko.SharedFixture):
     """Manages Heat stacks."""
 
     client: _client.HeatClientType = None
-    retry_count: int = 1
+    retry_count: int = 3
     retry_timeout: float = 1200.
     min_retry_interval: float = 0.1
-    max_retry_interval: float = 3.
+    max_retry_interval: float = 5.
     wait_interval: tobiko.Seconds = 5
     wait_timeout: tobiko.Seconds = 600.
     template: _template.HeatTemplateFixture
