@@ -15,10 +15,13 @@ from __future__ import absolute_import
 
 import typing
 
+import yaml
+
 import tobiko
 from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack.stacks import _nova
+from tobiko.openstack.stacks import _vlan
 
 
 CONF = config.CONF
@@ -71,6 +74,7 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
       - ping
       - ncat
       - nginx
+      - vlan
 
     The image will also have below running services:
       - nginx HTTP server listening on TCP port 80
@@ -86,8 +90,10 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
     def install_packages(self) -> typing.List[str]:
         return super().install_packages + ['iperf3',
                                            'iputils-ping',
+                                           'nano',
                                            'ncat',
-                                           'nginx']
+                                           'nginx',
+                                           'vlan']
 
     # port of running HTTP server
     http_port = 80
@@ -103,7 +109,43 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
             '> /etc/systemd/system/iperf3-server@.service')
         run_commands.append(
             f"systemctl enable iperf3-server@{self.iperf3_port}")
+        run_commands.append('echo "8021q" >> /etc/modules')
         return run_commands
+
+    @property
+    def ethernet_device(self) -> str:
+        return 'ens3'
+
+    @property
+    def vlan_id(self) -> int:
+        return tobiko.tobiko_config().neutron.vlan_id
+
+    @property
+    def vlan_device(self) -> str:
+        return f'vlan{self.vlan_id}'
+
+    @property
+    def vlan_config(self) -> typing.Dict[str, typing.Any]:
+        return {
+            'network': {
+                'version': 2,
+                'vlans': {
+                    self.vlan_device: {
+                        'link': self.ethernet_device,
+                        'dhcp4': True,
+                        'dhcp6': True,
+                        'id': self.vlan_id,
+                    }
+                }
+            }
+        }
+
+    @property
+    def write_files(self) -> typing.Dict[str, str]:
+        write_files = super().write_files
+        write_files['/etc/netplan/75-tobiko-vlan.yaml'] = yaml.dump(
+            self.vlan_config)
+        return write_files
 
 
 class UbuntuFlavorStackFixture(_nova.FlavorStackFixture):
@@ -120,7 +162,8 @@ class UbuntuMinimalServerStackFixture(_nova.CloudInitServerStackFixture):
     flavor_stack = tobiko.required_setup_fixture(UbuntuFlavorStackFixture)
 
 
-class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture):
+class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture,
+                               _vlan.VlanServerStackFixture):
     """Ubuntu server running an HTTP server
 
     The server has additional commands compared to the minimal one:
@@ -139,6 +182,14 @@ class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture):
     @property
     def iperf3_port(self) -> int:
         return self.image_fixture.iperf3_port
+
+    @property
+    def vlan_id(self) -> int:
+        return self.image_fixture.vlan_id
+
+    @property
+    def vlan_device(self) -> str:
+        return self.image_fixture.vlan_device
 
 
 class UbuntuExternalServerStackFixture(UbuntuServerStackFixture,
