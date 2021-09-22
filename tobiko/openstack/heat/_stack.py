@@ -205,7 +205,7 @@ class HeatStackFixture(tobiko.SharedFixture):
                 return self.validate_created_stack()
 
             if stack_status.endswith('_FAILED'):
-                LOG.debug(f"Stack '{self.stack_name}' (id='{stack.id}') "
+                LOG.error(f"Stack '{self.stack_name}' (id='{stack.id}') "
                           f"found in '{stack_status}' status (reason="
                           f"'{stack.stack_status_reason}'). Deleting it...")
                 self.delete_stack(stack_id=stack.id)
