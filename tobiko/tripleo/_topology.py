@@ -139,6 +139,43 @@ class TripleoTopologyNode(topology.OpenStackTopologyNode):
 
     overcloud_server: typing.Optional[nova.NovaServer] = None
 
+    def reboot_overcloud_node(self, reactivate_servers=True):
+        """Reboot overcloud node
+
+        This method reboots an overcloud node and may start every server which
+        changed its provisioning state to SHUTOFF because of that operation.
+
+        :param start_servers (bool): whether or not to start the servers which
+            are hosted on the node after the reboot
+        """
+
+        if reactivate_servers:
+            servers_to_restart = self.get_running_servers()
+
+        self.power_off_overcloud_node()
+        self.power_on_overcloud_node()
+
+        if reactivate_servers:
+            for server in servers_to_restart:
+                LOG.debug(f'Server {server.name} with ID {server.id} '
+                          f'had a SHUTOFF status before being '
+                          f'restarted')
+                nova.activate_server(server)
+                LOG.debug(f'Server {server.name} with ID {server.id} '
+                          f'has a {server.status} status after being '
+                          f'restarted')
+
+    def get_running_servers(self):
+        servers_to_reactivate = list()
+        for server in nova.list_servers():
+            server_hyp = getattr(server,
+                                 'OS-EXT-SRV-ATTR:'
+                                 'hypervisor_hostname').split('.', 1)[0]
+            if self.name == server_hyp and server.status != 'SHUTOFF':
+                servers_to_reactivate.append(server)
+        LOG.info(f'Servers to restart after reboot: {servers_to_reactivate}')
+        return servers_to_reactivate
+
     def power_on_overcloud_node(self):
         server = self.overcloud_server
         if server is None:
