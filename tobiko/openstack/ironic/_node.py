@@ -118,8 +118,7 @@ def power_off_node(node: IronicNodeType,
              f"(power state = '{node.power_state}').")
     client.node.set_power_state(node.uuid,
                                 state='off',
-                                soft=soft,
-                                timeout=timeout)
+                                soft=soft)
     return wait_for_node_power_state(node=node.uuid,
                                      power_state='power off',
                                      client=client,
@@ -139,8 +138,8 @@ def power_on_node(node: IronicNodeType,
 
     LOG.info(f"Power on baremetal node '{node.uuid}' "
              f"(power_state='{node.power_state}').")
-    client.node.set_power_state(node_id=node.uuid, state='on')
-
+    client.node.set_power_state(node_id=node.uuid,
+                                state='on')
     return wait_for_node_power_state(node=node.uuid,
                                      power_state='power on',
                                      client=client,

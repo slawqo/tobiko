@@ -348,7 +348,8 @@ def activate_server(server: ServerType,
         client.servers.reboot(server.id, reboot_type='HARD')
 
     return wait_for_server_status(server=server.id, status='ACTIVE',
-                                  client=client, timeout=timeout,
+                                  client=client,
+                                  timeout=timeout,
                                   sleep_time=sleep_time)
 
 

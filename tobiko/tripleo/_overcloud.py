@@ -15,7 +15,6 @@ from __future__ import absolute_import
 
 import io
 import os
-import typing
 
 from oslo_log import log
 import six
@@ -69,37 +68,44 @@ def find_overcloud_node(**params):
     return nova.find_server(client=client, **params)
 
 
-def power_on_overcloud_node(server: typing.Union[nova.ServerType]):
+def power_on_overcloud_node(server: nova.ServerType,
+                            timeout: tobiko.Seconds = 120.,
+                            sleep_time: tobiko.Seconds = 5.):
     session = _undercloud.undercloud_keystone_session()
-    node_id = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname',
-                      None)
-    if node_id is not None:
+    node = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname',
+                   None)
+    if node is None:
+        client = nova.get_nova_client(session=session)
+        nova.activate_server(client=client,
+                             server=server,
+                             timeout=timeout,
+                             sleep_time=sleep_time)
+    else:
         client = ironic.get_ironic_client(session=session)
-        try:
-            ironic.power_on_node(client=client, node=node_id)
-            return
-        except ironic.WaitForNodePowerStateError:
-            LOG.exception(f"Failed powering on Ironic node: '{node_id}'")
-
-    client = nova.get_nova_client(session=session)
-    nova.activate_server(client=client, server=server)
+        ironic.power_on_node(client=client,
+                             node=node,
+                             timeout=timeout,
+                             sleep_time=sleep_time)
 
 
-def power_off_overcloud_node(server: typing.Union[nova.ServerType]) \
-        -> nova.NovaServer:
+def power_off_overcloud_node(server: nova.ServerType,
+                             timeout: tobiko.Seconds = None,
+                             sleep_time: tobiko.Seconds = None):
     session = _undercloud.undercloud_keystone_session()
-    node_id = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname',
-                      None)
-    if node_id is not None:
+    node = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname',
+                   None)
+    if node is None:
+        client = nova.get_nova_client(session=session)
+        nova.shutoff_server(client=client,
+                            server=server,
+                            timeout=timeout,
+                            sleep_time=sleep_time)
+    else:
         client = ironic.get_ironic_client(session=session)
-        try:
-            ironic.power_off_node(client=client, node=node_id)
-            return
-        except ironic.WaitForNodePowerStateError:
-            LOG.exception(f"Failed powering off Ironic node: '{node_id}'")
-
-    client = nova.get_nova_client(session=session)
-    nova.shutoff_server(client=client, server=server)
+        ironic.power_off_node(client=client,
+                              node=node,
+                              timeout=timeout,
+                              sleep_time=sleep_time)
 
 
 def overcloud_ssh_client(hostname=None, ip_version=None, network_name=None,
