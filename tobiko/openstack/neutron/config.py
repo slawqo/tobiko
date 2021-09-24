@@ -68,6 +68,10 @@ OPTIONS = [
     cfg.IntOpt('vlan_id',
                default=101,
                help="VLAN trunk subport segmentation ID"),
+    cfg.ListOpt('ignore_extensions',
+                default=[],
+                help="Behave as these networking extensions are not available"
+                ),
 ]
 
 

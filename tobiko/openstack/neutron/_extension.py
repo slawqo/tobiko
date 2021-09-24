@@ -37,7 +37,11 @@ class NetworkingExtensionsFixture(tobiko.SharedFixture):
         extensions = self.client.list_extensions()
         if isinstance(extensions, collections.Mapping):
             extensions = extensions['extensions']
-        self.extensions = frozenset(e['alias'] for e in extensions)
+        ignore_extensions = set(
+            tobiko.tobiko_config().neutron.ignore_extensions)
+        self.extensions = frozenset(e['alias']
+                                    for e in extensions
+                                    if e['alias'] not in ignore_extensions)
 
 
 def get_networking_extensions():
