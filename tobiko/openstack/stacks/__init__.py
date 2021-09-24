@@ -79,6 +79,7 @@ FlavorStackFixture = _nova.FlavorStackFixture
 ServerGroupStackFixture = _nova.ServerGroupStackFixture
 AffinityServerGroupStackFixture = _nova.AffinityServerGroupStackFixture
 AntiAffinityServerGroupStackFixture = _nova.AntiAffinityServerGroupStackFixture
+CloudInitServerStackFixture = _nova.CloudInitServerStackFixture
 
 OctaviaLoadbalancerStackFixture = _octavia.OctaviaLoadbalancerStackFixture
 OctaviaListenerStackFixture = _octavia.OctaviaListenerStackFixture
