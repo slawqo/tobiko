@@ -20,6 +20,7 @@ import testtools
 
 import tobiko
 from tobiko import config
+from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 
 
@@ -31,29 +32,16 @@ class RebootTrunkServerStackFixture(stacks.UbuntuServerStackFixture):
     pass
 
 
-class TrunkTest(testtools.TestCase):
+@neutron.skip_if_missing_networking_extensions('trunk')
+class RebootTrunkTest(testtools.TestCase):
     """Tests trunk functionality"""
 
     stack = tobiko.required_fixture(RebootTrunkServerStackFixture)
 
-    vlan_proxy_stack = tobiko.required_fixture(
-        stacks.VlanProxyServerStackFixture)
-
-    @property
-    def vlan_proxy_ssh_client(self):
-        return self.vlan_proxy_stack.ssh_client
-
-    def test_activate_server(self):
-        self.stack.ensure_server_status('ACTIVE')
-        self.stack.assert_is_reachable()
-        self.stack.assert_vlan_is_reachable(ip_version=4)
-
-    def test_shutoff_server(self):
-        self.stack.ensure_server_status('SHUTOFF')
-        self.stack.assert_is_unreachable()
-        self.stack.assert_vlan_is_unreachable(ip_version=4)
-
     @pytest.mark.ovn_migration
-    def test_shutoff_then_activate_server(self):
-        self.test_shutoff_server()
-        self.test_activate_server()
+    def test_reboot(self):
+        self.stack.ensure_server_status('SHUTOFF')
+        self.stack.assert_vlan_is_unreachable()
+
+        self.stack.ensure_server_status('ACTIVE')
+        self.stack.assert_vlan_is_reachable()

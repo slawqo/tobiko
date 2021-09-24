@@ -218,7 +218,9 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
     def fixed_ipv6(self):
         return self.find_fixed_ip(ip_version=6)
 
-    has_vlan = False
+    @property
+    def has_vlan(self) -> bool:
+        return False
 
     #: Schedule on different host that this Nova server instance ID
     different_host = None

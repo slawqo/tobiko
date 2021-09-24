@@ -41,10 +41,11 @@ class VlanProxyServerStackFixture(_cirros.CirrosServerStackFixture):
     network_stack = tobiko.required_fixture(VlanNetworkStackFixture)
 
 
-@neutron.skip_if_missing_networking_extensions('trunk')
 class VlanServerStackFixture(_nova.ServerStackFixture, abc.ABC):
 
-    has_vlan = True
+    @property
+    def has_vlan(self) -> bool:
+        return neutron.has_networking_extensions('trunk')
 
     #: stack with the newtwork where the trunk support is attached
     vlan_network_stack = tobiko.required_fixture(VlanNetworkStackFixture)
@@ -77,11 +78,12 @@ class VlanServerStackFixture(_nova.ServerStackFixture, abc.ABC):
     def list_vlan_fixed_ips(self,
                             ip_version: int = None) \
             -> tobiko.Selection[netaddr.IPAddress]:
-        fixed_ips: tobiko.Selection[netaddr.IPAddress] = tobiko.Selection(
-            netaddr.IPAddress(fixed_ip['ip_address'])
-            for fixed_ip in self.vlan_fixed_ips)
-        if ip_version is not None:
-            fixed_ips = fixed_ips.with_attributes(version=ip_version)
+        fixed_ips = tobiko.Selection[netaddr.IPAddress]()
+        if self.vlan_fixed_ips:
+            fixed_ips.extend(netaddr.IPAddress(fixed_ip['ip_address'])
+                             for fixed_ip in self.vlan_fixed_ips)
+            if ip_version is not None and fixed_ips:
+                fixed_ips = fixed_ips.with_attributes(version=ip_version)
         return fixed_ips
 
     @property
@@ -91,18 +93,25 @@ class VlanServerStackFixture(_nova.ServerStackFixture, abc.ABC):
     def assert_vlan_is_reachable(self,
                                  ip_version: int = None):
         fixed_ips = self.list_vlan_fixed_ips(ip_version=ip_version)
-        ping.assert_reachable_hosts(fixed_ips,
-                                    ssh_client=self.vlan_ssh_proxy_client)
+        if fixed_ips:
+            ping.assert_reachable_hosts(
+                fixed_ips, ssh_client=self.vlan_ssh_proxy_client)
+        else:
+            tobiko.fail(f'Server {self.stack_name} has any IP on VLAN port')
 
     def assert_vlan_is_unreachable(self,
                                    ip_version: int = None):
         fixed_ips = self.list_vlan_fixed_ips(ip_version=ip_version)
-        ping.assert_unreachable_hosts(fixed_ips,
-                                      ssh_client=self.vlan_ssh_proxy_client)
+        if fixed_ips:
+            ping.assert_unreachable_hosts(
+                fixed_ips, ssh_client=self.vlan_ssh_proxy_client)
+        else:
+            tobiko.fail(f'Server {self.stack_name} has any IP on VLAN port')
 
     @property
     def neutron_required_quota_set(self) -> typing.Dict[str, int]:
         requirements = super().neutron_required_quota_set
-        requirements['port'] += 1
-        requirements['trunk'] += 1
+        if self.has_vlan:
+            requirements['trunk'] += 1
+            requirements['port'] += 1
         return requirements
