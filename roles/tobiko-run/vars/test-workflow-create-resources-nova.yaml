@@ -1,0 +1,8 @@
+---
+
+test_workflow_steps:
+  - tox_description: 'create Nova resources'
+    tox_envlist: nova
+    tox_step_name: create_nova_resources
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: no
