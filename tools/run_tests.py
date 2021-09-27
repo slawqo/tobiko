@@ -143,7 +143,7 @@ def run_test_cases():
 
     # Pass environment variables to pytest command
     environ = dict(os.environ, TOX_REPORT_NAME=TOX_REPORT_NAME)
-    common.execute(f"pytest "
+    common.execute("pytest -v "
                    f"{xdist_options} "
                    f"{rerun_options} "
                    f"{cover_options} "
