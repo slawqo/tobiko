@@ -55,25 +55,32 @@ class CaplogTest(unit.TobikoUnitTest):
         self.assertEqual('FATAL', pytest_config.inicfg['log_level'])
 
     def test_configure_caplog_log_format(self):
-        self.patch_caplog_config(log_format='<some-format>')
+        self.patch_caplog_config(line_format='<some-format>')
         pytest_config = mock.MagicMock(inicfg={})
         conftest.configure_caplog(pytest_config)
         self.assertEqual('<some-format>', pytest_config.inicfg['log_format'])
 
-    def test_configure_caplog_log_date_format(self):
-        self.patch_caplog_config(log_date_format='<some-format>')
+    def test_configure_caplog_date_format(self):
+        self.patch_caplog_config(date_format='<some-format>')
         pytest_config = mock.MagicMock(inicfg={})
         conftest.configure_caplog(pytest_config)
         self.assertEqual('<some-format>',
                          pytest_config.inicfg['log_date_format'])
 
-    def patch_caplog_config(self, capture_log=False, debug=False,
-                            log_format=None, log_date_format=None):
+    def patch_caplog_config(self,
+                            capture_log: bool = None,
+                            debug: bool = None,
+                            line_format: str = None,
+                            date_format: str = None):
         tobiko_config = self.patch(tobiko, 'tobiko_config').return_value
-        tobiko_config.logging.capture_log = capture_log
-        tobiko_config.debug = debug
-        tobiko_config.logging_default_format_string = log_format
-        tobiko_config.log_date_format = log_date_format
+        if capture_log is not None:
+            tobiko_config.logging.capture_log = capture_log
+        if debug is not None:
+            tobiko_config.debug = debug
+        if line_format is not None:
+            tobiko_config.logging.line_format = line_format
+        if date_format is not None:
+            tobiko_config.logging.date_format = date_format
 
 
 class TimeoutTest(unit.TobikoUnitTest):

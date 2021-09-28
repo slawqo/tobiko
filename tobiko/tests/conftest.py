@@ -50,35 +50,35 @@ def configure_metadata(config):
 def configure_caplog(config):
     tobiko_config = tobiko.tobiko_config()
 
-    if tobiko_config.logging.capture_log is True:
+    if tobiko_config.logging.capture_log:
         if tobiko_config.debug:
-            default = 'DEBUG'
+            level = 'DEBUG'
         else:
-            default = 'INFO'
+            level = 'INFO'
     else:
-        default = 'FATAL'
+        level = 'FATAL'
     for key in ['log_level',
                 'log_file_level',
                 'log_cli_level']:
-        set_default_inicfg(config, key, default)
+        set_default_inicfg(config, key, level)
 
-    default = tobiko_config.logging_default_format_string
-    if default:
+    line_format: str = tobiko_config.logging.line_format
+    if line_format:
         # instance and color are not supported by pytest
-        default = default.replace('%(instance)s', '')
-        default = default.replace('%(color)s', '')
-        if default:
+        line_format = line_format.replace('%(instance)s', '')
+        line_format = line_format.replace('%(color)s', '')
+        if line_format:
             for key in ['log_format',
                         'log_file_format',
                         'log_cli_format']:
-                set_default_inicfg(config, key, default)
+                set_default_inicfg(config, key, line_format)
 
-    default = tobiko_config.log_date_format
-    if default:
+    date_format = tobiko_config.logging.date_format
+    if date_format:
         for key in ['log_date_format',
                     'log_file_date_format',
                     'log_cli_date_format']:
-            set_default_inicfg(config, key, default)
+            set_default_inicfg(config, key, date_format)
 
 
 def configure_junitxml(config):
@@ -87,10 +87,8 @@ def configure_junitxml(config):
 
 def set_default_inicfg(config, key, default):
     value = config.inicfg.setdefault(key, default)
-    if value != default:
-        LOG.debug(f"Set default inicfg: {key} = {value}")
-    else:
-        LOG.debug(f"Keep existing inicfg: {key} = {value}")
+    if value == default:
+        LOG.debug(f"Set default inicfg: {key} = {value!r}")
 
 
 class TestRunnerTimeoutManager(tobiko.SharedFixture):

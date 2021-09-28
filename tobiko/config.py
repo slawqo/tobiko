@@ -46,7 +46,14 @@ LOGGING_CONF_GROUP_NAME = "logging"
 LOGGING_OPTIONS = [
     cfg.BoolOpt('capture_log',
                 default=True,
-                help="Whenever to capture LOG during test case execution"),
+                help="Whenever to report debugging log lines"),
+    cfg.StrOpt('line_format',
+               default=('%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
+                        '%(name)s - %(message)s'),
+               help='Default logging line format string'),
+    cfg.StrOpt('date_format',
+               default='%Y-%m-%d %H:%M:%S',
+               help='Default logging date format string'),
 ]
 
 HTTP_CONF_GROUP_NAME = "http"
