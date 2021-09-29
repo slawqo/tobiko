@@ -132,6 +132,7 @@ get_test_case = _testcase.get_test_case
 pop_test_case = _testcase.pop_test_case
 push_test_case = _testcase.push_test_case
 run_test = _testcase.run_test
+TestCase = _testcase.TestCase
 TestCasesManager = _testcase.TestCasesManager
 
 min_seconds = _time.min_seconds

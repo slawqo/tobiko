@@ -28,6 +28,8 @@ LOG = log.getLogger(__name__)
 
 os.environ.setdefault('PYTHON', sys.executable)
 
+TestCase = testtools.TestCase
+
 
 class TestCaseEntry(typing.NamedTuple):
     test_case: testtools.TestCase
