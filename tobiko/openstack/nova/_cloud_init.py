@@ -86,6 +86,47 @@ class CloudConfig(dict):
     def __add__(self, other):
         return combine_cloud_configs([self, other])
 
+    @property
+    def packages(self) -> typing.List[str]:
+        return self.setdefault('packages', [])
+
+    def add_package(self, *packages: str):
+        _packages = self.packages
+        for package in packages:
+            tobiko.check_valid_type(package, str)
+            if package not in _packages:
+                _packages.append(package)
+
+    @property
+    def runcmd(self) -> typing.List[typing.List[str]]:
+        return self.setdefault('runcmd', [])
+
+    def add_runcmd(self, *command_lines: sh.ShellCommandType):
+        runcmd = self.runcmd
+        for command_line in command_lines:
+            command_line = sh.shell_command(command_line)
+            runcmd.append(list(command_line))
+
+    @property
+    def write_files(self) -> typing.List[typing.Dict[str, typing.Any]]:
+        return self.setdefault('write_files', [])
+
+    def add_write_file(self,
+                       path: str,
+                       content: str,
+                       owner: str = None,
+                       permissions: str = None):
+        tobiko.check_valid_type(path, str)
+        tobiko.check_valid_type(content, str)
+        entry = dict(path=path, content=content)
+        if owner is not None:
+            tobiko.check_valid_type(owner, str)
+            entry['owner'] = owner
+        if permissions is not None:
+            tobiko.check_valid_type(owner, str)
+            entry['permission'] = permissions
+        self.write_files.append(entry)
+
 
 class InvalidCloudInitStatusError(tobiko.TobikoException):
     message = ("cloud-init status of host '{hostname}' is "
