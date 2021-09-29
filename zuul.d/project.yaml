@@ -3,7 +3,7 @@
       - ansible-role-jobs
       - build-openstack-docs-pti
       - build-release-notes-jobs-python3
-      - check-requirements
+      # - check-requirements
       - devstack-tobiko
       - devstack-tobiko-ceph
       - devstack-tobiko-faults
@@ -19,6 +19,10 @@
       - tobiko-infrared
     vars:
         rtd_webhook_id: '84947'
+    check:
+      jobs:
+        - requirements-check:
+            voting: false
     periodic:
       jobs:
         - tobiko-infrared
