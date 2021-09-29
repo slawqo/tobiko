@@ -72,9 +72,18 @@ class OctaviaServicesFaultTest(testtools.TestCase):
     list_octavia_active_units = ('systemctl list-units ' +
                                  '--state=active tripleo_octavia_*')
 
+    controllers = None
+
     def setUp(self):
         # pylint: disable=no-member
         super(OctaviaServicesFaultTest, self).setUp()
+
+        # Skip the test if there are no 3 available controllers -> e.g. Tripleo
+        self.controllers = topology.list_openstack_nodes(group='controller')
+
+        if 3 != len(self.controllers):
+            skip_reason = "The number of controllers should be 3 for this test"
+            self.skipTest(skip_reason)
 
         # Wait for Octavia objects to be active
         octavia.wait_for_active_members_and_lb(
@@ -90,12 +99,6 @@ class OctaviaServicesFaultTest(testtools.TestCase):
             self.listener_stack.lb_protocol, self.listener_stack.lb_port)
 
     def test_services_fault(self):
-        controllers = topology.list_openstack_nodes(group='controller')
-
-        if 3 != len(controllers):
-            skip_reason = "The number of controllers should be 3 for this test"
-            self.skipTest(skip_reason)
-
         # excluded_services are the services which will be stopped
         # on each controller
         excluded_services = {
@@ -105,14 +108,14 @@ class OctaviaServicesFaultTest(testtools.TestCase):
         }
 
         try:
-            for controller in controllers:
+            for controller in self.controllers:
                 self._make_sure_octavia_services_are_active(controller)
 
                 self._stop_octavia_main_services(
                     controller, excluded_services[controller.name])
 
         finally:
-            self._start_octavia_main_services(controllers)
+            self._start_octavia_main_services(self.controllers)
 
     def _make_sure_octavia_services_are_active(
             self, controller: OpenStackTopologyNode):
