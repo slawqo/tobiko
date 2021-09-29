@@ -43,7 +43,7 @@ class UbuntuMinimalImageFixture(glance.URLGlanceImageFixture):
     disk_format = CONF.tobiko.ubuntu.disk_format or "qcow2"
     container_format = CONF.tobiko.ubuntu.container_format or "bare"
     username = CONF.tobiko.ubuntu.username or 'ubuntu'
-    password = CONF.tobiko.ubuntu.password
+    password = CONF.tobiko.ubuntu.password or 'ununtu'
     connection_timeout = CONF.tobiko.ubuntu.connection_timeout or 600.
 
 
