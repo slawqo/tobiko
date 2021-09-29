@@ -21,12 +21,30 @@ import subprocess
 from oslo_log import log
 from py.xml import html  # pylint: disable=no-name-in-module,import-error
 import pytest
+from pytest_html import plugin as html_plugin
 
 import tobiko
 
 LOG = log.getLogger(__name__)
 
+
+def normalize_path(path):
+    return os.path.realpath(os.path.expanduser(path))
+
+
+TOP_DIR = normalize_path(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+
 TOX_REPORT_NAME = os.environ.get('TOX_REPORT_NAME', "tobiko_results")
+
+TOX_REPORT_DIR = normalize_path(
+    os.environ.get('TOX_REPORT_DIR', os.path.join(TOP_DIR, 'report')))
+
+TOX_REPORT_PREFIX = os.path.join(TOX_REPORT_DIR, TOX_REPORT_NAME)
+
+TOX_REPORT_HTML = os.environ.get(
+    'TOX_REPORT_HTML', TOX_REPORT_PREFIX + '.html')
 
 
 @pytest.hookimpl
@@ -35,6 +53,7 @@ def pytest_configure(config):
     configure_caplog(config)
     configure_timeout(config)
     configure_junitxml(config)
+    configure_html(config)
 
 
 def configure_metadata(config):
@@ -83,6 +102,46 @@ def configure_caplog(config):
 
 def configure_junitxml(config):
     config.inicfg['junit_suite_name'] = TOX_REPORT_NAME
+
+
+def configure_html(config):
+    if config.pluginmanager.hasplugin('html'):
+        htmlpath = config.getoption('htmlpath')
+        if htmlpath is None:
+            config.option.htmlpath = TOX_REPORT_HTML
+            htmlpath = config.getoption('htmlpath')
+        assert htmlpath is not None
+
+        html_plugin.HTMLReport = HTMLReport
+
+
+class HTMLReport(html_plugin.HTMLReport):
+
+    session = None
+    last_html_generation: tobiko.Seconds = None
+
+    def pytest_sessionstart(self, session):
+        super().pytest_sessionstart(session)
+        self.session = session
+
+    def pytest_runtest_logreport(self, report):
+        super().pytest_runtest_logreport(report)
+
+        # Avoid report regeneration ad an interval smaller than 10 seconds
+        now = tobiko.time()
+        if (self.last_html_generation is not None and
+                now - self.last_html_generation < 10.):
+            return
+        self.last_html_generation = now
+
+        LOG.debug("Update HTML test report files...")
+        temp_report = html_plugin.HTMLReport(logfile=self.logfile,
+                                             config=self.config)
+        # pylint: disable=attribute-defined-outside-init
+        temp_report.suite_start_time = self.suite_start_time
+        temp_report.reports = dict(self.reports)
+        temp_report.pytest_sessionfinish(self.session)
+        LOG.debug("HTML test report files updated")
 
 
 def set_default_inicfg(config, key, default):
