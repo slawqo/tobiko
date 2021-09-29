@@ -1,0 +1,18 @@
+---
+
+test_workflow_steps:
+  - tox_description: 'create Octavia resources'
+    tox_envlist: octavia
+    tox_step_name: create_octavia_resources
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: no
+
+  - tox_description: 'run Octavia disruptive test cases'
+    tox_envlist: octavia_faults
+    tox_step_name: octavia_faults
+
+  - tox_description: 'verify Octavia resources'
+    tox_envlist: octavia
+    tox_step_name: verify_octavia_resources
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: yes
