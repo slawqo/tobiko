@@ -40,6 +40,10 @@ class RebootTrunkTest(testtools.TestCase):
 
     @pytest.mark.ovn_migration
     def test_reboot(self):
+        # (fressi) must wait cloud init to complete VM setup before shutting it
+        # down
+        self.stack.wait_for_cloud_init_done()
+
         self.stack.ensure_server_status('SHUTOFF')
         self.stack.assert_vlan_is_unreachable()
 
