@@ -21,8 +21,8 @@ import typing
 from oslo_log import log
 import testtools
 
-from tobiko.common import _asserts
 from tobiko.common import _exception
+from tobiko.common import _fail
 from tobiko.common import _time
 
 
@@ -274,7 +274,7 @@ def retry_test_case(*exceptions: Exception,
                     typing.Callable[[typing.Callable], typing.Callable]:
     """Re-run test case method in case it fails
     """
-    exceptions = exceptions or (_asserts.FailureException,)
+    exceptions = exceptions or (_fail.FailureException,)
     return retry_on_exception(*exceptions,
                               count=count,
                               timeout=timeout,

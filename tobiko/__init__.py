@@ -16,12 +16,12 @@ from __future__ import absolute_import
 import os
 import sys
 
-from tobiko.common import _asserts
 from tobiko.common import _cached
 from tobiko.common import _config
 from tobiko.common import _deprecation
 from tobiko.common import _detail
 from tobiko.common import _exception
+from tobiko.common import _fail
 from tobiko.common import _fixture
 from tobiko.common import _logging
 from tobiko.common.managers import loader as loader_manager
@@ -52,8 +52,8 @@ deprecated = _deprecation.deprecated
 
 details_content = _detail.details_content
 
-FailureException = _asserts.FailureException
-fail = _asserts.fail
+FailureException = _fail.FailureException
+fail = _fail.fail
 
 tobiko_config = _config.tobiko_config
 tobiko_config_dir = _config.tobiko_config_dir
