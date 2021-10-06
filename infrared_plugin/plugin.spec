@@ -193,6 +193,13 @@ subparsers:
             help: Ignore test execution errors
             ansible_variable: ignore_test_failures
 
+      - title: Cleanup stage
+        options:
+          cleanup-heat-stacks:
+            type: Flag
+            help: Cleanup heat stacks created by tobiko
+            ansible_variable: stacks_cleanup
+
       - title: Collect stage
         options:
           collect-dir:

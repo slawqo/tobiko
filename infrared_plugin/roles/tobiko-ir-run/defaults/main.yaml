@@ -5,3 +5,4 @@ tobiko_git_refspec: ''
 test_git_refspec: ''
 tobiko_git_remote: ''
 test_git_remote: ''
+stacks_cleanup: false

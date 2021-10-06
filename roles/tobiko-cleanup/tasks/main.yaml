@@ -1,0 +1,8 @@
+---
+
+- name: "cleanup stacks created by tobiko tests"
+  shell: |
+    source {{ stackrc_file }}
+    openstack stack list -f value -c 'Stack Name' | grep "^tobiko\." | xargs openstack stack delete --wait
+    openstack image list -f value -c Name | grep "^tobiko\." | xargs openstack image delete
+  ignore_errors: yes
