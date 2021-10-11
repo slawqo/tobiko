@@ -88,12 +88,21 @@ class OctaviaLoadbalancerStackFixture(heat.HeatStackFixture):
 
     vip_network = tobiko.required_setup_fixture(OctaviaVipNetworkStackFixture)
 
+    #: Floating IP network where the Neutron floating IP are created
+    @property
+    def floating_network(self) -> str:
+        return self.vip_network.floating_network
+
+    @property
+    def has_floating_ip(self) -> bool:
+        return bool(self.floating_network)
+
     ip_version = 4
 
     provider = 'amphora'
 
     @property
-    def vip_subnet_id(self):
+    def vip_subnet(self):
         if self.ip_version == 4:
             return self.vip_network.ipv4_subnet_id
         else:

@@ -1,4 +1,4 @@
-heat_template_version: 2015-10-15
+heat_template_version: newton
 
 description: A Load Balancer
 
@@ -7,18 +7,45 @@ parameters:
         type: string
         description: The provider type (amphora,ovn, etc.)
 
-    vip_subnet_id:
+    vip_subnet:
         type: string
         description: ID of the load balancer public subnet
         constraints:
         - custom_constraint: neutron.subnet
 
+    has_floating_ip:
+        type: boolean
+        description: Whenever server has floating IP associated
+        default: false
+
+    floating_network:
+        type: string
+        description: |
+            Public network for which floating IP addresses will be allocated
+        constraints:
+            - custom_constraint: neutron.network
+
+
+conditions:
+  has_floating_ip:
+    get_param: has_floating_ip
+
+
 resources:
     loadbalancer:
         type: OS::Octavia::LoadBalancer
         properties:
-            vip_subnet: { get_param: vip_subnet_id }
+            vip_subnet: { get_param: vip_subnet }
             provider: { get_param: provider }
+
+    floating_ip:
+        type: OS::Neutron::FloatingIP
+        description: Floating IP address to be connected to the load balancer
+        condition: has_floating_ip
+        properties:
+          floating_network: {get_param: floating_network}
+          port_id: {get_attr: [loadbalancer, vip_port_id]}
+
 
 outputs:
     loadbalancer_id:
@@ -28,3 +55,8 @@ outputs:
     loadbalancer_vip:
         description: IP address of the load balancer's VIP port
         value: { get_attr: [ loadbalancer, vip_address ] }
+
+    floating_ip_address:
+        description: Floating IP address attached to VIP address
+        value: { get_attr: [ floating_ip, floating_ip_address ] }
+        condition: has_floating_ip
