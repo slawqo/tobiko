@@ -75,8 +75,8 @@ class NeutronNovaResponseReader(NeutronNovaCommonReader):
     message_pattern = r'Nova event response: '
     responses: tobiko.Selection[NeutronNovaResponse]
 
-    def read_responses(self) \
-            -> tobiko.Selection[NeutronNovaResponse]:
+    def read_responses(self) -> tobiko.Selection[NeutronNovaResponse]:
+        # pylint: disable=no-member
         responses = tobiko.Selection[NeutronNovaResponse]()
         message_pattern = re.compile(self.message_pattern)
         for hostname, line in self.log_digger.find_lines(
@@ -134,6 +134,7 @@ class OvnUnsupportedDhcpOptionReader(NeutronNovaCommonReader):
 
     def read_responses(self) \
             -> tobiko.Selection[UnsupportedDhcpOptionMessage]:
+        # pylint: disable=no-member
         def _get_port_uuid(line):
             port_pattern = 'on port (.*) is not suppported by OVN'
             return re.findall(port_pattern, line)[0]
