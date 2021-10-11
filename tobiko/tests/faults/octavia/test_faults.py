@@ -21,6 +21,7 @@ import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack import octavia
 from tobiko.openstack import stacks
+from tobiko import tripleo
 from tobiko.shell import sh
 
 
@@ -28,6 +29,7 @@ LOG = log.getLogger(__name__)
 
 
 @keystone.skip_if_missing_service(name='octavia')
+@tripleo.skip_if_missing_overcloud
 class OctaviaBasicFaultTest(testtools.TestCase):
     """Octavia fault scenario test.
 
