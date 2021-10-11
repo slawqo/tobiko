@@ -3,6 +3,10 @@ heat_template_version: 2015-10-15
 description: A Load Balancer
 
 parameters:
+    provider:
+        type: string
+        description: The provider type (amphora,ovn, etc.)
+
     vip_subnet_id:
         type: string
         description: ID of the load balancer public subnet
@@ -14,6 +18,7 @@ resources:
         type: OS::Octavia::LoadBalancer
         properties:
             vip_subnet: { get_param: vip_subnet_id }
+            provider: { get_param: provider }
 
 outputs:
     loadbalancer_id:
