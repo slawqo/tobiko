@@ -149,7 +149,7 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
 
 
 class UbuntuFlavorStackFixture(_nova.FlavorStackFixture):
-    ram = 128
+    ram = 256
     swap = 512
 
 
