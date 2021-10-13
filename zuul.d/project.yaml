@@ -10,6 +10,7 @@
       - devstack-tobiko-glance
       - devstack-tobiko-minimal
       - devstack-tobiko-octavia
+      - devstack-tobiko-neutron
       - devstack-tobiko-ovs
       - docs-on-readthedocs
       - openstack-cover-jobs
