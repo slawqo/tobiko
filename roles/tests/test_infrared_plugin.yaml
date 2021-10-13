@@ -38,11 +38,8 @@
     - name: "run Tox InfraRed plugin"
       shell:
         cmd: >
-          '{{ tox_executable }}' -e infrared --
-            --collect-dir '{{ test_collect_dir }}'
+          '{{ tox_executable }}' -e infrared -- --collect-dir '{{ test_collect_dir }}'
         chdir: '{{ test_dir }}'
-      environment:
-        IR_DEPS: "{{ ir_deps | default('') }}"
       ignore_errors: yes
       register: run_tox
 
