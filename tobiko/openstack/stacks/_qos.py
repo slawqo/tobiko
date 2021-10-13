@@ -60,3 +60,8 @@ class QosNetworkStackFixture(_neutron.NetworkStackFixture):
 class QosServerStackFixture(_ubuntu.UbuntuServerStackFixture):
     #: stack with the network with a qos policy
     network_stack = tobiko.required_setup_fixture(QosNetworkStackFixture)
+
+    @property
+    def has_vlan(self) -> bool:
+        # Trunk ports are not supported with QoS when ml2/ovs is used
+        return False
