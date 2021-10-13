@@ -40,6 +40,7 @@ WaitForServerStatusError = _client.WaitForServerStatusError
 WaitForServerStatusTimeout = _client.WaitForServerStatusTimeout
 shutoff_server = _client.shutoff_server
 activate_server = _client.activate_server
+delete_server = _client.delete_server
 ensure_server_status = _client.ensure_server_status
 live_migrate_server = _client.live_migrate_server
 migrate_server = _client.migrate_server

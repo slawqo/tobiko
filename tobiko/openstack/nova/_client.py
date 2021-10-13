@@ -132,11 +132,20 @@ def get_server_id(server: typing.Optional[ServerType] = None,
     return server_id
 
 
-def get_server(server: typing.Optional[ServerType] = None,
-               server_id: typing.Optional[str] = None,
-               client: NovaClientType = None, **params) -> NovaServer:
+def get_server(server: ServerType = None,
+               server_id: str = None,
+               client: NovaClientType = None,
+               **params) -> NovaServer:
     server_id = get_server_id(server=server, server_id=server_id)
     return nova_client(client).servers.get(server_id, **params)
+
+
+def delete_server(server: ServerType = None,
+                  server_id: str = None,
+                  client: NovaClientType = None,
+                  **params):
+    server_id = get_server_id(server=server, server_id=server_id)
+    return nova_client(client).servers.delete(server_id, **params)
 
 
 def migrate_server(server: typing.Optional[ServerType] = None,
