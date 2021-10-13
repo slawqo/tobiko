@@ -22,6 +22,7 @@ from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack.stacks import _nova
 from tobiko.openstack.stacks import _vlan
+from tobiko.shell import sh
 
 
 CONF = config.CONF
@@ -100,6 +101,10 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
 
     # port of running Iperf3 server
     iperf3_port = 5201
+
+    @property
+    def iperf3_service_name(self) -> str:
+        return f"iperf3-server@{self.iperf3_port}.service"
 
     @property
     def run_commands(self) -> typing.List[str]:
@@ -182,6 +187,18 @@ class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture,
     @property
     def iperf3_port(self) -> int:
         return self.image_fixture.iperf3_port
+
+    @property
+    def iperf3_service_name(self) -> str:
+        return self.image_fixture.iperf3_service_name
+
+    def wait_for_iperf3_server(self,
+                               timeout: tobiko.Seconds = None,
+                               interval: tobiko.Seconds = None):
+        return sh.wait_for_active_systemd_units(self.iperf3_service_name,
+                                                timeout=timeout,
+                                                interval=interval,
+                                                ssh_client=self.ssh_client)
 
     @property
     def vlan_id(self) -> int:

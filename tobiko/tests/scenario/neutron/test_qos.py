@@ -87,6 +87,7 @@ class QoSNetworkTest(testtools.TestCase):
 
     def test_qos_bw_limit(self):
         """Verify BW limit using the iperf3 tool"""
+        self.server.wait_for_iperf3_server()
         # localhost will act as client
         bandwidth_limit = self.policy.bwlimit_kbps * 1000.
         for attempt in tobiko.retry(timeout=100., interval=5.):

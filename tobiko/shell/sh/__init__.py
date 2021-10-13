@@ -98,7 +98,11 @@ ssh_process = _ssh.ssh_process
 ssh_execute = _ssh.ssh_execute
 SSHShellProcessFixture = _ssh.SSHShellProcessFixture
 
+SystemdUnit = _systemctl.SystemdUnit
+match_unit_state = _systemctl.match_unit_state
 list_systemd_units = _systemctl.list_systemd_units
+wait_for_active_systemd_units = _systemctl.wait_for_active_systemd_units
+wait_for_systemd_units_state = _systemctl.wait_for_systemd_units_state
 
 get_uptime = _uptime.get_uptime
 
