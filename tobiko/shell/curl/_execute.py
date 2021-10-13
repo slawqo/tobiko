@@ -33,14 +33,14 @@ CURL_CONNECTION_ERRORS = {
 
 
 def execute_curl(
-        hostname: typing.Union[str, netaddr.IPAddress, None] = None,
-        port: typing.Optional[int] = None,
-        path: typing.Optional[str] = None,
-        scheme: typing.Optional[str] = None,
-        ssh_client: typing.Optional[ssh.SSHClientFixture] = None,
+        hostname: typing.Union[str, netaddr.IPAddress] = None,
+        port: int = None,
+        path: str = None,
+        scheme: str = None,
+        ssh_client: ssh.SSHClientType = None,
         connect_timeout: tobiko.Seconds = None,
         fail_silently: bool = True,
-        retry_count: typing.Optional[int] = None,
+        retry_count: int = None,
         retry_timeout: tobiko.Seconds = None,
         retry_interval: tobiko.Seconds = None,
         **execute_params) -> str:
@@ -85,7 +85,8 @@ def make_netloc(
     try:
         ip_address = netaddr.IPAddress(hostname)
     except netaddr.AddrFormatError:
-        netloc = str(hostname).lower()
+        tobiko.check_valid_type(hostname, str)
+        netloc = hostname
     else:
         if ip_address.version == 6:
             # Add square brackets around IPv6 address to please curl
@@ -105,7 +106,7 @@ def make_netloc(
 def make_url(scheme: typing.Optional[str] = None,
              netloc: typing.Optional[str] = None,
              path: typing.Optional[str] = None) -> str:
-    return parse.SplitResult(scheme=scheme or '',
+    return parse.SplitResult(scheme=(scheme or 'http').lower(),
                              netloc=netloc or '',
                              path=path or '',
                              query='',
