@@ -143,8 +143,6 @@ class OctaviaPoolStackFixture(heat.HeatStackFixture):
 
     hm_timeout = 3
 
-    hm_type = 'HTTP'
-
     @property
     def listener_id(self):
         return self.listener.listener_id
@@ -196,5 +194,44 @@ class OctaviaOtherServerStackFixture(
 
 class OctaviaOtherMemberServerStackFixture(
         OctaviaMemberServerStackFixture):
+    server_stack = tobiko.required_setup_fixture(
+        OctaviaOtherServerStackFixture)
+
+
+# OVN provider stack fixtures
+class OctaviaOvnProviderLoadbalancerStackFixture(
+        OctaviaLoadbalancerStackFixture):
+
+    provider = 'ovn'
+
+
+class OctaviaOvnProviderListenerStackFixture(OctaviaListenerStackFixture):
+
+    loadbalancer = tobiko.required_setup_fixture(
+        OctaviaOvnProviderLoadbalancerStackFixture)
+
+    lb_port = 22
+
+    lb_protocol = 'TCP'
+
+
+class OctaviaOvnProviderPoolStackFixture(OctaviaPoolStackFixture):
+    listener = tobiko.required_setup_fixture(
+        OctaviaOvnProviderListenerStackFixture)
+
+    pool_protocol = 'TCP'
+
+    lb_algorithm = 'SOURCE_IP_PORT'
+
+
+class OctaviaOvnProviderMemberServerStackFixture(
+        OctaviaMemberServerStackFixture):
+    pool = tobiko.required_setup_fixture(OctaviaOvnProviderPoolStackFixture)
+
+    application_port = 22
+
+
+class OctaviaOvnProviderOtherMemberServerStackFixture(
+        OctaviaOvnProviderMemberServerStackFixture):
     server_stack = tobiko.required_setup_fixture(
         OctaviaOtherServerStackFixture)
