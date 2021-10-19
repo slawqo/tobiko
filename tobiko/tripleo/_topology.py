@@ -157,6 +157,8 @@ class TripleoTopologyNode(topology.OpenStackTopologyNode):
 
         if reactivate_servers:
             for server in servers_to_restart:
+                nova.wait_for_server_status(server=server.id,
+                                            status='SHUTOFF')
                 LOG.debug(f'Server {server.name} with ID {server.id} '
                           f'had a SHUTOFF status before being '
                           f'restarted')
