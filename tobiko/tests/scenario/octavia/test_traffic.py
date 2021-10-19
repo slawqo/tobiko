@@ -16,11 +16,15 @@ from __future__ import absolute_import
 
 import pytest
 import testtools
+from oslo_log import log
 
 import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack import octavia
 from tobiko.openstack import stacks
+
+
+LOG = log.getLogger(__name__)
 
 
 @keystone.skip_if_missing_service(name='octavia')
@@ -50,15 +54,10 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
         # pylint: disable=no-member
         super(OctaviaBasicTrafficScenarioTest, self).setUp()
 
-        # Wait for Octavia objects' provisioning status to be ACTIVE
-        # and reachable
-        octavia.wait_for_active_and_functional_members_and_lb(
-            members=[self.member1_stack,
-                     self.member2_stack],
-            pool_id=self.pool_stack.pool_id,
-            lb_protocol=self.listener_stack.lb_protocol,
-            lb_port=self.listener_stack.lb_port,
-            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+        # Wait for Octavia objects to be active
+        LOG.info(f'Waiting for {self.member1_stack.stack_name} and '
+                 f'{self.member2_stack.stack_name} to be created...')
+        self.pool_stack.wait_for_active_members()
 
         octavia.wait_for_octavia_service(
             loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)

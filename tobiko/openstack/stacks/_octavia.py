@@ -15,19 +15,16 @@
 #    under the License.
 from __future__ import absolute_import
 
-from oslo_log import log
-
 import tobiko
 from tobiko import config
 from tobiko.openstack import heat
+from tobiko.openstack import octavia
 from tobiko.openstack.stacks import _centos
 from tobiko.openstack.stacks import _cirros
 from tobiko.openstack.stacks import _hot
 from tobiko.openstack.stacks import _neutron
 
-
 CONF = config.CONF
-LOG = log.getLogger(__name__)
 
 
 class OctaviaVipNetworkStackFixture(_neutron.NetworkStackFixture):
@@ -108,6 +105,20 @@ class OctaviaLoadbalancerStackFixture(heat.HeatStackFixture):
         else:
             return self.vip_network.ipv6_subnet_id
 
+    def wait_for_active_loadbalancer(self, **kwargs):
+        octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
+                                status=octavia.ACTIVE,
+                                get_client=octavia.get_loadbalancer,
+                                object_id=self.loadbalancer.loadbalancer_id,
+                                **kwargs)
+
+    def wait_for_update_loadbalancer(self, **kwargs):
+        octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
+                                status=octavia.PENDING_UPDATE,
+                                get_client=octavia.get_loadbalancer,
+                                object_id=self.loadbalancer.loadbalancer_id,
+                                **kwargs)
+
 
 class OctaviaListenerStackFixture(heat.HeatStackFixture):
     template = _hot.heat_template_file('octavia/listener.yaml')
@@ -146,6 +157,26 @@ class OctaviaPoolStackFixture(heat.HeatStackFixture):
     @property
     def listener_id(self):
         return self.listener.listener_id
+
+    def wait_for_active_members(self):
+        pool_id = self.stack.output_show('pool_id')['output']['output_value']
+        for member in octavia.list_members(pool_id=pool_id):
+            self.wait_for_active_member(pool_id=pool_id,
+                                        member_id=member['id'])
+
+    def wait_for_active_member(self, pool_id, member_id, **kwargs):
+        """Wait for the member to be active
+
+        Waits for the member to have an ACTIVE provisioning status.
+
+        :param member_id: the member id.
+        :param pool_id: the pool id.
+        """
+        octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
+                                status=octavia.ACTIVE,
+                                get_client=octavia.get_member,
+                                object_id=pool_id,
+                                member_id=member_id, **kwargs)
 
 
 class OctaviaMemberServerStackFixture(heat.HeatStackFixture):

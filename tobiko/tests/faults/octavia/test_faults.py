@@ -65,11 +65,9 @@ class OctaviaBasicFaultTest(testtools.TestCase):
                              ' implemented yet')
 
         # Wait for Octavia objects to be active
-        octavia.wait_for_active_members_and_lb(
-                members=[self.member1_stack.member_id,
-                         self.member2_stack.member_id],
-                pool_id=self.pool_stack.pool_id,
-                loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+        LOG.info(f'Waiting for {self.member1_stack.stack_name} and '
+                 f'{self.member2_stack.stack_name} to be created...')
+        self.pool_stack.wait_for_active_members()
 
         octavia.wait_for_octavia_service(
             loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
@@ -93,21 +91,26 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         LOG.debug('Compute node has been rebooted')
 
-        # Wait for LB to be updated and active
-        octavia.wait_for_lb_to_be_updated_and_active(
-                self.loadbalancer_stack.loadbalancer_id)
+        # Wait for the LB to be updated
+        try:
+            self.loadbalancer_stack.wait_for_update_loadbalancer(
+                loadbalancer_id=self.loadbalancer_stack.loadbalancer_id,
+                timeout=30)
+
+        except tobiko.RetryTimeLimitError:
+            LOG.info('The restarted servers reached ACTIVE status after the'
+                     ' LB finished its update process, hence no exception is'
+                     ' being raised even though the update timeout was'
+                     ' reached.')
+
+        self.loadbalancer_stack.wait_for_active_loadbalancer(
+            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
 
         LOG.debug(f'Load Balancer {self.loadbalancer_stack.loadbalancer_id} is'
                   f' ACTIVE')
 
         # Wait for Octavia objects' provisioning status to be ACTIVE
-        octavia.wait_for_active_and_functional_members_and_lb(
-            members=[self.member1_stack,
-                     self.member2_stack],
-            pool_id=self.pool_stack.pool_id,
-            lb_protocol=self.listener_stack.lb_protocol,
-            lb_port=self.listener_stack.lb_port,
-            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+        self.pool_stack.wait_for_active_members()
 
         # Verify Octavia functionality
         octavia.check_members_balanced(

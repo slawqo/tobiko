@@ -101,48 +101,6 @@ def wait_for_members_to_be_reachable(members,
         raise RuntimeError("Members couldn't be reached!")
 
 
-def wait_for_active_and_functional_members_and_lb(
-        members,
-        pool_id: str,
-        lb_protocol: str,
-        lb_port: int,
-        loadbalancer_id: str,
-        interval: tobiko.Seconds = None,
-        timeout: tobiko.Seconds = None):
-
-    # Wait for members to have an ACTIVE provisioning status
-    for member_stack in members:
-        octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
-                                status=octavia.ACTIVE,
-                                get_client=octavia.get_member,
-                                object_id=pool_id,
-                                member_id=member_stack.member_id)
-
-    # Wait for LB to have an ACTIVE provisioning status
-    octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
-                            status=octavia.ACTIVE,
-                            get_client=octavia.get_loadbalancer,
-                            object_id=loadbalancer_id)
-
-    wait_for_members_to_be_reachable(members=members,
-                                     lb_protocol=lb_protocol,
-                                     lb_port=lb_port,
-                                     timeout=timeout,
-                                     interval=interval)
-
-
-def wait_for_lb_to_be_updated_and_active(loadbalancer_id):
-    octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
-                            status=octavia.PENDING_UPDATE,
-                            get_client=octavia.get_loadbalancer,
-                            object_id=loadbalancer_id)
-
-    octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
-                            status=octavia.ACTIVE,
-                            get_client=octavia.get_loadbalancer,
-                            object_id=loadbalancer_id)
-
-
 def wait_for_octavia_service(loadbalancer_id: str,
                              interval: tobiko.Seconds = None,
                              timeout: tobiko.Seconds = None,

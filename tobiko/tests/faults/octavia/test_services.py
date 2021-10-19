@@ -80,12 +80,9 @@ class OctaviaServicesFaultTest(testtools.TestCase):
             skip_reason = "The number of controllers should be 3 for this test"
             self.skipTest(skip_reason)
 
-        # Wait for Octavia objects to be active
-        octavia.wait_for_active_members_and_lb(
-            members=[self.member1_stack.member_id,
-                     self.member2_stack.member_id],
-            pool_id=self.pool_stack.pool_id,
-            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+        LOG.info(f'Waiting for {self.member1_stack.stack_name} and '
+                 f'{self.member2_stack.stack_name} to be created...')
+        self.pool_stack.wait_for_active_members()
 
         octavia.wait_for_octavia_service(
             loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
