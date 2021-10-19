@@ -365,11 +365,23 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         requirements['port'] += 1
         return requirements
 
-    def assert_is_reachable(self):
-        ping.assert_reachable_hosts([self.ip_address])
+    is_reachable_timeout: tobiko.Seconds = None
 
-    def assert_is_unreachable(self):
-        ping.assert_unreachable_hosts([self.ip_address])
+    def assert_is_reachable(self,
+                            ssh_client: ssh.SSHClientType = None,
+                            timeout: tobiko.Seconds = None):
+        if timeout is None:
+            timeout = self.is_reachable_timeout
+        ping.assert_reachable_hosts([self.ip_address],
+                                    ssh_client=ssh_client,
+                                    timeout=timeout)
+
+    def assert_is_unreachable(self,
+                              ssh_client: ssh.SSHClientType = None,
+                              timeout: tobiko.Seconds = None):
+        ping.assert_unreachable_hosts([self.ip_address],
+                                      ssh_client=ssh_client,
+                                      timeout=timeout)
 
     user_data = None
 
@@ -382,6 +394,9 @@ class CloudInitServerStackFixture(ServerStackFixture, ABC):
     swap_size: typing.Optional[int] = None
     #: nax SWAP file size in bytes
     swap_maxsize: typing.Optional[int] = None
+
+    # I expect cloud-init based servers to be slow to boot
+    is_reachable_timeout: tobiko.Seconds = 600.
 
     @property
     def user_data(self):

@@ -63,6 +63,9 @@ class CirrosServerStackFixture(_nova.ServerStackFixture):
     #: CirrOS can't get IP addresses from config-drive
     need_dhcp = True
 
+    #: We expect CirrOS based servers to be fast to boot
+    is_reachable_timeout: tobiko.Seconds = 300.
+
 
 class CirrosPeerServerStackFixture(CirrosServerStackFixture,
                                    _nova.PeerServerStackFixture):

@@ -91,20 +91,32 @@ class VlanServerStackFixture(_nova.ServerStackFixture, abc.ABC):
         return tobiko.setup_fixture(VlanProxyServerStackFixture).ssh_client
 
     def assert_vlan_is_reachable(self,
-                                 ip_version: int = None):
+                                 ip_version: int = None,
+                                 timeout: tobiko.Seconds = None,
+                                 ssh_client: ssh.SSHClientType = None):
         fixed_ips = self.list_vlan_fixed_ips(ip_version=ip_version)
         if fixed_ips:
-            ping.assert_reachable_hosts(
-                fixed_ips, ssh_client=self.vlan_ssh_proxy_client)
+            if timeout is None:
+                timeout = self.is_reachable_timeout
+            if ssh_client is None:
+                ssh_client = self.vlan_ssh_proxy_client
+            ping.assert_reachable_hosts(fixed_ips,
+                                        ssh_client=ssh_client,
+                                        timeout=timeout)
         else:
             tobiko.fail(f'Server {self.stack_name} has any IP on VLAN port')
 
     def assert_vlan_is_unreachable(self,
-                                   ip_version: int = None):
+                                   ip_version: int = None,
+                                   timeout: tobiko.Seconds = None,
+                                   ssh_client: ssh.SSHClientType = None):
         fixed_ips = self.list_vlan_fixed_ips(ip_version=ip_version)
         if fixed_ips:
-            ping.assert_unreachable_hosts(
-                fixed_ips, ssh_client=self.vlan_ssh_proxy_client)
+            if ssh_client is None:
+                ssh_client = self.vlan_ssh_proxy_client
+            ping.assert_unreachable_hosts(fixed_ips,
+                                          ssh_client=ssh_client,
+                                          timeout=timeout)
         else:
             tobiko.fail(f'Server {self.stack_name} has any IP on VLAN port')
 

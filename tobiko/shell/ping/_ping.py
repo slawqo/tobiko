@@ -65,6 +65,15 @@ def wait_for_ping_hosts(hosts: typing.Iterable[PingHostType],
                         retry_interval: tobiko.Seconds = None,
                         **params) \
         -> None:
+    if retry_timeout is None:
+        retry_timeout = params.get('timeout')
+    LOG.debug("Wait for ping hosts:\n"
+              f"  hosts: {hosts}\n"
+              f"  check_unreachable: {check_unreachable}\n"
+              f"  retry_count: {retry_count}\n"
+              f"  retry_timeout: {retry_timeout}\n"
+              f"  retry_interval: {retry_interval}\n"
+              f"  **params: {params}\n")
     for attempt in tobiko.retry(count=retry_count,
                                 timeout=retry_timeout,
                                 interval=retry_interval,
@@ -76,15 +85,17 @@ def wait_for_ping_hosts(hosts: typing.Iterable[PingHostType],
         else:
             hosts = unreachable
         if hosts:
-            try:
-                attempt.check_limits()
-            except tobiko.RetryLimitError:
+            if attempt.is_last:
                 if check_unreachable:
                     raise _exception.ReachableHostsException(
-                        hosts=hosts, timeout=attempt.timeout) from None
+                        hosts=hosts,
+                        timeout=attempt.timeout,
+                        elapsed_time=attempt.elapsed_time) from None
                 else:
                     raise _exception.UnreachableHostsException(
-                        hosts=hosts, timeout=attempt.timeout) from None
+                        hosts=hosts,
+                        timeout=attempt.timeout,
+                        elapsed_time=attempt.elapsed_time) from None
         else:
             break
 

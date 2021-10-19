@@ -58,13 +58,15 @@ class PingFailed(PingError, tobiko.FailureException):
 
 
 class UnreachableHostsException(PingFailed):
-    message = ("timeout of {timeout} seconds expired waiting for "
-               "host(s) {hosts} to get pinged successfully")
+    message = ("timeout of {timeout} seconds expired after "
+               "{elapsed_time} seconds waiting for "
+               "host(s) {hosts} to return ping messages")
 
 
 class ReachableHostsException(PingFailed):
-    message = ("timeout of {timeout} seconds expired waiting for "
-               "hosts(s) {hosts} to fail getting pinged")
+    message = ("timeout of {timeout} seconds expired after "
+               "{elapsed_time} seconds waiting for hosts(s) {hosts} "
+               "to fail returning ping messages")
 
 
 class UnsupportedPingOption(PingError):
