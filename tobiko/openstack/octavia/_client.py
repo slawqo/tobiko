@@ -82,6 +82,10 @@ def get_member(pool_id, member_id, client=None):
                                               member_id=member_id)
 
 
+def list_members(pool_id: str, client=None):
+    return octavia_client(client).member_list(pool_id=pool_id)['members']
+
+
 def list_amphorae(loadbalancer_id: str, client=None):
     return octavia_client(client).amphora_list(
         loadbalancer_id=loadbalancer_id)['amphorae']

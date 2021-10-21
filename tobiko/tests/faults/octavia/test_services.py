@@ -64,8 +64,6 @@ class OctaviaServicesFaultTest(testtools.TestCase):
     member2_stack = tobiko.required_setup_fixture(
         stacks.OctaviaOtherMemberServerStackFixture)
 
-    members_count = 2
-
     list_octavia_active_units = ('systemctl list-units ' +
                                  '--state=active tripleo_octavia_*')
 
@@ -91,7 +89,7 @@ class OctaviaServicesFaultTest(testtools.TestCase):
 
         # Sending initial traffic before we stop octavia services
         octavia.check_members_balanced(
-            members_count=self.members_count,
+            pool_id=self.pool_stack.pool_id,
             ip_address=self.loadbalancer_stack.floating_ip_address,
             lb_algorithm=self.pool_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,
@@ -179,7 +177,7 @@ class OctaviaServicesFaultTest(testtools.TestCase):
             self.assertTrue(service not in octavia_active_units, err_msg)
 
         octavia.check_members_balanced(
-            members_count=self.members_count,
+            pool_id=self.pool_stack.pool_id,
             ip_address=self.loadbalancer_stack.floating_ip_address,
             lb_algorithm=self.pool_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,
@@ -210,7 +208,7 @@ class OctaviaServicesFaultTest(testtools.TestCase):
             self._make_sure_octavia_services_are_active(controller)
 
         octavia.check_members_balanced(
-            members_count=self.members_count,
+            pool_id=self.pool_stack.pool_id,
             ip_address=self.loadbalancer_stack.floating_ip_address,
             lb_algorithm=self.pool_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,

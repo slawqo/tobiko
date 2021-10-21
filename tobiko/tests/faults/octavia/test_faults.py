@@ -54,8 +54,6 @@ class OctaviaBasicFaultTest(testtools.TestCase):
     member2_stack = tobiko.required_setup_fixture(
         stacks.OctaviaOtherMemberServerStackFixture)
 
-    members_count = 2
-
     def setUp(self):
         # pylint: disable=no-member
         super(OctaviaBasicFaultTest, self).setUp()
@@ -75,7 +73,7 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         # Send traffic
         octavia.check_members_balanced(
-            members_count=self.members_count,
+            pool_id=self.pool_stack.pool_id,
             ip_address=self.loadbalancer_stack.floating_ip_address,
             lb_algorithm=self.pool_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,
@@ -110,7 +108,7 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         # Verify Octavia functionality
         octavia.check_members_balanced(
-            members_count=self.members_count,
+            pool_id=self.pool_stack.pool_id,
             ip_address=self.loadbalancer_stack.floating_ip_address,
             lb_algorithm=self.pool_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,

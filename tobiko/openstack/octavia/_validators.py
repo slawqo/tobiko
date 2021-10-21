@@ -20,6 +20,7 @@ import typing
 from oslo_log import log
 
 import tobiko
+from tobiko.openstack import octavia
 from tobiko.shell import curl
 from tobiko.shell import ssh
 
@@ -27,10 +28,11 @@ from tobiko.shell import ssh
 LOG = log.getLogger(__name__)
 
 
-def check_members_balanced(members_count: int,
-                           ip_address: str,
+def check_members_balanced(ip_address: str,
                            protocol: str,
                            port: int,
+                           pool_id: str = None,
+                           members_count: int = None,
                            lb_algorithm: str = None,
                            requests_count: int = 10,
                            connect_timeout: tobiko.Seconds = 2.,
@@ -41,6 +43,15 @@ def check_members_balanced(members_count: int,
     """Check if traffic is properly balanced between members."""
 
     test_case = tobiko.get_test_case()
+
+    # Getting the members count
+    if members_count is None:
+        if pool_id is None:
+            raise ValueError('Either members_count or pool_id has to be passed'
+                             ' to the function.')
+
+        else:  # members_count is None and pool_id is not None
+            members_count = len(octavia.list_members(pool_id=pool_id))
 
     replies: typing.Dict[str, int] = collections.defaultdict(lambda: 0)
     for attempt in tobiko.retry(count=members_count * requests_count,

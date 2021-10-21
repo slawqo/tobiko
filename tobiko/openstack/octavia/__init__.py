@@ -26,6 +26,7 @@ octavia_client = _client.octavia_client
 OctaviaClientFixture = _client.OctaviaClientFixture
 get_loadbalancer = _client.get_loadbalancer
 get_member = _client.get_member
+list_members = _client.list_members
 list_amphorae = _client.list_amphorae
 get_amphora_vm = _client.get_amphora_vm
 list_amphoras_compute_nodes = _client.list_amphoras_compute_nodes

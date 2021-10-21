@@ -46,8 +46,6 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
     member2_stack = tobiko.required_setup_fixture(
         stacks.OctaviaOtherMemberServerStackFixture)
 
-    members_count = 2
-
     def setUp(self):
         # pylint: disable=no-member
         super(OctaviaBasicTrafficScenarioTest, self).setUp()
@@ -65,7 +63,7 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
     @pytest.mark.flaky(reruns=3)
     def test_traffic(self):
         octavia.check_members_balanced(
-            members_count=self.members_count,
+            pool_id=self.pool_stack.pool_id,
             ip_address=self.loadbalancer_stack.floating_ip_address,
             lb_algorithm=self.pool_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,
