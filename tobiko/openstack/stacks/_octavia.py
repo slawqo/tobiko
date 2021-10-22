@@ -182,11 +182,6 @@ class OctaviaMemberServerStackFixture(heat.HeatStackFixture):
         ][0]
 
 
-class OctaviaClientServerStackFixture(_cirros.CirrosServerStackFixture):
-    network_stack = tobiko.required_setup_fixture(
-        OctaviaVipNetworkStackFixture)
-
-
 class OctaviaOtherServerStackFixture(
         OctaviaServerStackFixture):
     pass

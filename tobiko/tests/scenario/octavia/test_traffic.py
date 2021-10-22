@@ -45,46 +45,26 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
     member2_stack = tobiko.required_setup_fixture(
         stacks.OctaviaOtherMemberServerStackFixture)
 
-    client_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaClientServerStackFixture)
-
     members_count = 2
 
     def setUp(self):
         # pylint: disable=no-member
         super(OctaviaBasicTrafficScenarioTest, self).setUp()
 
-        self.loadbalancer_vip = self.loadbalancer_stack.loadbalancer_vip
-        self.loadbalancer_port = self.listener_stack.lb_port
-        self.loadbalancer_protocol = self.listener_stack.lb_protocol
-
-        octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
-                                status=octavia.ACTIVE,
-                                get_client=octavia.get_member,
-                                object_id=self.pool_stack.pool_id,
-                                member_id=self.member1_stack.member_id)
-
-        octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
-                                status=octavia.ACTIVE,
-                                get_client=octavia.get_member,
-                                object_id=self.pool_stack.pool_id,
-                                member_id=self.member2_stack.member_id)
-
-        # Wait for LB is provisioned and ACTIVE
-        octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
-                                status=octavia.ACTIVE,
-                                get_client=octavia.get_loadbalancer,
-                                object_id=(
-                                    self.loadbalancer_stack.loadbalancer_id))
-
-    @property
-    def loadbalancer(self):
-        return self.loadbalancer_stack
+        # Wait for Octavia objects' provisioning status to be ACTIVE
+        # and reachable
+        octavia.wait_for_active_and_functional_members_and_lb(
+            members=[self.member1_stack,
+                     self.member2_stack],
+            pool_id=self.pool_stack.pool_id,
+            lb_protocol=self.listener_stack.lb_protocol,
+            lb_port=self.listener_stack.lb_port,
+            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
 
     def test_traffic(self):
-        octavia.check_members_balanced(self.pool_stack,
-                                       self.client_stack,
-                                       self.members_count,
-                                       self.loadbalancer_vip,
-                                       self.loadbalancer_protocol,
-                                       self.loadbalancer_port)
+        octavia.check_members_balanced(
+            members_count=self.members_count,
+            ip_address=self.loadbalancer_stack.floating_ip_address,
+            lb_algorithm=self.pool_stack.lb_algorithm,
+            protocol=self.listener_stack.lb_protocol,
+            port=self.listener_stack.lb_port)

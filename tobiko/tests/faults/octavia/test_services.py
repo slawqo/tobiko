@@ -64,9 +64,6 @@ class OctaviaServicesFaultTest(testtools.TestCase):
     member2_stack = tobiko.required_setup_fixture(
         stacks.OctaviaOtherMemberServerStackFixture)
 
-    client_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaClientServerStackFixture)
-
     members_count = 2
 
     list_octavia_active_units = ('systemctl list-units ' +
@@ -94,9 +91,11 @@ class OctaviaServicesFaultTest(testtools.TestCase):
 
         # Sending initial traffic before we stop octavia services
         octavia.check_members_balanced(
-            self.pool_stack, self.client_stack, self.members_count,
-            self.loadbalancer_stack.loadbalancer_vip,
-            self.listener_stack.lb_protocol, self.listener_stack.lb_port)
+            members_count=self.members_count,
+            ip_address=self.loadbalancer_stack.floating_ip_address,
+            lb_algorithm=self.pool_stack.lb_algorithm,
+            protocol=self.listener_stack.lb_protocol,
+            port=self.listener_stack.lb_port)
 
     def test_services_fault(self):
         # excluded_services are the services which will be stopped
@@ -180,9 +179,11 @@ class OctaviaServicesFaultTest(testtools.TestCase):
             self.assertTrue(service not in octavia_active_units, err_msg)
 
         octavia.check_members_balanced(
-            self.pool_stack, self.client_stack, self.members_count,
-            self.loadbalancer_stack.loadbalancer_vip,
-            self.listener_stack.lb_protocol, self.listener_stack.lb_port)
+            members_count=self.members_count,
+            ip_address=self.loadbalancer_stack.floating_ip_address,
+            lb_algorithm=self.pool_stack.lb_algorithm,
+            protocol=self.listener_stack.lb_protocol,
+            port=self.listener_stack.lb_port)
 
     def _start_octavia_main_services(
             self, controllers: typing.List[OpenStackTopologyNode] = None):
@@ -209,6 +210,8 @@ class OctaviaServicesFaultTest(testtools.TestCase):
             self._make_sure_octavia_services_are_active(controller)
 
         octavia.check_members_balanced(
-            self.pool_stack, self.client_stack, self.members_count,
-            self.loadbalancer_stack.loadbalancer_vip,
-            self.listener_stack.lb_protocol, self.listener_stack.lb_port)
+            members_count=self.members_count,
+            ip_address=self.loadbalancer_stack.floating_ip_address,
+            lb_algorithm=self.pool_stack.lb_algorithm,
+            protocol=self.listener_stack.lb_protocol,
+            port=self.listener_stack.lb_port)

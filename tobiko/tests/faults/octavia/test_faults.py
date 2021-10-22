@@ -22,7 +22,6 @@ from tobiko.openstack import keystone
 from tobiko.openstack import octavia
 from tobiko.openstack import stacks
 from tobiko import tripleo
-from tobiko.shell import sh
 
 
 LOG = log.getLogger(__name__)
@@ -55,9 +54,6 @@ class OctaviaBasicFaultTest(testtools.TestCase):
     member2_stack = tobiko.required_setup_fixture(
         stacks.OctaviaOtherMemberServerStackFixture)
 
-    client_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaClientServerStackFixture)
-
     members_count = 2
 
     def setUp(self):
@@ -79,9 +75,11 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         # Send traffic
         octavia.check_members_balanced(
-            self.pool_stack, self.client_stack, self.members_count,
-            self.loadbalancer_stack.loadbalancer_vip,
-            self.listener_stack.lb_protocol, self.listener_stack.lb_port)
+            members_count=self.members_count,
+            ip_address=self.loadbalancer_stack.floating_ip_address,
+            lb_algorithm=self.pool_stack.lb_algorithm,
+            protocol=self.listener_stack.lb_protocol,
+            port=self.listener_stack.lb_port)
 
     def test_reboot_amphora_compute_node(self):
         amphora_compute_hosts = octavia.get_amphoras_compute_nodes(
@@ -102,25 +100,18 @@ class OctaviaBasicFaultTest(testtools.TestCase):
                   f' ACTIVE')
 
         # Wait for Octavia objects' provisioning status to be ACTIVE
-        octavia.wait_for_active_members_and_lb(
-            members=[self.member1_stack.member_id,
-                     self.member2_stack.member_id],
+        octavia.wait_for_active_and_functional_members_and_lb(
+            members=[self.member1_stack,
+                     self.member2_stack],
             pool_id=self.pool_stack.pool_id,
+            lb_protocol=self.listener_stack.lb_protocol,
+            lb_port=self.listener_stack.lb_port,
             loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
-
-        # Reach members before verifying Octavia functionality
-        curl_member = "curl -f --connect-timeout 2 -g "
-
-        sh.ssh_execute(
-            self.client_stack.ssh_client,
-            f'{curl_member} + {self.member1_stack.server_stack.ip_address}')
-
-        sh.ssh_execute(
-            self.client_stack.ssh_client,
-            f'{curl_member} + {self.member2_stack.server_stack.ip_address}')
 
         # Verify Octavia functionality
         octavia.check_members_balanced(
-                self.pool_stack, self.client_stack, self.members_count,
-                self.loadbalancer_stack.loadbalancer_vip,
-                self.listener_stack.lb_protocol, self.listener_stack.lb_port)
+            members_count=self.members_count,
+            ip_address=self.loadbalancer_stack.floating_ip_address,
+            lb_algorithm=self.pool_stack.lb_algorithm,
+            protocol=self.listener_stack.lb_protocol,
+            port=self.listener_stack.lb_port)

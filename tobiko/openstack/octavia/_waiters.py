@@ -19,6 +19,7 @@ from oslo_log import log
 import tobiko
 from tobiko.openstack import octavia
 from tobiko import config
+from tobiko.shell import sh
 
 LOG = log.getLogger(__name__)
 
@@ -68,18 +69,66 @@ def wait_for_status(status_key, status, get_client, object_id,
                   f"from '{response[status_key]}' to '{status}'...")
 
 
-def wait_for_active_members_and_lb(members, pool_id, loadbalancer_id):
-    for member_id in members:
+def wait_for_members_to_be_reachable(members,
+                                     lb_protocol: str,
+                                     lb_port: int,
+                                     interval: tobiko.Seconds = None,
+                                     timeout: tobiko.Seconds = None,
+                                     count: int = 10):
+
+    # Wait for members to be reachable from localhost
+    last_reached_id = 0
+    for attempt in tobiko.retry(timeout=timeout,
+                                count=count,
+                                interval=interval):
+        try:
+            for member in members[last_reached_id:]:
+                octavia.check_members_balanced(
+                    members_count=1,
+                    ip_address=member.server_stack.ip_address,
+                    protocol=lb_protocol,
+                    port=lb_port,
+                    requests_count=1)
+                last_reached_id += 1  # prevent retrying same member again
+        except sh.ShellCommandFailed:
+            LOG.info("Waiting for members to have HTTP service available...")
+        else:
+            break
+
+        if attempt.is_last:
+            break
+    else:
+        raise RuntimeError("Members couldn't be reached!")
+
+
+def wait_for_active_and_functional_members_and_lb(
+        members,
+        pool_id: str,
+        lb_protocol: str,
+        lb_port: int,
+        loadbalancer_id: str,
+        interval: tobiko.Seconds = None,
+        timeout: tobiko.Seconds = None):
+
+    # Wait for members to have an ACTIVE provisioning status
+    for member_stack in members:
         octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
                                 status=octavia.ACTIVE,
                                 get_client=octavia.get_member,
-                                object_id=pool_id, member_id=member_id)
+                                object_id=pool_id,
+                                member_id=member_stack.member_id)
 
-    # Wait for LB is provisioned and ACTIVE
+    # Wait for LB to have an ACTIVE provisioning status
     octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
                             status=octavia.ACTIVE,
                             get_client=octavia.get_loadbalancer,
                             object_id=loadbalancer_id)
+
+    wait_for_members_to_be_reachable(members=members,
+                                     lb_protocol=lb_protocol,
+                                     lb_port=lb_port,
+                                     timeout=timeout,
+                                     interval=interval)
 
 
 def wait_for_lb_to_be_updated_and_active(loadbalancer_id):
