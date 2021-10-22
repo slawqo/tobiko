@@ -11,11 +11,11 @@ import os
 
 from oslo_log import log
 import podman
-import podman1
 
 
 import tobiko
 from tobiko.podman import _exception
+from tobiko.podman import _podman1
 from tobiko.podman import _shell
 from tobiko.shell import ssh
 from tobiko.shell import sh
@@ -37,7 +37,7 @@ def list_podman_containers(client=None, **kwargs):
 
 
 PODMAN_CLIENT_CLASSES = \
-    podman1.Client, podman.PodmanClient  # pylint: disable=E1101
+    _podman1.Client, podman.PodmanClient  # pylint: disable=E1101
 
 
 def podman_client(obj=None):
@@ -160,7 +160,7 @@ class PodmanClientFixture(tobiko.SharedFixture):
                         LOG.info('container_client is online')
 
                 else:
-                    client = podman1.Client(  # pylint: disable=E1101
+                    client = _podman1.Client(  # pylint: disable=E1101
                         uri=podman_remote_socket_uri,
                         remote_uri=remote_uri,
                         identity_file='~/.ssh/id_rsa')

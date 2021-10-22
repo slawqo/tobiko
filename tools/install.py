@@ -39,7 +39,6 @@ def main():
     common.setup_logging()
     install_tox()
     install_bindeps()
-    install_podman1()
     install_tobiko()
 
 
@@ -58,40 +57,6 @@ def install_tobiko():
     version = get_version.get_version()
     LOG.info(f"Installing Tobiko version {version}...")
     pip_install(f"-e '{TOP_DIR}'")
-
-
-def install_podman1(version='===1.6.0'):
-    pip_unisntall('podman')
-
-    LOG.info(f"Installing Podman... (version: {version})")
-
-    site_dirs = {os.path.dirname(os.path.realpath(site_dir))
-                 for site_dir in site.getsitepackages()
-                 if os.path.isdir(site_dir)}
-    more_site_dirs = {os.path.join(site_dir, 'site-packages')
-                      for site_dir in site_dirs
-                      if os.path.isdir(os.path.join(site_dir, 'site-packages'))}
-    site_dirs.update(more_site_dirs)
-    LOG.debug(f"Site packages dirs: {site_dirs}")
-
-    # Must ensure pre-existing podman directories are restored
-    # after installation
-    podman_dirs = [os.path.join(site_dir, 'podman')
-                   for site_dir in sorted(site_dirs)]
-    LOG.debug(f"Possible podman directories: {podman_dirs}")
-    with common.stash_dir(*podman_dirs):
-        for podman_dir in podman_dirs:
-            assert not os.path.exists(podman_dir)
-        pip_install(f"'podman{version}'")
-        for podman_dir in podman_dirs:
-            if os.path.isdir(podman_dir):
-                # Rename podman directory to podman1
-                os.rename(podman_dir, podman_dir + '1')
-                break
-        else:
-            raise RuntimeError("Podman directory not found!")
-        for podman_dir in podman_dirs:
-            assert not os.path.exists(podman_dir)
 
 
 def pip_install(args):
