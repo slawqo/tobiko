@@ -8,7 +8,7 @@
       - devstack-tobiko-ceph
       - devstack-tobiko-heat
       - devstack-tobiko-minimal
-      # - devstack-tobiko-octavia
+      - devstack-tobiko-octavia
       - devstack-tobiko-neutron
       - devstack-tobiko-nova
       - devstack-tobiko-ovs
