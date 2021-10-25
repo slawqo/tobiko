@@ -15,8 +15,6 @@ from __future__ import absolute_import
 
 import typing
 
-import yaml
-
 import tobiko
 from tobiko import config
 from tobiko.openstack import glance
@@ -148,7 +146,7 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
     @property
     def write_files(self) -> typing.Dict[str, str]:
         write_files = super().write_files
-        write_files['/etc/netplan/75-tobiko-vlan.yaml'] = yaml.dump(
+        write_files['/etc/netplan/75-tobiko-vlan.yaml'] = tobiko.dump_yaml(
             self.vlan_config)
         return write_files
 

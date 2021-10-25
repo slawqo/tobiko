@@ -18,7 +18,6 @@ import contextlib
 import typing
 
 from oslo_log import log
-import yaml
 
 import tobiko
 from tobiko.shell import sh
@@ -81,7 +80,7 @@ class CloudConfig(dict):
 
     @property
     def user_data(self):
-        return '#cloud-config\n' + yaml.dump(dict(self))
+        return '#cloud-config\n' + tobiko.dump_yaml(dict(self))
 
     def __add__(self, other):
         return combine_cloud_configs([self, other])
@@ -164,7 +163,7 @@ def get_cloud_init_status(
         else:
             raise
 
-    status = yaml.load(output)
+    status = tobiko.load_yaml(output)
     tobiko.check_valid_type(status, dict)
     tobiko.check_valid_type(status['status'], str)
     return status['status']

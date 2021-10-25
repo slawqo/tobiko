@@ -21,7 +21,8 @@ from oslo_log import log
 import six
 import testtools
 from testtools import content
-import yaml
+
+from tobiko.common import _yaml
 
 
 LOG = log.getLogger(__name__)
@@ -120,7 +121,7 @@ def get_yaml_to_get_bytes(get_yaml):
 
     def get_text():
         obj = get_yaml()
-        yield yaml.dump(obj).encode(errors='ignore')
+        yield _yaml.dump_yaml(obj).encode(errors='ignore')
 
     return get_text
 

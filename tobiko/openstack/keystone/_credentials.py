@@ -20,7 +20,6 @@ import typing  # noqa
 
 from oslo_log import log
 import testtools
-import yaml
 
 import tobiko
 
@@ -345,7 +344,7 @@ def api_version_from_url(auth_url) -> typing.Optional[int]:
 
 def print_credentials():
     credentials = default_keystone_credentials()
-    yaml.dump(dict(credentials.to_dict()),
-              sys.stdout,
-              indent=4,
-              sort_keys=True)
+    tobiko.dump_yaml(dict(credentials.to_dict()),
+                     sys.stdout,
+                     indent=4,
+                     sort_keys=True)

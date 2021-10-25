@@ -14,8 +14,8 @@
 from __future__ import absolute_import
 
 import testtools
-import yaml
 
+import tobiko
 from tobiko.openstack import nova
 
 
@@ -38,7 +38,7 @@ class TestUserData(testtools.TestCase):
 
     def assert_equal_cloud_config(self, expected, actual):
         self.assertTrue(actual.startswith('#cloud-config'))
-        self.assertEqual(expected, yaml.load(actual))
+        self.assertEqual(expected, tobiko.load_yaml(actual))
 
 
 class TestCloudConfig(testtools.TestCase):

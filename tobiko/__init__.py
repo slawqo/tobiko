@@ -34,6 +34,7 @@ from tobiko.common import _skip
 from tobiko.common import _testcase
 from tobiko.common import _time
 from tobiko.common import _utils
+from tobiko.common import _yaml
 
 
 TOBIKO_PACKAGE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -146,6 +147,9 @@ to_seconds_float = _time.to_seconds_float
 true_seconds = _time.true_seconds
 
 get_short_hostname = _utils.get_short_hostname
+
+dump_yaml = _yaml.dump_yaml
+load_yaml = _yaml.load_yaml
 
 from tobiko import config  # noqa
 config.init_config()

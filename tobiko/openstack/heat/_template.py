@@ -19,7 +19,6 @@ import sys
 import typing
 
 from heatclient.common import template_utils
-import yaml
 
 import tobiko
 
@@ -52,7 +51,7 @@ class HeatTemplateFixture(tobiko.SharedFixture):
         tobiko.check_valid_type(self.outputs, collections.Mapping)
         tobiko.check_valid_type(self.parameters, collections.Mapping)
         tobiko.check_valid_type(self.resources, collections.Mapping)
-        self.template_yaml = yaml.safe_dump(self.template)
+        self.template_yaml = tobiko.dump_yaml(self.template)
 
     @property
     def outputs(self) -> typing.Dict[str, typing.Any]:

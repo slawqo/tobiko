@@ -16,8 +16,6 @@ from __future__ import absolute_import
 import io
 import os
 
-import yaml
-
 import tobiko
 from tobiko.shell import sh
 from tobiko.tripleo import _undercloud
@@ -27,7 +25,7 @@ from tobiko.tripleo import _config
 def get_tripleo_ansible_inventory():
     inventory_file = get_tripleo_ansible_inventory_file()
     with io.open(inventory_file, 'rb') as fd:
-        return yaml.safe_load(fd)
+        return tobiko.load_yaml(fd)
 
 
 def has_tripleo_ansible_inventory():

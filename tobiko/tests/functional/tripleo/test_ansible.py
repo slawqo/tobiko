@@ -16,8 +16,8 @@ from __future__ import absolute_import
 import os
 
 import testtools
-import yaml
 
+import tobiko
 from tobiko import config
 from tobiko import tripleo
 
@@ -50,7 +50,7 @@ class InventoryFileTest(testtools.TestCase):
         inventory_yaml = tripleo.read_tripleo_ansible_inventory()
         self.assertIsInstance(inventory_yaml, str)
         self.assertTrue(inventory_yaml)
-        inventory = yaml.safe_load(inventory_yaml)
+        inventory = tobiko.load_yaml(inventory_yaml)
         self.assertIn('Undercloud', inventory)
         self.assertIn('Controller', inventory)
         self.assertIn('Compute', inventory)

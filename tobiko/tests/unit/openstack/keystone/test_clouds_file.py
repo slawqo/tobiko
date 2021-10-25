@@ -19,8 +19,6 @@ import os
 import tempfile
 import typing  # noqa
 
-import yaml
-
 import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack.keystone import _clouds_file
@@ -87,7 +85,7 @@ class CloudsFileFixture(tobiko.SharedFixture):
                 if self.suffix in _clouds_file.JSON_SUFFIXES:
                     json.dump(clouds_content, clouds_stream)
                 elif self.suffix in _clouds_file.YAML_SUFFIXES:
-                    yaml.safe_dump(clouds_content, clouds_stream)
+                    tobiko.dump_yaml(clouds_content, clouds_stream)
             finally:
                 clouds_stream.close()
 

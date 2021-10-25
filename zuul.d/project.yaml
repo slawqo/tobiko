@@ -8,7 +8,7 @@
       - devstack-tobiko-ceph
       - devstack-tobiko-heat
       - devstack-tobiko-minimal
-      - devstack-tobiko-octavia
+      # - devstack-tobiko-octavia
       - devstack-tobiko-neutron
       - devstack-tobiko-nova
       - devstack-tobiko-ovs
@@ -27,6 +27,8 @@
             voting: false
     periodic:
       jobs:
+        - devstack-tobiko-octavia:
+            voting: false
         - tobiko-infrared
         - tobiko-infrared-centos-7
         - tobiko-infrared-fedora

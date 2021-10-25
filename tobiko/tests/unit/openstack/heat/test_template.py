@@ -16,7 +16,6 @@ from __future__ import absolute_import
 import os
 
 from heatclient.common import template_utils
-import yaml
 
 import tobiko
 from tobiko.openstack import heat
@@ -44,5 +43,5 @@ class HeatTemplateFileTest(openstack.OpenstackTest):
                                        template_file))
         self.assertEqual(template_dict, template.template)
         self.assertEqual(template_files, template.template_files)
-        template_yaml = yaml.safe_dump(template_dict)
+        template_yaml = tobiko.dump_yaml(template_dict)
         self.assertEqual(template_yaml, template.template_yaml)

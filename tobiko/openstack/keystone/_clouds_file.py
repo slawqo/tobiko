@@ -17,7 +17,6 @@ import json
 import os
 
 from oslo_log import log
-import yaml
 
 import tobiko
 from tobiko.openstack.keystone import _credentials
@@ -181,7 +180,7 @@ class CloudsFileKeystoneCredentialsFixture(
                     clouds_content = json.load(f)
                 else:
                     LOG.debug('Load YAML clouds file: %r', clouds_file)
-                    clouds_content = yaml.safe_load(f)
+                    clouds_content = tobiko.load_yaml(f)
             LOG.debug('Clouds file content loaded from %r:\n%s',
                       clouds_file, json.dumps(clouds_content,
                                               indent=4,

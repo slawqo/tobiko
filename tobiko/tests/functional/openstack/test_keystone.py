@@ -19,7 +19,6 @@ from keystoneclient.v2_0 import client as v2_client
 from keystoneclient.v3 import client as v3_client
 from oslo_log import log
 import testtools
-import yaml
 
 import tobiko
 from tobiko.openstack import keystone
@@ -36,7 +35,7 @@ class TobikoKeystoneCredentialsCommandTest(testtools.TestCase):
 
     def test_execute(self):
         with sh.local_process('tobiko-keystone-credentials') as process:
-            actual = yaml.full_load(process.stdout)
+            actual = tobiko.load_yaml(process.stdout)
         process.check_exit_status()
         expected = keystone.default_keystone_credentials().to_dict()
         self.assertEqual(expected, actual)

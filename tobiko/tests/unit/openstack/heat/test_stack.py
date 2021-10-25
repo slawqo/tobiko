@@ -19,7 +19,6 @@ import time
 from heatclient.v1 import client as heatclient
 from heatclient import exc
 import mock
-import yaml
 
 import tobiko
 from tobiko.openstack import heat
@@ -156,7 +155,7 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
         if call_create:
             client.stacks.create.assert_called_once_with(
                 parameters=parameters, stack_name=stack.stack_name,
-                template=yaml.safe_dump(stack.template.template))
+                template=tobiko.dump_yaml(stack.template.template))
         else:
             client.stacks.create.assert_not_called()
 
