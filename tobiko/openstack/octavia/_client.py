@@ -21,6 +21,7 @@ import tobiko
 from tobiko.openstack import _client
 from tobiko.openstack import keystone
 from tobiko.openstack import nova
+from tobiko.openstack.octavia import _validators
 from tobiko.openstack import topology
 
 
@@ -91,31 +92,59 @@ def list_amphorae(loadbalancer_id: str, client=None):
         loadbalancer_id=loadbalancer_id)['amphorae']
 
 
-def list_amphoras_compute_nodes(load_balancer_id: str, client=None):
-    """List the compute nodes which host the LB amphoras
+def get_amphora_compute_node(loadbalancer_id: str,
+                             lb_port: str,
+                             lb_protocol: str,
+                             ip_address: str) -> (
+        topology.OpenStackTopologyNode):
+    """Gets the compute node which hosts the LB amphora
 
-    This function finds the Overcloud compute nodes which
-    host the amphoras and returns a list of their instances.
+    This function finds the Overcloud compute node which
+    hosts the amphora. In case there are more than 1 amphora
+    (e.g. if the LB's topology is Active/standby), so the compute node which
+    hosts the master amphora will be returned.
+
+    :param loadbalancer_id (str): The loadbalancer ID.
+    :return (TripleoTopologyNode): The compute node which hosts the Amphora
     """
 
-    hostnames = set()
-    for amphora in list_amphorae(loadbalancer_id=load_balancer_id,
-                                 client=client):
-        server = nova.get_server(amphora['compute_id'])
-        hostnames.add(getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname'))
-    return list(hostnames)
+    amphorae = list_amphorae(loadbalancer_id)
+    if len(amphorae) > 1:  # For a high available LB
+        amphora = get_master_amphora(amphorae, ip_address, lb_port,
+                                     lb_protocol)
+    else:
+        amphora = amphorae[0]
+
+    server = nova.get_server(amphora['compute_id'])
+    hostname = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname')
+    return topology.get_openstack_node(hostname=hostname)
 
 
-def get_amphoras_compute_nodes(load_balancer_id: str, client=None):
-    """Gets the hostnames/compute nodes which host the LB amphoras
+def get_master_amphora(amphorae, ip_address, lb_port, lb_protocol,
+                       client=None):
+    """Gets the master Amphora in a High Available LB
+    (a loadbalancer which uses the Active/standby topology)
 
-    This function finds the Overcloud compute nodes which
-    host the amphoras and returns a list of their instances.
+    :param loadbalancer_id (str): The loadbalancer ID.
+    :return amphora (str): JSON of the Master Amphora.
     """
 
-    hostnames = list_amphoras_compute_nodes(load_balancer_id=load_balancer_id,
-                                            client=client)
-    return topology.list_openstack_nodes(hostnames=hostnames)
+    # Generate traffic on the LB so we can identify the current Master
+    _validators.check_members_balanced(
+        ip_address=ip_address,
+        protocol=lb_protocol,
+        port=lb_port,
+        members_count=1)
+
+    # The amphora which has total_connections > 0 is the master.
+    for amphora in amphorae:
+        amphora_stats = octavia_client(client).amphora_stats_show(
+            amphora['id'])
+        for listener in list(amphora_stats.values())[0]:
+            if listener['total_connections'] > 0:
+                return amphora
+
+    raise ValueError("Amphora wasn't found! Invalid parameters were sent!")
 
 
 def get_amphora_vm(
