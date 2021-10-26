@@ -14,6 +14,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import pytest
 import testtools
 
 import tobiko
@@ -61,6 +62,7 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
             lb_port=self.listener_stack.lb_port,
             loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
 
+    @pytest.mark.flaky(reruns=3)
     def test_traffic(self):
         octavia.check_members_balanced(
             members_count=self.members_count,
