@@ -38,6 +38,7 @@ wait_for_active_and_functional_members_and_lb = (
     _waiters.wait_for_active_and_functional_members_and_lb)
 wait_for_lb_to_be_updated_and_active = (
         _waiters.wait_for_lb_to_be_updated_and_active)
+wait_for_octavia_service = _waiters.wait_for_octavia_service
 
 # Validators
 check_members_balanced = _validators.check_members_balanced
@@ -45,6 +46,7 @@ check_members_balanced = _validators.check_members_balanced
 # Exceptions
 RequestException = _exceptions.RequestException
 TimeoutException = _exceptions.TimeoutException
+OctaviaClientException = _exceptions.OctaviaClientException
 
 # Constants
 PROVISIONING_STATUS = _constants.PROVISIONING_STATUS

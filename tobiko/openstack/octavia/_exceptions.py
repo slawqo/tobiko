@@ -14,6 +14,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+from octaviaclient.api import exceptions
+
 import tobiko
 
 
@@ -24,3 +26,8 @@ class RequestException(tobiko.TobikoException):
 
 class TimeoutException(tobiko.TobikoException):
     message = "Timeout exception: {reason}"
+
+
+class OctaviaClientException(tobiko.TobikoException,
+                             exceptions.OctaviaClientException):
+    message = "Octavia client error: {reason}"

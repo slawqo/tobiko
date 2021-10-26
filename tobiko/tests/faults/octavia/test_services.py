@@ -87,6 +87,9 @@ class OctaviaServicesFaultTest(testtools.TestCase):
             pool_id=self.pool_stack.pool_id,
             loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
 
+        octavia.wait_for_octavia_service(
+            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+
         # Sending initial traffic before we stop octavia services
         octavia.check_members_balanced(
             pool_id=self.pool_stack.pool_id,

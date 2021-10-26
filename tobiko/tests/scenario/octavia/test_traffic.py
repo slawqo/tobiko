@@ -60,6 +60,9 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
             lb_port=self.listener_stack.lb_port,
             loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
 
+        octavia.wait_for_octavia_service(
+            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+
     @pytest.mark.flaky(reruns=3)
     def test_traffic(self):
         octavia.check_members_balanced(
