@@ -63,6 +63,12 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
         octavia.wait_for_octavia_service(
             loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
 
+        octavia.wait_for_members_to_be_reachable(
+            members=[self.member1_stack, self.member2_stack],
+            lb_protocol=self.listener_stack.lb_protocol,
+            lb_port=self.listener_stack.lb_port
+        )
+
     @pytest.mark.flaky(reruns=3)
     def test_traffic(self):
         octavia.check_members_balanced(

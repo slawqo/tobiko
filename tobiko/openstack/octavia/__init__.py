@@ -34,6 +34,7 @@ get_amphoras_compute_nodes = _client.get_amphoras_compute_nodes
 
 # Waiters
 wait_for_status = _waiters.wait_for_status
+wait_for_members_to_be_reachable = _waiters.wait_for_members_to_be_reachable
 wait_for_active_and_functional_members_and_lb = (
     _waiters.wait_for_active_and_functional_members_and_lb)
 wait_for_lb_to_be_updated_and_active = (
