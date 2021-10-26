@@ -17,12 +17,12 @@ tox_report_name:
 
 tox_run_tests_timeout: 18000  # 5 hours
 
-tox_constraints_file: '{{ remote_constraints_file }}'
+tox_constraints: ''
 
 tox_constrain_env:
   TOX_REPORT_DIR: '{{ tox_report_dir }}'
   TOX_REPORT_NAME: '{{ tox_report_name }}'
-  TOX_CONSTRAINTS_FILE: '{{ tox_constraints_file }}'
+  TOX_CONSTRAINTS: '{{ tox_constraints }}'
   TOX_RUN_TESTS_TIMEOUT: '{{ tox_run_tests_timeout | float }}'
 
 tox_succeeded_rc: 0

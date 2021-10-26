@@ -53,9 +53,3 @@ test_log_file: '{{ test_report_dir | realpath }}/tobiko.log'
 
 # Local where test cases results are being collected to
 test_collect_dir: '{{ test_src_dir | realpath }}/{{ test_report_name }}'
-
-
-# --- Workaround compatibility issues -----------------------------------------
-
-upper_constraints_file:
-  'https://opendev.org/openstack/requirements/raw/branch/master/upper-constraints.txt'

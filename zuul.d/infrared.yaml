@@ -30,7 +30,6 @@
     pre-run: playbooks/infrared/pre.yaml
     run: playbooks/infrared/run.yaml
     required-projects:
-      - name: openstack/requirements
       - name: x/tobiko
     voting: true
     vars:
@@ -40,8 +39,6 @@
       test_inventory_groups: {undercloud: [secondary]}
       tox_envlist: infrared
       tox_extra_args: -- --collect-dir {{ test_collect_dir | quote }}
-      tox_constraints_file: '{{ upper_constraints_file }}'
-      upper_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/openstack/requirements/upper-constraints.txt'
       tox_environ:
         ANSIBLE_INVENTORY: '{{ test_inventory_file }}'
       zuul_output_dir: '{{ ansible_user_dir }}/zuul-output'

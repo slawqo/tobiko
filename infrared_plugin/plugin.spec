@@ -184,10 +184,6 @@ subparsers:
             type: Value
             help: test cases log file
             ansible_variable: test_log_file
-          upper-constraints-file:
-            type: Value
-            help: URL or path to upper contraints file
-            ansible_variable: upper_constraints_file
           ignore-test-failures:
             type: Flag
             help: Ignore test execution errors

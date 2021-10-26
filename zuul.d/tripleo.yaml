@@ -4,7 +4,6 @@
     description: Base Tobiko TripleO job
     parent: tripleo-ci-centos-8-scenario002-standalone
     required-projects:
-      - openstack/requirements
       - openstack/tripleo-ci
       - x/tobiko
     pre-run: playbooks/tripleo/pre.yaml
@@ -14,7 +13,6 @@
       test_conf:
         keystone:
           cloud_name: standalone
-      upper_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/openstack/requirements/upper-constraints.txt'
       featureset: '052'
       featureset_override:
         run_tempest: false

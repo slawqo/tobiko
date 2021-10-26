@@ -17,7 +17,6 @@ from __future__ import absolute_import
 import os
 import site
 import sys
-import typing
 
 
 TOP_DIR = os.path.realpath(os.path.dirname(os.path.dirname(__file__)))
@@ -32,12 +31,8 @@ LOG = common.get_logger(__name__)
 
 TOX_VERSION = os.environ.get('TOX_VERSION') or '>=3.8.0'
 
-TOX_CONSTRAINTS_FILE = (
-    os.environ.get('TOX_CONSTRAINTS_FILE') or
-    'https://opendev.org/openstack/requirements/raw/branch/master/upper-constraints.txt')
-
-TOX_CONSTRAINTS = (
-    os.environ.get('TOX_CONSTRAINTS') or f"'-c{TOX_CONSTRAINTS_FILE}'")
+TOX_CONSTRAINTS = (os.environ.get('TOX_CONSTRAINTS') or
+                   f"-c{TOP_DIR}/upper-constraints.txt")
 
 
 def main():
