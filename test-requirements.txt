@@ -1,7 +1,6 @@
 # Test cases requirements
 
 mock>=3.0.5                    # BSD
-psutil>=5.8.0                  # BSD
 pytest>=6.2.1                  # MIT
 pytest-html>=3.1.1             # MPL-2.0
 pytest-xdist[psutil]>=2.2.0    # MIT
