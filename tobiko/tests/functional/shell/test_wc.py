@@ -45,9 +45,10 @@ class WcTest(testtools.TestCase):
                                sh.get_file_size,
                                file_name)
         self.assertEqual(1, ex.exit_status)
-        self.assertEqual(
-            f"wc: {file_name}: No such file or directory\n",
-            ex.stderr)
+        self.assertIn(
+            ex.stderr.strip(),
+            [f"wc: {file_name}: No such file or directory",
+             f"wc: {file_name}: open: No such file or directory"])
 
     def test_assert_file_size(self):
         file_name = os.path.join(sh.make_temp_dir(),
@@ -68,9 +69,10 @@ class WcTest(testtools.TestCase):
                                sh.assert_file_size,
                                1, file_name)
         self.assertEqual(1, ex.exit_status)
-        self.assertEqual(
-            f"wc: {file_name}: No such file or directory\n",
-            ex.stderr)
+        self.assertIn(
+            ex.stderr.strip(),
+            [f"wc: {file_name}: No such file or directory",
+             f"wc: {file_name}: open: No such file or directory"])
 
     def test_assert_file_size_when_mismatch(self):
         file_name = os.path.join(sh.make_temp_dir(),
