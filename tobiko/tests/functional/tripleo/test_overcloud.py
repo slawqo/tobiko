@@ -17,7 +17,6 @@ import os
 
 import netaddr
 import pandas as pd
-import six
 import testtools
 
 from tobiko import config
@@ -71,7 +70,7 @@ class OvercloudNovaApiTest(testtools.TestCase):
         host_config = tobiko.setup_fixture(
             tripleo.overcloud_host_config(hostname=hostname))
         self.assertEqual(hostname, host_config.host)
-        self.assertIsInstance(host_config.hostname, six.string_types)
+        self.assertIsInstance(host_config.hostname, str)
         netaddr.IPAddress(host_config.hostname)
         self.assertEqual(CONF.tobiko.tripleo.overcloud_ssh_port,
                          host_config.port)

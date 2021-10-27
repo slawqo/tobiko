@@ -21,7 +21,6 @@ import typing
 
 import fixtures
 from oslo_log import log
-import six
 import testtools
 
 import tobiko
@@ -88,7 +87,7 @@ def get_fixture_name(obj):
 
 def get_fixture_class(obj):
     '''Get fixture class'''
-    if isinstance(obj, six.string_types):
+    if isinstance(obj, str):
         obj = tobiko.load_object(obj)
 
     if not inspect.isclass(obj):
@@ -161,7 +160,7 @@ def cleanup_fixture(obj, fixture_id=None, manager=None):
 
 def get_name_and_object(obj):
     '''Get (name, obj) tuple identified by given :param obj:'''
-    if isinstance(obj, six.string_types):
+    if isinstance(obj, str):
         return obj, tobiko.load_object(obj)
     else:
         return get_object_name(obj), obj
@@ -219,8 +218,9 @@ def get_required_fixtures(obj):
     if required_names is None:
         if is_test_method(obj):
             # Get fixtures from default values that are fixtures
+            defaults = getattr(obj, '__defaults__', None) or []
             required = {default
-                        for default in six.get_function_defaults(obj) or []
+                        for default in defaults
                         if is_fixture(default)}
 
         elif inspect.isclass(obj):
@@ -312,7 +312,7 @@ def get_fixture_id(obj: typing.Any) -> typing.Any:
 
 def get_object_name(obj):
     '''Gets a fully qualified name for given :param obj:'''
-    if isinstance(obj, six.string_types):
+    if isinstance(obj, str):
         return obj
 
     name = getattr(obj, '__tobiko_fixture_name__', None)
@@ -326,25 +326,9 @@ def get_object_name(obj):
 
     module = inspect.getmodule(obj).__name__
 
-    if six.PY2:
-        # Below code is only for old Python versions
-        if inspect.isclass(obj):
-            # This doesn't work for nested classes
-            return module + '.' + obj.__name__
-
-        method_class = getattr(obj, 'im_class', None)
-        if method_class:
-            # This doesn't work for nested classes
-            return module + '.' + method_class.__name__ + '.' + obj.__name__
-
-        if inspect.isfunction(obj):
-            return module + '.' + obj.func_name
-
-    else:
-        # Only Python 3 defines __qualname__
-        name = getattr(obj, '__qualname__', None)
-        if name:
-            return module + '.' + name
+    name = getattr(obj, '__qualname__', None)
+    if name:
+        return module + '.' + name
 
     msg = "Unable to get fixture name from object {!r}".format(obj)
     raise TypeError(msg)

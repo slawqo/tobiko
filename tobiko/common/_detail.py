@@ -18,7 +18,6 @@ import itertools
 
 import fixtures
 from oslo_log import log
-import six
 import testtools
 from testtools import content
 
@@ -97,7 +96,7 @@ def get_text_to_get_bytes(get_text):
     def get_bytes():
         text = get_text()
         if text:
-            if isinstance(text, six.string_types):
+            if isinstance(text, str):
                 yield text.encode(errors='ignore')
             else:
                 for t in text:

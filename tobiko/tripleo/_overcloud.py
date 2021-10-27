@@ -17,7 +17,6 @@ import io
 import os
 
 from oslo_log import log
-import six
 
 import tobiko
 from tobiko import config
@@ -199,7 +198,7 @@ class OvercloudHostConfig(tobiko.SharedFixture):
             self.server = server
             if self.host is None:
                 self.host = server.name
-        tobiko.check_valid_type(self.host, six.string_types)
+        tobiko.check_valid_type(self.host, str)
         self._connect_parameters = ssh.gather_ssh_connect_parameters(**kwargs)
 
     def setup_fixture(self):

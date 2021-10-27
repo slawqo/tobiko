@@ -19,7 +19,7 @@ import io
 import select
 
 from oslo_log import log
-import six
+
 
 LOG = log.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class ShellIOBase(io.IOBase):
         if not data:
             return ''
 
-        if isinstance(data, six.string_types):
+        if isinstance(data, str):
             return data
 
         return data.decode()
@@ -124,7 +124,7 @@ class ShellWritable(ShellIOBase):
         return True
 
     def write(self, data):
-        if not isinstance(data, six.binary_type):
+        if not isinstance(data, bytes):
             data = data.encode()
         witten_bytes = self.delegate.write(data)
         if witten_bytes is None:
