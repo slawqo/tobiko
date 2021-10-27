@@ -15,7 +15,15 @@ repos:
       - id: end-of-file-fixer
       - id: forbid-new-submodules
       - id: requirements-txt-fixer
-        args: [requirements.txt, test-requirements.txt, extra-requirements.txt, linters-requirements.txt, doc/requirements.txt, infrared_plugin/requirements.txt]
+        args:
+          - doc/requirements.txt
+          - extra-requirements.txt
+          - infrared_plugin/requirements.txt
+          - linters-requirements.txt
+          - lower-constraints.txt
+          - requirements.txt
+          - test-requirements.txt
+          - upper-constraints.txt
       - id: trailing-whitespace
 
   - repo: https://gitlab.com/pycqa/flake8.git

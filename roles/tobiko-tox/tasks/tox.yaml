@@ -1,6 +1,6 @@
 ---
 
-- name: "set Tox command line fact"
+- name: set Tox command line fact
   set_fact:
     tox_command_line: >
         {{ tox_command }}
@@ -8,25 +8,23 @@
             {{ tox_extra_args }}
 
 
-- name: "normalize white spaces from Tox command line"
+- name: normalize white spaces from Tox command line
   set_fact:
     tox_command_line: '{{ tox_command_line.split() | join(" ") }}'
 
 
-- name: "combine environment variables"
+- name: combine environment variables
   set_fact:
     tox_env: '{{ tox_environment | from_yaml | combine(tox_constrain_env) }}'
 
-
-- name: "show tox variables"
-  debug:
-    msg:
-      tox_command_line: '{{ tox_command_line }}'
-      tox_description: '{{ tox_description }}'
-      tox_dir: '{{ tox_dir }}'
-      tox_env: '{{ tox_env }}'
-      tox_expected_rcs: '{{ tox_expected_rcs }}'
-
+- name: show tox variables
+  debug: var="{{ item }}"
+  loop:
+    - tox_command_line
+    - tox_description
+    - tox_dir
+    - tox_env
+    - tox_expected_rcs
 
 - name: "{{ tox_description }}"
   command:

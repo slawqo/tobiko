@@ -14,9 +14,6 @@
       - (python_version | string).split(".")[0] == '3'
 
 
-- include_tasks: constraints.yaml
-
-
 - include_tasks: install.yaml
 
 

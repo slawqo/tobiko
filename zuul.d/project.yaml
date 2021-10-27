@@ -21,13 +21,11 @@
       - tobiko-infrared
     vars:
         rtd_webhook_id: '84947'
-    check:
-      jobs:
-        - requirements-check:
-            voting: false
     periodic:
       jobs:
         - devstack-tobiko-octavia:
+            voting: false
+        - requirements-check:
             voting: false
         - tobiko-infrared
         - tobiko-infrared-centos-7
