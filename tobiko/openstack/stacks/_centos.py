@@ -66,6 +66,9 @@ class CentosServerStackFixture(_nova.CloudInitServerStackFixture):
     #: Flavor used to create a Nova server instance
     flavor_stack = tobiko.required_setup_fixture(CentosFlavorStackFixture)
 
+    # I expect CentOS based servers to be very slow to boot
+    is_reachable_timeout = 900.
+
 
 class Centos7ServerStackFixture(CentosServerStackFixture):
 
