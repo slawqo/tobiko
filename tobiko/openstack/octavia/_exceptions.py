@@ -28,6 +28,4 @@ class TimeoutException(tobiko.TobikoException):
     message = "Timeout exception: {reason}"
 
 
-class OctaviaClientException(tobiko.TobikoException,
-                             exceptions.OctaviaClientException):
-    message = "Octavia client error: {reason}"
+OctaviaClientException = exceptions.OctaviaClientException

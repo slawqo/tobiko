@@ -144,24 +144,21 @@ def wait_for_lb_to_be_updated_and_active(loadbalancer_id):
 
 
 def wait_for_octavia_service(loadbalancer_id: str,
-                             waiting_msg='Waiting for the LB to become '
-                                         'functional again...',
                              interval: tobiko.Seconds = None,
                              timeout: tobiko.Seconds = None,
-                             count: int = 10):
-
-    LOG.info(waiting_msg)
+                             client=None):
     for attempt in tobiko.retry(timeout=timeout,
                                 interval=interval,
-                                count=count):
+                                default_timeout=180.,
+                                default_interval=5.):
         try:
-            octavia.list_amphorae(loadbalancer_id=loadbalancer_id)
+            octavia.list_amphorae(loadbalancer_id=loadbalancer_id,
+                                  client=client)
+        except octavia.OctaviaClientException as ex:
+            LOG.debug(f"Error listing amphorae: {ex}")
+            if attempt.is_last:
+                raise
+            LOG.info('Waiting for the LB to become functional again...')
+        else:
             LOG.info('Octavia service is available!')
-            return
-        except Exception as ex:
-            if issubclass(octavia.OctaviaClientException, ex.__class__):
-                LOG.info(waiting_msg)
-                if attempt.is_last:
-                    raise
-            else:
-                raise ex
+            break
