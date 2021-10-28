@@ -94,7 +94,7 @@ class CirrosServerTest(testtools.TestCase):
         final_hypervisor = nova.get_server_hypervisor(server)
         self.assertNotEqual(initial_hypervisor, final_hypervisor)
 
-    @tobiko.skip("Expected to create problems on compute nodes")
+    @nova.skip_if_missing_hypervisors(count=2)
     def test_7_live_migrate_server(self):
         self.test_6_migrate_server(live=True)
 
@@ -119,7 +119,7 @@ class CirrosServerTest(testtools.TestCase):
         self.assertNotEqual(initial_hypervisor, final_hypervisor)
         self.assertEqual(target_hypervisor, final_hypervisor)
 
-    @tobiko.skip("Expected to create problems on compute nodes")
+    @nova.skip_if_missing_hypervisors(count=2)
     def test_8_live_migrate_server_with_host(self):
         self.test_8_migrate_server_with_host(live=True)
 
