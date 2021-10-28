@@ -17,8 +17,6 @@ from __future__ import absolute_import
 
 import subprocess
 
-import six
-
 from tobiko.shell.ssh import _config
 
 
@@ -38,7 +36,7 @@ def ssh_command(host, username=None, port=None, command=None,
         host=host, config_files=config_files)
 
     command = command or host_config.default.command.split()
-    if isinstance(command, six.string_types):
+    if isinstance(command, str):
         command = command.split()
 
     hostname = host_config.hostname
@@ -56,7 +54,7 @@ def ssh_command(host, username=None, port=None, command=None,
         command += ['-i', key_filename]
 
     if proxy_command:
-        if not isinstance(proxy_command, six.string_types):
+        if not isinstance(proxy_command, str):
             proxy_command = subprocess.list2cmdline([str(a)
                                                      for a in proxy_command])
         options['ProxyCommand'] = proxy_command

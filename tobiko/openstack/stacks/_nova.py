@@ -21,7 +21,6 @@ import typing
 from abc import ABC
 
 import netaddr
-import six
 from oslo_log import log
 
 import tobiko
@@ -497,7 +496,7 @@ class SameHostServerStackFixture(PeerServerStackFixture, abc.ABC):
 
 
 def as_str(text):
-    if isinstance(text, six.string_types):
+    if isinstance(text, str):
         return text
     else:
         return text.decode()

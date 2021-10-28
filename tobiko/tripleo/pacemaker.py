@@ -1,10 +1,10 @@
 from __future__ import absolute_import
 
+import io
 import time
 
 from oslo_log import log
 import pandas
-import six
 
 import tobiko
 from tobiko.tripleo import overcloud
@@ -53,7 +53,7 @@ def get_pcs_resources_table(timeout=720, interval=2):
                                 expect_exit_status=None).stdout
             # remove the first column when it only includes '*' characters
             output = output.replace('*', '').strip()
-            stream = six.StringIO(output)
+            stream = io.StringIO(output)
             table = pandas.read_csv(stream, delim_whitespace=True, header=None)
             table.columns = ['resource', 'resource_type', 'resource_state',
                              'overcloud_node']

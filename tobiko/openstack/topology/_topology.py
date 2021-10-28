@@ -16,12 +16,11 @@ from __future__ import absolute_import
 import collections
 import re
 import typing
+from urllib import parse
 import weakref
 
 import netaddr
 from oslo_log import log
-import six
-from six.moves.urllib import parse
 
 import tobiko
 from tobiko.shell import files
@@ -387,7 +386,7 @@ class OpenStackTopology(tobiko.SharedFixture):
         name = name or (hostname and node_name_from_hostname(hostname))
         details = {}
         if name:
-            tobiko.check_valid_type(name, six.string_types)
+            tobiko.check_valid_type(name, str)
             details['name'] = name
             try:
                 return self._names[name]

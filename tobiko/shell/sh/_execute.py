@@ -19,7 +19,6 @@ import collections
 import enum
 
 from oslo_log import log
-import six
 
 import tobiko
 from tobiko.shell.sh import _exception
@@ -29,7 +28,7 @@ from tobiko.shell.sh import _process
 LOG = log.getLogger(__name__)
 
 
-DATA_TYPES = six.string_types + (six.binary_type, six.text_type)
+DATA_TYPES = (str, bytes)
 
 
 @enum.unique

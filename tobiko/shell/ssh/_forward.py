@@ -18,10 +18,9 @@ from __future__ import absolute_import
 import collections
 import contextlib
 import socket
+import urllib
 
 from oslo_log import log
-import six
-from six.moves import urllib
 import sshtunnel
 
 import tobiko
@@ -154,7 +153,7 @@ class SSHUnixForwardHandler(sshtunnel._ForwardHandler):
                                           self.server.local_address)
 
         remote_address = self.remote_address
-        assert isinstance(remote_address, six.string_types)
+        assert isinstance(remote_address, str)
         command = 'sudo nc -U "{}"'.format(remote_address)
 
         chan = self.transport.open_session()
@@ -303,7 +302,7 @@ def binding_url(address):
         return 'tcp://{hostname}:{port}'.format(hostname=hostname,
                                                 port=port)
 
-    elif isinstance(address, six.string_types):
+    elif isinstance(address, str):
         return 'unix://{path}'.format(path=address)
 
     raise TypeError('Invalid address type: {!r}'.format(address))

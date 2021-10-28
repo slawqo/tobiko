@@ -1,11 +1,11 @@
 from __future__ import absolute_import
 
+import io
 import re
 import time
 
 from oslo_log import log
 import pandas
-import six
 
 import tobiko
 from tobiko.openstack import neutron
@@ -53,7 +53,7 @@ root    |     11|      2| 0.0|     0|00:00:05|migration/0    |[migration/0]
         "\"DELIM%z\" -o \"DELIM%x\" -o \"DELIM%c\" -o \"DELIM%a\" |grep -v "
         "ps|sed 's/\"/''/g'",
         ssh_client=ssh_client).stdout
-    stream = six.StringIO(output)
+    stream = io.StringIO(output)
     table = pandas.read_csv(stream, sep='DELIM', header=None, skiprows=1)
     table.replace(to_replace=' ', value="", regex=True, inplace=True)
     table.columns = ['USER', 'PID', 'PPID', 'CPU', 'VSZ', 'TIME', 'PROCESS',

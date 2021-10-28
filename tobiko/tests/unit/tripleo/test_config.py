@@ -13,8 +13,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import six
-
 from tobiko import config
 from tobiko.tests import unit
 
@@ -26,8 +24,7 @@ TIPLEO_CONF = CONF.tobiko.tripleo
 class TripleoConfigTest(unit.TobikoUnitTest):
 
     def test_ssh_key_filename(self):
-        self.assertIsInstance(TIPLEO_CONF.undercloud_ssh_key_filename,
-                              six.string_types)
+        self.assertIsInstance(TIPLEO_CONF.undercloud_ssh_key_filename, str)
 
 
 class UndercloudConfigTest(unit.TobikoUnitTest):
@@ -35,21 +32,21 @@ class UndercloudConfigTest(unit.TobikoUnitTest):
     def test_undercloud_ssh_hostname(self):
         value = TIPLEO_CONF.undercloud_ssh_hostname
         if value is not None:
-            self.assertIsInstance(value, six.string_types)
+            self.assertIsInstance(value, str)
 
     def test_undercloud_ssh_port(self):
         value = TIPLEO_CONF.undercloud_ssh_port
         if value is not None:
             self.assertIsInstance(value, int)
-            self.assertIn(value, six.moves.range(1, 2 ** 16))
+            self.assertGreater(value, 0)
+            self.assertLess(value, 2 ** 16)
 
     def test_undercloud_ssh_username(self):
-        self.assertIsInstance(TIPLEO_CONF.undercloud_ssh_username,
-                              six.string_types)
+        self.assertIsInstance(TIPLEO_CONF.undercloud_ssh_username, str)
 
     def test_undercloud_rcfile(self):
         for rcfile in TIPLEO_CONF.undercloud_rcfile:
-            self.assertIsInstance(rcfile, six.string_types)
+            self.assertIsInstance(rcfile, str)
 
 
 class OvercloudConfigTest(unit.TobikoUnitTest):
@@ -58,12 +55,12 @@ class OvercloudConfigTest(unit.TobikoUnitTest):
         value = TIPLEO_CONF.overcloud_ssh_port
         if value is not None:
             self.assertIsInstance(value, int)
-            self.assertIn(value, six.moves.range(1, 2 ** 16))
+            self.assertGreater(value, 0)
+            self.assertLess(value, 2 ** 16)
 
     def test_overcloud_ssh_username(self):
-        self.assertIsInstance(TIPLEO_CONF.overcloud_ssh_username,
-                              six.string_types)
+        self.assertIsInstance(TIPLEO_CONF.overcloud_ssh_username, str)
 
     def test_overcloud_rcfile(self):
         for rcfile in TIPLEO_CONF.overcloud_rcfile:
-            self.assertIsInstance(rcfile, six.string_types)
+            self.assertIsInstance(rcfile, str)

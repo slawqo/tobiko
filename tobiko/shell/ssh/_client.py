@@ -29,7 +29,6 @@ import netaddr
 from oslo_log import log
 import paramiko
 from paramiko import common
-import six
 
 import tobiko
 from tobiko.shell.ssh import _config
@@ -76,7 +75,7 @@ def positive_int(value):
 
 
 def get_key_filename(value):
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         value = [value]
     key_filename = [tobiko.tobiko_config_path(v) for v in value]
     return [f
@@ -670,7 +669,7 @@ def ssh_proxy_sock(hostname=None, port=None, command=None, client=None,
             return None
 
     # Apply connect parameters to proxy command
-    if not isinstance(command, six.string_types):
+    if not isinstance(command, str):
         command = subprocess.list2cmdline(command)
     if hostname:
         command = command.format(hostname=hostname, port=(port or 22))
