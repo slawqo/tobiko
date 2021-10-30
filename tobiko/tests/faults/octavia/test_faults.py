@@ -58,12 +58,6 @@ class OctaviaBasicFaultTest(testtools.TestCase):
         # pylint: disable=no-member
         super(OctaviaBasicFaultTest, self).setUp()
 
-        # Skipping the test in case the topology is Active/Standby
-        if len(octavia.list_amphorae(
-                self.loadbalancer_stack.loadbalancer_id)) > 1:
-            tobiko.skip_test('Fault tests to Active/Standby topology were not'
-                             ' implemented yet')
-
         # Wait for Octavia objects to be active
         LOG.info(f'Waiting for {self.member1_stack.stack_name} and '
                  f'{self.member2_stack.stack_name} to be created...')
@@ -81,13 +75,16 @@ class OctaviaBasicFaultTest(testtools.TestCase):
             port=self.listener_stack.lb_port)
 
     def test_reboot_amphora_compute_node(self):
-        amphora_compute_hosts = octavia.get_amphoras_compute_nodes(
-            self.loadbalancer_stack.loadbalancer_id)
+        amphora_compute_host = octavia.get_amphora_compute_node(
+            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id,
+            lb_port=self.listener_stack.lb_port,
+            lb_protocol=self.listener_stack.lb_protocol,
+            ip_address=self.loadbalancer_stack.floating_ip_address)
 
         LOG.debug('Rebooting compute node...')
 
         # Reboot Amphora's compute node will initiate a failover
-        amphora_compute_hosts[0].reboot_overcloud_node()
+        amphora_compute_host.reboot_overcloud_node()
 
         LOG.debug('Compute node has been rebooted')
 
