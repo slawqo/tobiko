@@ -29,7 +29,10 @@ from tools import common  # noqa
 
 LOG = common.get_logger(__name__)
 
-OS_TEST_PATH = common.normalize_path(os.environ['OS_TEST_PATH'])
+# Root tests dir
+OS_TEST_PATH = common.normalize_path(
+    os.environ.get('OS_TEST_PATH') or
+    os.path.join(TOP_DIR, 'tobiko', 'tests', 'unit'))
 
 # Output dirs
 TOX_REPORT_DIR = common.normalize_path(
