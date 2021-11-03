@@ -124,10 +124,14 @@ def make_dir(dirname):
 def remove_file(filename):
     if os.path.isfile(filename):
         LOG.debug("Remove file: '%s'", filename)
-        os.unlink(filename)
-        return True
-    else:
-        return False
+        try:
+            os.unlink(filename)
+        except FileNotFoundError:
+            LOG.debug("File concurrently removed: '%s'", filename)
+        else:
+            LOG.debug("File removed: '%s'", filename)
+            return True
+    return False
 
 
 @contextlib.contextmanager
