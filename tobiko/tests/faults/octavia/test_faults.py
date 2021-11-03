@@ -90,9 +90,7 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         # Wait for the LB to be updated
         try:
-            self.loadbalancer_stack.wait_for_update_loadbalancer(
-                loadbalancer_id=self.loadbalancer_stack.loadbalancer_id,
-                timeout=30)
+            self.loadbalancer_stack.wait_for_update_loadbalancer(timeout=30)
 
         except tobiko.RetryTimeLimitError:
             LOG.info('The restarted servers reached ACTIVE status after the'
@@ -100,8 +98,7 @@ class OctaviaBasicFaultTest(testtools.TestCase):
                      ' being raised even though the update timeout was'
                      ' reached.')
 
-        self.loadbalancer_stack.wait_for_active_loadbalancer(
-            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+        self.loadbalancer_stack.wait_for_active_loadbalancer()
 
         LOG.debug(f'Load Balancer {self.loadbalancer_stack.loadbalancer_id} is'
                   f' ACTIVE')

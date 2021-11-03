@@ -105,19 +105,21 @@ class OctaviaLoadbalancerStackFixture(heat.HeatStackFixture):
         else:
             return self.vip_network.ipv6_subnet_id
 
-    def wait_for_active_loadbalancer(self, **kwargs):
+    def wait_for_active_loadbalancer(self):
+        loadbalancer_id = self.stack.output_show(
+            'loadbalancer_id')['output']['output_value']
         octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
                                 status=octavia.ACTIVE,
                                 get_client=octavia.get_loadbalancer,
-                                object_id=self.loadbalancer.loadbalancer_id,
-                                **kwargs)
+                                object_id=loadbalancer_id)
 
-    def wait_for_update_loadbalancer(self, **kwargs):
+    def wait_for_update_loadbalancer(self):
+        loadbalancer_id = self.stack.output_show(
+            'loadbalancer_id')['output']['output_value']
         octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
                                 status=octavia.PENDING_UPDATE,
                                 get_client=octavia.get_loadbalancer,
-                                object_id=self.loadbalancer.loadbalancer_id,
-                                **kwargs)
+                                object_id=loadbalancer_id)
 
 
 class OctaviaListenerStackFixture(heat.HeatStackFixture):
