@@ -53,6 +53,7 @@ def check_members_balanced(ip_address: str,
         else:  # members_count is None and pool_id is not None
             members_count = len(octavia.list_members(pool_id=pool_id))
 
+    last_content = None
     replies: typing.Dict[str, int] = collections.defaultdict(lambda: 0)
     for attempt in tobiko.retry(count=members_count * requests_count,
                                 interval=interval):
@@ -63,6 +64,16 @@ def check_members_balanced(ip_address: str,
                                     connect_timeout=connect_timeout,
                                     ssh_client=ssh_client).strip()
         replies[content] += 1
+
+        if last_content is not None and lb_algorithm == 'ROUND_ROBIN':
+            if members_count > 1 and last_content == content:
+                raise octavia.RoundRobinException(
+                    'Request was forwarded two times to the same host:\n'
+                    f'members_count: {members_count}\n'
+                    f'expected: {last_content}\n'
+                    f'actual: {content}\n')
+
+        last_content = content
 
         if attempt.is_last:
             break
@@ -76,13 +87,5 @@ def check_members_balanced(ip_address: str,
     test_case.assertEqual(0, missing_members_count,
                           f'Missing replies from {missing_members_count} "'
                           '"members.')
-
-    if lb_algorithm == 'ROUND_ROBIN':
-        # assert that requests have been fairly dispatched (each server
-        # received the same number of requests)
-        test_case.assertEqual(1, len(set(replies.values())),
-                              'The number of requests served by each member is'
-                              ' different and not as expected by used '
-                              'ROUND_ROBIN algorithm.')
 
     return replies

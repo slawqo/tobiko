@@ -69,10 +69,18 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
         )
 
     @pytest.mark.flaky(reruns=3)
-    def test_traffic(self):
-        octavia.check_members_balanced(
-            pool_id=self.pool_stack.pool_id,
-            ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.pool_stack.lb_algorithm,
-            protocol=self.listener_stack.lb_protocol,
-            port=self.listener_stack.lb_port)
+    def test_round_robin_traffic(self):
+        for attempt in tobiko.retry(timeout=30.):
+            try:
+                octavia.check_members_balanced(
+                    pool_id=self.pool_stack.pool_id,
+                    ip_address=self.loadbalancer_stack.floating_ip_address,
+                    lb_algorithm=self.pool_stack.lb_algorithm,
+                    protocol=self.listener_stack.lb_protocol,
+                    port=self.listener_stack.lb_port)
+
+                break
+
+            except octavia.RoundRobinException as e:
+                if attempt.is_last:
+                    raise e
