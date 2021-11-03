@@ -33,13 +33,9 @@ class OctaviaVipNetworkStackFixture(_neutron.NetworkStackFixture):
     port_security_enabled = True
 
 
-class OctaviaMemberNetworkStackFixture(_neutron.NetworkStackFixture):
-    pass
-
-
 class OctaviaCentosServerStackFixture(_centos.CentosServerStackFixture):
     network_stack = tobiko.required_setup_fixture(
-        OctaviaMemberNetworkStackFixture)
+        OctaviaVipNetworkStackFixture)
 
     @property
     def user_data(self):
@@ -55,7 +51,7 @@ class OctaviaCentosServerStackFixture(_centos.CentosServerStackFixture):
 
 class OctaviaCirrosServerStackFixture(_cirros.CirrosServerStackFixture):
     network_stack = tobiko.required_setup_fixture(
-        OctaviaMemberNetworkStackFixture)
+        OctaviaVipNetworkStackFixture)
 
     @property
     def user_data(self):
