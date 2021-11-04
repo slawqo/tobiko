@@ -140,6 +140,8 @@ class HttpRoundRobinAmphoraIpv4Listener(heat.HeatStackFixture):
         return self.listener.listener_id
 
     def wait_for_active_members(self):
+        """Wait for all pool members to be active"""
+
         for member in octavia.list_members(pool_id=self.pool_id):
             self.wait_for_active_member(pool_id=self.pool_id,
                                         member_id=member['id'])

@@ -28,7 +28,6 @@ get_loadbalancer = _client.get_loadbalancer
 get_member = _client.get_member
 list_members = _client.list_members
 list_amphorae = _client.list_amphorae
-get_amphora_vm = _client.get_amphora_vm
 get_amphora_compute_node = _client.get_amphora_compute_node
 get_master_amphora = _client.get_master_amphora
 

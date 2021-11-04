@@ -39,8 +39,8 @@ class OctaviaServicesFaultTest(testtools.TestCase):
     Create a load balancer with 2 members that run a server application,
     Create a client that is connected to the load balancer VIP port,
     Generate network traffic from the client to the load balancer while
-    stopping some of the Octavia's services - if the container runtime
-    environment is podman.
+    stopping some of the Octavia's services which run under podman container
+    runtime environment.
 
     Each service will be running as a single instance.
     E.g. only one WORKER_SERVICE will run in all controllers, the same for
