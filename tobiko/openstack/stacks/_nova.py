@@ -247,9 +247,52 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
     retry_create = 3
     expected_creted_status = {heat.CREATE_COMPLETE}
 
+    #: String which is used to check if guest OS booting process was finished
+    booting_end_pattern = "login:"
+    guest_boot_timeout = 600  # seconds
+
+    def wait_for_guest_boot_finished(self):
+        # NOTE(slaweq): in that simple check we can look for something like
+        # "login:" in the console log. If this is already there, it means
+        # that vm was booted properly already
+        for attempt in tobiko.retry(timeout=self.guest_boot_timeout,
+                                    interval=1):
+            if self.booting_end_pattern in self.console_output:
+                return
+            LOG.debug(f"Server {self.server_id} seems that is not boot yet")
+            if attempt.is_last:
+                raise heat.InvalidStackError(
+                    f"Server {self.server_id} didn't boot properly.")
+
     def validate_created_stack(self):
         stack = super(ServerStackFixture, self).validate_created_stack()
         self.validate_scheduler_hints()
+        if not self.config_drive:
+            # NOTE(slaweq): Because of the bug
+            # https://bugs.launchpad.net/neutron/+bug/1813787 there can be
+            # race condition between Neutron L3 agent and VM boot. As a result
+            # VM can be booted and tries to get e.g. ssh-key from the metadata
+            # service before router is really ready and can provide metadata
+            # for that VM.
+            # As a workaround for that issue for now, Tobiko checks if guest
+            # OS boot finished and checks if SSH to the VM is possible.
+            # If booting was finished but SSH isn't possible it will reboot VM.
+            # If we hit the issue from the bug
+            # https://bugs.launchpad.net/neutron/+bug/1813787 during reboot of
+            # the VM, ssh-key should be properly configured inside VM as
+            # metadata service should be already available in the Neutron's
+            # router.
+            try:
+                self.wait_for_guest_boot_finished()
+            except heat.InvalidStackError:
+                return
+            if not self.ssh_works():
+                LOG.warning(
+                    f"SSH to the server '{self.server_id}' is not "
+                    f"working properly. Trying to reboot VM to "
+                    f"check if it is maybe caused by the bug "
+                    f"https://bugs.launchpad.net/neutron/+bug/1813787")
+                nova.reboot_server(self.server_id)
         return stack
 
     @property
@@ -381,6 +424,15 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         ping.assert_unreachable_hosts([self.ip_address],
                                       ssh_client=ssh_client,
                                       timeout=timeout)
+
+    def ssh_works(self):
+        try:
+            # We don't need to retry many times or wait long time for this,
+            # it either works as it should or not
+            self.ssh_client.connect(retry_count=1, retry_timeout=5)
+            return True
+        except Exception:
+            return False
 
     user_data = None
 
