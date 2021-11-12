@@ -1,107 +1,81 @@
-ARG base_image="docker.io/library/centos:8"
+FROM python:3.9 as base
 
-FROM "${base_image}" as base
+ENV TOBIKO_DIR=/tobiko
+ENV WHEEL_DIR=/wheel
 
-# Make sure Git and Python 3 are installed on your system.
-RUN yum install -y git python3 rsync which
+RUN apt update
 
-# Check your Python 3 version is greater than 3.6
-RUN python3 -c 'import sys; sys.version_info >= (3, 6)'
-
-# Ensure Pip is installed and up-to date
-RUN curl https://bootstrap.pypa.io/get-pip.py | python3
-
-# Check installed Pip version
-RUN python3 -m pip --version
-
-# Ensure basic Python packages are installed and up-to-date
-RUN python3 -m pip install --upgrade setuptools wheel virtualenv tox six
-
-# Check installed Tox version
-RUN tox --version
+# Set the locale
+RUN apt install -y locales
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen
 
 
-# -----------------------------------------------------------------------------
+FROM base as source
 
-FROM base as sources
+# Populate tobiko source dir
+# RUN mkdir -p ${TOBIKO_DIR}
 
-# Get Tobiko source code using Git
-RUN mkdir -p /src
-ADD . /src/tobiko
-WORKDIR /src/tobiko
+ADD .gitignore \
+    extra-requirements.txt \
+    requirements.txt \
+    README.rst \
+    setup.cfg \
+    setup.py \
+    test-requirements.txt \
+    upper-constraints.txt \
+    ${TOBIKO_DIR}/
 
-
-# -----------------------------------------------------------------------------
-
-FROM sources as bindeps
-
-# Ensure required binary packages are installed
-RUN ./tools/install-bindeps.sh
-
-# Check bindeps are installed
-CMD tox -e bindeps
+ADD .git ${TOBIKO_DIR}/.git/
+ADD tobiko/ ${TOBIKO_DIR}/tobiko/
 
 
-# -----------------------------------------------------------------------------
+FROM source as build
 
-FROM bindeps as py3
+# Install binary dependencies
+RUN apt install -y git
 
-# Prepare py3 Tox virtualenv
-RUN tox -e py3 --notest
-
-# Run unit yest cases
-CMD tox -e py3
-
-
-# -----------------------------------------------------------------------------
-
-FROM py3 as venv
-
-# Run bash inside py3 Tox environment
-CMD tox -e venv
+# Build wheel files
+RUN python3 -m pip wheel -w ${WHEEL_DIR} \
+    -c ${TOBIKO_DIR}/upper-constraints.txt \
+    -r ${TOBIKO_DIR}/requirements.txt \
+    -r ${TOBIKO_DIR}/test-requirements.txt \
+    -r ${TOBIKO_DIR}/extra-requirements.txt \
+    --src ${TOBIKO_DIR}/
 
 
-# -----------------------------------------------------------------------------
+FROM base as install
 
-FROM py3 as functional
-
-# Run functional test cases
-CMD tox -e functional
-
-
-# -----------------------------------------------------------------------------
-
-FROM py3 as scenario
-
-# Run scenario test cases
-CMD tox -e scenario
+# Install wheels
+RUN mkdir -p ${WHEEL_DIR}
+COPY --from=build ${WHEEL_DIR} ${WHEEL_DIR}
+RUN pip install ${WHEEL_DIR}/*.whl
 
 
-# -----------------------------------------------------------------------------
+FROM source as tobiko
 
-FROM py3 as neutron
+# Install packages
+RUN apt install -y iperf3 iputils-ping ncat
 
-# Run scenario test cases
-CMD tox -e neutron
+# Run tests variables
+ENV PYTHONWARNINGS=ignore::Warning
+ENV OS_TEST_PATH=${TOBIKO_DIR}/tobiko/tests/unit
+ENV TOX_REPORT_DIR=/report
+ENV TOX_REPORT_NAME=tobiko_results
+ENV TOBIKO_PREVENT_CREATE=false
 
+# Write log files to report directory
+RUN mkdir -p /etc/tobiko
+RUN printf "[DEFAULT]\nlog_dir=${TOBIKO_REPORT_DIR}" > /etc/tobiko/tobiko.conf
 
-# -----------------------------------------------------------------------------
+# Copy python pacakges
+COPY --from=install /usr/local /usr/local/
 
-FROM py3 as faults
+# Copy tobiko tools
+ADD tools/ ${TOBIKO_DIR}/tools/
 
-# Run faults test cases
-CMD tox -e faults
-
-
-# -----------------------------------------------------------------------------
-
-from bindeps as infrared
-
-# Set Python 3 as default alternative for python command
-RUN alternatives --set python /usr/bin/python3
-
-# Prepare infrared Tox virtualenv
-RUN tox -e infrared --notest
-
-# Run Tobiko InfraRed plugin
-CMD tox -e infrared
+WORKDIR ${TOBIKO_DIR}
+ENTRYPOINT tools/run_tests.py ${OS_TEST_PATH}
