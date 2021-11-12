@@ -152,6 +152,9 @@ class OctaviaPoolStackFixture(heat.HeatStackFixture):
 
     hm_timeout = 3
 
+    #: whenever to create the health monitor
+    has_monitor = True
+
     @property
     def listener_id(self):
         return self.listener.listener_id
@@ -246,6 +249,9 @@ class OctaviaOvnProviderPoolStackFixture(OctaviaPoolStackFixture):
     pool_protocol = 'TCP'
 
     lb_algorithm = 'SOURCE_IP_PORT'
+
+    #: There is any health monitor available for OVN provider
+    has_monitor = False
 
 
 class OctaviaOvnProviderMemberServerStackFixture(
