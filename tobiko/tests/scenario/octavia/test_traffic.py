@@ -14,14 +14,19 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 import pytest
 import testtools
 from oslo_log import log
 
 import tobiko
 from tobiko.openstack import keystone
+from tobiko.openstack import neutron
 from tobiko.openstack import octavia
 from tobiko.openstack import stacks
+from tobiko.shell import sh
+from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
@@ -84,3 +89,74 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
             except octavia.RoundRobinException as e:
                 if attempt.is_last:
                     raise e
+
+
+@neutron.skip_unless_is_ovn()
+@keystone.skip_if_missing_service(name='octavia')
+class OctaviaOVNProviderTrafficTest(testtools.TestCase):
+    """Octavia OVN provider traffic test.
+
+    Create an OVN provider load balancer with 2 members that run a server
+    application,
+    Create a client that is connected to the load balancer VIP port via FIP,
+    Generate network traffic from the client to the load balanacer via ssh.
+    """
+    loadbalancer_stack = tobiko.required_setup_fixture(
+        stacks.OctaviaOvnProviderLoadbalancerStackFixture)
+
+    listener_stack = tobiko.required_setup_fixture(
+        stacks.OctaviaOvnProviderListenerStackFixture)
+
+    pool_stack = tobiko.required_setup_fixture(
+        stacks.OctaviaOvnProviderPoolStackFixture)
+
+    member1_stack = tobiko.required_setup_fixture(
+        stacks.OctaviaOvnProviderMemberServerStackFixture)
+
+    member2_stack = tobiko.required_setup_fixture(
+        stacks.OctaviaOvnProviderOtherMemberServerStackFixture)
+
+    def setUp(self):
+        # pylint: disable=no-member
+        super(OctaviaOVNProviderTrafficTest, self).setUp()
+
+        # Wait for Octavia objects to be active
+        LOG.info(f'Waiting for {self.member1_stack.stack_name} and '
+                 f'{self.member2_stack.stack_name} to be created...')
+        self.pool_stack.wait_for_active_members()
+
+        octavia.wait_for_octavia_service(
+            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+
+    def test_ssh_traffic(self):
+        LOG.info('Trying to ssh each member and get its hostname.')
+
+        username: typing.Optional[str] = None
+        expected = set()
+        for member_stack in [self.member1_stack, self.member2_stack]:
+            ssh_client = member_stack.server_stack.ssh_client
+            expected.add(sh.get_hostname(ssh_client=ssh_client))
+            if username is None:
+                username = ssh_client.setup_connect_parameters()['username']
+            else:
+                self.assertEqual(
+                    username,
+                    ssh_client.setup_connect_parameters()['username'],
+                    "Member servers don't have the same "
+                    "username to login with")
+
+        ssh_client = ssh.ssh_client(
+            host=self.loadbalancer_stack.floating_ip_address,
+            username=username)
+
+        actual = set()
+        for attempt in tobiko.retry(timeout=120.):
+            with ssh_client:  # disconnect after every loop
+                actual.add(sh.ssh_hostname(ssh_client=ssh_client))
+            unexpected = actual - expected
+            if unexpected:
+                self.fail(f'Unexpected hostname: {unexpected}')
+            elif expected == actual:
+                break
+            elif attempt.is_last:
+                self.fail(f'Unreached host(s): {expected - actual}')
