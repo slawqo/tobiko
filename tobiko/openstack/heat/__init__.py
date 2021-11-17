@@ -29,8 +29,6 @@ heat_template_file = _template.heat_template_file
 HeatTemplateFixture = _template.HeatTemplateFixture
 HeatTemplateFileFixture = _template.HeatTemplateFileFixture
 
-InvalidStackError = _stack.InvalidStackError
-
 HeatStackFixture = _stack.HeatStackFixture
 heat_stack_parameters = _stack.heat_stack_parameters
 INIT_IN_PROGRESS = _stack.INIT_IN_PROGRESS
