@@ -207,6 +207,7 @@ class FedoraServerStackFixture(CloudInitServerStackFixture,
     pass
 
 
+@tobiko.skip('Disable this test because of fedora server connection issues')
 class FedoraServerTest(CirrosServerTest):
     stack = tobiko.required_fixture(FedoraServerStackFixture)
 
