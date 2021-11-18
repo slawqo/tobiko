@@ -27,10 +27,6 @@
             voting: false
         - requirements-check:
             voting: false
-        - tobiko-infrared
-        - tobiko-infrared-centos-7
-        - tobiko-infrared-fedora
-        - tobiko-infrared-ubuntu
         - tripleo-ci-centos-8-content-provider
         - tobiko-tripleo-functional:
             vars: &consumer_vars
