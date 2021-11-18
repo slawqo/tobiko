@@ -86,6 +86,19 @@ def get_neutron_client(session=None, shared=True, init_client=None,
 _RAISE_ERROR = object()
 
 
+def find_floating_ip(client=None, unique=False, default=_RAISE_ERROR,
+                     **attributes):
+    """Look for a port matching some property values"""
+    floating_ips = list_floating_ips(client=client, **attributes)
+    if default is _RAISE_ERROR or floating_ips:
+        if unique:
+            return floating_ips.unique
+        else:
+            return floating_ips.first
+    else:
+        return default
+
+
 def find_port(client=None, unique=False, default=_RAISE_ERROR, **attributes):
     """Look for a port matching some property values"""
     ports = list_ports(client=client, **attributes)
@@ -113,6 +126,12 @@ def find_subnet(client=None, unique=False, default=_RAISE_ERROR, **attributes):
 def list_ports(client=None, **params):
     ports = neutron_client(client).list_ports(**params)['ports']
     return tobiko.select(ports)
+
+
+def list_floating_ips(client=None, retrieve_all=True, **params):
+    floating_ips = neutron_client(client).list_floatingips(
+        retrieve_all=retrieve_all, **params)['floatingips']
+    return tobiko.select(floating_ips)
 
 
 def get_port_extra_dhcp_opts(port_id, client=None, **params):

@@ -178,6 +178,38 @@ class PortTest(testtools.TestCase):
 
 
 @keystone.skip_unless_has_keystone_credentials()
+class FloatingIpTest(testtools.TestCase):
+
+    server = tobiko.required_fixture(stacks.CirrosServerStackFixture)
+
+    def test_list_floating_ip(self):
+        port_id = self.server.port_id
+        floating_ips = neutron.list_floating_ips()
+        floating_ip = floating_ips.with_items(port_id=port_id).unique
+        self.assertEqual(floating_ip['floating_ip_address'],
+                         self.server.floating_ip_address)
+
+    def test_list_floating_ip_with_port_id(self):
+        port_id = self.server.port_id
+        floating_ip = neutron.list_floating_ips(port_id=port_id).unique
+        self.assertEqual(floating_ip['floating_ip_address'],
+                         self.server.floating_ip_address)
+
+    def test_list_floating_ip_with_floating_ip_address(self):
+        floating_ip_address = self.server.floating_ip_address
+        floating_ip = neutron.list_floating_ips(
+            floating_ip_address=floating_ip_address).unique
+        self.assertEqual(floating_ip['port_id'],
+                         self.server.port_id)
+
+    def test_find_floating_ip_with_port_id(self):
+        port_id = self.server.port_id
+        floating_ip = neutron.find_floating_ip(port_id=port_id, unique=True)
+        self.assertEqual(floating_ip['floating_ip_address'],
+                         self.server.floating_ip_address)
+
+
+@keystone.skip_unless_has_keystone_credentials()
 class AgentTest(testtools.TestCase):
 
     def test_skip_if_missing_agents(self, count=1, should_skip=False,
