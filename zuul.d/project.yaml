@@ -4,15 +4,15 @@
       - build-openstack-docs-pti
       - build-release-notes-jobs-python3
       # - check-requirements
-      # - devstack-tobiko
-      # - devstack-tobiko-ceph
-      # - devstack-tobiko-heat
-      # - devstack-tobiko-minimal
+      - devstack-tobiko
+      - devstack-tobiko-ceph
+      - devstack-tobiko-heat
+      - devstack-tobiko-minimal
       # - devstack-tobiko-octavia
-      # - devstack-tobiko-neutron
-      # - devstack-tobiko-nova
-      # - devstack-tobiko-ovs
-      # - devstack-tobiko-storage
+      - devstack-tobiko-neutron
+      - devstack-tobiko-nova
+      - devstack-tobiko-ovs
+      - devstack-tobiko-storage
       - docs-on-readthedocs
       - openstack-cover-jobs
       - openstack-lower-constraints-jobs
@@ -21,6 +21,10 @@
       - tobiko-infrared
     vars:
         rtd_webhook_id: '84947'
+    check:
+      jobs:
+        - devstack-tobiko-octavia:
+            voting: false
     periodic:
       jobs:
         - devstack-tobiko-octavia:
