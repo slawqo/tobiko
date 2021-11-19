@@ -7,7 +7,7 @@ parameters:
         type: string
         description: The provider type (amphora,ovn, etc.)
 
-    vip_subnet:
+    vip_subnet_id:
         type: string
         description: ID of the load balancer public subnet
         constraints:
@@ -35,7 +35,7 @@ resources:
     loadbalancer:
         type: OS::Octavia::LoadBalancer
         properties:
-            vip_subnet: { get_param: vip_subnet }
+            vip_subnet: { get_param: vip_subnet_id }
             provider: { get_param: provider }
 
     floating_ip:
@@ -45,7 +45,6 @@ resources:
         properties:
           floating_network: {get_param: floating_network}
           port_id: {get_attr: [loadbalancer, vip_port_id]}
-
 
 outputs:
     loadbalancer_id:

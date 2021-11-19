@@ -95,7 +95,7 @@ class OctaviaLoadbalancerStackFixture(heat.HeatStackFixture):
     provider = 'amphora'
 
     @property
-    def vip_subnet(self):
+    def vip_subnet_id(self):
         if self.ip_version == 4:
             return self.vip_network.ipv4_subnet_id
         else:
@@ -131,6 +131,10 @@ class OctaviaListenerStackFixture(heat.HeatStackFixture):
     @property
     def loadbalancer_id(self):
         return self.loadbalancer.loadbalancer_id
+
+    @property
+    def loadbalancer_provider(self):
+        return self.loadbalancer.provider
 
 
 class OctaviaPoolStackFixture(heat.HeatStackFixture):
