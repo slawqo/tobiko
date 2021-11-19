@@ -37,11 +37,6 @@ class FloatingIPTest(testtools.TestCase):
     #: Resources stack with floating IP and Nova server
     stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
 
-    def test_stack_create_complete(self):
-        self.stack.key_pair_stack.wait_for_create_complete()
-        self.stack.network_stack.wait_for_create_complete()
-        self.stack.wait_for_create_complete()
-
     def test_ssh(self):
         """Test SSH connectivity to floating IP address"""
         hostname = sh.ssh_hostname(ssh_client=self.stack.ssh_client)
