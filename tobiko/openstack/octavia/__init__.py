@@ -45,6 +45,7 @@ RequestException = _exceptions.RequestException
 TimeoutException = _exceptions.TimeoutException
 OctaviaClientException = _exceptions.OctaviaClientException
 RoundRobinException = _exceptions.RoundRobinException
+TrafficTimeoutError = _exceptions.TrafficTimeoutError
 
 # Constants
 PROVISIONING_STATUS = _constants.PROVISIONING_STATUS

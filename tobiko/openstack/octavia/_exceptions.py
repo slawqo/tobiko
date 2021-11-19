@@ -33,3 +33,7 @@ OctaviaClientException = exceptions.OctaviaClientException
 
 class RoundRobinException(tobiko.TobikoException):
     message = "Round robin exception: {reason}"
+
+
+class TrafficTimeoutError(tobiko.TobikoException):
+    message = "Traffic timeout error: {reason}"

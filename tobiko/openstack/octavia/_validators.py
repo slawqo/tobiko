@@ -23,6 +23,7 @@ import tobiko
 from tobiko.openstack import octavia
 from tobiko.shell import curl
 from tobiko.shell import ssh
+from tobiko.shell import sh
 
 
 LOG = log.getLogger(__name__)
@@ -57,12 +58,18 @@ def check_members_balanced(ip_address: str,
     replies: typing.Dict[str, int] = collections.defaultdict(lambda: 0)
     for attempt in tobiko.retry(count=members_count * requests_count,
                                 interval=interval):
-        content = curl.execute_curl(hostname=ip_address,
-                                    scheme=protocol,
-                                    port=port,
-                                    path='id',
-                                    connect_timeout=connect_timeout,
-                                    ssh_client=ssh_client).strip()
+        try:
+            content = curl.execute_curl(hostname=ip_address,
+                                        scheme=protocol,
+                                        port=port,
+                                        path='id',
+                                        connect_timeout=connect_timeout,
+                                        ssh_client=ssh_client).strip()
+        except sh.ShellCommandFailed as ex:
+            if ex.exit_status == 28:
+                raise octavia.TrafficTimeoutError(
+                    reason=str(ex.stderr)) from ex
+
         replies[content] += 1
 
         if last_content is not None and lb_algorithm == 'ROUND_ROBIN':

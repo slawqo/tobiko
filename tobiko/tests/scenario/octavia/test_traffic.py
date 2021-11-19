@@ -86,7 +86,8 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
 
                 break
 
-            except octavia.RoundRobinException as e:
+            except (octavia.RoundRobinException,
+                    octavia.TrafficTimeoutError) as e:
                 if attempt.is_last:
                     raise e
 
