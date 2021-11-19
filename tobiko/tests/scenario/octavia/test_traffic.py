@@ -14,6 +14,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
+import json
 import typing
 
 import pytest
@@ -129,34 +131,68 @@ class OctaviaOVNProviderTrafficTest(testtools.TestCase):
             loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
 
     def test_ssh_traffic(self):
-        LOG.info('Trying to ssh each member and get its hostname.')
-
+        """SSH every member server to get its hostname using a load balancer
+        """
         username: typing.Optional[str] = None
-        expected = set()
+        password: typing.Optional[str] = None
+        missing_replies = set()
         for member_stack in [self.member1_stack, self.member2_stack]:
             ssh_client = member_stack.server_stack.ssh_client
-            expected.add(sh.get_hostname(ssh_client=ssh_client))
+            hostname = sh.get_hostname(ssh_client=ssh_client)
+            missing_replies.add(hostname)
             if username is None:
-                username = ssh_client.setup_connect_parameters()['username']
+                username = member_stack.server_stack.username
             else:
-                self.assertEqual(
-                    username,
-                    ssh_client.setup_connect_parameters()['username'],
-                    "Member servers don't have the same "
-                    "username to login with")
+                self.assertEqual(username,
+                                 member_stack.server_stack.username,
+                                 "Not all member servers have the same "
+                                 "username to login with")
+            if password is None:
+                password = member_stack.server_stack.password
+            else:
+                self.assertEqual(password,
+                                 member_stack.server_stack.password,
+                                 "Not all member servers have the same "
+                                 "password to login with")
 
+        # Get SSH client to the load balancer virtual IP
         ssh_client = ssh.ssh_client(
             host=self.loadbalancer_stack.floating_ip_address,
-            username=username)
+            port=self.listener_stack.lb_port,
+            username=username,
+            password=password)
 
-        actual = set()
+        replies = []
         for attempt in tobiko.retry(timeout=120.):
+            LOG.debug(f"SSH to member server by using the load balancer "
+                      f"(login='{ssh_client.login}', attempt={attempt})...")
+
             with ssh_client:  # disconnect after every loop
-                actual.add(sh.ssh_hostname(ssh_client=ssh_client))
-            unexpected = actual - expected
-            if unexpected:
-                self.fail(f'Unexpected hostname: {unexpected}')
-            elif expected == actual:
+                hostname = sh.ssh_hostname(ssh_client=ssh_client)
+            try:
+                missing_replies.remove(hostname)
+            except KeyError:
+                self.assertIn(hostname, replies,
+                              f"Unexpected hostname reached: {hostname}")
+            replies.append(hostname)
+            if missing_replies:
+                LOG.debug('Reached member server(s):\n'
+                          f'{pretty_replies(replies)}')
+                if attempt.is_last:
+                    self.fail('Unreached member server(s): '
+                              f'{missing_replies}')
+                else:
+                    LOG.debug('Waiting for reaching remaining server(s)... '
+                              f'{missing_replies}')
+            else:
+                LOG.debug('All member servers reached:\n'
+                          f'{pretty_replies(replies)}')
                 break
-            elif attempt.is_last:
-                self.fail(f'Unreached host(s): {expected - actual}')
+        else:
+            raise RuntimeError('Broken retry loop')
+
+
+def pretty_replies(replies: typing.Iterable[str]):
+    return json.dumps(collections.Counter(replies),
+                      indent=4,
+                      sort_keys=True)
