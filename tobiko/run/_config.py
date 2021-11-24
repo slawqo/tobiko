@@ -32,7 +32,7 @@ class RunConfigFixture(tobiko.SharedFixture):
         package_file = os.path.realpath(os.path.realpath(tobiko.__file__))
         package_dir = os.path.dirname(package_file)
         tobiko_dir = os.path.dirname(package_dir)
-        self.test_path = [os.path.join(tobiko_dir, 'tobiko', 'tests')]
+        self.test_path = [os.path.join(tobiko_dir, 'tobiko', 'tests', 'unit')]
 
     @property
     def forked(self) -> bool:
