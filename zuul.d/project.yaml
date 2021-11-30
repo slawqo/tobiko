@@ -9,7 +9,7 @@
       - devstack-tobiko-functional
       - devstack-tobiko-heat
       - devstack-tobiko-minimal
-      # - devstack-tobiko-octavia
+      - devstack-tobiko-octavia
       - devstack-tobiko-neutron
       - devstack-tobiko-nova
       - devstack-tobiko-ovs
@@ -22,10 +22,6 @@
       - tobiko-infrared
     vars:
         rtd_webhook_id: '84947'
-    check:
-      jobs:
-        - devstack-tobiko-octavia:
-            voting: false
     periodic:
       jobs:
         - devstack-tobiko-octavia:
