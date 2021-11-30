@@ -17,12 +17,17 @@ import typing
 
 from keystoneclient import base
 from keystoneclient import client as keystoneclient
+from keystoneauth1 import exceptions
 from keystoneclient.v2_0 import client as v2_client
 from keystoneclient.v3 import client as v3_client
 from keystoneclient.v3 import endpoints as v3_endpoints
+from oslo_log import log
 
 import tobiko
 from tobiko.openstack import _client
+
+
+LOG = log.getLogger(__name__)
 
 
 class KeystoneClientFixture(_client.OpenstackClientFixture):
@@ -107,15 +112,26 @@ def list_endpoints(client=None, service=None, interface=None, region=None,
     if region:
         attributes['region_id'] = base.getid(region)
 
-    if client.version == 'v2.0':
-        endpoints = client.endpoints.list()
-        if translate:
-            endpoints = translate_v2_endpoints(v2_endpoints=endpoints,
-                                               interface=interface)
-    else:
-        endpoints = client.endpoints.list(service=service,
-                                          interface=interface,
-                                          region=region)
+    try:
+        if client.version == 'v2.0':
+            endpoints = client.endpoints.list()
+            if translate:
+                endpoints = translate_v2_endpoints(v2_endpoints=endpoints,
+                                                   interface=interface)
+        else:
+            endpoints = client.endpoints.list(service=service,
+                                              interface=interface,
+                                              region=region)
+    except exceptions.ClientException:
+        LOG.exception('Error listing services endpoints:\n'
+                      f'  client: {client}\n'
+                      f'  service: {service}\n'
+                      f'  interface: {interface}\n'
+                      f'  region: {region}\n'
+                      f'  translate: {translate}\n'
+                      f'  attributes: {attributes}\n')
+        raise
+
     endpoints = tobiko.select(endpoints)
     if attributes:
         endpoints = endpoints.with_attributes(**attributes)
