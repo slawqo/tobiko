@@ -38,12 +38,22 @@ class RebootTrunkTest(testtools.TestCase):
 
     stack = tobiko.required_fixture(RebootTrunkServerStackFixture)
 
-    @pytest.mark.ovn_migration
-    def test_reboot(self):
-        # (fressi) must wait cloud init to complete VM setup before shutting it
-        # down
+    def setUp(self):
+        super().setUp()
+        # (fressi) must wait cloud init to complete VM setup before
+        # shutting it down so that we ensure all IPs settings are
+        # permanent on VM
+        self.stack.ensure_server_status('ACTIVE')
         self.stack.wait_for_cloud_init_done()
 
+    @pytest.mark.ovn_migration
+    def test_0_ping_vlan(self):
+        """Check Nova server VLAN port is reachable"""
+        self.stack.assert_vlan_is_reachable()
+
+    @pytest.mark.ovn_migration
+    def test_1_ping_vlan_after_reboot(self):
+        """Check Nova server VLAN port is reachable after restarting it"""
         self.stack.ensure_server_status('SHUTOFF')
         self.stack.assert_vlan_is_unreachable()
 
