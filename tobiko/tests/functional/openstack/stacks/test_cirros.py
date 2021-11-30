@@ -18,6 +18,7 @@ from __future__ import absolute_import
 import typing
 
 import netaddr
+import pytest
 import testtools
 
 import tobiko
@@ -136,6 +137,7 @@ class EvacuablesServerStackTest(CirrosServerStackTest):
         self.assertEqual(['evacuable'], image.tags)
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=60)
 class CirrosPeerServerStackTest(CirrosServerStackTest):
 
     #: Stack of resources with an HTTP server
