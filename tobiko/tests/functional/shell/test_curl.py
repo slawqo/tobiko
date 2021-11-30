@@ -19,6 +19,7 @@ import os.path
 import typing
 
 import netaddr
+import pytest
 import testtools
 
 import tobiko
@@ -29,6 +30,7 @@ from tobiko.openstack import keystone
 from tobiko.openstack import stacks
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=60)
 @keystone.skip_unless_has_keystone_credentials()
 class TestCurlExecute(testtools.TestCase):
 
