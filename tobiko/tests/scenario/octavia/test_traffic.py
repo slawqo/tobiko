@@ -77,6 +77,9 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
 
     @pytest.mark.flaky(reruns=3)
     def test_round_robin_traffic(self):
+
+        # For 30 seconds we ignore specific exceptions as we know that Octavia
+        # resources are being provisioned
         for attempt in tobiko.retry(timeout=30.):
             try:
                 octavia.check_members_balanced(
@@ -89,7 +92,10 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
                 break
 
             except (octavia.RoundRobinException,
-                    octavia.TrafficTimeoutError) as e:
+                    octavia.TrafficTimeoutError,
+                    sh.ShellCommandFailed) as e:
+                LOG.debug(f"Traffic couldn't reach for the #{attempt.count} "
+                          f"time, because of the next exception: {e}")
                 if attempt.is_last:
                     raise e
 
