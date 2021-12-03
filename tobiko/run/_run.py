@@ -25,6 +25,7 @@ from oslo_log import log
 import tobiko
 from tobiko.run import _config
 from tobiko.run import _discover
+from tobiko.run import _result
 from tobiko.run import _worker
 
 
@@ -50,21 +51,25 @@ def run_tests(test_path: typing.Iterable[str],
 def run_test_ids(test_ids: typing.Iterable[str]) -> int:
     test_classes: typing.Dict[str, typing.List[str]] = \
         collections.defaultdict(list)
+
+    # regroup test ids my test class keeping test names order
     test_ids = list(test_ids)
-    LOG.info(f'Run {len(test_ids)} test(s)')
     for test_id in test_ids:
         test_class_id, test_name = test_id.rsplit('.', 1)
         test_classes[test_class_id].append(test_name)
-    result = unittest.TestResult()
+
+    # add test cases to the suite ordered by class name
+    suite = unittest.TestSuite()
     for test_class_id, test_names in sorted(test_classes.items()):
-        LOG.info(f'Enter test class {test_class_id}')
         test_class = tobiko.load_object(test_class_id)
         for test_name in test_names:
-            LOG.info(f'Enter test case {test_class_id}.{test_name}')
-            test_case = test_class(test_name)
-            test_case.run(result)
-            LOG.info(f'Exit test case {test_class_id}.{test_name}')
-        LOG.info(f'Exit test class {test_class_id}')
+            test = test_class(test_name)
+            suite.addTest(test)
+
+    # run the test suite
+    result = tobiko.setup_fixture(_result.TestResultFixture()).result
+    LOG.info(f'Run {len(test_ids)} test(s)')
+    suite.run(result)
     LOG.info(f'{result.testsRun} test(s) run')
     return result.testsRun
 
@@ -88,7 +93,7 @@ def forked_run_test_ids(test_ids: typing.Iterable[str]) -> int:
 
 def main(test_path: typing.Iterable[str] = None,
          test_filename: str = None,
-         forked: bool = True,
+         forked: bool = False,
          python_path: typing.Iterable[str] = None):
     if test_path is None:
         test_path = sys.argv[1:]
@@ -97,8 +102,8 @@ def main(test_path: typing.Iterable[str] = None,
                   test_filename=test_filename,
                   forked=forked,
                   python_path=python_path)
-    except Exception as ex:
-        sys.stderr.write(f'{ex}\n')
+    except Exception:
+        LOG.exception("Error running test cases")
         sys.exit(1)
     else:
         sys.exit(0)
