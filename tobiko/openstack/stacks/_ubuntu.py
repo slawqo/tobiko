@@ -136,7 +136,13 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
                     self.vlan_device: {
                         'link': self.ethernet_device,
                         'dhcp4': True,
+                        'dhcp4-overrides': {
+                            'use-routes': False
+                        },
                         'dhcp6': True,
+                        'dhcp6-overrides': {
+                            'use-routes': False
+                        },
                         'id': self.vlan_id,
                     }
                 }
