@@ -69,6 +69,8 @@ def check_members_balanced(ip_address: str,
             if ex.exit_status == 28:
                 raise octavia.TrafficTimeoutError(
                     reason=str(ex.stderr)) from ex
+            else:
+                raise ex
 
         replies[content] += 1
 
