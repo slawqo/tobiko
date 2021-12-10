@@ -416,6 +416,7 @@ class CloudInitServerStackFixture(ServerStackFixture, ABC):
 
     def wait_for_cloud_init_done(self, **params):
         nova.wait_for_cloud_init_done(ssh_client=self.ssh_client,
+                                      timeout=self.is_reachable_timeout,
                                       **params)
 
 
