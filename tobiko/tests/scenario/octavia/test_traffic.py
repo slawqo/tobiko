@@ -18,7 +18,6 @@ import collections
 import json
 import typing
 
-import pytest
 import testtools
 from oslo_log import log
 
@@ -75,12 +74,10 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
             lb_port=self.listener_stack.lb_port
         )
 
-    @pytest.mark.flaky(reruns=3)
     def test_round_robin_traffic(self):
-
-        # For 30 seconds we ignore specific exceptions as we know that Octavia
-        # resources are being provisioned
-        for attempt in tobiko.retry(timeout=30.):
+        # For 5 minutes seconds we ignore specific exceptions as we know
+        # that Octavia resources are being provisioned
+        for attempt in tobiko.retry(timeout=300.):
             try:
                 octavia.check_members_balanced(
                     pool_id=self.pool_stack.pool_id,
@@ -88,14 +85,13 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
                     lb_algorithm=self.pool_stack.lb_algorithm,
                     protocol=self.listener_stack.lb_protocol,
                     port=self.listener_stack.lb_port)
-
                 break
-
             except (octavia.RoundRobinException,
                     octavia.TrafficTimeoutError,
                     sh.ShellCommandFailed) as e:
-                LOG.debug(f"Traffic couldn't reach for the #{attempt.count} "
-                          f"time, because of the next exception: {e}")
+                LOG.exception(f"Traffic didn't reach all members after "
+                              f"#{attempt.number} attempts and "
+                              f"{attempt.elapsed_time} seconds")
                 if attempt.is_last:
                     raise e
 

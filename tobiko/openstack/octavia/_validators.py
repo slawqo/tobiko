@@ -36,7 +36,7 @@ def check_members_balanced(ip_address: str,
                            members_count: int = None,
                            lb_algorithm: str = None,
                            requests_count: int = 10,
-                           connect_timeout: tobiko.Seconds = 2.,
+                           connect_timeout: tobiko.Seconds = 10.,
                            interval: tobiko.Seconds = 1,
                            ssh_client: ssh.SSHClientFixture = None) -> (
         typing.Dict[str, int]):

@@ -85,7 +85,6 @@ OctaviaLoadbalancerStackFixture = _octavia.OctaviaLoadbalancerStackFixture
 OctaviaListenerStackFixture = _octavia.OctaviaListenerStackFixture
 OctaviaPoolStackFixture = _octavia.OctaviaPoolStackFixture
 OctaviaMemberServerStackFixture = _octavia.OctaviaMemberServerStackFixture
-OctaviaServerStackFixture = _octavia.OctaviaServerStackFixture
 OctaviaOtherServerStackFixture = _octavia.OctaviaOtherServerStackFixture
 OctaviaOtherMemberServerStackFixture = (
     _octavia.OctaviaOtherMemberServerStackFixture)
@@ -100,7 +99,6 @@ OctaviaOvnProviderMemberServerStackFixture = (
     _octavia.OctaviaOvnProviderMemberServerStackFixture)
 OctaviaOvnProviderOtherMemberServerStackFixture = (
     _octavia.OctaviaOvnProviderOtherMemberServerStackFixture)
-OctaviaVipNetworkStackFixture = _octavia.OctaviaVipNetworkStackFixture
 
 QosNetworkStackFixture = _qos.QosNetworkStackFixture
 QosPolicyStackFixture = _qos.QosPolicyStackFixture

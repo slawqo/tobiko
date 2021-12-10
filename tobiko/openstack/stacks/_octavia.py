@@ -19,67 +19,17 @@ import tobiko
 from tobiko import config
 from tobiko.openstack import heat
 from tobiko.openstack import octavia
-from tobiko.openstack.stacks import _centos
-from tobiko.openstack.stacks import _cirros
 from tobiko.openstack.stacks import _hot
 from tobiko.openstack.stacks import _neutron
+from tobiko.openstack.stacks import _ubuntu
 
 CONF = config.CONF
-
-
-class OctaviaVipNetworkStackFixture(_neutron.NetworkStackFixture):
-    # Load Balancer VIP network must use port security (required by neutron to
-    # support allowed address pairs on ports)
-    port_security_enabled = True
-
-
-class OctaviaCentosServerStackFixture(_centos.CentosServerStackFixture):
-    network_stack = tobiko.required_setup_fixture(
-        OctaviaVipNetworkStackFixture)
-
-    @property
-    def user_data(self):
-        # Launch a webserver on port 80 that replies the server name to the
-        # client
-        return ("#cloud-config\n"
-                "packages:\n"
-                "- httpd\n"
-                "runcmd:\n"
-                "- [ sh, -c, \"hostname > /var/www/html/id\" ]\n"
-                "- [ systemctl, enable, --now, httpd ]\n")
-
-
-class OctaviaCirrosServerStackFixture(_cirros.CirrosServerStackFixture):
-    network_stack = tobiko.required_setup_fixture(
-        OctaviaVipNetworkStackFixture)
-
-    @property
-    def user_data(self):
-        # Launch a webserver on port 80 that replies the server name to the
-        # client
-        # This webserver relies on the nc command which may fail if multiple
-        # clients connect at the same time. For concurrency testing,
-        # OctaviaCentosServerStackFixture is more suited to handle multiple
-        # requests.
-
-        return (
-            "#!/bin/sh\n"
-            "sudo nc -k -p 80 -e echo -e \"HTTP/1.1 200 OK\r\n"
-            "Content-Length: $(hostname | head -c-1 | wc -c )\r\n"
-            "Server: $(hostname)\r\n"
-            "Content-type: text/html; charset=utf-8\r\n"
-            "Connection: close\r\n\r\n"
-            "$(hostname)\"\n")
-
-
-class OctaviaServerStackFixture(OctaviaCirrosServerStackFixture):
-    pass
 
 
 class OctaviaLoadbalancerStackFixture(heat.HeatStackFixture):
     template = _hot.heat_template_file('octavia/load_balancer.yaml')
 
-    vip_network = tobiko.required_setup_fixture(OctaviaVipNetworkStackFixture)
+    vip_network = tobiko.required_setup_fixture(_neutron.NetworkStackFixture)
 
     #: Floating IP network where the Neutron floating IP are created
     @property
@@ -187,9 +137,9 @@ class OctaviaPoolStackFixture(heat.HeatStackFixture):
 class OctaviaMemberServerStackFixture(heat.HeatStackFixture):
     template = _hot.heat_template_file('octavia/member.yaml')
 
-    pool = tobiko.required_setup_fixture(OctaviaPoolStackFixture)
+    pool = tobiko.required_fixture(OctaviaPoolStackFixture)
 
-    server_stack = tobiko.required_setup_fixture(OctaviaServerStackFixture)
+    server_stack = tobiko.required_fixture(_ubuntu.UbuntuServerStackFixture)
 
     application_port = 80
 
@@ -207,19 +157,11 @@ class OctaviaMemberServerStackFixture(heat.HeatStackFixture):
             return self.server_stack.network_stack.ipv6_subnet_id
 
     @property
-    def member_address(self):
-        return [
-            fixed_ip['ip_address']
-            for fixed_ip in self.server_stack.fixed_ips
-            if ((self.ip_version == 4 and
-                 ':' not in fixed_ip['ip_address']) or
-                (self.ip_version == 6 and
-                 ':' in fixed_ip['ip_address']))
-        ][0]
+    def member_address(self) -> str:
+        return str(self.server_stack.find_fixed_ip(ip_version=self.ip_version))
 
 
-class OctaviaOtherServerStackFixture(
-        OctaviaServerStackFixture):
+class OctaviaOtherServerStackFixture(_ubuntu.UbuntuServerStackFixture):
     pass
 
 
