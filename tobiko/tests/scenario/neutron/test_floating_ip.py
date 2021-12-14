@@ -14,6 +14,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 from oslo_log import log
 import testtools
 
@@ -127,11 +129,8 @@ class FloatingIPWithPortSecurityFixture(stacks.CirrosServerStackFixture):
     security_groups_stack = tobiko.required_setup_fixture(
         stacks.SecurityGroupsFixture)
 
-    #: Enable port security on internal network
-    port_security_enabled = True
-
     @property
-    def security_groups(self):
+    def security_groups(self) -> typing.List[str]:
         """List with ICMP security group"""
         return [self.security_groups_stack.ssh_security_group_id]
 

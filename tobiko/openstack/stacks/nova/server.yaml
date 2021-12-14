@@ -34,7 +34,7 @@ parameters:
   port_security_enabled:
     type: boolean
     description: Whenever port security is enabled on server port
-    default: false
+    default: true
 
   security_groups:
     type: comma_delimited_list
