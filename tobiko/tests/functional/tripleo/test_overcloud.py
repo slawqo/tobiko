@@ -111,8 +111,8 @@ class OvercloudServicesTest(testtools.TestCase):
     across the overcloud nodes
     """
 
-    services_status: services.OvercloudServicesStatus = (
-        tobiko.required_fixture(services.OvercloudServicesStatus))
+    services_status = tobiko.required_fixture(
+        services.OvercloudServicesStatus)
 
     def test_get_services_resource_table(self):
         self.assertIsInstance(self.services_status.oc_services_df,

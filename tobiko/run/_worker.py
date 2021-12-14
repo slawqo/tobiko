@@ -24,8 +24,7 @@ from tobiko.run import _config
 
 class WorkersPoolFixture(tobiko.SharedFixture):
 
-    config: _config.RunConfigFixture = tobiko.required_fixture(
-        _config.RunConfigFixture)
+    config = tobiko.required_fixture(_config.RunConfigFixture)
 
     pool: multiprocessing.pool.Pool
     workers_count: int = 0
