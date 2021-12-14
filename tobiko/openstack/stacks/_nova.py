@@ -143,11 +143,15 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         """Flavor for Nova server instance"""
         return self.flavor_stack.flavor_id
 
-    #: Whenever port security on internal network is enable
-    port_security_enabled = False
+    @property
+    def port_security_enabled(self) -> bool:
+        """Whenever port security on internal network is enabled"""
+        return bool(self.security_groups)
 
-    #: Security groups to be associated to network ports
-    security_groups: typing.List[str] = []
+    @property
+    def security_groups(self) -> typing.List[str]:
+        """Security groups to be associated to network ports"""
+        return []
 
     @property
     def key_name(self) -> str:

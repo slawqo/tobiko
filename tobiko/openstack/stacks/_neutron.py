@@ -115,8 +115,8 @@ class NetworkStackFixture(heat.HeatStackFixture):
     #: Heat template file
     template = _hot.heat_template_file('neutron/network.yaml')
 
-    #: Disable port security by default for new network ports
-    port_security_enabled = False
+    #: Enable port security by default for new network ports
+    port_security_enabled = True
 
     @property
     def has_ipv4(self):
