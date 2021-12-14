@@ -31,8 +31,7 @@ from tobiko.tripleo import undercloud
 @neutron.skip_if_missing_networking_agents(neutron.L3_AGENT)
 class OpenvswitchTest(testtools.TestCase):
 
-    stack: stacks.ServerStackFixture = tobiko.required_fixture(
-        stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     def setUp(self):
         super(OpenvswitchTest, self).setUp()

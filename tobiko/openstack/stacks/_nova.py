@@ -201,7 +201,8 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
             fixed_ips.with_attributes(version=ip_version)
         return fixed_ips
 
-    def find_fixed_ip(self, ip_version: typing.Optional[int] = None,
+    def find_fixed_ip(self,
+                      ip_version: int = None,
                       unique=False) -> netaddr.IPAddress:
         fixed_ips = self.list_fixed_ips(ip_version=ip_version)
         if unique:

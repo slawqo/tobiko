@@ -288,16 +288,19 @@ def fixture_property(*args, **kwargs):
     return FixtureProperty(*args, **kwargs)
 
 
-def required_fixture(obj, **params):
-    '''Creates a property that gets fixture identified by given :param obj:
+F = typing.TypeVar('F', bound='SharedFixture')
 
-    '''
-    return RequiredFixtureProperty(obj, **params)
+
+def required_fixture(cls: typing.Type[F], **params) \
+        -> 'RequiredFixtureProperty[F]':
+    """Creates a property that gets fixture identified by given :param cls:
+    """
+    return RequiredFixtureProperty[F](cls, **params)
 
 
 @_deprecation.deprecated(
     deprecated_in='0.4.7',
-    removed_in='0.4.8',
+    removed_in='0.4.12',
     details='use tobiko.required_fixture function instead')
 def required_setup_fixture(obj, **params):
     '''Creates a property that sets up fixture identified by given :param obj:
@@ -460,12 +463,21 @@ class FixtureProperty(property):
         return super(FixtureProperty, self).__get__(instance, owner)
 
 
-class RequiredFixtureProperty(object):
+class RequiredFixtureProperty(typing.Generic[F]):
 
-    def __init__(self, fixture, setup=True, **params):
+    def __init__(self, fixture: typing.Any, setup=True, **params):
         self.fixture = fixture
         self.fixture_params = params
         self.setup = setup
+
+    @typing.overload
+    def __get__(self, instance: None, owner: typing.Type[F]) \
+            -> 'RequiredFixtureProperty[F]':
+        pass
+
+    @typing.overload
+    def __get__(self, instance: F, owner: typing.Type[F]) -> F:
+        pass
 
     def __get__(self, instance, _):
         if instance is None:
@@ -473,7 +485,7 @@ class RequiredFixtureProperty(object):
         else:
             return self.get_fixture(instance)
 
-    def get_fixture(self, _instance):
+    def get_fixture(self, _instance) -> F:
         fixture = get_fixture(self.fixture, **self.fixture_params)
         if self.setup:
             setup_fixture(fixture)

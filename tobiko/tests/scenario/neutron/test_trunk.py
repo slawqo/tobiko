@@ -46,8 +46,7 @@ class RebootTrunkServerStackFixture(stacks.UbuntuServerStackFixture):
 class RebootTrunkTest(testtools.TestCase):
     """Tests trunk functionality"""
 
-    stack: RebootTrunkServerStackFixture = tobiko.required_fixture(
-        RebootTrunkServerStackFixture)
+    stack = tobiko.required_fixture(RebootTrunkServerStackFixture)
 
     def test_0_vlan_ip_addresses(self):
         """Check Nova server VLAN port IP addresses"""
