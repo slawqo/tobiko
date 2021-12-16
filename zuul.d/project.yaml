@@ -6,7 +6,6 @@
       - check-requirements
       - devstack-tobiko
       - devstack-tobiko-ceph
-      - devstack-tobiko-faults
       - devstack-tobiko-functional
       - devstack-tobiko-heat
       - devstack-tobiko-minimal
