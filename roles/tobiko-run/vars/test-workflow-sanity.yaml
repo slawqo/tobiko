@@ -1,0 +1,8 @@
+---
+
+test_workflow_steps:
+  - tox_description: 'run sanity test cases'
+    tox_envlist: sanity
+    tox_step_name: sanity
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: no
