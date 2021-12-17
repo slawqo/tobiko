@@ -37,7 +37,7 @@ def get_version():
     version = CACHE.get('version')
     if not version:
         CACHE['version'] = version = common.execute(
-            f"git -C '{TOP_DIR}' describe").splitlines()[0]
+            f"git -C '{TOP_DIR}' describe --always").splitlines()[0]
     return version
 
 
