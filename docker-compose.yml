@@ -12,11 +12,8 @@ services:
       TOX_REPORT_NAME: tobiko_results_unit
     volumes:
       - ./report:/report
-
-  shell:
-    extends:
-      service: unit
-    entrypoint: /bin/bash
+      - .:/tobiko
+      - ~/.ssh:/root/.ssh
 
   functional:
     extends:
@@ -25,23 +22,30 @@ services:
       OS_TEST_PATH: tobiko/tests/functional
       TOX_REPORT_NAME: tobiko_results_functional
 
-  create:
+  create-workloads:
     extends:
       service: unit
     environment:
       OS_TEST_PATH: tobiko/tests/scenario
-      TOX_REPORT_NAME: tobiko_results_create
+      TOX_REPORT_NAME: tobiko_results_create_workloads
 
-  disrupt:
+  disrupt-services:
     extends:
       service: unit
     environment:
       OS_TEST_PATH: tobiko/tests/faults
-      TOX_REPORT_NAME: tobiko_results_disrupt
+      TOX_REPORT_NAME: tobiko_results_disrupt_services
 
-  verify:
+  verify-workloads:
     extends:
-      service: create
+      service: create-workloads
     environment:
       PREVENT_CREATE: 'true'
-      TOX_REPORT_NAME: tobiko_results_verify
+      TOX_REPORT_NAME: tobiko_results_verify_workloads
+
+  verify-services:
+    extends:
+      service: unit
+    environment:
+      OS_TEST_PATH: tobiko/tests/sanity
+      TOX_REPORT_NAME: tobiko_results_verify_services

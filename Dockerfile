@@ -78,4 +78,4 @@ COPY --from=install /usr/local /usr/local/
 ADD tools/ ${TOBIKO_DIR}/tools/
 
 WORKDIR ${TOBIKO_DIR}
-ENTRYPOINT tools/run_tests.py ${OS_TEST_PATH}
+CMD tools/run_tests.py ${OS_TEST_PATH}
