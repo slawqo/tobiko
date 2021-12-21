@@ -1,0 +1,17 @@
+---
+
+- name: "Install latest Docker compose"
+  become: true
+  shell: |
+    set -x
+    VERSION=$(
+      git ls-remote https://github.com/docker/compose |
+      grep refs/tags |
+      grep -oE "[0-9]+\.[0-9][0-9]+\.[0-9]+$" |
+      sort --version-sort |
+      tail -n 1)
+    ARCH=$(uname -s)-$(uname -m)
+    URL=https://github.com/docker/compose/releases/download/${VERSION}/docker-compose-${ARCH}
+    mkdir -p $(dirname '{{ docker_compose_executable }}')
+    curl -L ${URL} > '{{ docker_compose_executable }}'
+    chmod +x '{{ docker_compose_executable }}'

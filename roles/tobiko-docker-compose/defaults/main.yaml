@@ -1,0 +1,8 @@
+---
+
+docker_compose_command: run
+docker_compose_dir: '{{ zuul_work_dir }}'
+docker_compose_environment: {}
+docker_compose_executable: /usr/local/bin/docker-compose
+
+zuul_work_dir: "{{ zuul.project.src_dir }}"

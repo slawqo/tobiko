@@ -1,0 +1,8 @@
+---
+
+- name: "Run service {{ docker_compose_service }} at {{ docker_compose_dir }}"
+  command:
+    chdir: '{{ docker_compose_dir }}'
+    cmd: '{{ docker_compose_executable }} run {{ docker_compose_service }}'
+  register: docker_compose_run
+  environment: '{{ docker_compose_environment }}'

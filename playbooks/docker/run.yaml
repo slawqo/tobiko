@@ -1,0 +1,7 @@
+---
+
+- hosts: all
+  roles:
+    - role: tobiko-docker-compose
+      vars:
+        docker_compose_command: run

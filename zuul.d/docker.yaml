@@ -1,0 +1,41 @@
+---
+
+- project-template:
+    name: tobiko-docker
+    description: |
+      Docker jobs intended to gate Tobiko container related changes
+    check: &CHECK
+      jobs:
+        - tobiko-docker-unit
+        - tobiko-docker-functional
+    gate:
+      jobs:
+        - tobiko-docker-unit
+    periodic: *CHECK
+
+
+# ----------------------------------------------------------------------------
+
+- job:
+    name: tobiko-docker-unit
+    description: |
+      Run unit tests for an OpenStack Python project inside a Docker container.
+    voting: true
+    parent: base
+    timeout: 2400
+    pre-run: playbooks/docker/pre.yaml
+    run: playbooks/docker/run.yaml
+    # post-run: playbooks/docker/post.yaml
+    vars:
+        docker_compose_service: unit
+
+
+- job:
+    name: tobiko-docker-functional
+    description: |
+      Run functional tests for an OpenStack Python project inside a Docker container.
+    voting: false
+    parent: tobiko-docker-unit
+    timeout: 3600
+    vars:
+        docker_compose_service: functional
