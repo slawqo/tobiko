@@ -43,5 +43,5 @@ services:
     extends:
       service: create
     environment:
-      PREVENT_CREATE: true
+      PREVENT_CREATE: 'true'
       TOX_REPORT_NAME: tobiko_results_verify
