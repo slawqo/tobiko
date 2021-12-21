@@ -23,6 +23,7 @@
     timeout: 2400
     pre-run: playbooks/docker/pre.yaml
     run: playbooks/docker/run.yaml
+    post-run: playbooks/docker/post.yaml
     # post-run: playbooks/docker/post.yaml
     vars:
         docker_compose_service: unit

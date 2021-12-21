@@ -1,0 +1,7 @@
+---
+tobiko_report_dir: "{{ zuul_work_dir }}/report"
+
+zuul_work_dir: "{{ zuul.project.src_dir }}"
+
+zuul_output_dir: "{{ ansible_user_dir }}/zuul-output"
+zuul_use_fetch_output: "{{ zuul_site_use_fetch_output|default(false) }}"

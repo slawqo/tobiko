@@ -1,0 +1,42 @@
+---
+
+- name: Set Tobiko log path for multiple nodes
+  set_fact:
+    log_path: "{{ zuul.executor.log_root }}/{{ inventory_hostname }}/tobiko"
+  when: groups['all'] | length > 1
+
+- name: Set Tobiko log path for single node
+  set_fact:
+    log_path: "{{ zuul.executor.log_root }}/tobiko"
+  when: log_path is not defined
+
+- name: Ensure local report dir
+  file:
+    path: "{{ log_path }}"
+    state: directory
+    mode: 0755
+  delegate_to: localhost
+
+- name: Ensure zuul-output report dir
+  file:
+    path: "{{ zuul_output_dir }}/logs/tobiko"
+    state: directory
+    mode: 0755
+  when: zuul_use_fetch_output
+
+- name: Copy Tobiko logs  # noqa risky-file-permissions
+  copy:
+    dest: "{{ zuul_output_dir }}/logs/tobiko/"
+    src: "{{ tobiko_report_dir }}/"
+    remote_src: true
+  when: zuul_use_fetch_output
+
+- name: Collect Tobiko logs
+  synchronize:
+    dest: "{{ log_path }}"
+    mode: pull
+    src: "{{ tobiko_report_dir }}/"
+    verify_host: true
+    owner: no
+    group: no
+  when: not zuul_use_fetch_output
