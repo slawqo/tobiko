@@ -24,8 +24,6 @@
         rtd_webhook_id: '84947'
     periodic:
       jobs:
-        - devstack-tobiko-octavia:
-            voting: false
         - requirements-check:
             voting: false
         - tripleo-ci-centos-8-content-provider
