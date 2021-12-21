@@ -8,9 +8,7 @@
       jobs:
         - tobiko-docker-unit
         - tobiko-docker-functional
-    gate:
-      jobs:
-        - tobiko-docker-unit
+    gate: *CHECK
     periodic: *CHECK
 
 
@@ -34,7 +32,7 @@
     name: tobiko-docker-functional
     description: |
       Run functional tests for an OpenStack Python project inside a Docker container.
-    voting: false
+    voting: true
     parent: tobiko-docker-unit
     timeout: 3600
     vars:
