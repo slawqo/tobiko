@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import io
 import time
+import typing
 
 from oslo_log import log
 import pandas
@@ -26,7 +27,7 @@ def get_random_controller_ssh_client():
     return controller_node.ssh_client
 
 
-def get_pcs_resources_table(timeout=720, interval=2):
+def get_pcs_resources_table(timeout=720, interval=2) -> pandas.DataFrame:
     """
     get pcs status from a controller and parse it
     to have it's resources states in check
@@ -39,7 +40,7 @@ def get_pcs_resources_table(timeout=720, interval=2):
 
     :return: dataframe of pcs resources stats table
     """
-    failures = []
+    failures: typing.List[str] = []
     start = time.time()
 
     ssh_client = get_random_controller_ssh_client()
@@ -54,7 +55,8 @@ def get_pcs_resources_table(timeout=720, interval=2):
             # remove the first column when it only includes '*' characters
             output = output.replace('*', '').strip()
             stream = io.StringIO(output)
-            table = pandas.read_csv(stream, delim_whitespace=True, header=None)
+            table: pandas.DataFrame = pandas.read_csv(
+                stream, delim_whitespace=True, header=None)
             table.columns = ['resource', 'resource_type', 'resource_state',
                              'overcloud_node']
         except ValueError:
@@ -233,6 +235,7 @@ def get_overcloud_nodes_running_pcs_resource(resource=None,
     resource/type/state: exact str of a resource name as seen in pcs status
     :return: list of overcloud nodes
     """
+    # pylint: disable=no-member
     pcs_df = get_pcs_resources_table()
     if resource:
         pcs_df_query_resource = pcs_df.query('resource=="{}"'.format(
@@ -279,6 +282,7 @@ def get_overcloud_resource(resource_type=None,
             'resource'].unique().tolist()
 
     if resource_type and not resource_state:
+        # pylint: disable=no-member
         pcs_df_query_resource_type = pcs_df.query(
             'resource_type=="{}"'.format(resource_type))
         return pcs_df_query_resource_type['resource'].unique().tolist()

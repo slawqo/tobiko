@@ -54,10 +54,12 @@ root    |     11|      2| 0.0|     0|00:00:05|migration/0    |[migration/0]
         "ps|sed 's/\"/''/g'",
         ssh_client=ssh_client).stdout
     stream = io.StringIO(output)
-    table = pandas.read_csv(stream, sep='DELIM', header=None, skiprows=1)
+    table: pandas.DataFrame = pandas.read_csv(
+        stream, sep='DELIM', header=None, skiprows=1)
     table.replace(to_replace=' ', value="", regex=True, inplace=True)
     table.columns = ['USER', 'PID', 'PPID', 'CPU', 'VSZ', 'TIME', 'PROCESS',
                      'PROCESS_ARGS']
+    # pylint: disable=unsupported-assignment-operation
     table['overcloud_node'] = hostname
 
     LOG.debug("Successfully got overcloud nodes processes status table")

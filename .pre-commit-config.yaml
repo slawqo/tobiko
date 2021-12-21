@@ -51,12 +51,11 @@ repos:
   - repo: local
     hooks:
       - id: pylint
-        files: ^tobiko/
         name: pylint
-        entry: .tox/pep8/bin/pylint --max-line-length=80 -E -e W,E -d unused-import,broad-except,fixme
+        entry: pylint --max-line-length=88 -E -e W,E -d unused-import,broad-except,fixme,unspecified-encoding,redundant-u-string-prefix
+        files: ^tobiko/
         language: system
         types: [python]
-
 
 #  - repo: https://github.com/adrienverge/yamllint.git
 #    rev: v1.23.0

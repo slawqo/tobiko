@@ -227,7 +227,6 @@ def wait_for_systemd_units_state(
         if bad_units:
             raise UnexpectedSystemctlUnitState(matcher=match_unit,
                                                units=bad_units)
-    # pylint: disable=dict-values-not-iterating
     return tobiko.Selection(all_units.values())
 
 

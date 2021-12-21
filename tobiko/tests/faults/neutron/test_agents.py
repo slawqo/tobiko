@@ -228,7 +228,6 @@ class BaseAgentTest(testtools.TestCase):
         self.assertGreater(min_pids_per_host, 0)
         self.assertGreater(max_pids_per_host, 0)
         self.assertGreaterEqual(max_pids_per_host, min_pids_per_host)
-        # pylint: disable=range-builtin-not-iterating
         pids_count_range = range(min_pids_per_host, max_pids_per_host + 1)
         pids_per_host = {}
         for host in hosts:

@@ -55,7 +55,6 @@ class TobikoException(Exception):
     message = "unknown reason"
 
     def __init__(self, message=None, **properties):
-        # pylint: disable=exception-message-attribute
         message = message or self.message
         if properties:
             message = message.format(**properties)
