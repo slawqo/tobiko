@@ -49,3 +49,16 @@ services:
     environment:
       OS_TEST_PATH: tobiko/tests/sanity
       TOX_REPORT_NAME: tobiko_results_verify_services
+
+  infrared:
+    build:
+      context: infrared_plugin
+      target: tobiko-infrared
+    hostname: tobiko-infrared
+    environment:
+      IR_EXTRA_ARGS: --tobiko-src-dir /tobiko
+    volumes:
+      - ./report:/report
+      - .:/tobiko
+      - ./infrared_plugin:/tobiko-infrared
+      - ~/.ssh:/root/.ssh

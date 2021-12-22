@@ -6,9 +6,12 @@
       Docker jobs intended to gate Tobiko container related changes
     check: &CHECK
       jobs:
-        - tobiko-docker-unit
         - tobiko-docker-functional
-    gate: *CHECK
+        - tobiko-docker-infrared
+        - tobiko-docker-unit
+    gate:
+      jobs:
+        - tobiko-docker-functional
     periodic: *CHECK
 
 
@@ -38,3 +41,14 @@
     timeout: 3600
     vars:
         docker_compose_service: functional
+
+
+- job:
+    name: tobiko-docker-infrared
+    description: |
+      Run functional tests for an OpenStack Python project inside a Docker container.
+    voting: false
+    parent: tobiko-docker-unit
+    timeout: 3600
+    vars:
+        docker_compose_service: infrared

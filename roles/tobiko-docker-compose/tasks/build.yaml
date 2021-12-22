@@ -3,6 +3,6 @@
 - name: "Build image for service {{ docker_compose_service }} at {{ docker_compose_dir }}"
   command:
     chdir: '{{ docker_compose_dir }}'
-    cmd: '{{ docker_compose_executable }} build {{ docker_compose_service }}'
+    cmd: '{{ docker_compose_execute }} build {{ docker_compose_service }}'
   register: docker_compose_build
   environment: '{{ docker_compose_environment }}'
