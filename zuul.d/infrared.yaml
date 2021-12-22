@@ -8,10 +8,11 @@
       jobs:
         - tobiko-infrared
         - tobiko-infrared-centos-7
+        - tobiko-infrared-fedora
+        - tobiko-infrared-ubuntu
     gate:
       jobs:
         - tobiko-infrared
-        - tobiko-infrared-centos-7
     periodic:
       jobs:
         - tobiko-infrared
@@ -110,7 +111,7 @@
     name: tobiko-infrared-ubuntu
     parent: tobiko-infrared
     nodeset: tobiko-infrared-ubuntu
-    voting: false
+    voting: true
     description: |
       Run test cases using tobiko infrared plugin on Ubuntu
 
