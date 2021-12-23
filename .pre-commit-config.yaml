@@ -52,7 +52,7 @@ repos:
     hooks:
       - id: pylint
         name: pylint
-        entry: pylint --max-line-length=88 -E -e W,E -d unused-import,broad-except,fixme,unspecified-encoding,redundant-u-string-prefix
+        entry: .tox/pep8/bin/pylint --max-line-length=88 -E -e W,E -d unused-import,broad-except,fixme,unspecified-encoding,redundant-u-string-prefix
         files: ^tobiko/
         language: system
         types: [python]

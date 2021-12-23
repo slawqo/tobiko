@@ -25,9 +25,9 @@ class TestSystemctl(testtools.TestCase):
     def setUp(self):
         super().setUp()
         try:
-            sh.execute('systemctl --version')
-        except sh.ShellCommandFailed as ex:
-            self.skipTest(f"Can't execute systemctl: {ex.stderr}")
+            sh.execute('pgrep systemd')
+        except sh.ShellCommandFailed:
+            self.skipTest("systemd is not running")
 
     def test_list_system_services(self):
         units = sh.list_systemd_units()

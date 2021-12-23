@@ -47,7 +47,7 @@
     name: tobiko-docker-infrared
     description: |
       Run functional tests for an OpenStack Python project inside a Docker container.
-    voting: false
+    voting: true
     parent: tobiko-docker-unit
     timeout: 3600
     vars:
