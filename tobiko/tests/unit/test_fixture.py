@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 import os
 import sys
+import unittest
 
 import fixtures
 import mock
@@ -178,6 +179,53 @@ class SetupFixtureTest(unit.TobikoUnitTest):
         self.assertIs(tobiko.get_fixture(obj, fixture_id=fixture_id), result)
         result.setup_fixture.assert_called_once_with()
         result.cleanup_fixture.assert_not_called()
+
+
+class UseFixtureTest(unit.TobikoUnitTest):
+
+    def test_with_name(self):
+        self._test_use_fixture(canonical_name(MyFixture))
+
+    def test_with_type(self):
+        self._test_use_fixture(MyFixture)
+
+    def test_with_instance(self):
+        self._test_use_fixture(MyFixture2())
+
+    def test_with_name_and_fixture_id(self):
+        self._test_use_fixture(canonical_name(MyFixture), fixture_id=5)
+
+    def test_with_type_and_fixture_id(self):
+        self._test_use_fixture(MyFixture, fixture_id=6)
+
+    def test_with_instance_and_fixture_id(self):
+        self._test_use_fixture(MyFixture2(), fixture_id=7)
+
+    def _test_use_fixture(self, obj, fixture_id=None):
+
+        fixture: MyFixture = tobiko.get_fixture(
+            obj=obj, fixture_id=fixture_id)  # type: ignore
+
+        class InnerTest(unittest.TestCase):
+            def runTest(self):
+                fixture.setup_fixture.assert_not_called()
+                fixture.cleanup_fixture.assert_not_called()
+                result = tobiko.use_fixture(obj, fixture_id=fixture_id)
+                fixture.setup_fixture.assert_called_once_with()
+                fixture.cleanup_fixture.assert_not_called()
+                self.assertIs(fixture, result)
+
+        fixture.setup_fixture.assert_not_called()
+        fixture.cleanup_fixture.assert_not_called()
+
+        result = tobiko.run_test(InnerTest())
+
+        fixture.setup_fixture.assert_called_once_with()
+        fixture.cleanup_fixture.assert_called_once_with()
+
+        self.assertEqual(1, result.testsRun)
+        self.assertEqual([], result.errors)
+        self.assertEqual([], result.failures)
 
 
 class ResetFixtureTest(unit.TobikoUnitTest):

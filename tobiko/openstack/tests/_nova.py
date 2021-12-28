@@ -19,9 +19,6 @@ import os
 import typing  # noqa
 import time
 
-# import testtools
-import testtools
-
 import tobiko
 from tobiko.shell import ping
 from tobiko.shell import sh
@@ -82,8 +79,7 @@ def test_servers_creation(stack=TestServerCreationStack,
 
     # Create all servers stacks
     for fixture in fixtures:
-        assert isinstance(test_case, testtools.TestCase)
-        test_case.useFixture(fixture)
+        tobiko.use_fixture(fixture)
 
     # Check every server ID is unique and new
     server_ids = {fixture.server_id for fixture in fixtures}

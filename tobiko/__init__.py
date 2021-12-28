@@ -75,6 +75,7 @@ remove_fixture = _fixture.remove_fixture
 reset_fixture = _fixture.reset_fixture
 setup_fixture = _fixture.setup_fixture
 cleanup_fixture = _fixture.cleanup_fixture
+use_fixture = _fixture.use_fixture
 list_required_fixtures = _fixture.list_required_fixtures
 SharedFixture = _fixture.SharedFixture
 FixtureManager = _fixture.FixtureManager
