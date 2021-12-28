@@ -48,7 +48,7 @@ class BadAddressPingError(PingError):
     message = "bad address: {address}"
 
 
-class PingFailed(PingError, tobiko.FailureException):
+class PingFailed(PingError, AssertionError):
     """Raised when ping timeout expires before reaching expected message count
 
     """

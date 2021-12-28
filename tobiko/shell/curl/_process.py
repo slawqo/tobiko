@@ -349,7 +349,7 @@ def download_file(url: str,
                                    headers_file_name=headers_file_name,
                                    ssh_client=ssh_client,
                                    sudo=sudo)
-        except tobiko.FailureException:
+        except tobiko.FailureException:  # type: ignore
             pass
         else:
             LOG.debug(f"File '{url}' already downloaded.")

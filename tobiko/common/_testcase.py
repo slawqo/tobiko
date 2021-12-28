@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import os
 import sys
 import typing
+import unittest
 
 from oslo_log import log
 import testtools
@@ -28,11 +29,11 @@ LOG = log.getLogger(__name__)
 
 os.environ.setdefault('PYTHON', sys.executable)
 
-TestCase = testtools.TestCase
+TestCase = unittest.TestCase
 
 
 class TestCaseEntry(typing.NamedTuple):
-    test_case: testtools.TestCase
+    test_case: unittest.TestCase
     start_time: float
 
 
@@ -43,21 +44,21 @@ class TestCasesManager(object):
     def __init__(self):
         self._test_cases: typing.List[TestCaseEntry] = []
 
-    def get_test_case(self) -> testtools.TestCase:
+    def get_test_case(self) -> unittest.TestCase:
         try:
             return self._test_cases[-1].test_case
         except IndexError:
             return DUMMY_TEST_CASE
 
-    def pop_test_case(self) -> testtools.TestCase:
+    def pop_test_case(self) -> unittest.TestCase:
         entry = self._test_cases.pop()
         elapsed_time = _time.time() - entry.start_time
         LOG.debug(f"Exit test case '{entry.test_case.id()}' after "
                   f"{elapsed_time} seconds")
         return entry.test_case
 
-    def push_test_case(self, test_case: testtools.TestCase):
-        _exception.check_valid_type(test_case, testtools.TestCase)
+    def push_test_case(self, test_case: unittest.TestCase):
+        _exception.check_valid_type(test_case, unittest.TestCase)
         entry = TestCaseEntry(test_case=test_case,
                               start_time=_time.time())
         self._test_cases.append(entry)
@@ -67,22 +68,22 @@ class TestCasesManager(object):
 TEST_CASES = TestCasesManager()
 
 
-def push_test_case(test_case: testtools.TestCase,
+def push_test_case(test_case: unittest.TestCase,
                    manager: TestCasesManager = TEST_CASES):
     return manager.push_test_case(test_case=test_case)
 
 
 def pop_test_case(manager: TestCasesManager = TEST_CASES) -> \
-        testtools.TestCase:
+        unittest.TestCase:
     return manager.pop_test_case()
 
 
 def get_test_case(manager: TestCasesManager = TEST_CASES) -> \
-        testtools.TestCase:
+        unittest.TestCase:
     return manager.get_test_case()
 
 
-class DummyTestCase(testtools.TestCase):
+class DummyTestCase(unittest.TestCase):
 
     def runTest(self):
         pass
@@ -91,10 +92,16 @@ class DummyTestCase(testtools.TestCase):
 DUMMY_TEST_CASE = DummyTestCase()
 
 
-def run_test(test_case: testtools.TestCase,
-             test_result: testtools.TestResult = None) -> testtools.TestResult:
-    test_result = test_result or testtools.TestResult()
-    test_case.run(test_result)
+def run_test(test_case: unittest.TestCase,
+             test_result: unittest.TestResult = None,
+             manager: TestCasesManager = TEST_CASES) -> unittest.TestResult:
+    test_result = test_result or unittest.TestResult()
+    push_test_case(test_case, manager=manager)
+    try:
+        test_case.run(test_result)
+    finally:
+        popped = pop_test_case(manager=manager)
+        assert test_case is popped
     return test_result
 
 
@@ -103,16 +110,15 @@ def assert_in(needle, haystack, message: typing.Optional[str] = None,
     get_test_case(manager=manager).assertIn(needle, haystack, message)
 
 
-def get_skipped_test_cases(test_result: testtools.TestResult,
-                           skip_reason: typing.Optional[str] = None):
-    if skip_reason is not None:
-        assert_in(skip_reason, test_result.skip_reasons)
-        return test_result.skip_reasons[skip_reason]
-    else:
-        skipped_test_cases = list()
-        for cases in test_result.skip_reasons.values():
-            skipped_test_cases.extend(cases)
-        return skipped_test_cases
+def get_skipped_test_cases(test_result: unittest.TestResult,
+                           skip_reason: str = None) \
+        -> typing.List[unittest.TestCase]:
+    if isinstance(test_result, testtools.TestResult):
+        raise NotImplementedError(
+            f"Unsupported result type: {test_result}")
+    return [case
+            for case, reason in test_result.skipped
+            if skip_reason is None or skip_reason in reason]
 
 
 def assert_test_case_was_skipped(test_case: testtools.TestCase,
@@ -122,3 +128,32 @@ def assert_test_case_was_skipped(test_case: testtools.TestCase,
     skipped_tests = get_skipped_test_cases(test_result=test_result,
                                            skip_reason=skip_reason)
     assert_in(test_case, skipped_tests, manager=manager)
+
+
+FailureException = typing.cast(
+    typing.Tuple[Exception, ...],
+    (unittest.TestCase.failureException,
+     testtools.TestCase.failureException,
+     AssertionError))
+
+
+def fail(msg: str,
+         cause: typing.Type[Exception] = None) -> typing.NoReturn:
+    """Fail immediately current test case execution, with the given message.
+
+    Unconditionally raises a tobiko.FailureException as in below equivalent
+    code:
+
+        raise FailureException(msg.format(*args, **kwargs))
+
+    :param msg: string message used to create FailureException
+    :param cause: error that caused the failure
+    :returns: It never returns
+    :raises failure_type or FailureException exception type:
+    """
+    failure_type = get_test_case().failureException
+    raise failure_type(msg) from cause
+
+
+def add_cleanup(function: typing.Callable, *args, **kwargs):
+    get_test_case().addCleanup(function, *args, **kwargs)
