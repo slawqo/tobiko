@@ -27,7 +27,7 @@ LOG = log.getLogger(__name__)
 CONF = config.CONF
 
 RHEL_IMAGE_MAJOR_VERSION = '8.4'
-RHEL_IMAGE_MINOR_VERSION = '1239'
+RHEL_IMAGE_MINOR_VERSION = '1254'
 
 RHEL_IMAGE_URL = ('http://download.devel.redhat.com/brewroot/packages/'
                   f'rhel-guest-image/{RHEL_IMAGE_MAJOR_VERSION}/'
