@@ -124,6 +124,7 @@ MultipleObjectsFound = _select.MultipleObjectsFound
 
 SkipException = _skip.SkipException
 skip_if = _skip.skip_if
+skip_on_error = _skip.skip_on_error
 skip_test = _skip.skip_test
 skip_unless = _skip.skip_unless
 skip = _skip.skip

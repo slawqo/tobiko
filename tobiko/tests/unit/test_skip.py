@@ -14,11 +14,13 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 import tobiko
 from tobiko.tests import unit
 
 
-def condition(value):
+def condition(value: typing.Any):
     return value
 
 
@@ -223,4 +225,46 @@ class NegativeSkipUnlessConditionCalledWithArgsTest(NegativeSkipBase):
 class NegativeSkipUnlessConditionCalledWithKwargsTest(NegativeSkipBase):
 
     def test_fail(self):
+        self.test_method_called = True
+
+
+def raise_an_error(error: Exception):
+    raise error
+
+
+def raise_any_error():
+    pass
+
+
+@tobiko.skip_on_error('error raised: {cause}',
+                      raise_an_error,
+                      error_type=ValueError,
+                      error=ValueError("It is all right"))
+class PositiveSkipOnErrorTest(unit.TobikoUnitTest):
+
+    def test_skip_on_error(self):
+        self.fail('Not skipped')
+
+
+class PositiveSkipOnErrorMethodTest(unit.TobikoUnitTest):
+
+    @tobiko.skip_on_error('error raised: {cause}',
+                          raise_an_error,
+                          error_type=RuntimeError,
+                          error=RuntimeError("It is all right"))
+    def test_skip_on_error(self):
+        self.fail('Not skipped')
+
+
+@tobiko.skip_on_error('error not raised', raise_any_error,
+                      error_type=ValueError)
+class NegativeSkipOnErrorTest(NegativeSkipBase):
+    def test_skip_on_error(self):
+        self.test_method_called = True
+
+
+class NegativeSkipOnErrorMethodTest(NegativeSkipBase):
+    @tobiko.skip_on_error('error not raised', raise_any_error,
+                          error_type=ValueError)
+    def test_skip_on_error(self):
         self.test_method_called = True

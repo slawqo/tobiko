@@ -30,6 +30,10 @@ SkipTarget = typing.Union[typing.Callable,
 SkipDecorator = typing.Callable[[SkipTarget], SkipTarget]
 
 
+SkipOnErrorType = typing.Union[typing.Type[Exception],
+                               typing.Tuple[typing.Type[Exception], ...]]
+
+
 def skip_test(reason: str,
               cause: Exception = None,
               bugzilla: int = None) -> typing.NoReturn:
@@ -37,7 +41,7 @@ def skip_test(reason: str,
     if bugzilla is not None:
         reason += f'\nhttps://bugzilla.redhat.com/show_bug.cgi?id={bugzilla}\n'
     if cause is not None:
-        reason += f"\n\n{cause}\n"
+        reason += f"\n{cause}\n"
     raise SkipException(reason) from cause
 
 
@@ -75,12 +79,31 @@ def skip_unless(reason: str,
                            predicate=predicate)
 
 
+def skip_on_error(reason: str,
+                  predicate: typing.Callable,
+                  *args,
+                  error_type: SkipOnErrorType = None,
+                  bugzilla: int = None,
+                  **kwargs) -> \
+        SkipDecorator:
+    predicate = _get_skip_predicate(predicate, *args, **kwargs)
+    return _skip_decorator(reason=reason,
+                           error_type=error_type,
+                           bugzilla=bugzilla,
+                           predicate=predicate)
+
+
 def _skip_decorator(reason: str,
-                    unless: bool = True,
+                    unless: bool = None,
+                    error_type: SkipOnErrorType = None,
                     bugzilla: int = None,
                     predicate: typing.Callable = None) \
         -> SkipDecorator:
     """Mark test case for being skipped for a given reason unless it matches"""
+
+    if error_type is None:
+        error_type = tuple()
+
     def decorator(obj: SkipTarget) -> SkipTarget:
         method = _get_skip_method(obj)
 
@@ -89,11 +112,18 @@ def _skip_decorator(reason: str,
             _reason = reason
             cause: typing.Optional[Exception] = None
             if predicate is not None:
-                return_value = predicate()
-                if unless is bool(return_value):
-                    return method(*args, **kwargs)
+                return_value: typing.Any = None
+                try:
+                    return_value = predicate()
+                except error_type as ex:
+                    cause = ex
+                else:
+                    if unless in [None, bool(return_value)]:
+                        return method(*args, **kwargs)
                 if '{return_value' in reason:
                     _reason = reason.format(return_value=return_value)
+                if '{cause' in reason:
+                    _reason = reason.format(cause=cause)
             skip_test(reason=_reason, cause=cause, bugzilla=bugzilla)
 
         if obj is method:
