@@ -20,7 +20,7 @@ import typing
 import decorator
 
 
-def protocol(cls: type) -> type:
+def protocol(cls: typing.Type) -> typing.Type:
     name = cls.__name__
     bases = inspect.getmro(cls)[1:]
     namespace = dict(cls.__dict__,
@@ -29,8 +29,8 @@ def protocol(cls: type) -> type:
     return type(name, bases, namespace)
 
 
-def is_protocol_class(cls):
-    return inspect.isclass(cls) and cls.__dict__.get('_is_protocol', False)
+def is_protocol_class(obj):
+    return inspect.isclass(obj) and obj.__dict__.get('_is_protocol', False)
 
 
 def is_public_function(obj):
@@ -53,7 +53,7 @@ class CallHandlerMeta(type):
 
 class CallHandler(metaclass=CallHandlerMeta):
 
-    protocol_class: type
+    protocol_class: typing.Type
 
     def __init__(self,
                  handle_call: typing.Optional[typing.Callable] = None):
@@ -70,16 +70,16 @@ class CallHandler(metaclass=CallHandlerMeta):
 
 
 def call_proxy_class(
-        cls: type,
-        *bases: type,
-        class_name: typing.Optional[str] = None,
-        namespace: typing.Optional[dict] = None) \
-        -> type:
+        cls: typing.Type,
+        *bases: typing.Type,
+        class_name: str = None,
+        namespace: dict = None) \
+        -> typing.Type:
     if not inspect.isclass(cls):
         raise TypeError(f"Object {cls} is not a class")
     if class_name is None:
         class_name = cls.__name__ + 'Proxy'
-    protocol_classes = list_protocols(cls)
+    protocol_classes = list_protocols(typing.cast(typing.Hashable, cls))
     if not protocol_classes:
         raise TypeError(f"Class {cls} doesn't implement any protocol")
     if namespace is None:
@@ -99,13 +99,13 @@ def call_proxy_class(
     return proxy_class
 
 
-def call_proxy(cls: type, handle_call: typing.Callable) -> CallHandler:
+def call_proxy(cls: typing.Type, handle_call: typing.Callable) -> CallHandler:
     proxy_class = call_proxy_class(cls, CallHandler)
     return proxy_class(handle_call)
 
 
 @functools.lru_cache()
-def list_protocols(cls: type) -> typing.Tuple[type, ...]:
+def list_protocols(cls: typing.Type) -> typing.Tuple[typing.Type, ...]:
     subclasses = inspect.getmro(cls)
     protocols = tuple(cls
                       for cls in subclasses
