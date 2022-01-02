@@ -197,10 +197,12 @@ def save_containers_state_to_file(expected_containers_list,):
     return expected_containers_file
 
 
-def assert_containers_running(group, expected_containers, full_name=True):
+def assert_containers_running(group, expected_containers, full_name=True,
+                              bool_check=False):
 
     """assert that all containers specified in the list are running
-    on the specified openstack group(controller or compute etc..)"""
+    on the specified openstack group(controller or compute etc..)
+    if bool_check is True then return only True or false without failing"""
 
     if is_docker():
         LOG.info('not checking common containers since we are on docker')
@@ -250,11 +252,15 @@ def assert_containers_running(group, expected_containers, full_name=True):
                             container, node.name,
                             len(container_running_attrs)))
 
-    if failures:
+    if not bool_check and failures:
         tobiko.fail('container states mismatched:\n{!s}', '\n'.join(failures))
 
+    elif bool_check and failures:
+        return False
+
     else:
-        LOG.info('All tripleo common containers are in running state! ')
+        LOG.info('All specified containers are in running state! ')
+        return True
 
 
 def assert_all_tripleo_containers_running():
@@ -288,19 +294,52 @@ def assert_all_tripleo_containers_running():
                                             'swift_object_updater',
                                             'swift_proxy', 'swift_rsync']
 
+    shiftonstack_controller_tripleo_containers = ['cinder_api',
+                                                  'cinder_api_cron',
+                                                  'cinder_scheduler',
+                                                  'glance_api', 'heat_api',
+                                                  'heat_api_cfn',
+                                                  'heat_api_cron',
+                                                  'heat_engine',
+                                                  'horizon', 'iscsid',
+                                                  'keystone',
+                                                  'logrotate_crond',
+                                                  'memcached',
+                                                  'neutron_api', 'nova_api',
+                                                  'nova_api_cron',
+                                                  'nova_conductor',
+                                                  'nova_metadata',
+                                                  'nova_scheduler',
+                                                  'nova_vnc_proxy']
+
     common_compute_tripleo_containers = ['iscsid', 'logrotate_crond',
                                          'nova_compute', 'nova_libvirt',
                                          'nova_migration_target',
                                          'nova_virtlogd']
 
+    if assert_ceph_rgw_container_running():
+        tripleo_containers_to_check = \
+            shiftonstack_controller_tripleo_containers
+    else:
+        tripleo_containers_to_check = \
+            common_controller_tripleo_containers
+
     for group, group_containers in [('controller',
-                                     common_controller_tripleo_containers),
+                                     tripleo_containers_to_check),
                                     ('compute',
                                      common_compute_tripleo_containers)]:
         assert_containers_running(group, group_containers)
     # TODO: need to address OSP-version specific containers here.
     # optional ovn containers checks
     assert_ovn_containers_running()
+
+
+def assert_ceph_rgw_container_running():
+    """check if ceph-rgw is running, usually on
+    shifton stack deployments , if so we should not check for
+    swift containers precence"""
+    return assert_containers_running('controller', ['ceph-rgw'],
+                                     full_name=False, bool_check=True)
 
 
 def osp13_container_name_short_format(container_name_long_format):
