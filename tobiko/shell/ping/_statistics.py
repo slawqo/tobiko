@@ -122,8 +122,13 @@ class PingStatistics(object):
 
     """
 
-    def __init__(self, source=None, destination=None, transmitted=0,
-                 received=0, undelivered=0, begin_interval=None,
+    def __init__(self,
+                 source=None,
+                 destination=None,
+                 transmitted: int = 0,
+                 received: int = 0,
+                 undelivered: int = 0,
+                 begin_interval=None,
                  end_interval=None):
         self.source = source
         self.destination = destination
@@ -134,18 +139,17 @@ class PingStatistics(object):
         self.end_interval = end_interval
 
     @property
-    def unreceived(self):
+    def unreceived(self) -> int:
         return max(0, self.transmitted - self.received)
 
     @property
-    def delivered(self):
+    def delivered(self) -> int:
         return max(0, self.transmitted - self.undelivered)
 
     @property
-    def loss(self):
-        transmitted = max(0, float(self.transmitted))
-        if transmitted:
-            return float(self.unreceived) / transmitted
+    def loss(self) -> float:
+        if self.transmitted > 0:
+            return float(self.unreceived) / float(self.transmitted)
         else:
             return 0.
 
@@ -173,28 +177,20 @@ class PingStatistics(object):
 
     def assert_transmitted(self):
         if not self.transmitted:
-            tobiko.fail("{transmitted!r} package(s) has been transmitted "
-                        "to {destination!r}",
-                        transmitted=self.transmitted,
-                        destination=self.destination)
+            tobiko.fail(f"{self.transmitted} package(s) has been transmitted "
+                        f"to {self.destination}")
 
     def assert_not_transmitted(self):
         if self.transmitted:
-            tobiko.fail("{transmitted!r} package(s) has been transmitted to "
-                        "{destination!r}",
-                        transmitted=self.transmitted,
-                        destination=self.destination)
+            tobiko.fail(f"{self.transmitted} package(s) has been "
+                        f"transmitted to {self.destination}")
 
     def assert_replied(self):
         if not self.received:
-            tobiko.fail("{received!r} reply package(s) has been received from "
-                        "{destination!r}",
-                        received=self.received,
-                        destination=self.destination)
+            tobiko.fail(f"{self.received} reply package(s) has been "
+                        f"received from {self.destination}")
 
     def assert_not_replied(self):
         if self.received:
-            tobiko.fail("{received!r} reply package(s) has been received from "
-                        "{destination!r}",
-                        received=self.received,
-                        destination=self.destination)
+            tobiko.fail(f"{self.received} reply package(s) has been received "
+                        f"from {self.destination}")

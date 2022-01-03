@@ -72,8 +72,7 @@ def get_pcs_resources_table(timeout=720, interval=2) -> pandas.DataFrame:
             break
     # exhausted all retries
     if failures:
-        tobiko.fail(
-            'pcs status table import error\n{!s}', '\n'.join(failures))
+        tobiko.fail('pcs status table import error\n' + '\n'.join(failures))
 
     LOG.debug("Got pcs status :\n%s", table)
     return table

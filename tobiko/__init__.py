@@ -21,7 +21,6 @@ from tobiko.common import _config
 from tobiko.common import _deprecation
 from tobiko.common import _detail
 from tobiko.common import _exception
-from tobiko.common import _fail
 from tobiko.common import _fixture
 from tobiko.common import _logging
 from tobiko.common.managers import loader as loader_manager
@@ -52,9 +51,6 @@ CachedProperty = _cached.CachedProperty
 deprecated = _deprecation.deprecated
 
 details_content = _detail.details_content
-
-FailureException = _fail.FailureException
-fail = _fail.fail
 
 tobiko_config = _config.tobiko_config
 tobiko_config_dir = _config.tobiko_config_dir
@@ -129,7 +125,10 @@ skip_test = _skip.skip_test
 skip_unless = _skip.skip_unless
 skip = _skip.skip
 
+add_cleanup = _testcase.add_cleanup
 assert_test_case_was_skipped = _testcase.assert_test_case_was_skipped
+fail = _testcase.fail
+FailureException = _testcase.FailureException
 get_test_case = _testcase.get_test_case
 pop_test_case = _testcase.pop_test_case
 push_test_case = _testcase.push_test_case

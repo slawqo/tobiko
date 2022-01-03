@@ -34,8 +34,8 @@ class OpenstackNodesTest(testtools.TestCase):
             ping.ping(node.public_ip).assert_replied()
             other = ips.setdefault(node.public_ip, node)
             if node is not other:
-                tobiko.fail("Nodes {!r} and {!r} have the same IP: {!s}",
-                            node.name, other.name, node.public_ip)
+                tobiko.fail(f"Nodes {node.name} and {other.name} have the "
+                            f"same IP: {node.public_ip}")
 
     def test_hostnames(self):
         hostnames = dict()
@@ -44,8 +44,8 @@ class OpenstackNodesTest(testtools.TestCase):
             self.assertTrue(hostname.startswith(node.name))
             other = hostnames.setdefault(hostname, node)
             if node is not other:
-                tobiko.fail("Nodes {!r} and {!r} have the same hostname: {!r}",
-                            node.name, other.name, hostname)
+                tobiko.fail(f"Nodes {node.name} and {other.name} have the "
+                            f"same hostname: {hostname}")
 
     def test_network_namespaces(self):
         for node in self.topology.nodes:
@@ -56,6 +56,5 @@ class OpenstackNodesTest(testtools.TestCase):
                                            network_namespace=namespace)
                 other_ips = namespaces_ips.setdefault(namespace, ips)
                 if ips is not other_ips:
-                    tobiko.fail("Duplicate network namespace {!r} in node "
-                                "{!r}: {!r}, {!r}", namespace, node.name,
-                                other_ips, ips)
+                    tobiko.fail(f"Duplicate network namespace {namespace} in "
+                                f"node {node.name}: {other_ips}, {ips}")
