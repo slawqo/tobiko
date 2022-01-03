@@ -27,6 +27,7 @@ import tobiko
 from tobiko.common import _detail
 from tobiko.common import _deprecation
 from tobiko.common import _exception
+from tobiko.common import _testcase
 
 
 LOG = log.getLogger(__name__)
@@ -41,7 +42,7 @@ def is_fixture(obj):
 
 def get_fixture(obj: typing.Any,
                 fixture_id: typing.Any = None,
-                manager: 'FixtureManager' = None):
+                manager: 'FixtureManager' = None) -> fixtures.Fixture:
     '''Returns a fixture identified by given :param obj:
 
     It returns registered fixture for given :param obj:. If none has been
@@ -73,7 +74,7 @@ def get_fixture(obj: typing.Any,
     return manager.get_fixture(obj, fixture_id=fixture_id)
 
 
-def get_fixture_name(obj):
+def get_fixture_name(obj) -> str:
     '''Get unique fixture name'''
     name = getattr(obj, '__tobiko_fixture_name__', None)
     if name is None:
@@ -85,7 +86,7 @@ def get_fixture_name(obj):
     return name
 
 
-def get_fixture_class(obj):
+def get_fixture_class(obj) -> typing.Type[fixtures.Fixture]:
     '''Get fixture class'''
     if isinstance(obj, str):
         obj = tobiko.load_object(obj)
@@ -102,13 +103,15 @@ def get_fixture_dir(obj):
     return os.path.dirname(inspect.getfile(get_fixture_class(obj)))
 
 
-def remove_fixture(obj, fixture_id=None, manager=None):
+def remove_fixture(obj, fixture_id=None, manager=None) \
+        -> typing.Optional[fixtures.Fixture]:
     '''Unregister fixture identified by given :param obj: if any'''
     manager = manager or FIXTURES
     return manager.remove_fixture(obj, fixture_id=fixture_id)
 
 
-def setup_fixture(obj, fixture_id=None, manager=None, alternative=None):
+def setup_fixture(obj, fixture_id=None, manager=None, alternative=None) \
+        -> fixtures.Fixture:
     '''Get registered fixture and setup it up'''
     if alternative is None:
         objs = [obj]
@@ -142,7 +145,8 @@ def handle_setup_error(ex_type, ex_value, ex_tb):
                       exc_info=(ex_type, ex_value, ex_tb))
 
 
-def reset_fixture(obj, fixture_id=None, manager=None):
+def reset_fixture(obj, fixture_id=None, manager=None) \
+        -> fixtures.Fixture:
     '''Get registered fixture and reset it'''
     fixture = get_fixture(obj, fixture_id=fixture_id, manager=manager)
     with _exception.handle_multiple_exceptions():
@@ -150,7 +154,8 @@ def reset_fixture(obj, fixture_id=None, manager=None):
     return fixture
 
 
-def cleanup_fixture(obj, fixture_id=None, manager=None):
+def cleanup_fixture(obj, fixture_id=None, manager=None) \
+        -> fixtures.Fixture:
     '''Get registered fixture and clean it up'''
     fixture = get_fixture(obj, fixture_id=fixture_id, manager=manager)
     with _exception.handle_multiple_exceptions():
@@ -158,7 +163,15 @@ def cleanup_fixture(obj, fixture_id=None, manager=None):
     return fixture
 
 
-def get_name_and_object(obj):
+def use_fixture(obj, fixture_id=None, manager=None) \
+        -> fixtures.Fixture:
+    fixture = setup_fixture(obj, fixture_id=fixture_id, manager=manager)
+    _testcase.add_cleanup(tobiko.cleanup_fixture, fixture)
+    return fixture
+
+
+def get_name_and_object(obj: typing.Any) \
+        -> typing.Tuple[str, typing.Any]:
     '''Get (name, obj) tuple identified by given :param obj:'''
     if isinstance(obj, str):
         return obj, tobiko.load_object(obj)
@@ -206,7 +219,7 @@ def list_required_fixtures(objects):
     return result
 
 
-def is_test_method(obj):
+def is_test_method(obj) -> bool:
     '''Returns whenever given object is a test method'''
     return ((inspect.isfunction(obj) or inspect.ismethod(obj)) and
             obj.__name__.startswith('test_'))
@@ -313,38 +326,40 @@ def get_fixture_id(obj: typing.Any) -> typing.Any:
     return getattr(obj, '__tobiko_fixture_id__', None)
 
 
-def get_object_name(obj):
+def get_object_name(obj) -> str:
     '''Gets a fully qualified name for given :param obj:'''
     if isinstance(obj, str):
         return obj
 
     name = getattr(obj, '__tobiko_fixture_name__', None)
-    if name:
+    if isinstance(name, str):
+        assert isinstance(name, str)
         return name
 
+    assert name is None, f"{name} is not None"
     if (not inspect.isfunction(obj) and
             not inspect.ismethod(obj) and
             not inspect.isclass(obj)):
         obj = type(obj)
 
-    module = inspect.getmodule(obj).__name__
+    module = inspect.getmodule(obj)
+    if module is not None:
+        name = getattr(obj, '__qualname__', None)
+        if isinstance(name, str):
+            return module.__name__ + '.' + name
 
-    name = getattr(obj, '__qualname__', None)
-    if name:
-        return module + '.' + name
-
-    msg = "Unable to get fixture name from object {!r}".format(obj)
-    raise TypeError(msg)
+    raise TypeError(f"Unable to get fixture name from object {obj!r}")
 
 
 class FixtureManager(object):
 
     def __init__(self):
-        self.fixtures = {}
+        self.fixtures: typing.Dict[str, fixtures.Fixture] = {}
 
     def get_fixture(self,
                     obj: typing.Any,
-                    fixture_id: typing.Any = None):
+                    fixture_id: typing.Any = None) \
+            -> fixtures.Fixture:
         name, obj = get_name_and_object(obj)
         if fixture_id:
             name += f'-{fixture_id}'
@@ -358,12 +373,14 @@ class FixtureManager(object):
     @staticmethod
     def init_fixture(obj: typing.Any,
                      name: str,
-                     fixture_id: typing.Any):
+                     fixture_id: typing.Any) \
+            -> fixtures.Fixture:
         return init_fixture(obj=obj,
                             name=name,
                             fixture_id=fixture_id)
 
-    def remove_fixture(self, obj, fixture_id=None):
+    def remove_fixture(self, obj, fixture_id=None) \
+            -> typing.Optional[fixtures.Fixture]:
         name = get_object_name(obj)
         if fixture_id:
             name += '-' + str(fixture_id)
