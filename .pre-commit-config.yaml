@@ -34,11 +34,11 @@ repos:
         files: ^tobiko/
 
   - repo: https://github.com/pre-commit/mirrors-mypy.git
-    rev: 'v0.812'
+    rev: 'v0.930'
     hooks:
       - id: mypy
         files: ^tobiko/
-        entry: mypy tobiko/
+        entry: mypy --install-types --non-interactive tobiko/
         pass_filenames: false
         # args: [--ignore-missing-imports]
 

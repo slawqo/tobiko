@@ -20,7 +20,7 @@ import shlex
 import typing
 
 
-ShellCommandType = typing.Union['ShellCommand', str, typing.Iterable[str]]
+ShellCommandType = typing.Union['ShellCommand', str, typing.Iterable]
 
 
 class ShellCommand(tuple):
