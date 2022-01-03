@@ -90,7 +90,7 @@
     name: tobiko-infrared-fedora
     parent: tobiko-infrared
     nodeset: tobiko-infrared-fedora
-    voting: false
+    voting: true
     description: |
       Run test cases using tobiko infrared plugin on Fedora
 
