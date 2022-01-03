@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import collections
+from collections import abc
 import re
 import typing
 from urllib import parse
@@ -56,7 +57,7 @@ def list_openstack_nodes(topology: 'OpenStackTopology' = None,
     elif isinstance(group, PatternType):
         nodes = topology.get_groups(groups=[group])
     else:
-        assert isinstance(group, collections.Iterable)
+        assert isinstance(group, abc.Iterable)
         nodes = topology.get_groups(groups=group)
 
     if hostnames:

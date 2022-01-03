@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
+from collections import abc
 import time
 
 from heatclient.v1 import client as heatclient
@@ -297,7 +297,7 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
         expected_template = template or type(stack).template
         if tobiko.is_fixture(expected_template):
             self.assertIs(expected_template, stack.template)
-        elif isinstance(expected_template, collections.Mapping):
+        elif isinstance(expected_template, abc.Mapping):
             self.assertEqual(expected_template, stack.template.template)
         else:
             message = "Unsupported template type: {!r}".format(

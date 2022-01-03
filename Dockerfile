@@ -1,9 +1,16 @@
-FROM python:3.9 as base
+FROM python:3.10 as base
 
 ENV TOBIKO_DIR=/tobiko
 ENV WHEEL_DIR=/wheel
 
-RUN apt update
+ENV INSTALL_PACKAGES="apt install -y"
+
+# Install binary dependencies
+RUN apt update && \
+    ${INSTALL_PACKAGES} git
+
+RUN python3 -m ensurepip --upgrade && \
+    python3 -m pip install --upgrade setuptools wheel
 
 
 FROM base as source
@@ -28,7 +35,7 @@ ADD tobiko/ ${TOBIKO_DIR}/tobiko/
 FROM source as build
 
 # Install binary dependencies
-RUN apt install -y git
+# RUN ${INSTALL_PACKAGES} gcc python3-devel
 
 # Build wheel files
 RUN python3 -m pip wheel -w ${WHEEL_DIR} \
@@ -44,13 +51,13 @@ FROM base as install
 # Install wheels
 RUN mkdir -p ${WHEEL_DIR}
 COPY --from=build ${WHEEL_DIR} ${WHEEL_DIR}
-RUN pip install ${WHEEL_DIR}/*.whl
+RUN python3 -m pip install ${WHEEL_DIR}/*.whl
 
 
 FROM source as tobiko
 
 # Install packages
-RUN apt install -y iperf3 iputils-ping ncat
+RUN ${INSTALL_PACKAGES} iperf3 iputils-ping ncat
 
 # Run tests variables
 ENV PYTHONWARNINGS=ignore::Warning

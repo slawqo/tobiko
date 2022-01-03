@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
+from collections import abc
 
 import tobiko
 from tobiko.openstack import keystone
@@ -35,7 +35,7 @@ class NetworkingExtensionsFixture(tobiko.SharedFixture):
 
     def get_networking_extensions(self):
         extensions = self.client.list_extensions()
-        if isinstance(extensions, collections.Mapping):
+        if isinstance(extensions, abc.Mapping):
             extensions = extensions['extensions']
         ignore_extensions = set(
             tobiko.tobiko_config().neutron.ignore_extensions)

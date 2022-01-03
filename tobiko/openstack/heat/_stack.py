@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import collections
+from collections import abc
 import random
 import time
 import typing
@@ -53,7 +54,7 @@ def heat_stack_parameters(obj,
         -> 'HeatStackParametersFixture':
     if isinstance(obj, HeatStackParametersFixture):
         parameters = obj
-    elif obj is None or isinstance(obj, collections.Mapping):
+    elif obj is None or isinstance(obj, abc.Mapping):
         parameters = HeatStackParametersFixture(stack, obj)
     else:
         parameters = tobiko.get_fixture(obj)

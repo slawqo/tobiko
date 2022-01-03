@@ -15,7 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
+from collections import abc
 import contextlib
 import getpass
 import io
@@ -163,7 +163,7 @@ def gather_ssh_connect_parameters(source=None, destination=None, schema=None,
 
     if source:
         # gather from object
-        if isinstance(source, collections.Mapping):
+        if isinstance(source, abc.Mapping):
             parameters.update(_items_from_mapping(mapping=source,
                                                   schema=schema))
         else:

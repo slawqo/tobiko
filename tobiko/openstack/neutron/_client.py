@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
+from collections import abc
 import typing
 
 import netaddr
@@ -147,7 +147,7 @@ def list_subnets(client=None, ip_version: typing.Optional[int] = None,
     if ip_version is not None:
         params['ip_version'] = ip_version
     subnets = neutron_client(client).list_subnets(**params)
-    if isinstance(subnets, collections.Mapping):
+    if isinstance(subnets, abc.Mapping):
         subnets = subnets['subnets']
     return tobiko.select(subnets)
 

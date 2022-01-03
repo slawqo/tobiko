@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
+from collections import abc
 import re
 import typing
 
@@ -45,7 +45,7 @@ NeutronAgentType = typing.Dict[str, typing.Any]
 def list_agents(client=None, **params) \
         -> tobiko.Selection[NeutronAgentType]:
     agents = _client.neutron_client(client).list_agents(**params)
-    if isinstance(agents, collections.Mapping):
+    if isinstance(agents, abc.Mapping):
         agents = agents['agents']
     return tobiko.Selection[NeutronAgentType](agents)
 
@@ -53,7 +53,7 @@ def list_agents(client=None, **params) \
 def list_l3_agent_hosting_routers(router, client=None, **params):
     agents = _client.neutron_client(client).list_l3_agent_hosting_routers(
         router, **params)
-    if isinstance(agents, collections.Mapping):
+    if isinstance(agents, abc.Mapping):
         agents = agents['agents']
     return tobiko.select(agents)
 
@@ -71,7 +71,7 @@ def find_l3_agent_hosting_router(router, client=None, unique=False,
 def list_dhcp_agent_hosting_network(network, client=None, **params):
     agents = _client.neutron_client(client).list_dhcp_agent_hosting_networks(
         network, **params)
-    if isinstance(agents, collections.Mapping):
+    if isinstance(agents, abc.Mapping):
         agents = agents['agents']
     return tobiko.select(agents)
 

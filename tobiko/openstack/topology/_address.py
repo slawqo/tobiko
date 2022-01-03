@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
+from collections import abc
 import functools
 import socket
 import typing
@@ -43,7 +43,7 @@ def list_addresses(obj,
                                 ip_version=ip_version,
                                 port=port,
                                 ssh_config=ssh_config))
-    elif isinstance(obj, collections.Sequence):
+    elif isinstance(obj, abc.Sequence):
         addresses = tobiko.Selection()
         for item in iter(obj):
             addresses.extend(list_addresses(item))

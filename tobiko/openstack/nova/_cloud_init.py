@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
+from collections import abc
 import typing
 
 from oslo_log import log
@@ -51,7 +51,7 @@ def combine_cloud_configs(objs):
     extra_params = {}
     for obj in objs:
         if obj:
-            if not isinstance(obj, collections.abc.Mapping):
+            if not isinstance(obj, abc.Mapping):
                 obj = dict(obj)
             for package in obj.pop('packages', []):
                 if package and package not in packages:

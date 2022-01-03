@@ -14,7 +14,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
+from collections import abc
 import re
 import typing
 
@@ -44,14 +44,14 @@ class SelectionTest(unit.TobikoUnitTest):
                        objects: typing.Iterable[T] = tuple()) \
             -> tobiko.Selection[T]:
         reference = list(objects)
-        if isinstance(objects, collections.Generator):
+        if isinstance(objects, abc.Generator):
             # Can't reiterate the same generator twice
             objects = (o for o in reference)
-            assert isinstance(objects, collections.Generator)
-        elif isinstance(objects, collections.Iterator):
+            assert isinstance(objects, abc.Generator)
+        elif isinstance(objects, abc.Iterator):
             # Can't reiterate the same iterator twice
             objects = iter(reference)
-            assert isinstance(objects, collections.Iterator)
+            assert isinstance(objects, abc.Iterator)
 
         selection = self.create_selection(objects)
         self.assertIsInstance(selection, list)

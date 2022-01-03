@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import collections
+from collections import abc
 import getpass
 import logging
 import os
@@ -29,7 +30,7 @@ Context = collections.namedtuple('Context', (
 Context.__new__.__defaults__ = (None, ) * len(Context._fields)  # type: ignore
 
 
-class Portal(collections.MutableMapping):
+class Portal(abc.MutableMapping):
     """Expiring container for tunnels."""
 
     def __init__(self, sweap=25):
@@ -98,7 +99,7 @@ class Portal(collections.MutableMapping):
             self._schedule_reaper()
 
 
-class Tunnel():
+class Tunnel:
     """SSH tunnel."""
 
     def __init__(self, context):

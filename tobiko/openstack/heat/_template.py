@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
+from collections import abc
 import os
 import sys
 import typing
@@ -48,9 +48,9 @@ class HeatTemplateFixture(tobiko.SharedFixture):
 
     def setup_template(self):
         # Ensure main sections are dictionaries
-        tobiko.check_valid_type(self.outputs, collections.Mapping)
-        tobiko.check_valid_type(self.parameters, collections.Mapping)
-        tobiko.check_valid_type(self.resources, collections.Mapping)
+        tobiko.check_valid_type(self.outputs, abc.Mapping)
+        tobiko.check_valid_type(self.parameters, abc.Mapping)
+        tobiko.check_valid_type(self.resources, abc.Mapping)
         self.template_yaml = tobiko.dump_yaml(self.template)
 
     @property
@@ -98,7 +98,7 @@ HeatTemplateType = typing.Union[typing.Mapping[str, typing.Any],
 def heat_template(obj: HeatTemplateType,
                   template_files: typing.Mapping = None) \
         -> HeatTemplateFixture:
-    if isinstance(obj, collections.Mapping):
+    if isinstance(obj, abc.Mapping):
         template = HeatTemplateFixture(template=obj,
                                        template_files=template_files)
     else:
