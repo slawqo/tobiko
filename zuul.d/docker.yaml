@@ -6,9 +6,12 @@
       Docker jobs intended to gate Tobiko container related changes
     check: &CHECK
       jobs:
+        - tobiko-docker
+        - tobiko-docker-fedora
         - tobiko-docker-functional
         - tobiko-docker-infrared
-        - tobiko-docker-unit
+        - tobiko-docker-linters
+        - tobiko-docker-lower-constraints
     gate:
       jobs:
         - tobiko-docker-functional
@@ -18,7 +21,7 @@
 # ----------------------------------------------------------------------------
 
 - job:
-    name: tobiko-docker-unit
+    name: tobiko-docker
     description: |
       Run unit tests for an OpenStack Python project inside a Docker container.
     voting: true
@@ -33,11 +36,22 @@
 
 
 - job:
+    name: tobiko-docker-fedora
+    description: |
+      Run functional tests for an OpenStack Python project inside a Docker container
+      based on Fedora 35
+    voting: true
+    parent: tobiko-docker
+    vars:
+        docker_compose_service: fedora
+
+
+- job:
     name: tobiko-docker-functional
     description: |
       Run functional tests for an OpenStack Python project inside a Docker container.
     voting: true
-    parent: tobiko-docker-unit
+    parent: tobiko-docker
     timeout: 3600
     vars:
         docker_compose_service: functional
@@ -48,7 +62,28 @@
     description: |
       Run functional tests for an OpenStack Python project inside a Docker container.
     voting: true
-    parent: tobiko-docker-unit
+    parent: tobiko-docker
     timeout: 3600
     vars:
         docker_compose_service: infrared
+
+
+- job:
+    name: tobiko-docker-linters
+    description: |
+      Run static analisys verifications
+    voting: true
+    parent: tobiko-docker
+    vars:
+        docker_compose_service: linters
+
+
+- job:
+    name: tobiko-docker-lower-constraints
+    description: |
+      Run functional tests for an OpenStack Python project inside a Docker container
+      with lower-constrains.txt requirements file.
+    voting: true
+    parent: tobiko-docker
+    vars:
+        docker_compose_service: lower-constraints

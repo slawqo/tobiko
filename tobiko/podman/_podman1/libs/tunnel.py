@@ -81,8 +81,8 @@ class Portal(abc.MutableMapping):
 
     def _schedule_reaper(self):
         timer = threading.Timer(interval=self.sweap, function=self.reap)
-        timer.setName('PortalReaper')
-        timer.setDaemon(True)
+        timer.name = 'PortalReaper'
+        timer.daemon = True
         timer.start()
 
     def reap(self):

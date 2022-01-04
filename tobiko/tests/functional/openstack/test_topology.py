@@ -15,7 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
+from collections import abc
 import random
 import re
 
@@ -91,7 +91,7 @@ class OpenStackTopologyTest(testtools.TestCase):
                 else:
                     self.fail(f"Any node {node.name} group matches "
                               f"'{group}': {node.groups}")
-            elif isinstance(group, collections.Iterable):
+            elif isinstance(group, abc.Iterable):
                 matching_groups = set(group) & set(node.groups)
                 self.assertNotEqual(set(), matching_groups,
                                     f"Any group of node {node.name} "

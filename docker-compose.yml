@@ -15,6 +15,30 @@ services:
       - .:/tobiko
       - ~/.ssh:/root/.ssh
 
+  lower-constraints:
+    extends:
+      service: unit
+    build:
+      context: .
+      target: tobiko
+      args:
+        base_image: lower-constraints
+
+  linters:
+    extends:
+      service: unit
+    build:
+      target: linters
+
+  fedora:
+    extends:
+      service: unit
+    build:
+      context: .
+      target: tobiko
+      args:
+        base_image: fedora
+
   functional:
     extends:
       service: unit
