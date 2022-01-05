@@ -1,37 +1,43 @@
-ARG base_image=python
+ARG base_image=py39
 
+FROM centos:8 as lower-constraints
 
-FROM python:3.10 as python
-
-ENV INSTALL_PACKAGES="apt install -y"
-ENV CONSTRAINS_FILE=upper-constraints.txt
-
-RUN apt update && apt install -y iperf3 iputils-ping ncat
-
-
-FROM python:3.8 as lower-constraints
-
-ENV INSTALL_PACKAGES="apt install -y"
 ENV CONSTRAINS_FILE=lower-constraints.txt
+ENV INSTALL_PACKAGES="dnf install -y"
+ENV PYTHON_VERSION=3
 
-RUN apt update && apt install -y iperf3 iputils-ping ncat
+USER 0
 
 
-FROM fedora:35 as fedora
+FROM fedora:34 as py39
 
 ENV CONSTRAINS_FILE=upper-constraints.txt
 ENV INSTALL_PACKAGES="dnf install -y"
+ENV PYTHON_VERSION=3.9
 
-RUN ${INSTALL_PACKAGES} iperf3 gcc python3-devel
+USER 0
+
+
+FROM fedora:35 as py310
+
+ENV CONSTRAINS_FILE=upper-constraints.txt
+ENV INSTALL_PACKAGES="dnf install -y"
+ENV PYTHON_VERSION=3.10
+
+USER 0
 
 
 FROM ${base_image} as base
 
 ENV TOBIKO_DIR=/tobiko
 ENV WHEEL_DIR=/wheel
+ENV PACKAGES_DIR=/site_packages
+ENV PYTHON=python${PYTHON_VERSION}
 
-RUN python3 -m ensurepip --upgrade && \
-    python3 -m pip install --upgrade setuptools wheel
+RUN ${INSTALL_PACKAGES} ${PYTHON}
+
+RUN ${PYTHON} -m ensurepip --upgrade && \
+    ${PYTHON} -m pip install --upgrade setuptools wheel pip
 
 
 FROM base as source
@@ -55,8 +61,11 @@ ADD .git ${TOBIKO_DIR}/.git/
 
 FROM source as build
 
+RUN ${INSTALL_PACKAGES} gcc  ${PYTHON}-devel
+
 # Build wheel files
-RUN python3 -m pip wheel -w ${WHEEL_DIR} \
+RUN mkdir -p ${WHEEL_DIR}
+RUN ${PYTHON} -m pip wheel --wheel-dir ${WHEEL_DIR} \
     -c ${TOBIKO_DIR}/${CONSTRAINS_FILE} \
     -r ${TOBIKO_DIR}/requirements.txt \
     -r ${TOBIKO_DIR}/test-requirements.txt \
@@ -69,10 +78,10 @@ FROM base as install
 # Install wheels
 RUN mkdir -p ${WHEEL_DIR}
 COPY --from=build ${WHEEL_DIR} ${WHEEL_DIR}
-RUN python3 -m pip install ${WHEEL_DIR}/*.whl
+RUN ${PYTHON} -m pip install --prefix /usr/local ${WHEEL_DIR}/*.whl
 
 
-FROM source as tobiko
+FROM source as test
 
 # Run tests variables
 ENV PYTHONWARNINGS=ignore::Warning
@@ -80,6 +89,8 @@ ENV OS_TEST_PATH=${TOBIKO_DIR}/tobiko/tests/unit
 ENV TOX_REPORT_DIR=/report
 ENV TOX_REPORT_NAME=tobiko_results
 ENV TOBIKO_PREVENT_CREATE=false
+
+RUN ${INSTALL_PACKAGES} iperf3 iputils nmap-ncat findutils procps
 
 # Write log files to report directory
 RUN mkdir -p /etc/tobiko
@@ -95,7 +106,7 @@ WORKDIR ${TOBIKO_DIR}
 CMD tools/run_tests.py ${OS_TEST_PATH}
 
 
-FROM tobiko as linters
+FROM test as linters
 
 ENV SKIP=check-executables-have-shebangs,pylint
 
@@ -104,7 +115,11 @@ ADD .pre-commit-config.yaml \
     linters-requirements.txt \
     ${TOBIKO_DIR}/
 
-RUN python3 -m pip install -r ${TOBIKO_DIR}/linters-requirements.txt
+# Copy python pacakges
+COPY --from=install /usr/local /usr/local/
+
+# Install linters tools
+RUN ${PYTHON} -m pip install -r ${TOBIKO_DIR}/linters-requirements.txt
 RUN pre-commit install --install-hooks
 
 WORKDIR ${TOBIKO_DIR}

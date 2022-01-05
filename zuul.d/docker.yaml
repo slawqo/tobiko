@@ -6,12 +6,13 @@
       Docker jobs intended to gate Tobiko container related changes
     check: &CHECK
       jobs:
-        - tobiko-docker
-        - tobiko-docker-fedora
+        - tobiko-docker-lower-constraints
+        - tobiko-docker-py3
+        - tobiko-docker-py39
+        - tobiko-docker-py310
         - tobiko-docker-functional
         - tobiko-docker-infrared
         - tobiko-docker-linters
-        - tobiko-docker-lower-constraints
     gate:
       jobs:
         - tobiko-docker-functional
@@ -21,7 +22,7 @@
 # ----------------------------------------------------------------------------
 
 - job:
-    name: tobiko-docker
+    name: tobiko-docker-py3
     description: |
       Run unit tests for an OpenStack Python project inside a Docker container.
     voting: true
@@ -30,28 +31,49 @@
     pre-run: playbooks/docker/pre.yaml
     run: playbooks/docker/run.yaml
     post-run: playbooks/docker/post.yaml
-    # post-run: playbooks/docker/post.yaml
     vars:
-        docker_compose_service: unit
+        docker_compose_service: py3
 
 
 - job:
-    name: tobiko-docker-fedora
+    name: tobiko-docker-lower-constraints
     description: |
       Run functional tests for an OpenStack Python project inside a Docker container
-      based on Fedora 35
+      with lower-constraints.txt Pip constraints file.
     voting: true
-    parent: tobiko-docker
+    parent: tobiko-docker-py3
     vars:
-        docker_compose_service: fedora
+        docker_compose_service: lower-constraints
+
+
+- job:
+    name: tobiko-docker-py39
+    description: |
+      Run functional tests for an OpenStack Python project inside a Docker container
+      with Python 3.9
+    voting: true
+    parent: tobiko-docker-py3
+    vars:
+        docker_compose_service: py39
+
+
+- job:
+    name: tobiko-docker-py310
+    description: |
+      Run functional tests for an OpenStack Python project inside a Docker container
+      with Python 3.10
+    voting: true
+    parent: tobiko-docker-py3
+    vars:
+        docker_compose_service: py310
 
 
 - job:
     name: tobiko-docker-functional
     description: |
-      Run functional tests for an OpenStack Python project inside a Docker container.
+      Run functional tests for an OpenStack Python project inside a Docker container
     voting: true
-    parent: tobiko-docker
+    parent: tobiko-docker-py3
     timeout: 3600
     vars:
         docker_compose_service: functional
@@ -60,9 +82,9 @@
 - job:
     name: tobiko-docker-infrared
     description: |
-      Run functional tests for an OpenStack Python project inside a Docker container.
+      Run Tobiko InfraRed plugin inside of a Docker container
     voting: true
-    parent: tobiko-docker
+    parent: tobiko-docker-py3
     timeout: 3600
     vars:
         docker_compose_service: infrared
@@ -73,17 +95,6 @@
     description: |
       Run static analisys verifications
     voting: true
-    parent: tobiko-docker
+    parent: tobiko-docker-py3
     vars:
         docker_compose_service: linters
-
-
-- job:
-    name: tobiko-docker-lower-constraints
-    description: |
-      Run functional tests for an OpenStack Python project inside a Docker container
-      with lower-constrains.txt requirements file.
-    voting: true
-    parent: tobiko-docker
-    vars:
-        docker_compose_service: lower-constraints

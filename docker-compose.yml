@@ -2,14 +2,14 @@
 
 version: '3.4'
 services:
-  unit:
+  py3:
     build:
       context: .
-      target: tobiko
+      target: test
     hostname: tobiko
     environment:
       OS_TEST_PATH: tobiko/tests/unit
-      TOX_REPORT_NAME: tobiko_results_unit
+      TOX_REPORT_NAME: tobiko_results_py3
     volumes:
       - ./report:/report
       - .:/tobiko
@@ -17,45 +17,54 @@ services:
 
   lower-constraints:
     extends:
-      service: unit
+      service: py3
     build:
-      context: .
-      target: tobiko
       args:
         base_image: lower-constraints
+    environment:
+      TOX_REPORT_NAME: tobiko_results_lower_constraints
+
+  py39:
+    extends:
+      service: py3
+    build:
+      args:
+        base_image: py39
+    environment:
+      TOX_REPORT_NAME: tobiko_results_py39
+
+  py310:
+    extends:
+      service: py3
+    build:
+      args:
+        base_image: py310
+    environment:
+      TOX_REPORT_NAME: tobiko_results_py310
 
   linters:
     extends:
-      service: unit
+      service: py3
     build:
       target: linters
 
-  fedora:
-    extends:
-      service: unit
-    build:
-      context: .
-      target: tobiko
-      args:
-        base_image: fedora
-
   functional:
     extends:
-      service: unit
+      service: py3
     environment:
       OS_TEST_PATH: tobiko/tests/functional
       TOX_REPORT_NAME: tobiko_results_functional
 
   create-workloads:
     extends:
-      service: unit
+      service: py3
     environment:
       OS_TEST_PATH: tobiko/tests/scenario
       TOX_REPORT_NAME: tobiko_results_create_workloads
 
   disrupt-services:
     extends:
-      service: unit
+      service: py3
     environment:
       OS_TEST_PATH: tobiko/tests/faults
       TOX_REPORT_NAME: tobiko_results_disrupt_services
@@ -69,7 +78,7 @@ services:
 
   verify-services:
     extends:
-      service: unit
+      service: py3
     environment:
       OS_TEST_PATH: tobiko/tests/sanity
       TOX_REPORT_NAME: tobiko_results_verify_services
