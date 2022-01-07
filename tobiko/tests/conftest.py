@@ -36,15 +36,23 @@ TOP_DIR = normalize_path(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 
-TOX_REPORT_NAME = os.environ.get('TOX_REPORT_NAME', "tobiko_results")
+# Output dirs
+REPORT_DIR = os.path.realpath(os.path.expanduser(
+    os.environ.get('TOBIKO_TEST_PATH') or
+    os.environ.get('TOX_REPORT_DIR') or
+    os.getcwd()))
 
-TOX_REPORT_DIR = normalize_path(
-    os.environ.get('TOX_REPORT_DIR', os.path.join(TOP_DIR, 'report')))
+REPORT_NAME = (
+    os.environ.get('TOBIKO_REPORT_NAME') or
+    os.environ.get('TOX_REPORT_NAME') or
+    'tobiko_results')
 
-TOX_REPORT_PREFIX = os.path.join(TOX_REPORT_DIR, TOX_REPORT_NAME)
+REPORT_PREFIX = os.path.join(REPORT_DIR, REPORT_NAME)
 
-TOX_REPORT_HTML = os.environ.get(
-    'TOX_REPORT_HTML', TOX_REPORT_PREFIX + '.html')
+REPORT_HTML = (
+    os.environ.get('TOBIKO_REPORT_HTML') or
+    os.environ.get('TOX_REPORT_HTML') or
+    REPORT_PREFIX + '.html')
 
 
 @pytest.hookimpl
@@ -101,14 +109,14 @@ def configure_caplog(config):
 
 
 def configure_junitxml(config):
-    config.inicfg['junit_suite_name'] = TOX_REPORT_NAME
+    config.inicfg['junit_suite_name'] = REPORT_NAME
 
 
 def configure_html(config):
     if config.pluginmanager.hasplugin('html'):
         htmlpath = config.getoption('htmlpath')
         if htmlpath is None:
-            config.option.htmlpath = TOX_REPORT_HTML
+            config.option.htmlpath = REPORT_HTML
             htmlpath = config.getoption('htmlpath')
         assert htmlpath is not None
 
@@ -211,7 +219,7 @@ def pytest_runtest_makereport(item, call):
 
 
 def pytest_html_report_title(report):
-    report.title = f"Tobiko test results ({TOX_REPORT_NAME})"
+    report.title = f"Tobiko test results ({REPORT_NAME})"
 
 
 @pytest.hookimpl(hookwrapper=True)

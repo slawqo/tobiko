@@ -31,7 +31,6 @@ FROM ${base_image} as base
 
 ENV TOBIKO_DIR=/tobiko
 ENV WHEEL_DIR=/wheel
-ENV PACKAGES_DIR=/site_packages
 ENV PYTHON=python${PYTHON_VERSION}
 
 RUN ${INSTALL_PACKAGES} ${PYTHON}
@@ -85,10 +84,10 @@ FROM source as test
 
 # Run tests variables
 ENV PYTHONWARNINGS=ignore::Warning
-ENV OS_TEST_PATH=${TOBIKO_DIR}/tobiko/tests/unit
-ENV TOX_REPORT_DIR=/report
-ENV TOX_REPORT_NAME=tobiko_results
+ENV TOBIKO_REPORT_DIR=/report
+ENV TOBIKO_REPORT_NAME=tobiko_results
 ENV TOBIKO_PREVENT_CREATE=false
+ENV TOBIKO_TEST_PATH=${TOBIKO_DIR}/tobiko/tests/unit
 
 RUN ${INSTALL_PACKAGES} iperf3 iputils nmap-ncat findutils procps
 
@@ -103,7 +102,7 @@ ADD tools/ ${TOBIKO_DIR}/tools/
 COPY --from=install /usr/local /usr/local/
 
 WORKDIR ${TOBIKO_DIR}
-CMD tools/run_tests.py ${OS_TEST_PATH}
+CMD tools/run_tests.py ${TOBIKO_TEST_PATH}
 
 
 FROM test as linters

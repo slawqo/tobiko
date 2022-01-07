@@ -8,12 +8,12 @@ services:
       target: test
     hostname: tobiko
     environment:
-      OS_TEST_PATH: tobiko/tests/unit
-      TOX_REPORT_NAME: tobiko_results_py3
+      TOBIKO_TEST_PATH: tobiko/tests/unit
+      TOBIKO_REPORT_NAME: tobiko_results_py3
     volumes:
       - ./report:/report
       - .:/tobiko
-      - ~/.ssh:/root/.ssh
+      - ~/.ssh:/root/.ssh:ro
 
   lower-constraints:
     extends:
@@ -22,7 +22,7 @@ services:
       args:
         base_image: lower-constraints
     environment:
-      TOX_REPORT_NAME: tobiko_results_lower_constraints
+      TOBIKO_REPORT_NAME: tobiko_results_lower_constraints
 
   py39:
     extends:
@@ -31,7 +31,7 @@ services:
       args:
         base_image: py39
     environment:
-      TOX_REPORT_NAME: tobiko_results_py39
+      TOBIKO_REPORT_NAME: tobiko_results_py39
 
   py310:
     extends:
@@ -40,7 +40,7 @@ services:
       args:
         base_image: py310
     environment:
-      TOX_REPORT_NAME: tobiko_results_py310
+      TOBIKO_REPORT_NAME: tobiko_results_py310
 
   linters:
     extends:
@@ -52,36 +52,36 @@ services:
     extends:
       service: py3
     environment:
-      OS_TEST_PATH: tobiko/tests/functional
-      TOX_REPORT_NAME: tobiko_results_functional
+      TOBIKO_TEST_PATH: tobiko/tests/functional
+      TOBIKO_REPORT_NAME: tobiko_results_functional
 
   create-workloads:
     extends:
       service: py3
     environment:
-      OS_TEST_PATH: tobiko/tests/scenario
-      TOX_REPORT_NAME: tobiko_results_create_workloads
+      TOBIKO_TEST_PATH: tobiko/tests/scenario
+      TOBIKO_REPORT_NAME: tobiko_results_create_workloads
 
   disrupt-services:
     extends:
       service: py3
     environment:
-      OS_TEST_PATH: tobiko/tests/faults
-      TOX_REPORT_NAME: tobiko_results_disrupt_services
+      TOBIKO_TEST_PATH: tobiko/tests/faults
+      TOBIKO_REPORT_NAME: tobiko_results_disrupt_services
 
   verify-workloads:
     extends:
       service: create-workloads
     environment:
-      PREVENT_CREATE: 'true'
-      TOX_REPORT_NAME: tobiko_results_verify_workloads
+      TOBIKO_PREVENT_CREATE: 'true'
+      TOBIKO_REPORT_NAME: tobiko_results_verify_workloads
 
   verify-services:
     extends:
       service: py3
     environment:
-      OS_TEST_PATH: tobiko/tests/sanity
-      TOX_REPORT_NAME: tobiko_results_verify_services
+      TOBIKO_TEST_PATH: tobiko/tests/sanity
+      TOBIKO_REPORT_NAME: tobiko_results_verify_services
 
   infrared:
     build:
@@ -92,6 +92,6 @@ services:
       IR_EXTRA_ARGS: --tobiko-src-dir /tobiko
     volumes:
       - ./report:/report
-      - .:/tobiko
-      - ./infrared_plugin:/tobiko-infrared
-      - ~/.ssh:/root/.ssh
+      - .:/tobiko:ro
+      - ./infrared_plugin:/tobiko-infrared:ro
+      - ~/.ssh:/root/.ssh:ro

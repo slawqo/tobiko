@@ -30,34 +30,63 @@ from tools import common  # noqa
 LOG = common.get_logger(__name__)
 
 # Root tests dir
-OS_TEST_PATH = common.normalize_path(
+TEST_PATH = common.normalize_path(
+    os.environ.get('TOBIKO_TEST_PATH') or
     os.environ.get('OS_TEST_PATH') or
     os.path.join(TOP_DIR, 'tobiko', 'tests', 'unit'))
 
 # Output dirs
-TOX_REPORT_DIR = common.normalize_path(
-    os.environ.get('TOX_REPORT_DIR', os.getcwd()))
+REPORT_DIR = common.normalize_path(
+    os.environ.get('TOBIKO_REPORT_DIR') or
+    os.environ.get('TOX_REPORT_DIR') or
+    os.getcwd())
 
-TOX_REPORT_NAME = os.environ.get('TOX_REPORT_NAME', 'tobiko_results')
-TOX_REPORT_PREFIX = os.path.join(TOX_REPORT_DIR, TOX_REPORT_NAME)
+REPORT_NAME = (
+    os.environ.get('TOBIKO_REPORT_NAME') or
+    os.environ.get('TOX_REPORT_NAME') or
+    'tobiko_results')
 
-TOX_REPORT_LOG = os.environ.get(
-    'TOX_REPORT_LOG', TOX_REPORT_PREFIX + '.log')
+REPORT_PREFIX = os.path.join(REPORT_DIR, REPORT_NAME)
 
-TOX_REPORT_HTML = os.environ.get(
-    'TOX_REPORT_HTML', TOX_REPORT_PREFIX + '.html')
+REPORT_LOG = (
+    os.environ.get('TOBIKO_REPORT_LOG') or
+    os.environ.get('TOX_REPORT_LOG') or
+    REPORT_PREFIX + '.log')
 
-TOX_REPORT_XML = os.environ.get(
-    'TOX_REPORT_XML', TOX_REPORT_PREFIX + '.xml')
+REPORT_HTML = (
+    os.environ.get('TOBIKO_REPORT_HTML') or
+    os.environ.get('TOX_REPORT_HTML') or
+    REPORT_PREFIX + '.html')
 
-TOX_NUM_PROCESSES = os.environ.get('TOX_NUM_PROCESSES') or 'auto'
+REPORT_XML = (
+    os.environ.get('TOBIKO_REPORT_XML') or
+    os.environ.get('TOX_REPORT_XML') or
+    REPORT_PREFIX + '.xml')
 
-TOX_RUN_TESTS_TIMEOUT = float(os.environ.get('TOX_RUN_TESTS_TIMEOUT') or 0.)
+NUM_PROCESSES = (
+    os.environ.get('TOBIKO_NUM_PROCESSES') or
+    os.environ.get('TOX_NUM_PROCESSES') or
+    'auto')
 
-TOX_RERUNS = int(os.environ.get('TOX_RERUNS') or 0)
-TOX_RERUNS_DELAY = int(os.environ.get('TOX_RERUNS_DELAY') or 5)
+RUN_TESTS_TIMEOUT = float(
+    os.environ.get('TOBIKO_RUN_TESTS_TIMEOUT') or
+    os.environ.get('TOX_RUN_TESTS_TIMEOUT') or
+    0.)
 
-TOX_COVER = bool(os.environ.get('TOX_COVER', 'false').lower() in ['1', 'yes', 'true'])
+RERUNS = int(
+    os.environ.get('TOBIKO_RERUNS') or
+    os.environ.get('TOX_RERUNS') or
+    0)
+
+RERUNS_DELAY = int(
+    os.environ.get('TOBIKO_RERUNS_DELAY') or
+    os.environ.get('TOX_RERUNS_DELAY') or
+    5)
+
+COVER = (
+    os.environ.get('TOBIKO_COVER') or
+    os.environ.get('TOX_COVER') or
+    'false') in ['1', 'yes', 'true']
 
 
 def main():
@@ -95,19 +124,19 @@ def run_tests():
 
 def setup_timeout():
 
-    if TOX_RUN_TESTS_TIMEOUT > 0.:
+    if RUN_TESTS_TIMEOUT > 0.:
 
         def handle_timeout(_signum, _frame):
             LOG.error(
-                f"run_tests.py timeout out after {TOX_RUN_TESTS_TIMEOUT} "
+                f"run_tests.py timeout out after {RUN_TESTS_TIMEOUT} "
                 "seconds")
             terminate_childs()
             raise subprocess.TimeoutExpired("run_tests.py",
-                                            TOX_RUN_TESTS_TIMEOUT)
+                                            RUN_TESTS_TIMEOUT)
 
-        signal.setitimer(signal.ITIMER_REAL, TOX_RUN_TESTS_TIMEOUT)
+        signal.setitimer(signal.ITIMER_REAL, RUN_TESTS_TIMEOUT)
         signal.signal(signal.SIGALRM, handle_timeout)
-        LOG.debug(f'Run tests timeout set as {TOX_RUN_TESTS_TIMEOUT} seconds')
+        LOG.debug(f'Run tests timeout set as {RUN_TESTS_TIMEOUT} seconds')
 
 
 def terminate_childs():
@@ -123,36 +152,37 @@ def terminate_childs():
 
 
 def cleanup_report_dir():
-    for report_file in [TOX_REPORT_LOG, TOX_REPORT_HTML, TOX_REPORT_XML]:
+    for report_file in [REPORT_LOG, REPORT_HTML, REPORT_XML]:
         if not common.make_dir(os.path.dirname(report_file)):
             common.remove_file(report_file)
 
 
 def log_environ():
-    common.execute('env | sort >> "{log_file}"', log_file=TOX_REPORT_LOG,
+    common.execute('env | sort >> "{log_file}"',
+                   log_file=REPORT_LOG,
                    capture_stdout=False)
 
 
 def run_test_cases():
     xdist_options = ''
-    if TOX_NUM_PROCESSES != '1':
-        xdist_options = f"--numprocesses '{TOX_NUM_PROCESSES}' --dist loadscope"
+    if NUM_PROCESSES != '1':
+        xdist_options = f"--numprocesses '{NUM_PROCESSES}' --dist loadscope"
     rerun_options = ''
-    if TOX_RERUNS:
-        rerun_options = f"--reruns '{TOX_RERUNS}' --reruns-delay '{TOX_RERUNS_DELAY}'"
+    if RERUNS:
+        rerun_options = f"--reruns '{RERUNS}' --reruns-delay '{RERUNS_DELAY}'"
     cover_options = ''
-    if TOX_COVER:
+    if COVER:
         cover_options = f"--cov=tobiko"
 
     # Pass environment variables to pytest command
-    environ = dict(os.environ, TOX_REPORT_NAME=TOX_REPORT_NAME)
+    environ = dict(os.environ, TOBIKO_REPORT_NAME=REPORT_NAME)
     common.execute("pytest -v "
                    f"{xdist_options} "
                    f"{rerun_options} "
                    f"{cover_options} "
-                   f"--log-file={TOX_REPORT_LOG} "
-                   f"--junitxml={TOX_REPORT_XML} "
-                   f"--html={TOX_REPORT_HTML} --self-contained-html "
+                   f"--log-file={REPORT_LOG} "
+                   f"--junitxml={REPORT_XML} "
+                   f"--html={REPORT_HTML} --self-contained-html "
                    f"{common.get_posargs()}",
                    environ=environ,
                    capture_stdout=False)
