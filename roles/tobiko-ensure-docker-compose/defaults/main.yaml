@@ -1,3 +1,5 @@
 ---
 
 docker_compose_executable: /usr/local/bin/docker-compose
+docker_compose_install_using_pip: true
+docker_compose_install_using_curl: not docker_compose_install_using_pip

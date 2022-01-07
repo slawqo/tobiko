@@ -1,6 +1,14 @@
 ---
 
-- name: "Install latest Docker compose"
+- name: "Install latest Docker compose with Pip"
+  become: true
+  shell: |
+    set -x
+    python3 -m pip install docker-compose
+  when: docker_compose_install_using_pip
+
+
+- name: "Install latest Docker compose with Curl"
   become: true
   shell: |
     set -x
@@ -15,3 +23,4 @@
     mkdir -p $(dirname '{{ docker_compose_executable }}')
     curl -L ${URL} > '{{ docker_compose_executable }}'
     chmod +x '{{ docker_compose_executable }}'
+  when: docker_compose_install_using_curl
