@@ -4,6 +4,7 @@ FROM centos:8 as lower-constraints
 
 ENV CONSTRAINS_FILE=lower-constraints.txt
 ENV INSTALL_PACKAGES="dnf install -y"
+ENV INSTALL_PACKAGES_GROUP="dnf groupinstall -y"
 ENV PYTHON_VERSION=3
 
 USER 0
@@ -13,6 +14,7 @@ FROM fedora:34 as py39
 
 ENV CONSTRAINS_FILE=upper-constraints.txt
 ENV INSTALL_PACKAGES="dnf install -y"
+ENV INSTALL_PACKAGES_GROUP="dnf groupinstall -y"
 ENV PYTHON_VERSION=3.9
 
 USER 0
@@ -22,6 +24,7 @@ FROM fedora:35 as py310
 
 ENV CONSTRAINS_FILE=upper-constraints.txt
 ENV INSTALL_PACKAGES="dnf install -y"
+ENV INSTALL_PACKAGES_GROUP="dnf groupinstall -y"
 ENV PYTHON_VERSION=3.10
 
 USER 0
@@ -60,7 +63,9 @@ ADD .git ${TOBIKO_DIR}/.git/
 
 FROM source as build
 
-RUN ${INSTALL_PACKAGES} gcc  ${PYTHON}-devel
+# Install development packages
+RUN ${INSTALL_PACKAGES_GROUP} "Development Tools"
+RUN ${INSTALL_PACKAGES} ${PYTHON}-devel
 
 # Build wheel files
 RUN mkdir -p ${WHEEL_DIR}
