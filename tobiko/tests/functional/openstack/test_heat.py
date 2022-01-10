@@ -97,10 +97,10 @@ class EnsureQuotaLimitsTest(testtools.TestCase):
         quota_set = neutron.get_neutron_quota_set(detail=True)
         for name, requirement in stack.requirements.items():
             quota = quota_set[name]
-            self.assertGreaterEqual(quota['limit'],
+            self.assertGreaterEqual(int(quota['limit']),
                                     requirement +
-                                    max(0, quota['used']) -
-                                    max(0, quota['reserved']))
+                                    max(0, int(quota['used'])) -
+                                    max(0, int(quota['reserved'])))
 
     def test_ensure_nova_quota_limits(self):
         stack = EnsureNovaQuotaLimitsFixture(stack_name=self.id())
@@ -108,10 +108,10 @@ class EnsureQuotaLimitsTest(testtools.TestCase):
         quota_set = nova.get_nova_quota_set(detail=True)
         for name, requirement in stack.requirements.items():
             quota = getattr(quota_set, name)
-            if quota['limit'] > 0:
-                self.assertGreaterEqual(quota['limit'],
-                                        requirement +
-                                        max(0, quota['in_use']) -
-                                        max(0, quota['reserved']))
+            if int(quota['limit']) > 0:
+                self.assertGreaterEqual(int(quota['limit']),
+                                        int(requirement) +
+                                        max(0, int(quota['in_use'])) -
+                                        max(0, int(quota['reserved'])))
             else:
-                self.assertEqual(quota['limit'], -1)
+                self.assertEqual(int(quota['limit']), -1)
