@@ -42,7 +42,9 @@ def setup_http_session(session, ssh_client=None):
 
 # All known keyword arguments that could be provided to the pool manager, its
 # pools, or the underlying connections. This is used to construct a pool key.
-_key_fields = tuple(poolmanager._key_fields) + ('key_ssh_client',)
+_key_fields = tuple(
+    poolmanager._key_fields  # type: ignore
+) + ('key_ssh_client',)
 
 
 class PoolKey(collections.namedtuple("PoolKey", _key_fields)):  # type: ignore
@@ -57,10 +59,12 @@ class PoolKey(collections.namedtuple("PoolKey", _key_fields)):  # type: ignore
 #: Each PoolManager makes a copy of this dictionary so they can be configured
 #: globally here, or individually on the instance.
 key_fn_by_scheme = {
-    "http": functools.partial(poolmanager._default_key_normalizer,
-                              PoolKey),
-    "https": functools.partial(poolmanager._default_key_normalizer,
-                               PoolKey),
+    "http": functools.partial(
+        poolmanager._default_key_normalizer,  # type: ignore
+        PoolKey),
+    "https": functools.partial(
+        poolmanager._default_key_normalizer,  # type: ignore
+        PoolKey),
 }
 
 # pylint: enable=protected-access

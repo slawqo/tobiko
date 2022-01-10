@@ -578,13 +578,14 @@ def ssh_client(host, port=None, username=None, proxy_jump=None,
                               **connect_parameters)
 
 
-def load_private_keys(key_filenames: typing.List[str]):
-    pkeys = []
+def load_private_keys(key_filenames: typing.List[str]) \
+        -> typing.List[paramiko.PKey]:
+    pkeys: typing.List[paramiko.PKey] = []
     for filename in key_filenames:
         if os.path.exists(filename):
             try:
                 with io.open(filename, 'rt') as fd:
-                    pkey = paramiko.RSAKey.from_private_key(fd)
+                    pkey: paramiko.PKey = paramiko.RSAKey.from_private_key(fd)
             except Exception:
                 LOG.error('Unable to get RSAKey private key from file: '
                           f'{filename}', exc_info=1)
