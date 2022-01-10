@@ -59,6 +59,7 @@ tobiko_config_path = _config.tobiko_config_path
 TobikoException = _exception.TobikoException
 check_valid_type = _exception.check_valid_type
 exc_info = _exception.exc_info
+ExceptionInfo = _exception.ExceptionInfo
 handle_multiple_exceptions = _exception.handle_multiple_exceptions
 list_exc_infos = _exception.list_exc_infos
 

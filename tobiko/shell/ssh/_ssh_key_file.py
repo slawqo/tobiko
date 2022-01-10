@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os.path
 import typing  # noqa
 
 from oslo_log import log
@@ -75,7 +76,8 @@ class GetSSHKeyFileFixture(tobiko.SharedFixture):
             return
 
         key_file = tobiko.tobiko_config_path(
-            f"~/.ssh/id_rsa-{remote_hostname}")
+            f"~/.ssh/{os.path.basename(self.remote_key_file)}-" +
+            remote_hostname)
         with tobiko.open_output_file(key_file) as fd:
             fd.write(private_key.decode())
         with tobiko.open_output_file(key_file + '.pub') as fd:

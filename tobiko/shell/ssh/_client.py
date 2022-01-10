@@ -18,7 +18,6 @@ from __future__ import absolute_import
 from collections import abc
 import contextlib
 import getpass
-import io
 import os
 import subprocess
 import time
@@ -26,6 +25,7 @@ import threading
 import typing
 
 import netaddr
+import testtools
 from oslo_log import log
 import paramiko
 from paramiko import common
@@ -578,32 +578,63 @@ def ssh_client(host, port=None, username=None, proxy_jump=None,
                               **connect_parameters)
 
 
-def load_private_keys(key_filenames: typing.List[str]) \
+KEY_CLASSES: typing.List[typing.Type[paramiko.PKey]] = [
+    paramiko.RSAKey,
+    paramiko.DSSKey,
+    paramiko.ECDSAKey,
+    paramiko.Ed25519Key,
+]
+
+
+def load_private_keys(key_filenames: typing.List[str],
+                      password: str = None) \
         -> typing.List[paramiko.PKey]:
     pkeys: typing.List[paramiko.PKey] = []
     for filename in key_filenames:
         if os.path.exists(filename):
             try:
-                with io.open(filename, 'rt') as fd:
-                    pkey: paramiko.PKey = paramiko.RSAKey.from_private_key(fd)
-            except Exception:
-                LOG.error('Unable to get RSAKey private key from file: '
-                          f'{filename}', exc_info=1)
+                pkey = load_private_key(filename, password=password)
+            except LoadPrivateKeyError as ex:
+                LOG.exception(f'Error loading key file: {ex}')
             else:
                 pkeys.append(pkey)
+        else:
+            LOG.debug(f'Key file not found: {filename}')
     return pkeys
+
+
+class LoadPrivateKeyError(tobiko.TobikoException):
+    message = "Unable to load private key from file {filename}"
+
+
+def load_private_key(filename: str,
+                     password: str = None) -> paramiko.PKey:
+    errors: typing.List[tobiko.ExceptionInfo] = []
+    for key_class in KEY_CLASSES:
+        try:
+            pkey: paramiko.PKey = key_class.from_private_key_file(
+                filename=filename, password=password)
+        except (paramiko.SSHException, ValueError):
+            errors.append(tobiko.exc_info())
+        else:
+            LOG.debug(f'Key file loaded: {filename} (key_class={key_class})')
+            return pkey
+
+    cause = testtools.MultipleExceptions(*errors)
+    raise LoadPrivateKeyError(filename=filename) from cause
 
 
 def ssh_connect(hostname, username=None, port=None, connection_interval=None,
                 connection_attempts=None, connection_timeout=None,
                 proxy_command=None, proxy_client=None, key_filename=None,
+                password: str = None,
                 **parameters):
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.WarningPolicy())
     login = _command.ssh_login(hostname=hostname, username=username, port=port)
 
     assert isinstance(key_filename, list)
-    pkeys = load_private_keys(key_filename)
+    pkeys = load_private_keys(key_filename, password=password)
     auth_failed: typing.Optional[Exception] = None
     for attempt in tobiko.retry(count=connection_attempts,
                                 timeout=connection_timeout,
@@ -614,7 +645,7 @@ def ssh_connect(hostname, username=None, port=None, connection_interval=None,
         LOG.debug(f"Logging in to '{login}'...\n"
                   f"  - parameters: {parameters}\n"
                   f"  - attempt: {attempt.details}\n")
-        for pkey in pkeys + [None]:
+        for pkey in pkeys + [None]:  # type: ignore
             succeeded = False
             proxy_sock = ssh_proxy_sock(
                 hostname=hostname,
