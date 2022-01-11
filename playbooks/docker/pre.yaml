@@ -3,6 +3,7 @@
 - hosts: all
   roles:
     - role: ensure-docker
+    - role: tobiko-ensure-python3
     - role: tobiko-ensure-docker-compose
     - role: tobiko-docker-compose
       vars:
