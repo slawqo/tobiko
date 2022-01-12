@@ -83,6 +83,7 @@ References
 * Release notes: https://docs.openstack.org/releasenotes/tobiko/
 * Source code: https://opendev.org/x/tobiko
 * Bugs: https://storyboard.openstack.org/#!/project/x/tobiko
+* Code review: https://review.opendev.org/q/project:x/tobiko
 
 
 Related projects
