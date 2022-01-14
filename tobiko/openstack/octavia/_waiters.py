@@ -19,7 +19,6 @@ from oslo_log import log
 import tobiko
 from tobiko.openstack import octavia
 from tobiko import config
-from tobiko.shell import sh
 
 LOG = log.getLogger(__name__)
 
@@ -67,56 +66,3 @@ def wait_for_status(status_key, status, get_client, object_id,
 
         LOG.debug(f"Waiting for {get_client.__name__} {status_key} to get "
                   f"from '{response[status_key]}' to '{status}'...")
-
-
-def wait_for_members_to_be_reachable(members,
-                                     lb_protocol: str,
-                                     lb_port: int,
-                                     interval: tobiko.Seconds = None,
-                                     timeout: tobiko.Seconds = None,
-                                     count: int = 10):
-
-    # Wait for members to be reachable from localhost
-    last_reached_id = 0
-    for attempt in tobiko.retry(timeout=timeout,
-                                count=count,
-                                interval=interval):
-        try:
-            for member in members[last_reached_id:]:
-                octavia.check_members_balanced(
-                    members_count=1,
-                    ip_address=member.server_stack.ip_address,
-                    protocol=lb_protocol,
-                    port=lb_port,
-                    requests_count=1)
-                last_reached_id += 1  # prevent retrying same member again
-        except sh.ShellCommandFailed:
-            LOG.info("Waiting for members to have HTTP service available...")
-        else:
-            break
-
-        if attempt.is_last:
-            break
-    else:
-        raise RuntimeError("Members couldn't be reached!")
-
-
-def wait_for_octavia_service(loadbalancer_id: str,
-                             interval: tobiko.Seconds = None,
-                             timeout: tobiko.Seconds = None,
-                             client=None):
-    for attempt in tobiko.retry(timeout=timeout,
-                                interval=interval,
-                                default_timeout=180.,
-                                default_interval=5.):
-        try:
-            octavia.list_amphorae(loadbalancer_id=loadbalancer_id,
-                                  client=client)
-        except octavia.OctaviaClientException as ex:
-            LOG.debug(f"Error listing amphorae: {ex}")
-            if attempt.is_last:
-                raise
-            LOG.info('Waiting for the LB to become functional again...')
-        else:
-            LOG.info('Octavia service is available!')
-            break

@@ -50,19 +50,10 @@ class OctaviaServicesFaultTest(testtools.TestCase):
     is received as expected.
     """
     loadbalancer_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaLoadbalancerStackFixture)
+        stacks.AmphoraIPv4LoadBalancerStack)
 
     listener_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaListenerStackFixture)
-
-    pool_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaPoolStackFixture)
-
-    member1_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaMemberServerStackFixture)
-
-    member2_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaOtherMemberServerStackFixture)
+        stacks.HttpRoundRobinAmphoraIpv4Listener)
 
     list_octavia_active_units = ('systemctl list-units ' +
                                  '--state=active tripleo_octavia_*')
@@ -80,18 +71,23 @@ class OctaviaServicesFaultTest(testtools.TestCase):
             skip_reason = "The number of controllers should be 3 for this test"
             self.skipTest(skip_reason)
 
-        LOG.info(f'Waiting for {self.member1_stack.stack_name} and '
-                 f'{self.member2_stack.stack_name} to be created...')
-        self.pool_stack.wait_for_active_members()
+        # Wait for Octavia objects to be active
+        LOG.info('Waiting for member '
+                 f'{self.listener_stack.server_stack.stack_name} and '
+                 f'for member '
+                 f'{self.listener_stack.other_server_stack.stack_name} '
+                 f'to be created...')
+        self.listener_stack.wait_for_active_members()
 
-        octavia.wait_for_octavia_service(
-            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+        self.loadbalancer_stack.wait_for_octavia_service()
+
+        self.listener_stack.wait_for_members_to_be_reachable()
 
         # Sending initial traffic before we stop octavia services
         octavia.check_members_balanced(
-            pool_id=self.pool_stack.pool_id,
+            pool_id=self.listener_stack.pool_id,
             ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.pool_stack.lb_algorithm,
+            lb_algorithm=self.listener_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,
             port=self.listener_stack.lb_port)
 
@@ -176,10 +172,12 @@ class OctaviaServicesFaultTest(testtools.TestCase):
             err_msg = f'{service} was not stopped on {controller.name}'
             self.assertTrue(service not in octavia_active_units, err_msg)
 
+        self.loadbalancer_stack.wait_for_octavia_service()
+
         octavia.check_members_balanced(
-            pool_id=self.pool_stack.pool_id,
+            pool_id=self.listener_stack.pool_id,
             ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.pool_stack.lb_algorithm,
+            lb_algorithm=self.listener_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,
             port=self.listener_stack.lb_port)
 
@@ -208,8 +206,8 @@ class OctaviaServicesFaultTest(testtools.TestCase):
             self._make_sure_octavia_services_are_active(controller)
 
         octavia.check_members_balanced(
-            pool_id=self.pool_stack.pool_id,
+            pool_id=self.listener_stack.pool_id,
             ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.pool_stack.lb_algorithm,
+            lb_algorithm=self.listener_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,
             port=self.listener_stack.lb_port)
