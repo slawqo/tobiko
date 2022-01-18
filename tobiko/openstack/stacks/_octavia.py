@@ -173,7 +173,7 @@ class HttpRoundRobinAmphoraIpv4Listener(heat.HeatStackFixture):
                 timeout=timeout,
                 interval=interval,
                 default_interval=5.,
-                default_timeout=150.):
+                default_timeout=members[0].wait_timeout):
             try:
                 for member in members[last_reached_id:]:
                     octavia.check_members_balanced(
