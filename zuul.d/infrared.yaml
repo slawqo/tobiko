@@ -5,8 +5,8 @@
     description: |
       Infrared jobs intended to gate infrared Tobiko plugin changes
     check:
-      jobs:
-        - tobiko-infrared
+      jobs: &CHECK
+        - tobiko-infrared-centos
         - tobiko-infrared-centos-7
         - tobiko-infrared-fedora
         - tobiko-infrared-ubuntu
@@ -14,17 +14,13 @@
       jobs:
         - tobiko-infrared
     periodic:
-      jobs:
-        - tobiko-infrared
-        - tobiko-infrared-centos-7
-        - tobiko-infrared-fedora
-        - tobiko-infrared-ubuntu
+      jobs: *CHECK
 
 
 - job:
     name: tobiko-infrared
     parent: tox
-    nodeset: tobiko-infrared-centos
+    nodeset: tobiko-infrared-fedora
     timeout: 3600
     description: |
       Run test cases using tobiko infrared plugin
@@ -64,6 +60,14 @@
       - name: undercloud
         nodes:
           - secondary
+
+- job:
+    name: tobiko-infrared-centos
+    parent: tobiko-infrared
+    nodeset: tobiko-infrared-centos
+    voting: false
+    description: |
+      Run test cases using tobiko infrared plugin on CentOS
 
 
 - job:
