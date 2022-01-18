@@ -101,6 +101,26 @@ subparsers:
             required: yes
             ansible_variable: tobiko_src_dir
             default: '{{ inventory_dir }}/src/tobiko'
+          openshift-ir-src-dir:
+            type: Value
+            help: Local directory where OpenShift InfraRed scripts are deployed from0
+            ansible_variable: openshift_infrared_src_dir
+          openshift-ir-dir:
+            type: Value
+            help: Remote directory where OpenShift InfraRed scripts are deployed to
+            ansible_variable: openshift_infrared_dir
+          openshift-ir-repo:
+            type: Value
+            help: Git URL from where to download OpenShift InfraRed files
+            ansible_variable: openshift_infrared_git_repo
+          openshift-ir-remote:
+            type: Value
+            help: Git remote name to be used for checking out OpenShift InfraRed files
+            ansible_variable: openshift_infrared_git_remote
+          openshift-ir-refspec:
+            type: Value
+            help: Git refspect to be used for checking out OpenShift InfraRed files
+            ansible_variable: openshift_infrared_git_refspec
 
       - title: Configure stage
         options:

@@ -36,6 +36,24 @@
         deploy_git_remote: '{{ test_git_remote }}'
       when: test_dir != tobiko_dir
 
+    - name: deploy OpenShift InfraRed plugin files
+      include_role: name=tobiko-ir-deploy
+      vars:
+        deploy_dir: '{{ openshift_infrared_dir | realpath }}'
+        deploy_src_dir: '{{ openshift_infrared_src_dir | realpath }}'
+
+        deploy_git_repo: '{{ openshift_infrared_git_repo }}'
+        deploy_git_refspec: '{{ openshift_infrared_git_refspec }}'
+        deploy_git_remote: '{{ openshift_infrared_git_remote }}'
+
+    # validations-common here since it's packaged by rhel-osp
+    - name: install validations-common
+      ignore_errors: yes
+      become: true
+      package:
+        name: validations-common
+        state: present
+
     - name: "initialize test execution"
       include_role: name=tobiko-configure
 

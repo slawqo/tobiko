@@ -6,3 +6,16 @@ test_git_refspec: ''
 tobiko_git_remote: ''
 test_git_remote: ''
 stacks_cleanup: false
+
+
+# Local directory where OpenShift InfraRed scripts are deployed from
+openshift_infrared_src_dir: '{{ playbook_dir }}/../openshift'
+
+# Remote directory where OpenShift InfraRed scripts are deployed to
+openshift_infrared_dir: '{{ ansible_user_dir }}/src/openshift-ir-plugin'
+
+# Remote Git repo from where OpenShift InfraRed scripts are deployed from
+openshift_infrared_git_repo:
+  'http://code.engineering.redhat.com/gerrit/openshift-ir-plugin.git'
+openshift_infrared_git_refspec: ''
+openshift_infrared_git_remote: ''

@@ -86,8 +86,8 @@ services:
   infrared:
     build:
       context: infrared_plugin
-      target: tobiko-infrared
-    hostname: tobiko-infrared
+      target: run
+    hostname: infrared
     environment:
       IR_EXTRA_ARGS: --tobiko-src-dir /tobiko
     volumes:
