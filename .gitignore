@@ -51,3 +51,7 @@ workspace.tgz
 
 # Tripleo files
 tripleo-hosts.yaml
+
+# Report files
+tobiko_results.html
+style.css
