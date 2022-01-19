@@ -64,8 +64,8 @@ class FixtureManagerPatch(tobiko.FixtureManager, _patch.PatchFixture):
 class TobikoUnitTest(_patch.PatchMixin, testtools.TestCase):
 
     patch_environ = {
-        'http_proxy': 'http://127.0.0.1:88888',
-        'https_proxy': 'http://127.0.0.1:88888',
+        'http_proxy': 'http://127.0.0.1:8888',
+        'https_proxy': 'http://127.0.0.1:8888',
         'no_proxy': '127.0.0.1'
     }
 
