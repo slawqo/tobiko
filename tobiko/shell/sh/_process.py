@@ -16,11 +16,17 @@
 from __future__ import absolute_import
 
 import io
+import os
+import time
 import typing  # noqa
+from multiprocessing import Process as MultiProcess
 
+import psutil
 from oslo_log import log
 
+
 import tobiko
+from tobiko.shell import sh
 from tobiko.shell.sh import _command
 from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _io
@@ -457,3 +463,104 @@ def default_sudo_command():
 def network_namespace_command(network_namespace, command):
     return _command.shell_command(['/sbin/ip', 'netns', 'exec',
                                    network_namespace]) + command
+
+
+def start_background_process(bg_function=None, bg_process_name=None, **kwargs):
+    """Background process that will take a function name as parameter
+    and execute it in the background using a separate non attached process.
+    That process will continue to run even after Tobiko exists.
+    params:
+    bg_function= function name to run in background
+    bg_process_pid_file= file path that will contain the process pid, multiple
+    processes can use the same file pid are appended.
+    outputs: writes processes pids to a file, each in a line
+    returns: the process object"""
+
+    # define a parent process that would be killed and orphan the actual
+    # background process to run unattached in the background
+    # this is so the background process won't be stopped when tobiko exists
+    def _background_process_parent():
+        p = MultiProcess(target=bg_function, name=bg_process_name,
+                         kwargs=kwargs)
+        p.start()
+        LOG.info(
+            f'Started background function: {bg_function.__name__} process pid '
+            f'is: {p.pid}, process name: {bg_process_name}, '
+            f'main execution process continues...')
+        # append bg_process pid to a file
+        bg_process_pids_file_name = f'{sh.get_user_home_dir()}/' \
+                                    f'{bg_process_name}_pids_file'
+        with open(bg_process_pids_file_name, "at") as bg_process_pid_file:
+            bg_process_pid_file.write(str(p.pid) + "\n")
+            LOG.debug(f'Writing pid: {p.pid} to pids file:'
+                      f' {bg_process_pids_file_name}')
+
+    # start parent process, nested with a started child process
+    # then kill the parent
+    d = MultiProcess(target=_background_process_parent)
+    d.daemon = False
+    d.start()
+    LOG.debug(f'Background process parent started pid: {d.pid}')
+    time.sleep(1)
+    d.terminate()
+    LOG.debug(f'Background process orphaned,  parent killed parent pid:'
+              f' {d.pid}')
+
+
+def stop_process(pid_list):
+    """Stop (kill) a process from a list"""
+    for pid in pid_list:
+
+        LOG.info(f'stopping process with pid: {pid}')
+        sh.execute(f'sudo kill -9 {pid}')
+
+
+def get_bg_procs_pids(bg_process_name):
+    """return a list of pids from the specified bg_process_name file"""
+    bg_process_pids_file_name = f'{sh.get_user_home_dir()}/' \
+                                f'{bg_process_name}_pids_file'
+    bg_process_name_pid_list = []
+    if os.path.isfile(bg_process_pids_file_name):
+        LOG.info(f'found previous background process file :'
+                 f' {bg_process_pids_file_name}, cheking it`s processes.')
+        # go over file's pids
+        with io.open(bg_process_pids_file_name, 'rt') as fd:
+            for line in fd.readlines():
+                pid = line.rstrip()
+                try:
+                    proc = psutil.Process(int(pid))
+                # continue if pid is not a valid int or doesn't exist
+                except (TypeError, ValueError, psutil.NoSuchProcess):
+                    continue
+                # check if process is running
+                if proc.status() != psutil.STATUS_ZOMBIE:
+                    LOG.debug(f'skipping process {pid} , it\'s a zombie')
+                    bg_process_name_pid_list.append(pid)
+    return bg_process_name_pid_list
+
+
+def check_or_start_background_process(bg_function=None,
+                                      bg_process_name=None,
+                                      check_function=None, **kwargs):
+    """ Check if process exists, if so stop the process,
+        then execute some check logic i.e. a check function.
+        if the process by name isn't running,
+        start a separate process i.e a background function
+        params:
+            bg_process_name= process name
+            bg_function: function name
+            check_function: function name """
+    procs_running_list = get_bg_procs_pids(bg_process_name)
+    if procs_running_list:
+        stop_process(procs_running_list)
+        # execute process check i.e. go over process results file
+        LOG.info(f'running a check function: {check_function} '
+                 f'on results of processes: {bg_process_name}')
+        check_function()
+
+    else:  # if background process is not present , start one:
+        LOG.info(f'No previous background processes found:'
+                 f' {bg_process_name}, starting a new background process '
+                 f'of function: {bg_function}')
+        start_background_process(bg_function=bg_function,
+                                 bg_process_name=bg_process_name, **kwargs)

@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import typing  # noqa
+from os.path import expanduser
 
 from oslo_log import log
 
@@ -23,6 +24,11 @@ import tobiko
 
 
 LOG = log.getLogger(__name__)
+
+
+def get_user_home_dir():
+    """return a str path of the current user's home"""
+    return expanduser("~")
 
 
 class ExecutePathFixture(tobiko.SharedFixture):
