@@ -17,6 +17,7 @@ from __future__ import absolute_import
 
 import typing
 
+import pytest
 from oslo_log import log
 import testtools
 
@@ -230,6 +231,7 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.request_galera_sst()
         OvercloudHealthCheck.run_after()
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_controllers_shutdown(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.test_controllers_shutdown()
