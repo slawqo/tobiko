@@ -1,8 +1,8 @@
 .. _tobiko-user-guide:
 
-=================
-Tobiko User Guide
-=================
+==========
+User Guide
+==========
 
 .. toctree::
    :maxdepth: 2

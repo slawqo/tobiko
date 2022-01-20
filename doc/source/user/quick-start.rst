@@ -1,15 +1,10 @@
 .. _tobiko-quick-start-guide:
 
-========================
-Tobiko Quick Start Guide
-========================
+===========
+Quick Start
+===========
 
-
-Document Overview
------------------
-
-This document describes how to install execute Tobiko test cases
-using `Tox <https://tox.readthedocs.io/en/latest/>`__.
+This document describes how to setup an environment and how to run test cases
 
 .. sidebar:: See also
 
@@ -22,54 +17,7 @@ using `Tox <https://tox.readthedocs.io/en/latest/>`__.
     :ref:`tobiko-test-case-execution-guide`.
 
 
-Install Dependencies
---------------------
-
-Install Basic Python Packages
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Make sure Git and Python 3 are installed on your system.
-
-For instance on RedHat Linux / Fedora::
-
-    sudo dnf install -y git python3 which
-
-Check your Python 3 version is 3.6 or greater::
-
-    python3 --version
-
-Make sure pip is installed and up-to date::
-
-    curl https://bootstrap.pypa.io/get-pip.py | sudo python3
-
-Check installed Pip version::
-
-    python3 -m pip --version
-
-Make sure basic Python packages are installed and up-to-date::
-
-    sudo python3 -m pip install --upgrade setuptools wheel virtualenv tox six
-
-Check installed Tox version::
-
-    tox --version
-
-
-Clone the Tobiko repository
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Clone the Tobiko repository using Git::
-
-    git clone https://opendev.org/x/tobiko.git
-    cd tobiko
-
-
-Install Missing Binary Packages
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Install required binary packages::
-
-    tools/install-bindeps.sh
+.. include:: _install_venv.rst
 
 
 Configure Logging Options
