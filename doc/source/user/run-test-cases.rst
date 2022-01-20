@@ -4,7 +4,7 @@
 Tobiko Test Cases Execution Guide
 =================================
 
-This document describes how to execute Tobiko scenario test cases.
+This document describes how to execute Tobiko test cases.
 
 .. sidebar:: See also
 
@@ -18,22 +18,52 @@ This document describes how to execute Tobiko scenario test cases.
 
 
 Prepare Your System
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 Before running Tobiko test cases, you need to be sure you are doing it from
 Tobiko source files folder and that you have activated a virtualenv where Tobiko
-and its requirements are installed. Please refer to
+is, and its requirements are installed. Please refer to
 :ref:`tobiko-installation-guide` and :ref:`tobiko-configuration-guide` to know
 how to setup your system before running test cases.
 
+Prepare some logging (Optional and recommended)
+------------------------------------------------
+
+To see if we are now being able to execute Tobiko test cases, please open
+**a new terminal** and keep it open, where you could watch tobiko.log receive
+logs on real time. Change directory to reach the directory where tobiko.log
+file is and run the following command::
+
+    tail -F tobiko.log
+
+.. _run-tobiko-test-cases:
+
+Run Tobiko Test Cases
+---------------------
+
+.. run-tobiko-test-cases_label
+
+Run Tobiko specific test cases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: _run_specific_tests.rst
 
 Run Scenario Test Cases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: _run_scenario.rst
+
+Running Disruptive Test Cases
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: _run_faults.rst
+
+Run the Tobiko Workflow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. include:: _run_workflow.rst
+
+Test Cases Report Files
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-To run test cases you need a test runner able to execute Python test cases.
-Test cases delivered with Tobiko has been tested using
-`stestr <https://stestr.readthedocs.io/en/latest/>`__
-
-From the Tobiko source folder you can run scenario test cases using the below command::
-
-    stestr run --test-path tobiko/tests/scenario/
+.. include:: _test_cases_report_files.rst
