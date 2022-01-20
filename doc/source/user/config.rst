@@ -1,12 +1,8 @@
 .. _tobiko-configuration-guide:
 
-==========================
-Tobiko Configuration Guide
-==========================
-
-
-Document Overview
------------------
+=============
+Configuration
+=============
 
 This document describes how to configure Tobiko.
 
@@ -34,26 +30,11 @@ To be able to execute scenario test cases there some OpenStack resources that
 have to be created before running test cases. Please look at
 :ref:`setup-required-resources` for more details.
 
-
-.. _tobiko-conf:
-
 tobiko.conf
 ~~~~~~~~~~~
 
-Tobiko tries to load :ref:`tobiko-conf` file from one of the below locations:
-
-* current directory::
-
-    ./tobiko.conf
-
-* user home directory::
-
-    ~/.tobiko/tobiko.conf
-
-* system directory::
-
-    /etc/tobiko/tobiko.conf
-
+.. include:: _conf_explanation.rst
+    :start-after: tobiko-conf-label
 
 Configure Logging
 ~~~~~~~~~~~~~~~~~
