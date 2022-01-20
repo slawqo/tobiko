@@ -8,7 +8,7 @@ config:
 subparsers:
 
   tobiko:
-    description: Deploy, configure and execute tobiko test cases
+    description: Deploy, configure and execute Tobiko test cases
     include_groups: ["Ansible options", "Inventory", "Common options", "Answers file"]
     groups:
 
