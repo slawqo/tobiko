@@ -14,7 +14,7 @@ test_default_conf:
     undercloud_ssh_hostname: "{{ undercloud_ssh_hostname }}"
     overcloud_ssh_username: "{{ overcloud_ssh_username }}"
 
-test_log_debug: false
+test_log_debug: ''
 
 test_case_timeout: 1800.
 test_runner_timeout: 14400.

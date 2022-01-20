@@ -132,7 +132,6 @@ subparsers:
             type: Value
             help: enable/disable verbose log entries in tests results log file
             ansible_variable: test_log_debug
-            default: yes
           test-case-timeout:
             type: Value
             help: Test case timeout in seconds
