@@ -26,7 +26,6 @@ ChangeLog
 doc/build/*
 cover/
 dist/
-etc/*.sample
 report/
 test_results*
 zuul/versioninfo
@@ -34,16 +33,13 @@ zuul/versioninfo
 # Files created by releasenotes build
 releasenotes/build
 
-# Docs related files
-doc/source/_static/config-samples/*.sample
-
 Pipfile.lock
 
 # Tobiko configuration file
 clouds.yaml
 ssh_config
 ssh_id*
-tobiko.conf*
+tobiko.conf
 
 # Infrared things
 .infrared
