@@ -42,37 +42,26 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
     Generate network traffic from the client to the load balanacer.
     """
     loadbalancer_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaLoadbalancerStackFixture)
+        stacks.AmphoraIPv4LoadBalancerStack)
 
     listener_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaListenerStackFixture)
-
-    pool_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaPoolStackFixture)
-
-    member1_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaMemberServerStackFixture)
-
-    member2_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaOtherMemberServerStackFixture)
+        stacks.HttpRoundRobinAmphoraIpv4Listener)
 
     def setUp(self):
         # pylint: disable=no-member
         super(OctaviaBasicTrafficScenarioTest, self).setUp()
 
         # Wait for Octavia objects to be active
-        LOG.info(f'Waiting for {self.member1_stack.stack_name} and '
-                 f'{self.member2_stack.stack_name} to be created...')
-        self.pool_stack.wait_for_active_members()
+        LOG.info('Waiting for member '
+                 f'{self.listener_stack.server_stack.stack_name} and '
+                 f'for member '
+                 f'{self.listener_stack.other_server_stack.stack_name} '
+                 f'to be created...')
+        self.listener_stack.wait_for_active_members()
 
-        octavia.wait_for_octavia_service(
-            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+        self.loadbalancer_stack.wait_for_octavia_service()
 
-        octavia.wait_for_members_to_be_reachable(
-            members=[self.member1_stack, self.member2_stack],
-            lb_protocol=self.listener_stack.lb_protocol,
-            lb_port=self.listener_stack.lb_port
-        )
+        self.listener_stack.wait_for_members_to_be_reachable()
 
     def test_round_robin_traffic(self):
         # For 5 minutes seconds we ignore specific exceptions as we know
@@ -80,9 +69,9 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
         for attempt in tobiko.retry(timeout=300.):
             try:
                 octavia.check_members_balanced(
-                    pool_id=self.pool_stack.pool_id,
+                    pool_id=self.listener_stack.pool_id,
                     ip_address=self.loadbalancer_stack.floating_ip_address,
-                    lb_algorithm=self.pool_stack.lb_algorithm,
+                    lb_algorithm=self.listener_stack.lb_algorithm,
                     protocol=self.listener_stack.lb_protocol,
                     port=self.listener_stack.lb_port)
                 break
@@ -107,31 +96,22 @@ class OctaviaOVNProviderTrafficTest(testtools.TestCase):
     Generate network traffic from the client to the load balanacer via ssh.
     """
     loadbalancer_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaOvnProviderLoadbalancerStackFixture)
+        stacks.OVNIPv4LoadBalancerStack)
 
     listener_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaOvnProviderListenerStackFixture)
-
-    pool_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaOvnProviderPoolStackFixture)
-
-    member1_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaOvnProviderMemberServerStackFixture)
-
-    member2_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaOvnProviderOtherMemberServerStackFixture)
+        stacks.TcpSourceIpPortOvnIpv4Listener)
 
     def setUp(self):
         # pylint: disable=no-member
         super(OctaviaOVNProviderTrafficTest, self).setUp()
 
         # Wait for Octavia objects to be active
-        LOG.info(f'Waiting for {self.member1_stack.stack_name} and '
-                 f'{self.member2_stack.stack_name} to be created...')
-        self.pool_stack.wait_for_active_members()
+        LOG.info(f'Waiting for member {self.listener_stack.member_id} and '
+                 f'for member {self.listener_stack.other_member_id} '
+                 f'to be created...')
+        self.listener_stack.wait_for_active_members()
 
-        octavia.wait_for_octavia_service(
-            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+        self.loadbalancer_stack.wait_for_octavia_service()
 
     def test_ssh_traffic(self):
         """SSH every member server to get its hostname using a load balancer
@@ -139,22 +119,23 @@ class OctaviaOVNProviderTrafficTest(testtools.TestCase):
         username: typing.Optional[str] = None
         password: typing.Optional[str] = None
         missing_replies = set()
-        for member_stack in [self.member1_stack, self.member2_stack]:
-            ssh_client = member_stack.server_stack.ssh_client
+
+        for member_server in [self.listener_stack.server_stack,
+                              self.listener_stack.other_server_stack]:
+            ssh_client = member_server.ssh_client
             hostname = sh.get_hostname(ssh_client=ssh_client)
             missing_replies.add(hostname)
             if username is None:
-                username = member_stack.server_stack.username
+                username = member_server.username
             else:
                 self.assertEqual(username,
-                                 member_stack.server_stack.username,
+                                 member_server.username,
                                  "Not all member servers have the same "
                                  "username to login with")
             if password is None:
-                password = member_stack.server_stack.password
+                password = member_server.password
             else:
-                self.assertEqual(password,
-                                 member_stack.server_stack.password,
+                self.assertEqual(password, member_server.password,
                                  "Not all member servers have the same "
                                  "password to login with")
 
@@ -182,8 +163,7 @@ class OctaviaOVNProviderTrafficTest(testtools.TestCase):
                 LOG.debug('Reached member server(s):\n'
                           f'{pretty_replies(replies)}')
                 if attempt.is_last:
-                    self.fail('Unreached member server(s): '
-                              f'{missing_replies}')
+                    self.fail('Unreached member server(s): {missing_replies}')
                 else:
                     LOG.debug('Waiting for reaching remaining server(s)... '
                               f'{missing_replies}')

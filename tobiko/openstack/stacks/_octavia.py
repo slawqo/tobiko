@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+from oslo_log import log
+
 import tobiko
 from tobiko import config
 from tobiko.openstack import heat
@@ -22,11 +24,13 @@ from tobiko.openstack import octavia
 from tobiko.openstack.stacks import _hot
 from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _ubuntu
+from tobiko.shell import sh
 
 CONF = config.CONF
+LOG = log.getLogger(__name__)
 
 
-class OctaviaLoadbalancerStackFixture(heat.HeatStackFixture):
+class AmphoraIPv4LoadBalancerStack(heat.HeatStackFixture):
     template = _hot.heat_template_file('octavia/load_balancer.yaml')
 
     vip_network = tobiko.required_setup_fixture(_neutron.NetworkStackFixture)
@@ -67,12 +71,40 @@ class OctaviaLoadbalancerStackFixture(heat.HeatStackFixture):
                                 object_id=self.loadbalancer_id,
                                 timeout=timeout)
 
+    def wait_for_octavia_service(self,
+                                 interval: tobiko.Seconds = None,
+                                 timeout: tobiko.Seconds = None,
+                                 client=None):
+        for attempt in tobiko.retry(timeout=timeout,
+                                    interval=interval,
+                                    default_timeout=180.,
+                                    default_interval=5.):
+            try:
+                octavia.list_amphorae(loadbalancer_id=self.loadbalancer_id,
+                                      client=client)
+            except octavia.OctaviaClientException as ex:
+                LOG.debug(f"Error listing amphorae: {ex}")
+                if attempt.is_last:
+                    raise
+                LOG.info('Waiting for the LB to become functional again...')
+            else:
+                LOG.info('Octavia service is available!')
+                break
 
-class OctaviaListenerStackFixture(heat.HeatStackFixture):
+
+class AmphoraIPv6LoadBalancerStack(AmphoraIPv4LoadBalancerStack):
+    ip_version = 6
+
+
+class OctaviaOtherServerStackFixture(_ubuntu.UbuntuServerStackFixture):
+    pass
+
+
+class HttpRoundRobinAmphoraIpv4Listener(heat.HeatStackFixture):
     template = _hot.heat_template_file('octavia/listener.yaml')
 
     loadbalancer = tobiko.required_setup_fixture(
-        OctaviaLoadbalancerStackFixture)
+        AmphoraIPv4LoadBalancerStack)
 
     lb_port = 80
 
@@ -86,20 +118,14 @@ class OctaviaListenerStackFixture(heat.HeatStackFixture):
     def loadbalancer_provider(self):
         return self.loadbalancer.provider
 
-
-class OctaviaPoolStackFixture(heat.HeatStackFixture):
-    template = _hot.heat_template_file('octavia/pool.yaml')
-
-    listener = tobiko.required_setup_fixture(
-        OctaviaListenerStackFixture)
-
+    # Pool attributes
     pool_protocol = 'HTTP'
 
     lb_algorithm = 'ROUND_ROBIN'
 
+    # healthmonitor attributes
     hm_type = 'HTTP'
 
-    # healthmonitor attributes
     hm_delay = 3
 
     hm_max_retries = 4
@@ -114,9 +140,8 @@ class OctaviaPoolStackFixture(heat.HeatStackFixture):
         return self.listener.listener_id
 
     def wait_for_active_members(self):
-        pool_id = self.stack.output_show('pool_id')['output']['output_value']
-        for member in octavia.list_members(pool_id=pool_id):
-            self.wait_for_active_member(pool_id=pool_id,
+        for member in octavia.list_members(pool_id=self.pool_id):
+            self.wait_for_active_member(pool_id=self.pool_id,
                                         member_id=member['id'])
 
     def wait_for_active_member(self, pool_id, member_id, **kwargs):
@@ -133,13 +158,47 @@ class OctaviaPoolStackFixture(heat.HeatStackFixture):
                                 object_id=pool_id,
                                 member_id=member_id, **kwargs)
 
+    def wait_for_members_to_be_reachable(self,
+                                         interval: tobiko.Seconds = None,
+                                         timeout: tobiko.Seconds = None):
 
-class OctaviaMemberServerStackFixture(heat.HeatStackFixture):
-    template = _hot.heat_template_file('octavia/member.yaml')
+        members = [self.server_stack, self.other_server_stack]
 
-    pool = tobiko.required_fixture(OctaviaPoolStackFixture)
+        if len(members) < 1:
+            return
 
+        # Wait for members to be reachable from localhost
+        last_reached_id = 0
+        for attempt in tobiko.retry(
+                timeout=timeout,
+                interval=interval,
+                default_interval=5.,
+                default_timeout=150.):
+            try:
+                for member in members[last_reached_id:]:
+                    octavia.check_members_balanced(
+                        members_count=1,
+                        ip_address=member.ip_address,
+                        protocol=self.lb_protocol,
+                        port=self.lb_port,
+                        requests_count=1)
+                    last_reached_id += 1  # prevent retrying same member again
+            except sh.ShellCommandFailed:
+                if attempt.is_last:
+                    raise
+                LOG.info(
+                    "Waiting for members to have HTTP service available...")
+                continue
+            else:
+                break
+        else:
+            raise RuntimeError("Members couldn't be reached!")
+
+    # Members attributes
     server_stack = tobiko.required_fixture(_ubuntu.UbuntuServerStackFixture)
+
+    other_server_stack = tobiko.required_setup_fixture(
+        OctaviaOtherServerStackFixture)
 
     application_port = 80
 
@@ -151,63 +210,65 @@ class OctaviaMemberServerStackFixture(heat.HeatStackFixture):
 
     @property
     def subnet_id(self):
+        network_stack = self.server_stack.network_stack
         if self.ip_version == 4:
-            return self.server_stack.network_stack.ipv4_subnet_id
+            return network_stack.ipv4_subnet_id
         else:
-            return self.server_stack.network_stack.ipv6_subnet_id
+            return network_stack.ipv6_subnet_id
 
     @property
     def member_address(self) -> str:
-        return str(self.server_stack.find_fixed_ip(ip_version=self.ip_version))
+        return self.get_member_address(self.server_stack)
+
+    @property
+    def other_member_address(self) -> str:
+        return self.get_member_address(self.other_server_stack)
+
+    def get_member_address(self, server_stack):
+        return str(server_stack.find_fixed_ip(ip_version=self.ip_version))
 
 
-class OctaviaOtherServerStackFixture(_ubuntu.UbuntuServerStackFixture):
-    pass
+class HttpRoundRobinAmphoraIpv6Listener(HttpRoundRobinAmphoraIpv4Listener):
+    ip_version = 6
 
 
-class OctaviaOtherMemberServerStackFixture(
-        OctaviaMemberServerStackFixture):
-    server_stack = tobiko.required_setup_fixture(
-        OctaviaOtherServerStackFixture)
+class HttpLeastConnectionAmphoraIpv4Listener(
+      HttpRoundRobinAmphoraIpv4Listener):
+    lb_algorithm = 'LEAST_CONNECTIONS'
 
 
-# OVN provider stack fixtures
-class OctaviaOvnProviderLoadbalancerStackFixture(
-        OctaviaLoadbalancerStackFixture):
-
-    provider = 'ovn'
+class HttpLeastConnectionAmphoraIpv6Listener(
+      HttpLeastConnectionAmphoraIpv4Listener):
+    ip_version = 6
 
 
-class OctaviaOvnProviderListenerStackFixture(OctaviaListenerStackFixture):
+class HttpSourceIpAmphoraIpv4Listener(HttpRoundRobinAmphoraIpv4Listener):
+    lb_algorithm = 'SOURCE_IP'
 
-    loadbalancer = tobiko.required_setup_fixture(
-        OctaviaOvnProviderLoadbalancerStackFixture)
 
-    lb_port = 22
-
+class HttpSourceIpAmphoraIpv6Listener(HttpSourceIpAmphoraIpv4Listener):
+    ip_version = 6
     lb_protocol = 'TCP'
 
 
-class OctaviaOvnProviderPoolStackFixture(OctaviaPoolStackFixture):
-    listener = tobiko.required_setup_fixture(
-        OctaviaOvnProviderListenerStackFixture)
+# OVN provider stack fixtures
+class OVNIPv4LoadBalancerStack(AmphoraIPv4LoadBalancerStack):
+    provider = 'ovn'
 
-    pool_protocol = 'TCP'
 
-    lb_algorithm = 'SOURCE_IP_PORT'
+class OVNIPv6LoadBalancerStack(OVNIPv4LoadBalancerStack):
+    ip_version = 6
 
-    #: There is any health monitor available for OVN provider
+
+class TcpSourceIpPortOvnIpv4Listener(HttpRoundRobinAmphoraIpv4Listener):
+    loadbalancer = tobiko.required_setup_fixture(OVNIPv4LoadBalancerStack)
+    lb_protocol = 'TCP'
+    lb_port = 22
     has_monitor = False
-
-
-class OctaviaOvnProviderMemberServerStackFixture(
-        OctaviaMemberServerStackFixture):
-    pool = tobiko.required_setup_fixture(OctaviaOvnProviderPoolStackFixture)
-
+    lb_algorithm = 'SOURCE_IP_PORT'
+    pool_protocol = 'TCP'
     application_port = 22
 
 
-class OctaviaOvnProviderOtherMemberServerStackFixture(
-        OctaviaOvnProviderMemberServerStackFixture):
-    server_stack = tobiko.required_setup_fixture(
-        OctaviaOtherServerStackFixture)
+class TcpSourceIpPortOvnIpv6Listener(TcpSourceIpPortOvnIpv4Listener):
+    ip_version = 6

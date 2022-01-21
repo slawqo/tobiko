@@ -81,24 +81,25 @@ AffinityServerGroupStackFixture = _nova.AffinityServerGroupStackFixture
 AntiAffinityServerGroupStackFixture = _nova.AntiAffinityServerGroupStackFixture
 CloudInitServerStackFixture = _nova.CloudInitServerStackFixture
 
-OctaviaLoadbalancerStackFixture = _octavia.OctaviaLoadbalancerStackFixture
-OctaviaListenerStackFixture = _octavia.OctaviaListenerStackFixture
-OctaviaPoolStackFixture = _octavia.OctaviaPoolStackFixture
-OctaviaMemberServerStackFixture = _octavia.OctaviaMemberServerStackFixture
-OctaviaOtherServerStackFixture = _octavia.OctaviaOtherServerStackFixture
-OctaviaOtherMemberServerStackFixture = (
-    _octavia.OctaviaOtherMemberServerStackFixture)
-# Ovn Provider resources
-OctaviaOvnProviderLoadbalancerStackFixture = (
-    _octavia.OctaviaOvnProviderLoadbalancerStackFixture)
-OctaviaOvnProviderListenerStackFixture = (
-    _octavia.OctaviaOvnProviderListenerStackFixture)
-OctaviaOvnProviderPoolStackFixture = (
-    _octavia.OctaviaOvnProviderPoolStackFixture)
-OctaviaOvnProviderMemberServerStackFixture = (
-    _octavia.OctaviaOvnProviderMemberServerStackFixture)
-OctaviaOvnProviderOtherMemberServerStackFixture = (
-    _octavia.OctaviaOvnProviderOtherMemberServerStackFixture)
+# Octavia resources: Amphora provider resources
+AmphoraIPv4LoadBalancerStack = _octavia.AmphoraIPv4LoadBalancerStack
+AmphoraIPv6LoadBalancerStack = _octavia.AmphoraIPv6LoadBalancerStack
+
+HttpRoundRobinAmphoraIpv4Listener = _octavia.HttpRoundRobinAmphoraIpv4Listener
+HttpRoundRobinAmphoraIpv6Listener = _octavia.HttpRoundRobinAmphoraIpv6Listener
+HttpLeastConnectionAmphoraIpv4Listener = (
+    _octavia.HttpLeastConnectionAmphoraIpv4Listener)
+HttpLeastConnectionAmphoraIpv6Listener = (
+    _octavia.HttpLeastConnectionAmphoraIpv6Listener)
+HttpSourceIpAmphoraIpv4Listener = _octavia.HttpSourceIpAmphoraIpv4Listener
+HttpSourceIpAmphoraIpv6Listener = _octavia.HttpSourceIpAmphoraIpv6Listener
+
+# Octavia resources: Ovn provider resources
+OVNIPv4LoadBalancerStack = _octavia.OVNIPv4LoadBalancerStack
+OVNIPv6LoadBalancerStack = _octavia.OVNIPv6LoadBalancerStack
+
+TcpSourceIpPortOvnIpv4Listener = _octavia.TcpSourceIpPortOvnIpv4Listener
+TcpSourceIpPortOvnIpv6Listener = _octavia.TcpSourceIpPortOvnIpv6Listener
 
 QosNetworkStackFixture = _qos.QosNetworkStackFixture
 QosPolicyStackFixture = _qos.QosPolicyStackFixture

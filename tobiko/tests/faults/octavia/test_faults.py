@@ -40,37 +40,32 @@ class OctaviaBasicFaultTest(testtools.TestCase):
     Generate network traffic again to verify Octavia functionality.
     """
     loadbalancer_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaLoadbalancerStackFixture)
+        stacks.AmphoraIPv4LoadBalancerStack)
 
     listener_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaListenerStackFixture)
-
-    pool_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaPoolStackFixture)
-
-    member1_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaMemberServerStackFixture)
-
-    member2_stack = tobiko.required_setup_fixture(
-        stacks.OctaviaOtherMemberServerStackFixture)
+        stacks.HttpRoundRobinAmphoraIpv4Listener)
 
     def setUp(self):
         # pylint: disable=no-member
         super(OctaviaBasicFaultTest, self).setUp()
 
         # Wait for Octavia objects to be active
-        LOG.info(f'Waiting for {self.member1_stack.stack_name} and '
-                 f'{self.member2_stack.stack_name} to be created...')
-        self.pool_stack.wait_for_active_members()
+        LOG.info('Waiting for member '
+                 f'{self.listener_stack.server_stack.stack_name} and '
+                 f'for member '
+                 f'{self.listener_stack.other_server_stack.stack_name} '
+                 f'to be created...')
+        self.listener_stack.wait_for_active_members()
 
-        octavia.wait_for_octavia_service(
-            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id)
+        self.loadbalancer_stack.wait_for_octavia_service()
+
+        self.listener_stack.wait_for_members_to_be_reachable()
 
         # Send traffic
         octavia.check_members_balanced(
-            pool_id=self.pool_stack.pool_id,
+            pool_id=self.listener_stack.pool_id,
             ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.pool_stack.lb_algorithm,
+            lb_algorithm=self.listener_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,
             port=self.listener_stack.lb_port)
 
@@ -104,12 +99,12 @@ class OctaviaBasicFaultTest(testtools.TestCase):
                   f' ACTIVE')
 
         # Wait for Octavia objects' provisioning status to be ACTIVE
-        self.pool_stack.wait_for_active_members()
+        self.listener_stack.wait_for_active_members()
 
         # Verify Octavia functionality
         octavia.check_members_balanced(
-            pool_id=self.pool_stack.pool_id,
+            pool_id=self.listener_stack.pool_id,
             ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.pool_stack.lb_algorithm,
+            lb_algorithm=self.listener_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,
             port=self.listener_stack.lb_port)
