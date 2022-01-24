@@ -27,9 +27,9 @@
 import os
 import sys
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TOBIKO_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
-sys.path.insert(0, TOBIKO_DIR)
+TOBIKO_DOC_DIR = os.path.dirname(os.path.realpath(__file__))
+TOBIKO_SRC_DIR = os.path.realpath(f"{TOBIKO_DOC_DIR}/../..")
+sys.path.insert(0, TOBIKO_SRC_DIR)
 
 
 # -- Python logging ----------------------------------------------------------
@@ -120,24 +120,10 @@ html_theme_options = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = [f'{TOBIKO_DOC_DIR}/_static']
 
 # -- Options for oslo_config.sphinxconfiggen ---------------------------------
 
-_config_generator_config_files = [
-    'tobiko.conf',
-]
-
-
-def _get_config_generator_config_definition(conf):
-    config_file_path = '../../etc/oslo-config-generator/%s' % conf
-    # oslo_config.sphinxconfiggen appends '.conf.sample' to the filename,
-    # strip file extentension (.conf or .ini).
-    output_file_path = '_static/config-samples/%s' % conf.rsplit('.', 1)[0]
-    return config_file_path, output_file_path
-
-
 config_generator_config_file = [
-    _get_config_generator_config_definition(conf)
-    for conf in _config_generator_config_files
+    (f'etc/tobiko.conf.gen', f"{TOBIKO_DOC_DIR}/_static/tobiko")
 ]

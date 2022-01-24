@@ -1,0 +1,4 @@
+[DEFAULT]
+namespace = tobiko
+output_file = tobiko.conf.sample
+wrap_width = 88
