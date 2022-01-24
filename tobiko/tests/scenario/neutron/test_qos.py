@@ -85,6 +85,7 @@ class QoSNetworkTest(testtools.TestCase):
         """Verify server policy ID"""
         self.assertIsNone(self.server.port_details['qos_policy_id'])
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=120)
     def test_qos_bw_limit(self):
         """Verify BW limit using the iperf3 tool"""
         self.server.wait_for_iperf3_server()
