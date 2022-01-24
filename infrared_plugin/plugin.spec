@@ -187,6 +187,10 @@ subparsers:
             type: Value
             help: Python interpreter to be used for executing test cases
             ansible_variable: tox_python
+          pytest-addopts:
+            type: Value
+            help: Extra options to be passed to PyTest
+            ansible_variable: pytest_addopts
           run-tests-timeout:
             type: Value
             help: Timeout (in seconds) to interrupt test cases execution
@@ -207,6 +211,10 @@ subparsers:
             type: Flag
             help: Ignore test execution errors
             ansible_variable: ignore_test_failures
+          flaky:
+            type: Flag
+            help: Ignore flaky test cases
+            ansible_variable: test_flaky
 
       - title: Cleanup stage
         options:

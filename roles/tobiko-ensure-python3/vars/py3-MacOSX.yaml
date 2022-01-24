@@ -1,12 +1,10 @@
 ---
 
 python_exe_dirs:
+  - ~/Library/Python/3.10/bin
   - ~/Library/Python/3.8/bin
-  - ~/Library/Python/3.7/bin
-  - ~/Library/Python/3.6/bin
+  - /Library/Frameworks/Python.framework/Versions/3.10/bin
   - /Library/Frameworks/Python.framework/Versions/3.8/bin
-  - /Library/Frameworks/Python.framework/Versions/3.7/bin
-  - /Library/Frameworks/Python.framework/Versions/3.6/bin
   - /usr/local/bin
   - /usr/bin
   - /bin
