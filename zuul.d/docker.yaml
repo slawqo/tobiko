@@ -10,7 +10,6 @@
         - tobiko-docker-infrared
         - tobiko-docker-linters
         - tobiko-docker-lower-constraints
-        - tobiko-docker-py3
         - tobiko-docker-py39
         - tobiko-docker-py310
     check-arm64:
@@ -21,6 +20,7 @@
         - tobiko-docker-py310-arm64
     gate:
       jobs:
+        - tobiko-docker-py3
         - tobiko-docker-functional
         - tobiko-docker-functional-arm64
     periodic: *CHECK
