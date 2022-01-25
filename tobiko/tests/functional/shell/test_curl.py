@@ -32,7 +32,7 @@ from tobiko.openstack import stacks
 
 @pytest.mark.flaky(reruns=2, reruns_delay=60)
 @keystone.skip_unless_has_keystone_credentials()
-class TestCurlExecute(testtools.TestCase):
+class CurlExecuteTest(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(stacks.UbuntuServerStackFixture)
 
@@ -72,7 +72,8 @@ class TestCurlExecute(testtools.TestCase):
                       f"IPv{ip_version} address.")
 
 
-class TestCurl(testtools.TestCase):
+@pytest.mark.flaky(reruns=2, reruns_delay=60)
+class CurlTest(testtools.TestCase):
 
     def test_get_url_header(self,
                             url: str = None,
