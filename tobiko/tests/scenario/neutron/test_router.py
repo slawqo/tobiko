@@ -14,6 +14,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import pytest
 from oslo_log import log
 import testtools
 
@@ -90,6 +91,7 @@ class RouterTest(testtools.TestCase):
         self.assertIn(self.ipv6_subnet_gateway_ip,
                       self.stack.network_stack.ipv6_gateway_addresses)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     @neutron.skip_if_missing_networking_extensions('l3_agent_scheduler')
     def test_router_is_scheduled_on_l3_agents(self):
         router_agent = neutron.find_l3_agent_hosting_router(self.router['id'],
