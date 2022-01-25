@@ -191,6 +191,10 @@ subparsers:
             type: Value
             help: Extra options to be passed to PyTest
             ansible_variable: pytest_addopts
+          pytest-maxfail:
+            type: Value
+            help: Max number of test case failures before aborting
+            ansible_variable: pytest_maxfail
           run-tests-timeout:
             type: Value
             help: Timeout (in seconds) to interrupt test cases execution

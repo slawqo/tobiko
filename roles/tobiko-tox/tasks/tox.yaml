@@ -13,9 +13,17 @@
     tox_command_line: '{{ tox_command_line.split() | join(" ") }}'
 
 
-- name: combine environment variables
+- name: combine and normalize environment variable values
   set_fact:
-    tox_env: '{{ tox_environment | from_yaml | combine(tox_constrain_env) }}'
+    tox_env: >
+      {{ tox_env |
+         default({}) |
+         combine({ item.key: (item.value | string).strip() }) }}
+  loop: >
+    {{ ((tox_environment | from_yaml | dict2items) +
+        (tox_constrain_env | dict2items)) }}
+  when:
+    - (item.value | string).strip()  # skip empty strings
 
 - name: show tox variables
   debug: var="{{ item }}"
