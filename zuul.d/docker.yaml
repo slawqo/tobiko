@@ -6,15 +6,14 @@
       Docker jobs intended to gate Tobiko container related changes
     check: &CHECK
       jobs:
-        - tobiko-docker-functional
-        - tobiko-docker-infrared
-        - tobiko-docker-linters
         - tobiko-docker-lower-constraints
         - tobiko-docker-py39
         - tobiko-docker-py310
+        - tobiko-docker-functional
+        - tobiko-docker-infrared
+        - tobiko-docker-linters
     check-arm64:
       jobs:
-        - tobiko-docker-functional-arm64
         - tobiko-docker-lower-constraints-arm64
         - tobiko-docker-py3-arm64
         - tobiko-docker-py310-arm64
@@ -22,7 +21,6 @@
       jobs:
         - tobiko-docker-py3
         - tobiko-docker-functional
-        - tobiko-docker-functional-arm64
     periodic: *CHECK
 
 
@@ -107,14 +105,12 @@
         docker_compose_service: linters
 
 
-# --- ARM64 jobs ----------------------------------------------------------------------
-
 - job:
     name: tobiko-docker-py3-arm64
     description: |
       Run unit tests for an OpenStack Python project inside a Docker container on top
       of arm64 architecture
-    voting: true
+    voting: false
     parent: tobiko-docker-py3
     nodeset: ubuntu-focal-arm64
 
@@ -124,7 +120,7 @@
     description: |
       Run unit tests for an OpenStack Python project inside a Docker container on top
       of arm64 architecture
-    voting: true
+    voting: false
     parent: tobiko-docker-py310
     nodeset: ubuntu-focal-arm64
 
@@ -134,16 +130,6 @@
     description: |
       Run unit tests for an OpenStack Python project inside a Docker container on top
       of arm64 architecture
-    voting: true
+    voting: false
     parent: tobiko-docker-lower-constraints
-    nodeset: ubuntu-focal-arm64
-
-
-- job:
-    name: tobiko-docker-functional-arm64
-    description: |
-      Run unit tests for an OpenStack Python project inside a Docker container on top
-      of arm64 architecture
-    voting: true
-    parent: tobiko-docker-functional
     nodeset: ubuntu-focal-arm64
