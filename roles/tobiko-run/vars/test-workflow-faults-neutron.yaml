@@ -10,6 +10,7 @@ test_workflow_steps:
   - tox_description: 'run disruptive test cases'
     tox_envlist: neutron_faults
     tox_step_name: neutron_faults
+    pytest_maxfail: 1
 
   - tox_description: 'verify Neutron resources'
     tox_envlist: neutron

@@ -18,6 +18,7 @@ test_workflow_steps:
     tox_step_name: faults
     tox_environment:
       TOBIKO_PREVENT_CREATE: no
+    pytest_maxfail: 1
 
   - tox_description: 'run sanity test cases after disruptive test cases'
     tox_envlist: sanity
