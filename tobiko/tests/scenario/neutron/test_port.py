@@ -19,6 +19,7 @@ import re
 import typing
 
 import netaddr
+import pytest
 from neutron_lib import constants
 from oslo_log import log
 import testtools
@@ -230,6 +231,7 @@ class ExtraDhcpOptsPortLoggingTest(testtools.TestCase):
 
     stack = tobiko.required_setup_fixture(stacks.NetworkStackFixture)
 
+    @pytest.mark.flaky(reruns=2, reruns_delay=60)
     def test_extra_dhcp_opts_logs_unsupported_options(self):
         # initialize logs that match the pattern
         topology.assert_ovn_unsupported_dhcp_option_messages()
