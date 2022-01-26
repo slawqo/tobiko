@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import abc
 
 from oslo_log import log
+import pytest
 import testtools
 
 import tobiko
@@ -83,6 +84,7 @@ class CirrosServerTest(testtools.TestCase):
         self.ensure_server(status='ACTIVE')
         self.assert_is_reachable()
 
+    @pytest.mark.flaky(reruns=2, reruns_delay=60)
     @nova.skip_if_missing_hypervisors(count=2)
     def test_6_migrate_server(self, live=False):
         """Tests cold migration actually changes hypervisor
@@ -94,10 +96,12 @@ class CirrosServerTest(testtools.TestCase):
         final_hypervisor = nova.get_server_hypervisor(server)
         self.assertNotEqual(initial_hypervisor, final_hypervisor)
 
-    @tobiko.skip("Expected to create problems on compute nodes")
+    @pytest.mark.flaky(reruns=2, reruns_delay=60)
+    @nova.skip_if_missing_hypervisors(count=2)
     def test_7_live_migrate_server(self):
         self.test_6_migrate_server(live=True)
 
+    @pytest.mark.flaky(reruns=2, reruns_delay=60)
     @nova.skip_if_missing_hypervisors(count=2)
     def test_8_migrate_server_with_host(self, live=False):
         """Tests cold migration actually ends on target hypervisor
@@ -119,7 +123,8 @@ class CirrosServerTest(testtools.TestCase):
         self.assertNotEqual(initial_hypervisor, final_hypervisor)
         self.assertEqual(target_hypervisor, final_hypervisor)
 
-    @tobiko.skip("Expected to create problems on compute nodes")
+    @pytest.mark.flaky(reruns=2, reruns_delay=60)
+    @nova.skip_if_missing_hypervisors(count=2)
     def test_8_live_migrate_server_with_host(self):
         self.test_8_migrate_server_with_host(live=True)
 
@@ -189,6 +194,7 @@ class UbuntuMinimalServerStackFixture(CloudInitServerStackFixture,
     pass
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=60)
 class UbuntuMinimalServerTest(CirrosServerTest):
     stack = tobiko.required_fixture(UbuntuMinimalServerStackFixture)
 
@@ -198,6 +204,7 @@ class UbuntuServerStackFixture(CloudInitServerStackFixture,
     pass
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=60)
 class UbuntuServerTest(CirrosServerTest):
     stack = tobiko.required_fixture(UbuntuServerStackFixture)
 
@@ -217,6 +224,7 @@ class CentosServerStackFixture(CloudInitServerStackFixture,
     pass
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=60)
 class CentosServerTest(CirrosServerTest):
     stack = tobiko.required_fixture(CentosServerStackFixture)
 
@@ -226,5 +234,6 @@ class RedhatServerStackFixture(CloudInitServerStackFixture,
     pass
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=60)
 class RedhatServerTest(CirrosServerTest):
     stack = tobiko.required_fixture(RedhatServerStackFixture)
