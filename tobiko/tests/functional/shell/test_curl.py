@@ -72,7 +72,6 @@ class CurlExecuteTest(testtools.TestCase):
                       f"IPv{ip_version} address.")
 
 
-@pytest.mark.flaky(reruns=2, reruns_delay=60)
 class CurlTest(testtools.TestCase):
 
     def test_get_url_header(self,
