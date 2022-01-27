@@ -72,6 +72,10 @@ def configure_metadata(config):
         ['git', 'log', '-n', '1'],
         universal_newlines=True).replace('\n', '<br>')
     config._metadata["Tobiko Git Commit"] = git_commit
+    git_release = subprocess.check_output(
+        ['git', 'describe', '--tags'],
+        universal_newlines=True).replace('\n', '<br>')
+    config._metadata["Tobiko Git Release"] = git_release
 
 
 def configure_caplog(config):
