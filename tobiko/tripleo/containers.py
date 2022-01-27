@@ -438,11 +438,13 @@ def comparable_container_keys(container, include_container_objects=False):
     if is_podman():
         if podman.Podman_Version_3():
             con_host_name_stat_obj_tuple = (tripleo_topology.ip_to_hostname(
-                container.client.base_url.rsplit('_')[1]), container.attrs[
+                container.client.base_url.netloc.rsplit('_')[1]),
+                                            container.attrs[
                 'Names'][0], container.attrs['State'], container)
 
             con_host_name_stat_tuple = (tripleo_topology.ip_to_hostname(
-                container.client.base_url.rsplit('_')[1]), container.attrs[
+                container.client.base_url.netloc.rsplit('_')[1]),
+                                        container.attrs[
                 'Names'][0], container.attrs['State'])
         else:
 
