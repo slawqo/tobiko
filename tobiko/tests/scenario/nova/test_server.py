@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import abc
+import contextlib
 
 from oslo_log import log
 import pytest
@@ -148,11 +149,14 @@ class CirrosServerTest(testtools.TestCase):
         self.assert_is_reachable()
         self.assertEqual('ACTIVE', server.status)
         if live:
-            nova.live_migrate_server(server, **params)
+            with self.handle_migration_errors():
+                nova.live_migrate_server(server, **params)
+
             server = nova.wait_for_server_status(
                 server, 'ACTIVE', transient_status=['MIGRATING'])
         else:
-            nova.migrate_server(server, **params)
+            with self.handle_migration_errors():
+                nova.migrate_server(server, **params)
             server = nova.wait_for_server_status(server, 'VERIFY_RESIZE')
             self.assertEqual('VERIFY_RESIZE', server.status)
 
@@ -161,6 +165,13 @@ class CirrosServerTest(testtools.TestCase):
                 server, 'ACTIVE', transient_status=['VERIFY_RESIZE'])
         self.assert_is_reachable()
         return server
+
+    @contextlib.contextmanager
+    def handle_migration_errors(self):
+        try:
+            yield
+        except nova.MigrationHostNotFoundError as ex:
+            self.skipTest(str(ex))
 
     def assert_is_reachable(self):
         self.stack.assert_is_reachable()
