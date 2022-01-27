@@ -19,6 +19,8 @@ import typing
 import novaclient
 import novaclient.exceptions
 import novaclient.v2.client
+import novaclient.v2.servers
+import novaclient.v2.hypervisors
 from oslo_log import log
 
 import tobiko
@@ -30,6 +32,7 @@ LOG = log.getLogger(__name__)
 CLIENT_CLASSES = (novaclient.v2.client.Client,)
 NovaClient = typing.Union[novaclient.v2.client.Client]
 NovaServer = typing.Union[novaclient.v2.servers.Server]
+NovaHypervisor = typing.Union[novaclient.v2.hypervisors.Hypervisor]
 
 
 class NovaClientFixture(_client.OpenstackClientFixture):
@@ -77,13 +80,15 @@ def get_nova_client(session=None, shared=True, init_client=None,
     return client.client
 
 
-def list_hypervisors(client: NovaClientType = None, detailed=True, **params):
+def list_hypervisors(client: NovaClientType = None, detailed=True, **params) \
+        -> tobiko.Selection[NovaHypervisor]:
     client = nova_client(client)
     hypervisors = client.hypervisors.list(detailed=detailed)
     return tobiko.select(hypervisors).with_attributes(**params)
 
 
-def find_hypervisor(client: NovaClientType = None, unique=False, **params):
+def find_hypervisor(client: NovaClientType = None, unique=False, **params) \
+        -> NovaHypervisor:
     hypervisors = list_hypervisors(client=client, **params)
     if unique:
         return hypervisors.unique
