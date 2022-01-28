@@ -32,6 +32,7 @@
     - checkout_files is skipped
   block:
     - name: "check source directory exists"
+      delegate_to: localhost
       stat:
         path: '{{ deploy_src_dir }}'
       register: deploy_src_dir_stat
