@@ -13,9 +13,11 @@
 #    under the License.
 from __future__ import absolute_import
 
+import contextlib
 import typing
 
 import novaclient
+import novaclient.exceptions
 import novaclient.v2.client
 from oslo_log import log
 
@@ -148,31 +150,49 @@ def delete_server(server: ServerType = None,
     return nova_client(client).servers.delete(server_id, **params)
 
 
-def migrate_server(server: typing.Optional[ServerType] = None,
-                   server_id: typing.Optional[str] = None,
+class MigrationHostNotFoundError(tobiko.TobikoException):
+    message = ("No valid host was found to migrate server '{server_id}'"
+               "(params={params}).")
+
+
+def migrate_server(server: ServerType = None,
+                   server_id: str = None,
                    client: NovaClientType = None, **params):
-    # pylint: disable=protected-access
     server_id = get_server_id(server=server, server_id=server_id)
-    LOG.debug(f"Start server migration (server_id='{server_id}', "
-              f"info={params})")
-    return nova_client(client).servers._action('migrate', server_id,
-                                               info=params)
+    LOG.debug(f"Start server '{server_id}' migration...\n" +
+              f"{params}")
+    with handle_migration_errors(server_id=server_id, **params):
+        # pylint: disable=protected-access
+        return nova_client(client).servers._action('migrate', server_id,
+                                                   info=params)
 
 
-def live_migrate_server(server: typing.Optional[ServerType] = None,
-                        server_id: typing.Optional[str] = None,
-                        host: typing.Optional[str] = None,
+def live_migrate_server(server: ServerType = None,
+                        server_id: str = None,
+                        host: str = None,
                         block_migration: typing.Union[str, bool] = True,
                         disk_over_commit: bool = False,
                         client: NovaClientType = None,
                         **params):
     server_id = get_server_id(server=server, server_id=server_id)
-    LOG.debug(f"Start server live migration (server_id='{server_id}', "
-              f"host={host}, block_migration={block_migration}, "
-              f"disk_over_commit={disk_over_commit}, info={params})")
-    return nova_client(client).servers.live_migrate(
-        server=server_id, host=host, block_migration=block_migration,
-        disk_over_commit=disk_over_commit, **params)
+    params.update(host=host, block_migration=block_migration,
+                  disk_over_commit=disk_over_commit)
+    LOG.debug(f"Start server '{server_id}' live migration...\n" +
+              f"{params}")
+    with handle_migration_errors(server_id=server_id, **params):
+        return nova_client(client).servers.live_migrate(server=server,
+                                                        **params)
+
+
+@contextlib.contextmanager
+def handle_migration_errors(server_id: str, **params):
+    try:
+        yield
+    except novaclient.exceptions.BadRequest as ex:
+        if 'No valid host was found' in str(ex):
+            raise MigrationHostNotFoundError(server_id=server_id,
+                                             params=params) from ex
+        raise
 
 
 def confirm_resize(server: typing.Optional[ServerType] = None,
