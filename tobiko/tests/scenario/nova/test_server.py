@@ -170,7 +170,8 @@ class CirrosServerTest(testtools.TestCase):
     def handle_migration_errors(self):
         try:
             yield
-        except nova.MigrationHostNotFoundError as ex:
+        except (nova.PreCheckMigrateServerError,
+                nova.NoValidHostFoundMigrateServerError) as ex:
             self.skipTest(str(ex))
 
     def assert_is_reachable(self):

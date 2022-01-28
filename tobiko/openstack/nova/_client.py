@@ -134,12 +134,27 @@ def get_server_id(server: typing.Optional[ServerType] = None,
     return server_id
 
 
+class GetServerError(tobiko.TobikoException):
+    message = ("Error getting server '{server_id}' details "
+               "(params={params}):\n"
+               "{reason}")
+
+
+class ServerNotFoundError(GetServerError, tobiko.ObjectNotFound):
+    pass
+
+
 def get_server(server: ServerType = None,
                server_id: str = None,
                client: NovaClientType = None,
                **params) -> NovaServer:
     server_id = get_server_id(server=server, server_id=server_id)
-    return nova_client(client).servers.get(server_id, **params)
+    try:
+        return nova_client(client).servers.get(server_id, **params)
+    except novaclient.exceptions.NotFound as ex:
+        raise ServerNotFoundError(server_id=server_id,
+                                  params=params,
+                                  reason=str(ex)) from ex
 
 
 def delete_server(server: ServerType = None,
@@ -150,11 +165,6 @@ def delete_server(server: ServerType = None,
     return nova_client(client).servers.delete(server_id, **params)
 
 
-class MigrationHostNotFoundError(tobiko.TobikoException):
-    message = ("No valid host was found to migrate server '{server_id}'"
-               "(params={params}).")
-
-
 def migrate_server(server: ServerType = None,
                    server_id: str = None,
                    client: NovaClientType = None, **params):
@@ -163,8 +173,8 @@ def migrate_server(server: ServerType = None,
               f"{params}")
     with handle_migration_errors(server_id=server_id, **params):
         # pylint: disable=protected-access
-        return nova_client(client).servers._action('migrate', server_id,
-                                                   info=params)
+        return nova_client(client).servers._action(
+            'migrate', server_id, info=params)
 
 
 def live_migrate_server(server: ServerType = None,
@@ -186,13 +196,32 @@ def live_migrate_server(server: ServerType = None,
 
 @contextlib.contextmanager
 def handle_migration_errors(server_id: str, **params):
+    error_class = MigrateServerError
     try:
         yield
     except novaclient.exceptions.BadRequest as ex:
-        if 'No valid host was found' in str(ex):
-            raise MigrationHostNotFoundError(server_id=server_id,
-                                             params=params) from ex
-        raise
+        reason = str(ex)
+        if 'No valid host was found' in reason:
+            error_class = NoValidHostFoundMigrateServerError
+        if 'Migration pre-check error' in reason:
+            error_class = PreCheckMigrateServerError
+        raise error_class(server_id=server_id,
+                          reason=reason,
+                          params=params) from ex
+
+
+class MigrateServerError(tobiko.TobikoException):
+    message = ("Error migrating server '{server_id}' "
+               "(params={params}):\n"
+               "{reason}")
+
+
+class NoValidHostFoundMigrateServerError(MigrateServerError):
+    pass
+
+
+class PreCheckMigrateServerError(MigrateServerError):
+    pass
 
 
 def confirm_resize(server: typing.Optional[ServerType] = None,
@@ -238,7 +267,6 @@ def get_console_output(server: typing.Optional[ServerType] = None,
             else:
                 # For some reason it could happen resulting body cannot be
                 # translated to json object and it is converted to None
-                # on such case get_console_output would raise a TypeError
                 LOG.exception(f"Error getting server '{server_id}' console "
                               "output")
         else:
@@ -247,14 +275,12 @@ def get_console_output(server: typing.Optional[ServerType] = None,
                           f"(length = {len(output)}).")
                 return output
 
-        try:
-            attempt.check_limits()
-        except tobiko.RetryLimitError:
+        if attempt.is_last:
             LOG.info(f"No console output produced by server '{server_id}') "
                      f" after {attempt.elapsed_time} seconds")
             break
-        else:
-            LOG.debug(f"Waiting for server '{server_id}' console output...")
+
+        LOG.debug(f"Waiting for server '{server_id}' console output...")
 
     return None
 

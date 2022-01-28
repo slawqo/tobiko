@@ -48,7 +48,12 @@ confirm_resize = _client.confirm_resize
 reboot_server = _client.reboot_server
 NovaServer = _client.NovaServer
 ServerType = _client.ServerType
-MigrationHostNotFoundError = _client.MigrationHostNotFoundError
+GetServerError = _client.GetServerError
+ServerNotFoundError = _client.ServerNotFoundError
+MigrateServerError = _client.MigrateServerError
+PreCheckMigrateServerError = _client.PreCheckMigrateServerError
+NoValidHostFoundMigrateServerError = (
+    _client.NoValidHostFoundMigrateServerError)
 
 WaitForCloudInitTimeoutError = _cloud_init.WaitForCloudInitTimeoutError
 cloud_config = _cloud_init.cloud_config
