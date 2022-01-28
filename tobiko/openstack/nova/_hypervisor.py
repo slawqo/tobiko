@@ -13,7 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
+import typing
 
 import tobiko
 from tobiko.openstack.nova import _client
@@ -54,32 +54,14 @@ def skip_if_missing_hypervisors(count=1, **params):
                           **params)
 
 
-def get_same_host_hypervisors(servers, hypervisor):
-    host_hypervisors = get_servers_hypervisors(servers)
-    same_host_server_ids = host_hypervisors.pop(hypervisor, None)
-    if same_host_server_ids:
-        return {hypervisor: same_host_server_ids}
-    else:
-        return {}
-
-
-def get_different_host_hypervisors(servers, hypervisor):
-    host_hypervisors = get_servers_hypervisors(servers)
-    host_hypervisors.pop(hypervisor, None)
-    return host_hypervisors
-
-
-def get_servers_hypervisors(servers, client=None):
-    hypervisors = collections.defaultdict(list)
+def list_servers_hypervisors(servers: typing.Iterable[_client.ServerType],
+                             client: _client.NovaClientType = None) \
+        -> tobiko.Selection[str]:
+    hypervisors = tobiko.Selection[str]()
+    client = _client.nova_client(client)
     for server in (servers or list()):
-        client = _client.nova_client(client)
-        if isinstance(server, str):
-            server_id = server
-            server = _client.get_server(server_id, client=client)
-        else:
-            server_id = server.id
-        hypervisor = get_server_hypervisor(server)
-        hypervisors[hypervisor].append(server_id)
+        server = _client.get_server(server, client=client)
+        hypervisors.append(get_server_hypervisor(server))
     return hypervisors
 
 

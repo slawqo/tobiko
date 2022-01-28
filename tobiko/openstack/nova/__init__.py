@@ -63,10 +63,8 @@ wait_for_cloud_init_done = _cloud_init.wait_for_cloud_init_done
 wait_for_cloud_init_status = _cloud_init.wait_for_cloud_init_status
 
 skip_if_missing_hypervisors = _hypervisor.skip_if_missing_hypervisors
-get_same_host_hypervisors = _hypervisor.get_same_host_hypervisors
-get_different_host_hypervisors = _hypervisor.get_different_host_hypervisors
 get_server_hypervisor = _hypervisor.get_server_hypervisor
-get_servers_hypervisors = _hypervisor.get_servers_hypervisors
+list_servers_hypervisors = _hypervisor.list_servers_hypervisors
 
 get_nova_quota_set = _quota_set.get_nova_quota_set
 ensure_nova_quota_limits = _quota_set.ensure_nova_quota_limits

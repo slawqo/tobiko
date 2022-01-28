@@ -14,7 +14,7 @@
 #    under the License.
 from __future__ import absolute_import
 
-
+import pytest
 import testtools
 
 import tobiko
@@ -57,7 +57,7 @@ class NetworkTest(testtools.TestCase):
                          gateway['ha'])
 
 
-@tobiko.skip("The test is not able to allocate required resources")
+@pytest.mark.migrate_server
 class SameHostNetworkTest(NetworkTest):
 
     #: Resources stack with Nova server to send messages to
@@ -73,7 +73,7 @@ class SameHostNetworkTest(NetworkTest):
                          getattr(receiver, 'OS-EXT-SRV-ATTR:host'))
 
 
-@tobiko.skip("The test is not able to allocate required resources")
+@pytest.mark.migrate_server
 @nova.skip_if_missing_hypervisors(count=2, state='up', status='enabled')
 class DifferentHostNetworkTest(NetworkTest):
 

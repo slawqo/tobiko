@@ -269,23 +269,29 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
 
     def validate_same_host_scheduler_hints(self, hypervisor):
         if self.same_host:
-            different_host_hypervisors = nova.get_different_host_hypervisors(
-                self.same_host, hypervisor)
-            if different_host_hypervisors:
-                tobiko.skip_test(f"Server {self.server_id} of stack "
-                                 f"{self.stack_name} created on different "
-                                 "hypervisor host from servers:\n"
-                                 f"{different_host_hypervisors}")
+            hypervisors = nova.list_servers_hypervisors(self.same_host)
+            if hypervisor not in hypervisors:
+                self.migrate_server(hypervisor=hypervisors.unique)
 
     def validate_different_host_scheduler_hints(self, hypervisor):
         if self.different_host:
-            same_host_hypervisors = nova.get_same_host_hypervisors(
-                self.different_host, hypervisor)
-            if same_host_hypervisors:
-                tobiko.skip_test(f"Server {self.server_id} of stack "
-                                 f"{self.stack_name} created on the same "
-                                 "hypervisor host as servers:\n"
-                                 f"{same_host_hypervisors}")
+            hypervisors = nova.list_servers_hypervisors(self.different_host)
+            if hypervisor in hypervisors:
+                self.migrate_server()
+
+    def migrate_server(self, hypervisor: str = None, live=True):
+        server = nova.activate_server(server=self.server_id)
+        if live:
+            nova.live_migrate_server(server, host=hypervisor)
+            server = nova.wait_for_server_status(
+                server, 'ACTIVE', transient_status=['MIGRATING'])
+        else:
+            nova.migrate_server(server, host=hypervisor)
+            server = nova.wait_for_server_status(server, 'VERIFY_RESIZE')
+            nova.confirm_resize(server)
+            server = nova.wait_for_server_status(
+                server, 'ACTIVE', transient_status=['VERIFY_RESIZE'])
+        return server
 
     @property
     def server_details(self):
