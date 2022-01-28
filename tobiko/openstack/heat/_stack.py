@@ -166,8 +166,7 @@ class HeatStackFixture(tobiko.SharedFixture):
                     if attempt.is_last:
                         raise
 
-                    assert attempt.count is not None
-                    assert attempt.timeout is not None
+                    self.delete_stack()
 
                     # It uses a random time sleep to make conflicting
                     # concurrent creations less probable to occur
