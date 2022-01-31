@@ -29,21 +29,44 @@ from tobiko.common import _deprecation
 from tobiko.common import _exception
 from tobiko.common import _testcase
 
-
 LOG = log.getLogger(__name__)
 
+F = typing.TypeVar('F', 'SharedFixture', fixtures.Fixture)
+FixtureType = typing.Union[F, typing.Type[F], str]
 
-def is_fixture(obj):
-    '''Returns whenever obj is a fixture or not'''
+
+def is_fixture(obj: typing.Any) -> bool:
+    """It returns whenever obj is a fixture or not"""
     return (getattr(obj, '__tobiko_fixture__', False) or
             isinstance(obj, fixtures.Fixture) or
             (inspect.isclass(obj) and issubclass(obj, fixtures.Fixture)))
 
 
-def get_fixture(obj: typing.Any,
+@typing.overload
+def get_fixture(obj: typing.Type[F],
+                fixture_id: typing.Any = None,
+                manager: 'FixtureManager' = None) -> F:
+    pass
+
+
+@typing.overload
+def get_fixture(obj: F,
+                fixture_id: typing.Any = None,
+                manager: 'FixtureManager' = None) -> F:
+    pass
+
+
+@typing.overload
+def get_fixture(obj: str,
                 fixture_id: typing.Any = None,
                 manager: 'FixtureManager' = None) -> fixtures.Fixture:
-    '''Returns a fixture identified by given :param obj:
+    pass
+
+
+def get_fixture(obj: FixtureType,
+                fixture_id: typing.Any = None,
+                manager: 'FixtureManager' = None) -> F:
+    """Returns a fixture identified by given :param obj:
 
     It returns registered fixture for given :param obj:. If none has been
     registered it creates a new one.
@@ -66,16 +89,16 @@ def get_fixture(obj: typing.Any,
     :returns: an instance of fixture class identified by obj, or obj itself
     if it is instance of fixtures.Fixture class.
 
-    '''
+    """
     if isinstance(obj, fixtures.Fixture):
-        return obj
+        return typing.cast(F, obj)
     if manager is None:
         manager = FIXTURES
     return manager.get_fixture(obj, fixture_id=fixture_id)
 
 
 def get_fixture_name(obj) -> str:
-    '''Get unique fixture name'''
+    """It gets unique fixture name"""
     name = getattr(obj, '__tobiko_fixture_name__', None)
     if name is None:
         if not is_fixture(obj):
@@ -86,8 +109,8 @@ def get_fixture_name(obj) -> str:
     return name
 
 
-def get_fixture_class(obj) -> typing.Type[fixtures.Fixture]:
-    '''Get fixture class'''
+def get_fixture_class(obj: FixtureType) -> typing.Type[fixtures.Fixture]:
+    """It gets fixture class"""
     if isinstance(obj, str):
         obj = tobiko.load_object(obj)
 
@@ -98,21 +121,55 @@ def get_fixture_class(obj) -> typing.Type[fixtures.Fixture]:
     return obj
 
 
-def get_fixture_dir(obj):
+def get_fixture_dir(obj: FixtureType) -> str:
     '''Get directory of fixture class source code file'''
     return os.path.dirname(inspect.getfile(get_fixture_class(obj)))
 
 
-def remove_fixture(obj, fixture_id=None, manager=None) \
-        -> typing.Optional[fixtures.Fixture]:
-    '''Unregister fixture identified by given :param obj: if any'''
+@typing.overload
+def remove_fixture(obj: typing.Type[F],
+                   fixture_id: typing.Any = None,
+                   manager: 'FixtureManager' = None) -> typing.Optional[F]:
+    pass
+
+
+@typing.overload
+def remove_fixture(obj: F,
+                   fixture_id: typing.Any = None,
+                   manager: 'FixtureManager' = None) -> typing.Optional[F]:
+    pass
+
+
+def remove_fixture(obj: FixtureType,
+                   fixture_id: typing.Any = None,
+                   manager: 'FixtureManager' = None) -> typing.Optional[F]:
+    """Unregister fixture identified by given :param obj: if any"""
     manager = manager or FIXTURES
     return manager.remove_fixture(obj, fixture_id=fixture_id)
 
 
-def setup_fixture(obj, fixture_id=None, manager=None, alternative=None) \
-        -> fixtures.Fixture:
-    '''Get registered fixture and setup it up'''
+@typing.overload
+def setup_fixture(obj: typing.Type[F],
+                  fixture_id: typing.Any = None,
+                  manager: 'FixtureManager' = None) -> F:
+    pass
+
+
+@typing.overload
+def setup_fixture(obj: F,
+                  fixture_id: typing.Any = None,
+                  manager: 'FixtureManager' = None) -> F:
+    pass
+
+
+def setup_fixture(obj: FixtureType,
+                  fixture_id: typing.Any = None,
+                  manager: 'FixtureManager' = None,
+                  alternative: FixtureType = None) \
+        -> F:
+    """I setups registered fixture
+
+    """
     if alternative is None:
         objs = [obj]
     else:
@@ -121,7 +178,10 @@ def setup_fixture(obj, fixture_id=None, manager=None, alternative=None) \
             handle_exception=handle_setup_error):
         errors = []
         for _obj in objs:
-            fixture = get_fixture(_obj, fixture_id=fixture_id, manager=manager)
+            fixture: F = typing.cast(F,
+                                     get_fixture(_obj,
+                                                 fixture_id=fixture_id,
+                                                 manager=manager))
             try:
                 fixture.setUp()
                 break
@@ -145,33 +205,92 @@ def handle_setup_error(ex_type, ex_value, ex_tb):
                       exc_info=(ex_type, ex_value, ex_tb))
 
 
-def reset_fixture(obj, fixture_id=None, manager=None) \
-        -> fixtures.Fixture:
-    '''Get registered fixture and reset it'''
-    fixture = get_fixture(obj, fixture_id=fixture_id, manager=manager)
+@typing.overload
+def reset_fixture(obj: typing.Type[F],
+                  fixture_id: typing.Any = None,
+                  manager: 'FixtureManager' = None) -> F:
+    pass
+
+
+@typing.overload
+def reset_fixture(obj: F,
+                  fixture_id: typing.Any = None,
+                  manager: 'FixtureManager' = None) -> F:
+    pass
+
+
+def reset_fixture(obj: FixtureType,
+                  fixture_id: typing.Any = None,
+                  manager: 'FixtureManager' = None) -> F:
+    """It cleanups and setups registered fixture"""
+    fixture: F = get_fixture(obj, fixture_id=fixture_id, manager=manager)
     with _exception.handle_multiple_exceptions():
         fixture.reset()
     return fixture
 
 
-def cleanup_fixture(obj, fixture_id=None, manager=None) \
-        -> fixtures.Fixture:
-    '''Get registered fixture and clean it up'''
+@typing.overload
+def cleanup_fixture(obj: typing.Type[F],
+                    fixture_id: typing.Any = None,
+                    manager: 'FixtureManager' = None) -> F:
+    pass
+
+
+@typing.overload
+def cleanup_fixture(obj: F,
+                    fixture_id: typing.Any = None,
+                    manager: 'FixtureManager' = None) -> F:
+    pass
+
+
+def cleanup_fixture(obj: FixtureType,
+                    fixture_id: typing.Any = None,
+                    manager: 'FixtureManager' = None) -> F:
+    """It cleans up registered fixture"""
     fixture = get_fixture(obj, fixture_id=fixture_id, manager=manager)
     with _exception.handle_multiple_exceptions():
         fixture.cleanUp()
     return fixture
 
 
-def use_fixture(obj, fixture_id=None, manager=None) \
-        -> fixtures.Fixture:
+@typing.overload
+def use_fixture(obj: typing.Type[F],
+                fixture_id: typing.Any = None,
+                manager: 'FixtureManager' = None) -> F:
+    pass
+
+
+@typing.overload
+def use_fixture(obj: F,
+                fixture_id: typing.Any = None,
+                manager: 'FixtureManager' = None) -> F:
+    pass
+
+
+def use_fixture(obj: FixtureType,
+                fixture_id: typing.Any = None,
+                manager: 'FixtureManager' = None) -> F:
+    """It setups registered fixture and then register it for cleanup
+
+    At the end of the test case execution it will call cleanup_fixture
+    with on the fixture
+    """
     fixture = setup_fixture(obj, fixture_id=fixture_id, manager=manager)
     _testcase.add_cleanup(tobiko.cleanup_fixture, fixture)
     return fixture
 
 
-def get_name_and_object(obj: typing.Any) \
-        -> typing.Tuple[str, typing.Any]:
+@typing.overload
+def get_name_and_object(obj: typing.Type[F]) -> typing.Tuple[str, F]:
+    pass
+
+
+@typing.overload
+def get_name_and_object(obj: F) -> typing.Tuple[str, F]:
+    pass
+
+
+def get_name_and_object(obj: typing.Any) -> typing.Tuple[str, typing.Any]:
     '''Get (name, obj) tuple identified by given :param obj:'''
     if isinstance(obj, str):
         return obj, tobiko.load_object(obj)
@@ -279,29 +398,28 @@ def get_required_fixture_properties(cls):
             if isinstance(member, RequiredFixtureProperty)]
 
 
-def init_fixture(obj: typing.Any,
+def init_fixture(obj: typing.Union[typing.Type[F], F],
                  name: str,
-                 fixture_id: typing.Any = None):
-    if inspect.isclass(obj) and issubclass(obj, fixtures.Fixture):
+                 fixture_id: typing.Any = None) -> F:
+    fixture: F
+    if isinstance(obj, fixtures.Fixture):
+        fixture = obj
+    elif inspect.isclass(obj) and issubclass(obj, fixtures.Fixture):
         try:
-            obj = obj()
+            fixture = obj()
         except Exception as ex:
             raise TypeError(f"Error creating fixture '{name}' from class "
                             f"{obj!r}.") from ex
-    if isinstance(obj, fixtures.Fixture):
-        obj.__tobiko_fixture__ = True
-        obj.__tobiko_fixture_name__ = name
-        obj.__tobiko_fixture_id__ = fixture_id
-        return obj
-
-    raise TypeError(f"Invalid fixture object type: '{obj!r}'")
+    else:
+        raise TypeError(f"Invalid fixture object type: '{obj!r}'")
+    fixture.__tobiko_fixture__ = True
+    fixture.__tobiko_fixture_name__ = name
+    fixture.__tobiko_fixture_id__ = fixture_id
+    return fixture
 
 
 def fixture_property(*args, **kwargs):
     return FixtureProperty(*args, **kwargs)
-
-
-F = typing.TypeVar('F', bound='SharedFixture')
 
 
 def required_fixture(cls: typing.Type[F], **params) \
@@ -354,33 +472,35 @@ def get_object_name(obj) -> str:
 class FixtureManager(object):
 
     def __init__(self):
-        self.fixtures: typing.Dict[str, fixtures.Fixture] = {}
+        self.fixtures: typing.Dict[str, F] = {}
 
     def get_fixture(self,
-                    obj: typing.Any,
-                    fixture_id: typing.Any = None) \
-            -> fixtures.Fixture:
+                    obj: FixtureType,
+                    fixture_id: typing.Any = None) -> F:
         name, obj = get_name_and_object(obj)
         if fixture_id:
             name += f'-{fixture_id}'
-        fixture = self.fixtures.get(name)
-        if fixture is None:
-            self.fixtures[name] = fixture = self.init_fixture(
-                obj=obj, name=name, fixture_id=fixture_id)
+        try:
+            return self.fixtures[name]
+        except KeyError:
+            fixture: F = self.init_fixture(obj=obj,
+                                           name=name,
+                                           fixture_id=fixture_id)
             assert isinstance(fixture, fixtures.Fixture)
-        return fixture
+            self.fixtures[name] = fixture
+            return fixture
 
     @staticmethod
-    def init_fixture(obj: typing.Any,
+    def init_fixture(obj: typing.Union[typing.Type[F], F],
                      name: str,
-                     fixture_id: typing.Any) \
-            -> fixtures.Fixture:
+                     fixture_id: typing.Any) -> F:
         return init_fixture(obj=obj,
                             name=name,
                             fixture_id=fixture_id)
 
-    def remove_fixture(self, obj, fixture_id=None) \
-            -> typing.Optional[fixtures.Fixture]:
+    def remove_fixture(self,
+                       obj: FixtureType,
+                       fixture_id: typing.Any = None) -> typing.Optional[F]:
         name = get_object_name(obj)
         if fixture_id:
             name += '-' + str(fixture_id)
@@ -413,8 +533,8 @@ class SharedFixture(fixtures.Fixture):
     _cleanup_executed = False
 
     __tobiko_fixture__ = True
-    __tobiko_fixture_name__ = None
-    __tobiko_fixture_id__ = None
+    __tobiko_fixture_name__: typing.Optional[str] = None
+    __tobiko_fixture_id__: typing.Any = None
 
     def __init__(self):
         # make sure class states can be used before setUp
