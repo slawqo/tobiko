@@ -13,7 +13,7 @@ services:
     volumes:
       - ./report:/report
       - .:/tobiko
-      - ~/.ssh:/root/.ssh:ro
+      - ~/.ssh:/root/.ssh
 
   lower-constraints:
     extends:
