@@ -37,12 +37,12 @@ class NetworkTest(testtools.TestCase):
         self.stack.wait_for_create_complete()
 
     def test_ssh(self):
-        """Test SSH connectivity to floating IP address"""
+        """Test TCP connectivity to SSH server from VM to VM"""
         hostname = sh.ssh_hostname(ssh_client=self.stack.ssh_client)
         self.assertEqual(self.stack.server_name.lower(), hostname)
 
     def test_ping(self):
-        """Test ICMP connectivity to floating IP address"""
+        """Test ICMP connectivity to from VM to VM"""
         ping.assert_reachable_hosts(
             [self.stack.ip_address],
             ssh_client=self.stack.peer_stack.ssh_client)
@@ -51,7 +51,7 @@ class NetworkTest(testtools.TestCase):
 
     @neutron.skip_if_missing_networking_extensions('l3-ha')
     def test_l3_ha(self):
-        """Test 'mtu' network attribute"""
+        """Test l3-ha network attribute"""
         gateway = self.stack.network_stack.gateway_details
         self.assertEqual(self.stack.network_stack.ha,
                          gateway['ha'])
