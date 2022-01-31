@@ -264,8 +264,12 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
     def validate_scheduler_hints(self):
         if self.scheduler_hints:
             hypervisor = self.hypervisor_host
-            self.validate_same_host_scheduler_hints(hypervisor=hypervisor)
-            self.validate_different_host_scheduler_hints(hypervisor=hypervisor)
+            try:
+                self.validate_same_host_scheduler_hints(hypervisor=hypervisor)
+                self.validate_different_host_scheduler_hints(
+                    hypervisor=hypervisor)
+            except nova.MigrateServerError as ex:
+                raise heat.InvalidStackError(name=self.stack_name) from ex
 
     def validate_same_host_scheduler_hints(self, hypervisor):
         if self.same_host:
