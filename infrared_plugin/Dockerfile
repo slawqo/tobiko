@@ -1,4 +1,4 @@
-FROM centos:8 as base
+FROM fedora:34 as base
 
 ENV TOBIKO_INFRARED_DIR /tobiko-infrared
 ENV OPENSHIFT_INFRARED_URL=http://code.engineering.redhat.com/gerrit/openshift-ir-plugin.git
@@ -9,7 +9,8 @@ ENV IR_EXTRA_ARGS ""
 
 # Install common binary dependencies
 RUN dnf install -y git python3 rsync which
-RUN python3 -m pip install --upgrade wheel setuptools pip
+RUN python3 -m ensurepip --upgrade
+RUN python3 -m pip install --upgrade wheel setuptools
 
 # Creates directories and use infrared home dir as home
 RUN mkdir -p "${IR_HOME}" "${REPORT_DIR}"
@@ -21,7 +22,7 @@ FROM base as install
 # Install wheels
 ADD requirements.txt .
 
-RUN pip install -r requirements.txt
+RUN python3 -m pip install -r requirements.txt
 
 
 FROM base as configure

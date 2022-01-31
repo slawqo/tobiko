@@ -1,23 +1,11 @@
 ARG base_image=py39
 
-FROM centos:8 as lower-constraints
-
-ENV CONSTRAINS_FILE=lower-constraints.txt
-ENV INSTALL_PACKAGES="dnf install -y"
-ENV INSTALL_PACKAGES_GROUP="dnf groupinstall -y"
-ENV PYTHON_VERSION=3
-
-USER 0
-
-
 FROM fedora:34 as py39
 
 ENV CONSTRAINS_FILE=upper-constraints.txt
 ENV INSTALL_PACKAGES="dnf install -y"
 ENV INSTALL_PACKAGES_GROUP="dnf groupinstall -y"
 ENV PYTHON_VERSION=3.9
-
-USER 0
 
 
 FROM fedora:35 as py310
@@ -27,7 +15,10 @@ ENV INSTALL_PACKAGES="dnf install -y"
 ENV INSTALL_PACKAGES_GROUP="dnf groupinstall -y"
 ENV PYTHON_VERSION=3.10
 
-USER 0
+
+FROM py39 as lower-constraints
+
+ENV CONSTRAINS_FILE=lower-constraints.txt
 
 
 FROM ${base_image} as base
