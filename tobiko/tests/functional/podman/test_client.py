@@ -15,8 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import types
-
 import testtools
 
 import tobiko
@@ -60,9 +58,3 @@ class PodmanClientTest(testtools.TestCase):
         client = podman.get_podman_client(
             ssh_client=self.ssh_client).connect()
         self.assertTrue(client.system.ping())
-
-    def test_list_podman_containers(self):
-        client = podman.get_podman_client(
-            ssh_client=self.ssh_client).connect()
-        self.assertIsInstance(client.containers.list(),
-                              types.GeneratorType)
