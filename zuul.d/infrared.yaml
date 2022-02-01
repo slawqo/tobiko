@@ -6,8 +6,6 @@
       Infrared jobs intended to gate infrared Tobiko plugin changes
     check:
       jobs: &CHECK
-        - tobiko-infrared-centos
-        - tobiko-infrared-centos-7
         - tobiko-infrared-fedora
         - tobiko-infrared-ubuntu
     gate:
@@ -48,47 +46,6 @@
       - ^tobiko/tests/scenario/
       - ^tobiko/tests/faults/
 
-
-- nodeset:
-    name: tobiko-infrared-centos
-    nodes:
-      - name: primary
-        label: centos-8-stream
-      - name: secondary
-        label: centos-8-stream
-    groups:
-      - name: undercloud
-        nodes:
-          - secondary
-
-- job:
-    name: tobiko-infrared-centos
-    parent: tobiko-infrared
-    nodeset: tobiko-infrared-centos
-    voting: false
-    description: |
-      Run test cases using tobiko infrared plugin on CentOS
-
-
-- job:
-    name: tobiko-infrared-centos-7
-    parent: tobiko-infrared
-    nodeset: tobiko-infrared-centos-7
-    voting: true
-    description: |
-      Run test cases using tobiko infrared plugin on CentOS
-
-- nodeset:
-    name: tobiko-infrared-centos-7
-    nodes:
-      - name: primary
-        label: centos-7
-      - name: secondary
-        label: centos-7
-    groups:
-      - name: undercloud
-        nodes:
-          - secondary
 
 - job:
     name: tobiko-infrared-fedora
