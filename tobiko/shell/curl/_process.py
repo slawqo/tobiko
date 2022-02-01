@@ -345,7 +345,7 @@ def download_file(url: str,
                            sudo=sudo)
     if cached:
         try:
-            assert_downleaded_file(file_name=file_name,
+            assert_downloaded_file(file_name=file_name,
                                    headers_file_name=headers_file_name,
                                    ssh_client=ssh_client,
                                    sudo=sudo)
@@ -365,14 +365,14 @@ def download_file(url: str,
                     retry_interval=retry_interval)
     LOG.debug(f"File download complete ('{url}' -> '{file_name}').")
     if check:
-        assert_downleaded_file(file_name=file_name,
+        assert_downloaded_file(file_name=file_name,
                                headers_file_name=headers_file_name,
                                ssh_client=ssh_client,
                                sudo=sudo)
     return process
 
 
-def assert_downleaded_file(file_name: str,
+def assert_downloaded_file(file_name: str,
                            headers_file_name: str,
                            ssh_client: ssh.SSHClientType = None,
                            sudo: bool = None):

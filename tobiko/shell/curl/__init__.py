@@ -23,7 +23,7 @@ execute_curl = _execute.execute_curl
 
 CurlHeader = _process.CurlHeader
 CurlProcessFixture = _process.CurlProcessFixture
-assert_downloaded_file = _process.assert_downleaded_file
+assert_downloaded_file = _process.assert_downloaded_file
 download_file = _process.download_file
 default_download_dir = _process.default_download_dir
 get_url_header = _process.get_url_header

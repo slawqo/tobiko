@@ -129,3 +129,11 @@ class CurlTest(testtools.TestCase):
         process_2 = self.test_download_file(cached=True,
                                             download_dir=download_dir)
         self.assertFalse(process_2.executed)
+
+    def test_assert_downloaded_file(self):
+        process = self.test_download_file(cached=True)
+        curl.assert_downloaded_file(
+            file_name=process.file_name,
+            headers_file_name=process.headers_file_name,
+            ssh_client=process.ssh_client,
+            sudo=process.sudo)
