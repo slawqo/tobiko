@@ -1,0 +1,5 @@
+---
+
+- name: "Run CentOS fix-up tasks"
+  include_tasks: centos.yaml
+  when: ansible_distribution == 'CentOS'
