@@ -6,8 +6,9 @@
       Infrared jobs intended to gate infrared Tobiko plugin changes
     check:
       jobs: &CHECK
-        - tobiko-infrared-centos
         - tobiko-infrared-centos-7
+        - tobiko-infrared-centos-8
+        - tobiko-infrared-centos-9
         - tobiko-infrared-fedora
         - tobiko-infrared-ubuntu
     gate:
@@ -49,34 +50,13 @@
       - ^tobiko/tests/faults/
 
 
-- nodeset:
-    name: tobiko-infrared-centos
-    nodes:
-      - name: primary
-        label: centos-8-stream
-      - name: secondary
-        label: centos-8-stream
-    groups:
-      - name: undercloud
-        nodes:
-          - secondary
-
-- job:
-    name: tobiko-infrared-centos
-    parent: tobiko-infrared
-    nodeset: tobiko-infrared-centos
-    voting: false
-    description: |
-      Run test cases using tobiko infrared plugin on CentOS
-
-
 - job:
     name: tobiko-infrared-centos-7
     parent: tobiko-infrared
     nodeset: tobiko-infrared-centos-7
     voting: true
     description: |
-      Run test cases using tobiko infrared plugin on CentOS
+      Run test cases using tobiko infrared plugin on CentOS 7
 
 - nodeset:
     name: tobiko-infrared-centos-7
@@ -85,10 +65,47 @@
         label: centos-7
       - name: secondary
         label: centos-7
-    groups:
+    groups: &NODESET_GROUPS
       - name: undercloud
         nodes:
           - secondary
+
+
+- job:
+    name: tobiko-infrared-centos-8
+    parent: tobiko-infrared
+    nodeset: tobiko-infrared-centos-8
+    voting: false
+    description: |
+      Run test cases using tobiko infrared plugin on CentOS 8
+
+- nodeset:
+    name: tobiko-infrared-centos-8
+    nodes:
+      - name: primary
+        label: centos-8-stream
+      - name: secondary
+        label: centos-8-stream
+    groups: *NODESET_GROUPS
+
+
+- job:
+    name: tobiko-infrared-centos-9
+    parent: tobiko-infrared
+    nodeset: tobiko-infrared-centos-9
+    voting: false
+    description: |
+      Run test cases using tobiko infrared plugin on CentOS 8
+
+- nodeset:
+    name: tobiko-infrared-centos-9
+    nodes:
+      - name: primary
+        label: centos-9-stream
+      - name: secondary
+        label: centos-9-stream
+    groups: *NODESET_GROUPS
+
 
 - job:
     name: tobiko-infrared-fedora
@@ -105,10 +122,7 @@
         label: fedora-34
       - name: secondary
         label: fedora-34
-    groups:
-      - name: undercloud
-        nodes:
-          - secondary
+    groups: *NODESET_GROUPS
 
 
 - job:
@@ -126,7 +140,4 @@
         label: ubuntu-focal
       - name: secondary
         label: ubuntu-focal
-    groups:
-      - name: undercloud
-        nodes:
-          - secondary
+    groups: *NODESET_GROUPS
