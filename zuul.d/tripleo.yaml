@@ -1,3 +1,18 @@
+---
+
+- project-template:
+    name: tobiko-tripleo
+    description: |
+      TripleO jobs intended to gate Tobiko changes
+    periodic:
+      jobs: &PERIODIC_JOBS
+        - tripleo-ci-centos-8-content-provider
+        - tobiko-tripleo-functional
+        - tobiko-tripleo-faults
+    experimental:
+      jobs: *PERIODIC_JOBS
+
+
 - job:
     name: tobiko-tripleo
     abstract: true
@@ -9,7 +24,12 @@
     pre-run: playbooks/tripleo/pre.yaml
     run: playbooks/tripleo/run.yaml
     post-run: playbooks/tripleo/post.yaml
+    dependencies: tripleo-ci-centos-8-content-provider
     vars:
+      consumer_job: true
+      build_container_images: false
+      remove_tags:
+        - build
       test_conf:
         keystone:
           cloud_name: standalone

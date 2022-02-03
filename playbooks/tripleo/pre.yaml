@@ -6,7 +6,7 @@
     - tobiko-configure
 
     - name: "import tripleo-ci common role"
-      role: common
+      role: ci-common-vars
 
     - name: "install tripleo"
       role: run-test

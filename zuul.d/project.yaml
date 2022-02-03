@@ -22,21 +22,10 @@
       - publish-to-pypi
       - tobiko-docker
       - tobiko-infrared
+      - tobiko-tripleo
     vars:
         rtd_webhook_id: '84947'
     periodic:
       jobs:
         - requirements-check:
             voting: true
-        - tripleo-ci-centos-8-content-provider
-        - tobiko-tripleo-functional:
-            vars: &consumer_vars
-              consumer_job: true
-              build_container_images: false
-              remove_tags:
-                - build
-            dependencies: &deps_cprovider
-              - tripleo-ci-centos-8-content-provider
-        - tobiko-tripleo-faults:
-            vars: *consumer_vars
-            dependencies: *deps_cprovider
