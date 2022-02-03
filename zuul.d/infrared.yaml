@@ -93,7 +93,7 @@
     name: tobiko-infrared-centos-9
     parent: tobiko-infrared
     nodeset: tobiko-infrared-centos-9
-    voting: false
+    voting: true
     description: |
       Run test cases using tobiko infrared plugin on CentOS 8
 
