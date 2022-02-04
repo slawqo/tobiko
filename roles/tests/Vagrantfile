@@ -118,7 +118,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       ansible.extra_vars = {
         'vagrant_nodes' => NODES,
         'vagrant_groups' => GROUPS,
-        'ssh_key_file' => SSH_KEY_FILE,
+        'ssh_local_key_file' => SSH_KEY_FILE,
         'rh_username' => RH_USERNAME,
         'rh_password' => RH_PASSWORD,
         'tobiko_src_dir' => TOBIKO_SRC_DIR,

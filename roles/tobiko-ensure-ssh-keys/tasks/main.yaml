@@ -1,22 +1,39 @@
 ---
 
-- name: "generate local SSH key '{{ ssh_key_file }}'"
+- name: generate local SSH key file ({{ ssh_local_key_file }})
   openssh_keypair:
-    path: '{{ ssh_key_file }}'
-    type: ecdsa
-    size: 521
+    path: '{{ ssh_local_key_file }}'
+    type: '{{ ssh_key_algorithm }}'
+    size: '{{ ssh_key_size }}'
     state: present
     force: no
   delegate_to: localhost
 
+- name: make sure '{{ ssh_key_file | dirname }}' directory exists
+  file:
+    state: directory
+    path: '{{ ssh_key_file | dirname }}'
+    mode: 0700
 
-- name: "copy '{{ ssh_key_file }}' file to host"
+- name: copy '{{ ssh_local_key_file }}' file to '{{ ssh_key_file }}'
   copy:
-    src: '{{ ssh_key_file }}{{ item }}'
-    dest: '/home/vagrant/.ssh/id_ecdsa{{ item }}'
-    owner: vagrant
-    group: vagrant
+    src: '{{ ssh_local_key_file }}{{ item }}'
+    dest: '{{ ssh_key_file }}{{ item }}'
+    owner: '{{ ssh_key_user }}'
+    group: '{{ ssh_key_user }}'
     mode: '0600'
   loop:
     - ''
     - '.pub'
+
+- name: enable access via key file on all nodes
+  authorized_key:
+    user: '{{ ssh_key_user }}'
+    state: present
+    key: "{{ lookup('file', ssh_local_key_file + '.pub') }}"
+
+
+- name: set facts
+  set_fact:
+    ssh_key_file: '{{ ssh_key_file }}'
+    ssh_key_user: '{{ ssh_key_user }}'

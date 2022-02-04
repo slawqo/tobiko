@@ -3,10 +3,7 @@
 - hosts: primary
   roles:
     - tobiko-zuul
+    - tobiko-ensure-ssh-keys
     - tobiko-configure
-
-    - name: "import tripleo-ci common role"
-      role: ci-common-vars
-
-    - name: "install tripleo"
-      role: run-test
+    - ci-common-vars
+    - run-test

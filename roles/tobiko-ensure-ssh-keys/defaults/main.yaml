@@ -1,3 +1,0 @@
----
-
-ssh_key_file: '{{ playbook_dir }}/ssh_identity'
