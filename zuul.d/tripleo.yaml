@@ -12,7 +12,6 @@
     experimental:
       jobs: *PERIODIC_JOBS
 
-
 - job:
     name: tobiko-tripleo
     abstract: true
@@ -24,25 +23,23 @@
     pre-run: playbooks/tripleo/pre.yaml
     run: playbooks/tripleo/run.yaml
     post-run: playbooks/tripleo/post.yaml
-    dependencies: tripleo-ci-centos-8-content-provider
+    dependencies:
+      - tripleo-ci-centos-8-content-provider
     vars:
-      consumer_job: true
       build_container_images: false
-      remove_tags:
-        - build
-      test_conf:
-        keystone:
-          cloud_name: standalone
+      consumer_job: true
       featureset: '052'
       featureset_override:
-        run_tempest: false
-        use_os_tempest: false
+        # run_tempest: false
+        # use_os_tempest: false
         standalone_environment_files:
           - 'environments/low-memory-usage.yaml'
           - 'ci/environments/scenario002-standalone.yaml'
       playbooks:
         - quickstart.yml
         - multinode-standalone.yml
+      remove_tags:
+        - build
       run_test_role_vars:
         build_test_packages: false
         artg_skipped_projects:
@@ -66,6 +63,9 @@
           - openstack/tripleo-ci-internal-config
           - tripleo-environments
           - x/tobiko
+      test_conf:
+        keystone:
+          cloud_name: standalone
 
 
 - job:
