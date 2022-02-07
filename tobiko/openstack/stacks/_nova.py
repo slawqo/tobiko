@@ -275,22 +275,29 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         if self.same_host:
             hypervisors = nova.list_servers_hypervisors(self.same_host)
             if hypervisor not in hypervisors:
-                self.migrate_server(hypervisor=hypervisors.unique)
+                self.migrate_server(live=True,
+                                    host=hypervisors.unique)
 
     def validate_different_host_scheduler_hints(self, hypervisor):
         if self.different_host:
             hypervisors = nova.list_servers_hypervisors(self.different_host)
             if hypervisor in hypervisors:
-                self.migrate_server()
+                self.migrate_server(live=True)
 
-    def migrate_server(self, hypervisor: str = None, live=True):
+    def migrate_server(self,
+                       live=False,
+                       host: str = None,
+                       block_migration: bool = None) \
+            -> nova.NovaServer:
         server = nova.activate_server(server=self.server_id)
         if live:
-            nova.live_migrate_server(server, host=hypervisor)
+            nova.live_migrate_server(server,
+                                     host=host,
+                                     block_migration=block_migration)
             server = nova.wait_for_server_status(
                 server, 'ACTIVE', transient_status=['MIGRATING'])
         else:
-            nova.migrate_server(server, host=hypervisor)
+            nova.migrate_server(server, host=host)
             server = nova.wait_for_server_status(server, 'VERIFY_RESIZE')
             nova.confirm_resize(server)
             server = nova.wait_for_server_status(

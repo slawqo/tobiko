@@ -54,6 +54,10 @@ MigrateServerError = _client.MigrateServerError
 PreCheckMigrateServerError = _client.PreCheckMigrateServerError
 NoValidHostFoundMigrateServerError = (
     _client.NoValidHostFoundMigrateServerError)
+NotInLocalStorageMigrateServerError = (
+    _client.NotInLocalStorageMigrateServerError)
+NotInSharedStorageMigrateServerError = (
+    _client.NotInSharedStorageMigrateServerError)
 
 WaitForCloudInitTimeoutError = _cloud_init.WaitForCloudInitTimeoutError
 cloud_config = _cloud_init.cloud_config

@@ -128,8 +128,8 @@ def find_service(client: NovaClientType = None, unique=False, **params):
 ServerType = typing.Union[str, NovaServer]
 
 
-def get_server_id(server: typing.Optional[ServerType] = None,
-                  server_id: typing.Optional[str] = None) -> str:
+def get_server_id(server: ServerType = None,
+                  server_id: str = None) -> str:
     if server_id is None:
         if isinstance(server, str):
             server_id = server
@@ -172,8 +172,12 @@ def delete_server(server: ServerType = None,
 
 def migrate_server(server: ServerType = None,
                    server_id: str = None,
-                   client: NovaClientType = None, **params):
+                   host: str = None,
+                   client: NovaClientType = None,
+                   **params):
     server_id = get_server_id(server=server, server_id=server_id)
+    if host is not None:
+        params.update(host=host)
     LOG.debug(f"Start server '{server_id}' migration...\n" +
               f"{params}")
     with handle_migration_errors(server_id=server_id, **params):
@@ -185,31 +189,54 @@ def migrate_server(server: ServerType = None,
 def live_migrate_server(server: ServerType = None,
                         server_id: str = None,
                         host: str = None,
-                        block_migration: typing.Union[str, bool] = True,
-                        disk_over_commit: bool = False,
+                        block_migration: bool = None,
+                        disk_over_commit=False,
                         client: NovaClientType = None,
                         **params):
     server_id = get_server_id(server=server, server_id=server_id)
-    params.update(host=host, block_migration=block_migration,
-                  disk_over_commit=disk_over_commit)
-    LOG.debug(f"Start server '{server_id}' live migration...\n" +
-              f"{params}")
-    with handle_migration_errors(server_id=server_id, **params):
-        return nova_client(client).servers.live_migrate(server=server,
-                                                        **params)
+    if block_migration is None:
+        # some setups work only with block migration and some only
+        # with without
+        try:
+            return live_migrate_server(server_id=server_id,
+                                       host=host,
+                                       block_migration=False,
+                                       disk_over_commit=disk_over_commit,
+                                       client=client,
+                                       **params)
+        except NotInSharedStorageMigrateServerError:
+            return live_migrate_server(server_id=server_id,
+                                       host=host,
+                                       block_migration=True,
+                                       disk_over_commit=disk_over_commit,
+                                       client=client,
+                                       **params)
+    else:
+        params.update(host=host,
+                      block_migration=block_migration,
+                      disk_over_commit=disk_over_commit)
+        LOG.debug(f"Start server '{server_id}' live migration...\n" +
+                  f"{params}")
+        with handle_migration_errors(server_id=server_id, **params):
+            return nova_client(client).servers.live_migrate(server=server_id,
+                                                            **params)
 
 
 @contextlib.contextmanager
 def handle_migration_errors(server_id: str, **params):
-    error_class = MigrateServerError
     try:
         yield
     except novaclient.exceptions.BadRequest as ex:
         reason = str(ex)
+        error_class = MigrateServerError
         if 'No valid host was found' in reason:
             error_class = NoValidHostFoundMigrateServerError
         if 'Migration pre-check error' in reason:
             error_class = PreCheckMigrateServerError
+        if 'is not on shared storage' in reason:
+            error_class = NotInSharedStorageMigrateServerError
+        if 'is not on local storage' in reason:
+            error_class = NotInLocalStorageMigrateServerError
         raise error_class(server_id=server_id,
                           reason=reason,
                           params=params) from ex
@@ -226,6 +253,14 @@ class NoValidHostFoundMigrateServerError(MigrateServerError):
 
 
 class PreCheckMigrateServerError(MigrateServerError):
+    pass
+
+
+class NotInLocalStorageMigrateServerError(MigrateServerError):
+    pass
+
+
+class NotInSharedStorageMigrateServerError(MigrateServerError):
     pass
 
 

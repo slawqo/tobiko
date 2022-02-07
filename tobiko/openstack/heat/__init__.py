@@ -30,6 +30,7 @@ HeatTemplateFixture = _template.HeatTemplateFixture
 HeatTemplateFileFixture = _template.HeatTemplateFileFixture
 
 HeatStackFixture = _stack.HeatStackFixture
+HeatStackNotFound = _stack.HeatStackNotFound
 heat_stack_parameters = _stack.heat_stack_parameters
 InvalidStackError = _stack.InvalidStackError
 INIT_IN_PROGRESS = _stack.INIT_IN_PROGRESS

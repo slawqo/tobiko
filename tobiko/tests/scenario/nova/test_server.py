@@ -38,26 +38,14 @@ class CirrosServerStackFixture(stacks.CirrosServerStackFixture):
 
     def validate_created_stack(self):
         stack = super().validate_created_stack()
-        try:
-            server = nova.get_server(self.server_id)
-        except nova.ServerNotFoundError as ex:
-            if config.is_prevent_create():
-                tobiko.skip_test(str(ex))
-            else:
-                raise heat.InvalidStackError(name=self.stack_name) from ex
-        else:
-            if server.status != 'SHUTOFF':
-                if server.status != 'ACTIVE':
-                    try:
-                        nova.activate_server(server)
-                    except nova.WaitForServerStatusTimeout as ex:
-                        raise heat.InvalidStackError(
-                            name=self.stack_name) from ex
+        server = nova.get_server(self.server_id)
+        if server.status != 'SHUTOFF':
+            if server.status != 'ACTIVE':
                 try:
-                    self.assert_is_reachable()
-                except ping.UnreachableHostsException as ex:
-                    raise heat.InvalidStackError(name=self.stack_name) from ex
-
+                    nova.activate_server(server)
+                except nova.WaitForServerStatusTimeout as ex:
+                    raise heat.InvalidStackError(
+                        name=self.stack_name) from ex
         return stack
 
 
@@ -67,55 +55,75 @@ class CirrosServerTest(testtools.TestCase):
     stack = tobiko.required_fixture(CirrosServerStackFixture)
     peer_stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
-    @pytest.mark.server_create
-    @config.skip_if_prevent_create()
-    def test_0_create_server(self):
-        tobiko.cleanup_fixture(type(self).stack.fixture)
-        self.ensure_server(status='ACTIVE')
-        self.assert_is_reachable()
-
     def test_1_server_name(self):
         server = self.ensure_server()
         self.assertEqual(self.stack.server_name, server.name)
 
-    @pytest.mark.server_active
-    def test_2_activate_server(self):
+    @pytest.mark.server_shutoff
+    def test_2_shutoff_server(self):
+        # ensure boot is finished before turning VM down
         self.ensure_server(status='ACTIVE')
         self.assert_is_reachable()
 
-    @pytest.mark.server_shutoff
-    def test_3_shutoff_server(self):
         self.ensure_server(status='SHUTOFF')
         self.assert_is_unreachable()
 
-    def test_4_shutoff_and_activate_server(self):
+    @pytest.mark.server_active
+    def test_3_activate_server(self):
+        # ensure server is down before activating it
         self.ensure_server(status='SHUTOFF')
+        self.assert_is_unreachable()
+
         self.ensure_server(status='ACTIVE')
         self.assert_is_reachable()
 
     @pytest.mark.server_migrate
-    @pytest.mark.flaky(reruns=2, reruns_delay=60)
     @nova.skip_if_missing_hypervisors(count=2)
-    def test_5_migrate_server(self, live=False):
+    def test_4_migrate_server(self):
+        self._test_migrate_server(live=False)
+
+    @pytest.mark.server_migrate
+    @nova.skip_if_missing_hypervisors(count=2)
+    def test_5_live_migrate_server(self):
+        self._test_migrate_server(live=True)
+
+    @pytest.mark.server_migrate
+    @nova.skip_if_missing_hypervisors(count=2)
+    def test_6_migrate_server_with_host(self):
+        """Tests cold migration actually ends on target hypervisor
+        """
+        self._test_migrate_server_with_host(live=False)
+
+    @pytest.mark.server_migrate
+    @nova.skip_if_missing_hypervisors(count=2)
+    def test_7_live_migrate_server_with_host(self):
+        self._test_migrate_server_with_host(live=True)
+
+    @pytest.mark.server_migrate
+    @nova.skip_if_missing_hypervisors(count=2)
+    def test_8_live_migrate_server_with_block_migration(self):
+        self._test_migrate_server(live=True, block_migration=True)
+
+    @pytest.mark.server_migrate
+    @nova.skip_if_missing_hypervisors(count=2)
+    def test_9_live_migrate_server_with_no_block_migration(self):
+        self._test_migrate_server(live=True, block_migration=False)
+
+    def _test_migrate_server(self,
+                             live: bool,
+                             block_migration: bool = None):
         """Tests cold migration actually changes hypervisor
         """
         server = self.ensure_server(status='ACTIVE')
         initial_hypervisor = nova.get_server_hypervisor(server)
 
-        server = self.migrate_server(server, live=live)
+        server = self.migrate_server(live=live,
+                                     block_migration=block_migration)
         final_hypervisor = nova.get_server_hypervisor(server)
         self.assertNotEqual(initial_hypervisor, final_hypervisor)
 
-    @pytest.mark.server_migrate
-    @pytest.mark.flaky(reruns=2, reruns_delay=60)
-    @nova.skip_if_missing_hypervisors(count=2)
-    def test_6_live_migrate_server(self):
-        self.test_5_migrate_server(live=True)
-
-    @pytest.mark.server_migrate
-    @pytest.mark.flaky(reruns=2, reruns_delay=60)
-    @nova.skip_if_missing_hypervisors(count=2)
-    def test_7_migrate_server_with_host(self, live=False):
+    def _test_migrate_server_with_host(self,
+                                       live: bool):
         """Tests cold migration actually ends on target hypervisor
         """
         server = self.ensure_server(status='ACTIVE')
@@ -129,69 +137,31 @@ class CirrosServerTest(testtools.TestCase):
                              "server to")
         target_hypervisor = random.choice(hypervisors).hypervisor_hostname
 
-        server = self.migrate_server(server=server,
-                                     host=target_hypervisor,
+        server = self.migrate_server(host=target_hypervisor,
                                      live=live)
         final_hypervisor = nova.get_server_hypervisor(server)
         self.assertNotEqual(initial_hypervisor, final_hypervisor)
         self.assertEqual(target_hypervisor, final_hypervisor)
 
-    @pytest.mark.server_migrate
-    @pytest.mark.flaky(reruns=2, reruns_delay=60)
-    @nova.skip_if_missing_hypervisors(count=2)
-    def test_8_live_migrate_server_with_host(self):
-        self.test_7_migrate_server_with_host(live=True)
-
-    @config.skip_if_prevent_create()
-    @pytest.mark.server_delete
-    def test_9_delete_server(self):
-        server = self.ensure_server()
-        self.addCleanup(self.ensure_server)
-        nova.delete_server(server)
-        for _ in tobiko.retry(timeout=60., interval=3.):
-            try:
-                server = nova.get_server(server.id)
-            except nova.ServerNotFoundError:
-                LOG.debug(f"Server '{server.id}' deleted")
-                break
-            else:
-                LOG.debug(f"Waiting for server deletion:\n"
-                          f" - server.id='{server.id}'"
-                          f" - server.status='{server.status}'")
-        self.assert_is_unreachable()
-
     def ensure_server(self, status: str = None):
-        server_id: str = self.stack.server_id
-        try:
-            server = nova.find_server(id=server_id, unique=True)
-        except tobiko.ObjectNotFound:
-            LOG.debug(f"Server '{server_id}' not found: recreate it...")
-            server_id = tobiko.reset_fixture(self.stack).server_id
-            server = nova.find_server(id=server_id, unique=True)
-            LOG.debug(f"Server '{server_id}' created.")
+        server = self.stack.server_details
         if status not in [None, server.status]:
-            LOG.debug(f"Ensuring server '{server_id}' status changes:\
+            LOG.debug(f"Ensuring server '{server.id}' status changes:\
                       '{server.status}' -> '{status}'")
             server = self.stack.ensure_server_status(status)
             self.assertEqual(status, server.status)
         return server
 
-    def migrate_server(self, server, live=False, **params):
+    def migrate_server(self,
+                       live=False,
+                       host: str = None,
+                       block_migration: bool = None) \
+            -> nova.NovaServer:
         self.assert_is_reachable()
-        self.assertEqual('ACTIVE', server.status)
-        if live:
-            with self.handle_migration_errors():
-                nova.live_migrate_server(server, **params)
-            server = nova.wait_for_server_status(
-                server, 'ACTIVE', transient_status=['MIGRATING'])
-        else:
-            with self.handle_migration_errors():
-                nova.migrate_server(server, **params)
-            server = nova.wait_for_server_status(server, 'VERIFY_RESIZE')
-            self.assertEqual('VERIFY_RESIZE', server.status)
-            nova.confirm_resize(server)
-            server = nova.wait_for_server_status(
-                server, 'ACTIVE', transient_status=['VERIFY_RESIZE'])
+        with self.handle_migration_errors():
+            server = self.stack.migrate_server(live=live,
+                                               host=host,
+                                               block_migration=block_migration)
         self.assert_is_reachable()
         return server
 
@@ -200,7 +170,9 @@ class CirrosServerTest(testtools.TestCase):
         try:
             yield
         except (nova.PreCheckMigrateServerError,
-                nova.NoValidHostFoundMigrateServerError) as ex:
+                nova.NoValidHostFoundMigrateServerError,
+                nova.NotInLocalStorageMigrateServerError,
+                nova.NotInSharedStorageMigrateServerError) as ex:
             self.skipTest(str(ex))
 
     def assert_is_reachable(self):
@@ -245,7 +217,6 @@ class UbuntuServerStackFixture(CloudInitServerStackFixture,
     pass
 
 
-@pytest.mark.flaky(reruns=2, reruns_delay=60)
 class UbuntuServerTest(CirrosServerTest):
     stack = tobiko.required_fixture(UbuntuServerStackFixture)
 
@@ -278,3 +249,48 @@ class RedhatServerStackFixture(CloudInitServerStackFixture,
 @pytest.mark.flaky(reruns=2, reruns_delay=60)
 class RedhatServerTest(CirrosServerTest):
     stack = tobiko.required_fixture(RedhatServerStackFixture)
+
+
+class CrateDeleteServerStackFixture(stacks.CirrosServerStackFixture):
+    pass
+
+
+@pytest.mark.server_create
+@pytest.mark.server_delete
+@config.skip_if_prevent_create()
+class CrateDeleteServerStackTest(testtools.TestCase):
+
+    stack = tobiko.required_fixture(CrateDeleteServerStackFixture,
+                                    setup=False)
+
+    def test_1_create_server(self):
+        tobiko.cleanup_fixture(self.stack)
+        self.ensure_server(status='ACTIVE')
+        self.stack.assert_is_reachable()
+
+    def test_2_delete_server(self):
+        server = self.ensure_server(status='ACTIVE')
+        self.stack.assert_is_reachable()
+
+        nova.delete_server(server.id)
+        for _ in tobiko.retry(timeout=60., interval=3.):
+            try:
+                server = nova.get_server(server_id=server.id)
+            except nova.ServerNotFoundError:
+                LOG.debug(f"Server '{server.id}' deleted")
+                break
+            else:
+                LOG.debug(f"Waiting for server deletion:\n"
+                          f" - server.id='{server.id}'"
+                          f" - server.status='{server.status}'")
+        self.stack.assert_is_unreachable()
+
+    def ensure_server(self, status: str):
+        try:
+            server_id: str = self.stack.server_id
+            nova.get_server(server_id=server_id)
+        except heat.HeatStackNotFound:
+            tobiko.setup_fixture(self.stack)
+        except nova.ServerNotFoundError:
+            tobiko.reset_fixture(self.stack)
+        return self.stack.ensure_server_status(status=status)
