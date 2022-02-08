@@ -451,8 +451,12 @@ class HeatStackFixture(tobiko.SharedFixture):
     def ensure_quota_limits(self):
         """Ensures quota limits before creating a new stack
         """
-        self.ensure_neutron_quota_limits()
-        self.ensure_nova_quota_limits()
+        try:
+            self.ensure_neutron_quota_limits()
+            self.ensure_nova_quota_limits()
+        except (nova.EnsureNovaQuotaLimitsError,
+                neutron.EnsureNeutronQuotaLimitsError) as ex:
+            raise InvalidStackError(name=self.stack_name) from ex
 
     def ensure_neutron_quota_limits(self):
         required_quota_set = self.neutron_required_quota_set

@@ -73,6 +73,7 @@ list_servers_hypervisors = _hypervisor.list_servers_hypervisors
 get_nova_quota_set = _quota_set.get_nova_quota_set
 ensure_nova_quota_limits = _quota_set.ensure_nova_quota_limits
 set_nova_quota_set = _quota_set.set_nova_quota_set
+EnsureNovaQuotaLimitsError = _quota_set.EnsureNovaQuotaLimitsError
 
 find_server_ip_address = _server.find_server_ip_address
 HasServerMixin = _server.HasServerMixin
