@@ -92,6 +92,7 @@ list_device_ip_addresses = _port.list_device_ip_addresses
 get_neutron_quota_set = _quota_set.get_neutron_quota_set
 set_neutron_quota_set = _quota_set.set_neutron_quota_set
 ensure_neutron_quota_limits = _quota_set.ensure_neutron_quota_limits
+EnsureNeutronQuotaLimitsError = _quota_set.EnsureNeutronQuotaLimitsError
 
 NeutronNetworkFixture = _network.NeutronNetworkFixture
 NoSuchNetwork = _network.NoSuchNetwork
