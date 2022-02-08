@@ -1,13 +1,57 @@
 ---
 
-- name: generate local SSH key file ({{ ssh_local_key_file }})
+# --- generate files ---------------------------------------------------------
+
+- debug: var=ssh_key_host  # , verbosity=2
+
+- name: will generate SSH key files on local file '{{ ssh_local_key_file }}'
+  when: ssh_key_host == 'localhost'
+  set_fact:
+    ssh_generate_key_file: '{{ ssh_local_key_file }}'
+    cacheable: yes
+
+- name: will generate SSH key files on remote file '{{ ssh_key_file }}'
+  when: ssh_key_host != 'localhost'
+  set_fact:
+    ssh_generate_key_file: '{{ ssh_key_file }}'
+    cacheable: yes
+
+- debug: var=ssh_generate_key_file, verbosity=2
+
+- name: generate SSH key files ({{ ssh_key_host }}:{{ ssh_local_key_file }})
   openssh_keypair:
-    path: '{{ ssh_local_key_file }}'
+    path: '{{ ssh_generate_key_file }}'
     type: '{{ ssh_key_algorithm }}'
     size: '{{ ssh_key_size }}'
     state: present
-    force: no
-  delegate_to: localhost
+    force: false
+  delegate_to: '{{ ssh_key_host }}'
+
+
+# --- read files -------------------------------------------------------------
+
+- delegate_to: '{{ ssh_key_host }}'
+  block:
+    - name: read private SSH key file
+      slurp:
+        src: '{{ ssh_generate_key_file }}'
+      register: ssh_read_private_key
+
+    - name: read public SSH key file
+      slurp:
+        src: '{{ ssh_generate_key_file }}.pub'
+      register: ssh_read_public_key
+
+- name: store SSH key pairs
+  set_fact:
+    ssh_private_key: '{{ ssh_read_private_key.content | b64decode }}'
+    ssh_public_key: '{{ ssh_read_public_key.content | b64decode }}'
+
+- debug: var=ssh_private_key, verbosity=2
+- debug: var=ssh_public_key, verbosity=2
+
+
+# --- write files ------------------------------------------------------------
 
 - name: make sure '{{ ssh_key_file | dirname }}' directory exists
   file:
@@ -15,23 +59,30 @@
     path: '{{ ssh_key_file | dirname }}'
     mode: 0700
 
-- name: copy '{{ ssh_local_key_file }}' file to '{{ ssh_key_file }}'
+- name: write private SSH key file to '{{ ssh_key_file }}'
   copy:
-    src: '{{ ssh_local_key_file }}{{ item }}'
-    dest: '{{ ssh_key_file }}{{ item }}'
+    content: '{{ ssh_private_key }}'
+    dest: '{{ ssh_key_file }}'
     owner: '{{ ssh_key_user }}'
     group: '{{ ssh_key_user }}'
     mode: '0600'
-  loop:
-    - ''
-    - '.pub'
+
+- name: write public SSH key file to '{{ ssh_key_file }}.pub'
+  copy:
+    content: '{{ ssh_public_key }}'
+    dest: '{{ ssh_key_file }}.pub'
+    owner: '{{ ssh_key_user }}'
+    group: '{{ ssh_key_user }}'
+    mode: '0600'
+
+
+# --- authorize key ----------------------------------------------------------
 
 - name: enable access via key file on all nodes
   authorized_key:
     user: '{{ ssh_key_user }}'
     state: present
-    key: "{{ lookup('file', ssh_local_key_file + '.pub') }}"
-
+    key: "{{ ssh_public_key }}"
 
 - name: set facts
   set_fact:

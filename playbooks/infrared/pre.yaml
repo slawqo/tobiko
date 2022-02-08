@@ -1,5 +1,9 @@
 ---
 
+- hosts: all
+  roles:
+    - tobiko-ensure-ssh-keys
+
 - hosts: primary
   roles:
     - tobiko-ensure-python3
