@@ -49,6 +49,7 @@ class CirrosServerStackFixture(stacks.CirrosServerStackFixture):
         return stack
 
 
+@pytest.mark.minimal
 @keystone.skip_unless_has_keystone_credentials()
 class CirrosServerTest(testtools.TestCase):
 

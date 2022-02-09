@@ -12,6 +12,7 @@
       - devstack-tobiko-neutron
       - devstack-tobiko-nova
       - devstack-tobiko-ovs
+      - devstack-tobiko-sanity
       - devstack-tobiko-storage
       - docs-on-readthedocs
       - openstack-cover-jobs

@@ -25,6 +25,7 @@ from tobiko.shell import ping
 from tobiko.shell import sh
 
 
+@pytest.mark.minimal
 class NetworkTest(testtools.TestCase):
 
     #: Resources stack with Nova server to send messages to
