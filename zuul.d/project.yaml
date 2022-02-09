@@ -5,7 +5,6 @@
       - build-release-notes-jobs-python3
       - check-requirements
       - devstack-tobiko
-      - devstack-tobiko-ceph
       - devstack-tobiko-functional
       - devstack-tobiko-heat
       - devstack-tobiko-minimal
