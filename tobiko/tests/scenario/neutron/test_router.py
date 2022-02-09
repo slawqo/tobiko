@@ -31,6 +31,7 @@ LOG = log.getLogger(__name__)
 CONF = config.CONF
 
 
+@pytest.mark.minimal
 class RouterTest(testtools.TestCase):
     """Test Neutron routers"""
 

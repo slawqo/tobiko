@@ -1,15 +1,21 @@
 ---
 
 test_workflow_steps:
+  - tox_description: 'run sanity test cases before creating resources'
+    tox_envlist: sanity
+    tox_step_name: before
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: no
+
   - tox_description: 'create workload resources'
     tox_envlist: scenario
     tox_step_name: create_resources
     tox_environment:
       TOBIKO_PREVENT_CREATE: no
 
-  - tox_description: 'run sanity test cases before disruptive test cases'
+  - tox_description: 'run sanity test cases before disruptive tests'
     tox_envlist: sanity
-    tox_step_name: before_faults
+    tox_step_name: between
     tox_environment:
       TOBIKO_PREVENT_CREATE: no
 
@@ -20,9 +26,9 @@ test_workflow_steps:
       TOBIKO_PREVENT_CREATE: no
     pytest_maxfail: 1
 
-  - tox_description: 'run sanity test cases after disruptive test cases'
+  - tox_description: 'run sanity test cases after disruptive tests'
     tox_envlist: sanity
-    tox_step_name: after_faults
+    tox_step_name: after
     tox_environment:
       TOBIKO_PREVENT_CREATE: no
 

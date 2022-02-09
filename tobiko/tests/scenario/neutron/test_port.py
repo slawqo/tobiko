@@ -39,6 +39,7 @@ IPV4 = constants.IP_VERSION_4
 IPV6 = constants.IP_VERSION_6
 
 
+@pytest.mark.minimal
 class PortTest(testtools.TestCase):
     """Test Neutron ports"""
 

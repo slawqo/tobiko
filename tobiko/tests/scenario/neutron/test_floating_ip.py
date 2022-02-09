@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import typing
 
 from oslo_log import log
+import pytest
 import testtools
 
 import tobiko
@@ -33,6 +34,7 @@ CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
+@pytest.mark.minimal
 class FloatingIPTest(testtools.TestCase):
     """Tests connectivity via floating IPs"""
 
