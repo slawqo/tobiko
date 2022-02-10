@@ -19,9 +19,14 @@ test_workflow_steps:
     tox_environment:
       TOBIKO_PREVENT_CREATE: no
 
-  - tox_description: 'run disruptive test cases'
+  - tox_description: 'run disruptive test cases (neutron)'
     tox_envlist: neutron_faults
     tox_step_name: neutron_faults
+    pytest_maxfail: 1
+
+  - tox_description: 'run disruptive test cases (high availability)'
+    tox_envlist: ha_faults
+    tox_step_name: ha_faults
     pytest_maxfail: 1
 
   - tox_description: 'run sanity test cases after disruptive tests'
