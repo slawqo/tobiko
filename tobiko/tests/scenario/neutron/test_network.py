@@ -20,6 +20,7 @@ import testtools
 import tobiko
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
+from tobiko.tripleo import nova as tripleo_nova
 from tobiko.openstack import stacks
 from tobiko.shell import ping
 from tobiko.shell import sh
@@ -56,6 +57,14 @@ class NetworkTest(testtools.TestCase):
         gateway = self.stack.network_stack.gateway_details
         self.assertEqual(self.stack.network_stack.ha,
                          gateway['ha'])
+
+
+class BackgroundPingVmTest(testtools.TestCase):
+
+    def test_check_background_vm_ping(self):
+        """Test background ping to a vm a background process,
+        second tobiko run will check the ping results"""
+        tripleo_nova.check_or_start_background_vm_ping()
 
 
 @pytest.mark.migrate_server
