@@ -23,6 +23,8 @@ from tobiko.openstack import nova
 from tobiko.openstack import stacks
 from tobiko.shell import ping
 from tobiko.shell import sh
+from tobiko.tripleo import undercloud
+from tobiko.tripleo import nova as tripleo_nova
 
 
 @pytest.mark.minimal
@@ -56,6 +58,17 @@ class NetworkTest(testtools.TestCase):
         gateway = self.stack.network_stack.gateway_details
         self.assertEqual(self.stack.network_stack.ha,
                          gateway['ha'])
+
+    @pytest.mark.background
+    @undercloud.skip_if_missing_undercloud
+    def test_check_background_vm_ping(self):
+        """ Tests that are designed to run in the background ,
+            then collect results.
+            Logic: checks if process exists, if so stop the process,
+            then execute some check logic i.e. a check function.
+            if the process by name isn't running,
+            start a separate process i.e a background function"""
+        tripleo_nova.check_or_start_background_vm_ping()
 
 
 @pytest.mark.migrate_server

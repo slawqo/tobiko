@@ -468,7 +468,8 @@ def get_vm_ping_log_files(glob_ping_log_pattern='tobiko_ping_results/ping_'
 
 def rename_ping_staistics_file_to_checked(filepath):
     """append _checked to a ping statistics file once finished it's check"""
-    os.rename(filepath, f'{filepath}_checked')
+    check_time = time.strftime("%Y_%m_%d-%H-%M-%S")
+    os.rename(filepath, f'{filepath}_checked_{check_time}')
 
 
 def check_ping_statistics(failure_limit=10):
@@ -485,8 +486,7 @@ def check_ping_statistics(failure_limit=10):
                 ping_line = json.loads(ping_line.rstrip())
                 if ping_line['transmitted'] != ping_line['received']:
                     failure_counter += 1
-                    LOG.debug(f'found ping failure to :'
-                              f' {ping_line["destination"]}')
+                    LOG.info(f'found ping failure: {ping_line}')
                     if failure_counter >= failure_limit:
                         rename_ping_staistics_file_to_checked(filename)
                         tobiko.fail(f'{failure_counter} pings failure found '

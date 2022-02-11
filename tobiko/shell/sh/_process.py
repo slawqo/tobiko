@@ -541,26 +541,40 @@ def get_bg_procs_pids(bg_process_name):
 
 def check_or_start_background_process(bg_function=None,
                                       bg_process_name=None,
-                                      check_function=None, **kwargs):
-    """ Check if process exists, if so stop the process,
-        then execute some check logic i.e. a check function.
+                                      check_function=None,
+                                      **kwargs):
+    """ Check if process exists, if so restart the process,
+        execute some check logic i.e. a check function.
         if the process by name isn't running,
-        start a separate process i.e a background function
+        start a new separate process i.e a background function
         params:
             bg_process_name= process name
             bg_function: function name
             check_function: function name """
+
     procs_running_list = get_bg_procs_pids(bg_process_name)
     if procs_running_list:
-        stop_process(procs_running_list)
+        # in any case test is still running, check for failures:
         # execute process check i.e. go over process results file
+        # truncate the log file and restart the background process
         LOG.info(f'running a check function: {check_function} '
                  f'on results of processes: {bg_process_name}')
         check_function()
-
-    else:  # if background process is not present , start one:
+        # if we want to terminate the specific background process by
+        # name, close it, otherwise the check will continue to run in the
+        # background
+        stop_process(procs_running_list)
+        LOG.info('checked and stopped previous background processes and log '
+                 'starting a new background process ')
+    else:
+        # First time the test is run:
+        # if background process by specific name is not present ,
+        # start one in the background:
         LOG.info(f'No previous background processes found:'
                  f' {bg_process_name}, starting a new background process '
                  f'of function: {bg_function}')
-        start_background_process(bg_function=bg_function,
-                                 bg_process_name=bg_process_name, **kwargs)
+
+    start_background_process(bg_function=bg_function,
+                             bg_process_name=bg_process_name, **kwargs)
+    # check test is not failing from the start
+    check_function()
