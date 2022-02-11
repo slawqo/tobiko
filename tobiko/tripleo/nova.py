@@ -229,7 +229,7 @@ def get_nova_server_floating_ip():
            stacks.CirrosServerStackFixture).floating_ip_address
 
 
-# Test is for D/S env
+# Test is inteded for D/S env
 @tripleo.skip_if_missing_overcloud
 def check_or_start_background_vm_ping():
     """Check if process exists, if so stop and check ping health
