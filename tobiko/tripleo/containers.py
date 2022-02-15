@@ -553,7 +553,7 @@ def get_container_states_list(containers_list,
 
 
 pcs_resource_list = ['haproxy', 'galera', 'redis', 'ovn-dbs', 'cinder',
-                     'rabbitmq']
+                     'rabbitmq', 'manila', 'ceph', 'pacemaker']
 
 
 def remove_containers_if_pacemaker_resources(comparable_containers_df):
