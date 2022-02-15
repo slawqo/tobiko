@@ -32,6 +32,8 @@ from tobiko.common import _testcase
 LOG = log.getLogger(__name__)
 
 F = typing.TypeVar('F', 'SharedFixture', fixtures.Fixture)
+G = typing.TypeVar('G', bound=fixtures.Fixture)
+
 FixtureType = typing.Union[F, typing.Type[F], str]
 
 
@@ -395,7 +397,7 @@ def get_required_fixture_properties(cls):
     # Return all members that are instances of RequiredFixtureProperty
     return [member
             for _, member in sorted(members.items())
-            if isinstance(member, RequiredFixtureProperty)]
+            if isinstance(member, RequiredFixture)]
 
 
 def init_fixture(obj: typing.Union[typing.Type[F], F],
@@ -422,11 +424,11 @@ def fixture_property(*args, **kwargs):
     return FixtureProperty(*args, **kwargs)
 
 
-def required_fixture(cls: typing.Type[F], **params) \
-        -> 'RequiredFixtureProperty[F]':
+def required_fixture(cls: typing.Type[F], setup=True, **params) \
+        -> 'RequiredFixture[F]':
     """Creates a property that gets fixture identified by given :param cls:
     """
-    return RequiredFixtureProperty[F](cls, **params)
+    return RequiredFixture[F](cls, setup=setup, **params)
 
 
 @_deprecation.deprecated(
@@ -600,39 +602,31 @@ class FixtureProperty(property):
         return super(FixtureProperty, self).__get__(instance, owner)
 
 
-class RequiredFixtureProperty(typing.Generic[F]):
+class RequiredFixture(property, typing.Generic[G]):
 
-    def __init__(self, fixture: typing.Any, setup=True, **params):
-        self.fixture = fixture
-        self.fixture_params = params
-        self.setup = setup
-
-    @typing.overload
-    def __get__(self, instance: None, owner: typing.Type[F]) \
-            -> 'RequiredFixtureProperty[F]':
-        pass
-
-    @typing.overload
-    def __get__(self, instance: F, owner: typing.Type[F]) -> F:
-        pass
-
-    def __get__(self, instance, _):
-        if instance is None:
-            return self
+    def __init__(self, cls: typing.Type[G], setup=True, **kwargs):
+        self.cls = cls
+        self.kwargs = kwargs
+        if setup:
+            fget = self.setup_fixture
         else:
-            return self.get_fixture(instance)
+            fget = self.get_fixture
+        super().__init__(fget=fget)
 
-    def get_fixture(self, _instance) -> F:
-        fixture = get_fixture(self.fixture, **self.fixture_params)
-        if self.setup:
-            setup_fixture(fixture)
-            if (hasattr(_instance, 'addCleanup') and
-                    hasattr(_instance, 'getDetails')):
-                _instance.addCleanup(_detail.gather_details,
-                                     fixture.getDetails(),
-                                     _instance.getDetails())
+    def get_fixture(self, _instance=None) -> G:
+        return get_fixture(self.cls, **self.kwargs)
+    fixture = property(fget=get_fixture)
+
+    def setup_fixture(self, _instance=None) -> G:
+        fixture = self.fixture
+        setup_fixture(fixture)
+        if (hasattr(_instance, 'addCleanup') and
+                hasattr(_instance, 'getDetails')):
+            _instance.addCleanup(_detail.gather_details,
+                                 fixture.getDetails(),
+                                 _instance.getDetails())
         return fixture
 
     @property
-    def __tobiko_required_fixtures__(self):
-        return [self.fixture]
+    def __tobiko_required_fixtures__(self) -> typing.List[typing.Type[G]]:
+        return [self.cls]
