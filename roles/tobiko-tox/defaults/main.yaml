@@ -21,7 +21,7 @@ tox_constraints: ''
 
 tox_constrain_env:
   PYTEST_ADDOPTS: >
-     {% if not test_flaky%}-m 'not flaky'{% endif %}
+     {% if pytest_markers %}-m '{{ pytest_markers }}'{% endif %}
      {% if pytest_maxfail %}--maxfail '{{ pytest_maxfail }}'{% endif %}
      {{ pytest_addopts }}
   TOX_REPORT_DIR: '{{ tox_report_dir }}'
@@ -37,5 +37,6 @@ tox_expected_rcs:
 ignore_test_failures: no
 
 pytest_addopts: ''
+pytest_markers: "{% if not test_flaky%}not flaky{% endif %}"
 pytest_maxfail: ''
 test_flaky: false

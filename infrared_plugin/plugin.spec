@@ -191,6 +191,12 @@ subparsers:
             type: Value
             help: Extra options to be passed to PyTest
             ansible_variable: pytest_addopts
+          pytest-markers:
+            type: Value
+            help: >
+                only run tests matching given mark expression.
+                For example: --pytest-markers 'mark1 and not mark2'.
+            ansible_variable: pytest_markers
           pytest-maxfail:
             type: Value
             help: Max number of test case failures before aborting
