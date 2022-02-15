@@ -26,7 +26,7 @@ class GlanceApiTestCase(testtools.TestCase):
     """Tests glance images API"""
 
     #: Stack of resources with a network with a gateway router
-    fixture = tobiko.required_setup_fixture(stacks.CirrosImageFixture)
+    fixture = tobiko.required_fixture(stacks.CirrosImageFixture)
 
     def test_get_image(self):
         image = glance.get_image(self.fixture.image_id)

@@ -36,7 +36,7 @@ class RouterTest(testtools.TestCase):
     """Test Neutron routers"""
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     def setUp(self):
         super(RouterTest, self).setUp()
@@ -130,7 +130,7 @@ class L3HARouterTest(RouterTest):
     """Test Neutron HA routers"""
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(stacks.L3haServerStackFixture)
+    stack = tobiko.required_fixture(stacks.L3haServerStackFixture)
 
     @neutron.skip_if_missing_networking_extensions('l3_agent_scheduler')
     def test_router_is_scheduled_on_l3_agents(self):
@@ -150,8 +150,8 @@ class NetworkWithNoServersStack(stacks.NetworkStackFixture):
 @neutron.skip_unless_is_ovs()
 class DVRTest(testtools.TestCase):
 
-    router_stack = tobiko.required_setup_fixture(NetworkWithNoServersStack)
-    server_stack = tobiko.required_setup_fixture(
+    router_stack = tobiko.required_fixture(NetworkWithNoServersStack)
+    server_stack = tobiko.required_fixture(
             stacks.CirrosServerStackFixture)
 
     def setUp(self):

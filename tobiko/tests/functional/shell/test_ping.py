@@ -196,7 +196,7 @@ class ProxyPingTest(PingTest):
 
 class NamespacePingTest(PingTest):
 
-    namespace = tobiko.required_setup_fixture(
+    namespace = tobiko.required_fixture(
         _fixtures.NetworkNamespaceFixture)
 
     @property
@@ -215,7 +215,7 @@ class NamespacePingTest(PingTest):
 
 class CirrosPingTest(PingTest):
 
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     @property
     def ssh_client(self):
@@ -224,14 +224,14 @@ class CirrosPingTest(PingTest):
 
 class CentosPingTest(CirrosPingTest):
 
-    stack = tobiko.required_setup_fixture(stacks.CentosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CentosServerStackFixture)
 
 
 class FedoraPingTest(CirrosPingTest):
 
-    stack = tobiko.required_setup_fixture(stacks.FedoraServerStackFixture)
+    stack = tobiko.required_fixture(stacks.FedoraServerStackFixture)
 
 
 class UbuntuPingTest(CirrosPingTest):
 
-    stack = tobiko.required_setup_fixture(stacks.UbuntuServerStackFixture)
+    stack = tobiko.required_fixture(stacks.UbuntuServerStackFixture)

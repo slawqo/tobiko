@@ -25,7 +25,7 @@ from tobiko.openstack import topology
 
 class OpenstackNodesTest(testtools.TestCase):
 
-    topology = tobiko.required_setup_fixture(
+    topology = tobiko.required_fixture(
         topology.get_default_openstack_topology_class())
 
     def test_public_ips(self):

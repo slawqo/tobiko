@@ -41,10 +41,10 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
     Create a client that is connected to the load balancer VIP port,
     Generate network traffic from the client to the load balanacer.
     """
-    loadbalancer_stack = tobiko.required_setup_fixture(
+    loadbalancer_stack = tobiko.required_fixture(
         stacks.AmphoraIPv4LoadBalancerStack)
 
-    listener_stack = tobiko.required_setup_fixture(
+    listener_stack = tobiko.required_fixture(
         stacks.HttpRoundRobinAmphoraIpv4Listener)
 
     def setUp(self):
@@ -95,10 +95,10 @@ class OctaviaOVNProviderTrafficTest(testtools.TestCase):
     Create a client that is connected to the load balancer VIP port via FIP,
     Generate network traffic from the client to the load balanacer via ssh.
     """
-    loadbalancer_stack = tobiko.required_setup_fixture(
+    loadbalancer_stack = tobiko.required_fixture(
         stacks.OVNIPv4LoadBalancerStack)
 
-    listener_stack = tobiko.required_setup_fixture(
+    listener_stack = tobiko.required_fixture(
         stacks.TcpSourceIpPortOvnIpv4Listener)
 
     def setUp(self):

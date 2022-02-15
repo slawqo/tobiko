@@ -28,10 +28,10 @@ from tobiko.openstack import stacks
 
 class IfconfigTest(testtools.TestCase):
 
-    cirros_stack = tobiko.required_setup_fixture(
+    cirros_stack = tobiko.required_fixture(
         stacks.CirrosServerStackFixture)
 
-    ubuntu_stack = tobiko.required_setup_fixture(
+    ubuntu_stack = tobiko.required_fixture(
         stacks.UbuntuServerStackFixture)
 
     def test_list_ip_addresses(self, ip_version=None, **execute_params):

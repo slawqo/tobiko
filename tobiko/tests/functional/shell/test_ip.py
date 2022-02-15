@@ -29,19 +29,19 @@ from tobiko.tests.functional.shell import _fixtures
 
 class IpTest(testtools.TestCase):
 
-    centos_stack = tobiko.required_setup_fixture(
+    centos_stack = tobiko.required_fixture(
         stacks.CentosServerStackFixture)
 
-    cirros_stack = tobiko.required_setup_fixture(
+    cirros_stack = tobiko.required_fixture(
         stacks.CirrosServerStackFixture)
 
-    fedora_stack = tobiko.required_setup_fixture(
+    fedora_stack = tobiko.required_fixture(
         stacks.FedoraServerStackFixture)
 
-    ubuntu_stack = tobiko.required_setup_fixture(
+    ubuntu_stack = tobiko.required_fixture(
         stacks.UbuntuServerStackFixture)
 
-    namespace = tobiko.required_setup_fixture(
+    namespace = tobiko.required_fixture(
         _fixtures.NetworkNamespaceFixture)
 
     def test_list_ip_addresses(self, ip_version=None, scope=None,

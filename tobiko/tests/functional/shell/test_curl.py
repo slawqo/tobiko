@@ -34,7 +34,7 @@ from tobiko.openstack import stacks
 @keystone.skip_unless_has_keystone_credentials()
 class CurlExecuteTest(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(stacks.UbuntuServerStackFixture)
+    stack = tobiko.required_fixture(stacks.UbuntuServerStackFixture)
 
     def test_execute_curl(
             self,

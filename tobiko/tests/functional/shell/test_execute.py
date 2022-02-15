@@ -185,7 +185,7 @@ class SSHExecuteTest(ExecuteTest):
 
     expected_shell = SSH_EXPECTED_SHELL
 
-    server_stack = tobiko.required_setup_fixture(
+    server_stack = tobiko.required_fixture(
         stacks.UbuntuMinimalServerStackFixture)
 
     @property
@@ -199,5 +199,5 @@ class SSHExecuteTest(ExecuteTest):
 @keystone.skip_unless_has_keystone_credentials()
 class CirrosSSHExecuteTest(SSHExecuteTest):
 
-    server_stack = tobiko.required_setup_fixture(
+    server_stack = tobiko.required_fixture(
         stacks.CirrosServerStackFixture)

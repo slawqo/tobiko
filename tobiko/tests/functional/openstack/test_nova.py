@@ -29,7 +29,7 @@ from tobiko.shell import ping
 
 class KeyPairTest(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(stacks.KeyPairStackFixture)
+    stack = tobiko.required_fixture(stacks.KeyPairStackFixture)
 
     def test_key_files(self):
         self.assertTrue(os.path.isfile(self.stack.key_file))
@@ -40,7 +40,7 @@ class KeyPairTest(testtools.TestCase):
 class ClientTest(testtools.TestCase):
 
     #: Stack of resources with a server attached to a floating IP
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     @nova.skip_if_missing_hypervisors(count=1)
     def test_list_hypervisors(self):
@@ -111,7 +111,7 @@ class ServerActionsStack(stacks.CirrosServerStackFixture):
 
 class ServerActionsTest(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(ServerActionsStack)
+    stack = tobiko.required_fixture(ServerActionsStack)
 
     def test_activate_server(self, initial_status='SHUTOFF'):
         self.stack.ensure_server_status(initial_status)
@@ -183,7 +183,7 @@ class MigrateServerStack(stacks.CirrosServerStackFixture):
 @nova.skip_if_missing_hypervisors(count=2)
 class MigrateServerTest(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(MigrateServerStack)
+    stack = tobiko.required_fixture(MigrateServerStack)
 
     def test_migrate_server(self):
         """Tests cold migration actually changes hypervisor

@@ -33,7 +33,7 @@ LOG = log.getLogger(__name__)
 class AmphoraIPv4LoadBalancerStack(heat.HeatStackFixture):
     template = _hot.heat_template_file('octavia/load_balancer.yaml')
 
-    vip_network = tobiko.required_setup_fixture(_neutron.NetworkStackFixture)
+    vip_network = tobiko.required_fixture(_neutron.NetworkStackFixture)
 
     #: Floating IP network where the Neutron floating IP are created
     @property
@@ -103,7 +103,7 @@ class OctaviaOtherServerStackFixture(_ubuntu.UbuntuServerStackFixture):
 class HttpRoundRobinAmphoraIpv4Listener(heat.HeatStackFixture):
     template = _hot.heat_template_file('octavia/listener.yaml')
 
-    loadbalancer = tobiko.required_setup_fixture(
+    loadbalancer = tobiko.required_fixture(
         AmphoraIPv4LoadBalancerStack)
 
     lb_port = 80
@@ -197,7 +197,7 @@ class HttpRoundRobinAmphoraIpv4Listener(heat.HeatStackFixture):
     # Members attributes
     server_stack = tobiko.required_fixture(_ubuntu.UbuntuServerStackFixture)
 
-    other_server_stack = tobiko.required_setup_fixture(
+    other_server_stack = tobiko.required_fixture(
         OctaviaOtherServerStackFixture)
 
     application_port = 80
@@ -261,7 +261,7 @@ class OVNIPv6LoadBalancerStack(OVNIPv4LoadBalancerStack):
 
 
 class TcpSourceIpPortOvnIpv4Listener(HttpRoundRobinAmphoraIpv4Listener):
-    loadbalancer = tobiko.required_setup_fixture(OVNIPv4LoadBalancerStack)
+    loadbalancer = tobiko.required_fixture(OVNIPv4LoadBalancerStack)
     lb_protocol = 'TCP'
     lb_port = 22
     has_monitor = False

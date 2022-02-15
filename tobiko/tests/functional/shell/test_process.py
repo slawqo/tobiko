@@ -44,7 +44,7 @@ class ProcessFixture(tobiko.SharedFixture):
 
 class ProcessTest(testtools.TestCase):
 
-    fixture = tobiko.required_setup_fixture(ProcessFixture)
+    fixture = tobiko.required_fixture(ProcessFixture)
 
     def test_stdout(self):
         fixture = self.fixture
@@ -61,12 +61,12 @@ class LocalProcessFixture(ProcessFixture):
 
 class LocalProcessTest(ProcessTest):
 
-    fixture = tobiko.required_setup_fixture(LocalProcessFixture)
+    fixture = tobiko.required_fixture(LocalProcessFixture)
 
 
 class SSHProcessFixture(ProcessFixture):
 
-    stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_fixture(
         stacks.UbuntuMinimalServerStackFixture)
 
     def setup_fixture(self):
@@ -77,16 +77,16 @@ class SSHProcessFixture(ProcessFixture):
 @keystone.skip_unless_has_keystone_credentials()
 class SSHProcessTest(ProcessTest):
 
-    fixture = tobiko.required_setup_fixture(SSHProcessFixture)
+    fixture = tobiko.required_fixture(SSHProcessFixture)
 
 
 class CirrosProcessFixture(SSHProcessFixture):
 
-    stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_fixture(
         stacks.CirrosServerStackFixture)
 
 
 @keystone.skip_unless_has_keystone_credentials()
 class CirrosProcessTest(ProcessTest):
 
-    fixture = tobiko.required_setup_fixture(CirrosProcessFixture)
+    fixture = tobiko.required_fixture(CirrosProcessFixture)

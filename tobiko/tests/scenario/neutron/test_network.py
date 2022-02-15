@@ -29,7 +29,7 @@ from tobiko.shell import sh
 class NetworkTest(testtools.TestCase):
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(stacks.CirrosPeerServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosPeerServerStackFixture)
 
     def test_stack_create_complete(self):
         self.stack.key_pair_stack.wait_for_create_complete()
@@ -62,7 +62,7 @@ class NetworkTest(testtools.TestCase):
 class SameHostNetworkTest(NetworkTest):
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_fixture(
         stacks.CirrosSameHostServerStackFixture)
 
     def test_same_host(self):
@@ -79,7 +79,7 @@ class SameHostNetworkTest(NetworkTest):
 class DifferentHostNetworkTest(NetworkTest):
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_fixture(
         stacks.CirrosDifferentHostServerStackFixture)
 
     def test_different_host(self):
@@ -98,7 +98,7 @@ class DifferentHostNetworkTest(NetworkTest):
                                            count=2)
 class L3haNetworkTest(NetworkTest):
     #: Resources stack with floating IP and Nova server
-    stack = tobiko.required_setup_fixture(stacks.L3haPeerServerStackFixture)
+    stack = tobiko.required_fixture(stacks.L3haPeerServerStackFixture)
 
 
 @neutron.skip_if_missing_networking_extensions('l3-ha')
@@ -106,7 +106,7 @@ class L3haNetworkTest(NetworkTest):
                                            count=2)
 class L3haSameHostNetworkTest(SameHostNetworkTest):
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_fixture(
         stacks.L3haSameHostServerStackFixture)
 
 
@@ -116,5 +116,5 @@ class L3haSameHostNetworkTest(SameHostNetworkTest):
 @nova.skip_if_missing_hypervisors(count=2, state='up', status='enabled')
 class L3haDifferentHostNetworkTest(DifferentHostNetworkTest):
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_fixture(
         stacks.L3haDifferentHostServerStackFixture)

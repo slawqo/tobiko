@@ -67,7 +67,7 @@ def get_ssh_host_url(host: str) -> parse.ParseResult:
 
 class SSHConfigFixture(tobiko.SharedFixture):
 
-    default = tobiko.required_setup_fixture(SSHDefaultConfigFixture)
+    default = tobiko.required_fixture(SSHDefaultConfigFixture)
 
     config_files = None
     config = None
@@ -143,7 +143,7 @@ class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
                                                              'host_config',
                                                              'config_files'])):
 
-    default = tobiko.required_setup_fixture(SSHDefaultConfigFixture)
+    default = tobiko.required_fixture(SSHDefaultConfigFixture)
 
     @property
     def hostname(self):

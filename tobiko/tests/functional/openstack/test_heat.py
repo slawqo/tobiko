@@ -45,7 +45,7 @@ class MyStack(heat.HeatStackFixture):
 
 class HeatStackFixtureTest(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(MyStack)
+    stack = tobiko.required_fixture(MyStack)
 
     def test_get_stack(self):
         self.stack.wait_for_create_complete()

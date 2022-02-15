@@ -44,7 +44,7 @@ class PortTest(testtools.TestCase):
     """Test Neutron ports"""
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     def test_port_ips(self, ip_version: typing.Optional[int] = None):
         """Checks port IPS has been assigned to server via DHCP protocol"""
@@ -124,7 +124,7 @@ class UbuntuExternalPortTest(PortTest):
     """Test Neutron ports"""
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_fixture(
         stacks.UbuntuExternalServerStackFixture)
 
 
@@ -135,7 +135,7 @@ class UbuntuExternalPortTest(PortTest):
                                            count=2)
 class L3HAPortTest(PortTest):
     #: Resources stack with floating IP and Nova server
-    stack = tobiko.required_setup_fixture(stacks.L3haServerStackFixture)
+    stack = tobiko.required_fixture(stacks.L3haServerStackFixture)
 
 
 # --- Port events logging ----------------------------------------------------
@@ -147,7 +147,7 @@ class PortLogsStack(stacks.CirrosServerStackFixture):
 @neutron.skip_unless_is_ovs()
 class PortLogsTest(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(PortLogsStack)
+    stack = tobiko.required_fixture(PortLogsStack)
 
     def test_nova_port_notification_on_activate(self):
         self.stack.ensure_server_status('SHUTOFF')
@@ -206,7 +206,7 @@ class PortLogsTest(testtools.TestCase):
 
 class ExtraDhcpOptsPortTest(PortTest):
     """Test extra-dhcp-options port parameter"""
-    stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_fixture(
         stacks.ExtraDhcpOptsCirrosServerStackFixture)
 
     def test_extra_dhcp_opts(self):
@@ -230,7 +230,7 @@ class ExtraDhcpOptsPortTest(PortTest):
 @neutron.skip_unless_is_ovn()
 class ExtraDhcpOptsPortLoggingTest(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(stacks.NetworkStackFixture)
+    stack = tobiko.required_fixture(stacks.NetworkStackFixture)
 
     @pytest.mark.flaky(reruns=2, reruns_delay=60)
     def test_extra_dhcp_opts_logs_unsupported_options(self):

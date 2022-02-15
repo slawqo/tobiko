@@ -66,7 +66,7 @@ class CloudsFileKeystoneCredentialsFixture(
     clouds_content = None
     clouds_file = None
 
-    config = tobiko.required_setup_fixture(DefaultCloudsFileConfig)
+    config = tobiko.required_fixture(DefaultCloudsFileConfig)
 
     def __init__(self, credentials=None, cloud_name=None,
                  clouds_content=None, clouds_file=None, clouds_files=None):

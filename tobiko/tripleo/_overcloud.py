@@ -179,7 +179,7 @@ class OvercloudHostConfig(tobiko.SharedFixture):
     hostname = None
     port = None
     username = None
-    key_file = tobiko.required_setup_fixture(OvercloudSshKeyFileFixture)
+    key_file = tobiko.required_fixture(OvercloudSshKeyFileFixture)
     ip_version = None
     network_name = None
     key_filename = None

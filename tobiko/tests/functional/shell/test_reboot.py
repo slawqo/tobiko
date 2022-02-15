@@ -36,7 +36,7 @@ class RebootHostStack(stacks.CirrosServerStackFixture):
 
 class RebootHostTest(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(RebootHostStack)
+    stack = tobiko.required_fixture(RebootHostStack)
 
     def test_reboot_host(self, nova_reboot=False, **params):
         server = self.stack.ensure_server_status('ACTIVE')

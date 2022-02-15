@@ -25,7 +25,6 @@ import testtools
 
 import tobiko
 from tobiko.common import _detail
-from tobiko.common import _deprecation
 from tobiko.common import _exception
 from tobiko.common import _testcase
 
@@ -424,22 +423,11 @@ def fixture_property(*args, **kwargs):
     return FixtureProperty(*args, **kwargs)
 
 
-def required_fixture(cls: typing.Type[F], setup=True, **params) \
-        -> 'RequiredFixture[F]':
+def required_fixture(cls: typing.Type[G], setup=True, **params) \
+        -> 'RequiredFixture[G]':
     """Creates a property that gets fixture identified by given :param cls:
     """
     return RequiredFixture[F](cls, setup=setup, **params)
-
-
-@_deprecation.deprecated(
-    deprecated_in='0.4.7',
-    removed_in='0.4.12',
-    details='use tobiko.required_fixture function instead')
-def required_setup_fixture(obj, **params):
-    '''Creates a property that sets up fixture identified by given :param obj:
-
-    '''
-    return required_fixture(obj, setup=True, **params)
 
 
 def get_fixture_id(obj: typing.Any) -> typing.Any:

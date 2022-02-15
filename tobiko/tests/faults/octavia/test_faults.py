@@ -39,10 +39,10 @@ class OctaviaBasicFaultTest(testtools.TestCase):
     Reach the members to make sure they are ready to be checked.
     Generate network traffic again to verify Octavia functionality.
     """
-    loadbalancer_stack = tobiko.required_setup_fixture(
+    loadbalancer_stack = tobiko.required_fixture(
         stacks.AmphoraIPv4LoadBalancerStack)
 
-    listener_stack = tobiko.required_setup_fixture(
+    listener_stack = tobiko.required_fixture(
         stacks.HttpRoundRobinAmphoraIpv4Listener)
 
     def setUp(self):

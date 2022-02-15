@@ -23,14 +23,14 @@ from tobiko.openstack import stacks
 
 class ServerGroupTestCase(testtools.TestCase):
 
-    affinity_stack = tobiko.required_setup_fixture(
+    affinity_stack = tobiko.required_fixture(
         stacks.AffinityServerGroupStackFixture)
 
     def test_affinity_server_group(self):
         group_id = self.affinity_stack.scheduler_group
         self.assertIsNotNone(group_id)
 
-    anti_affinity_stack = tobiko.required_setup_fixture(
+    anti_affinity_stack = tobiko.required_fixture(
         stacks.AntiAffinityServerGroupStackFixture)
 
     def test_anti_affinity_server_group(self):

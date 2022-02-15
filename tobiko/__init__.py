@@ -67,7 +67,6 @@ is_fixture = _fixture.is_fixture
 get_fixture = _fixture.get_fixture
 fixture_property = _fixture.fixture_property
 required_fixture = _fixture.required_fixture
-required_setup_fixture = _fixture.required_setup_fixture
 get_fixture_name = _fixture.get_fixture_name
 get_fixture_class = _fixture.get_fixture_class
 get_fixture_dir = _fixture.get_fixture_dir
