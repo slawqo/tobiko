@@ -67,7 +67,7 @@ def _param_list(*args, **kwargs):
         if credentials.api_version == 3:
             tmp_auth['os-identity-api-version'] = credentials.api_version
         for key, val in tmp_auth.items():
-            if val is not None:
+            if val:
                 kwargs[key] = val
     arg_list = []
     for arg in args:
