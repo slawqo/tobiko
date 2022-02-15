@@ -80,6 +80,7 @@ use_fixture = _fixture.use_fixture
 list_required_fixtures = _fixture.list_required_fixtures
 SharedFixture = _fixture.SharedFixture
 FixtureManager = _fixture.FixtureManager
+RequiredFixture = _fixture.RequiredFixture
 
 CaptureLogFixture = _logging.CaptureLogFixture
 
