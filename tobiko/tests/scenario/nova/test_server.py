@@ -34,26 +34,10 @@ from tobiko.shell import ping
 LOG = log.getLogger(__name__)
 
 
-class CirrosServerStackFixture(stacks.CirrosServerStackFixture):
-
-    def validate_created_stack(self):
-        stack = super().validate_created_stack()
-        server = nova.get_server(self.server_id)
-        if server.status != 'SHUTOFF':
-            if server.status != 'ACTIVE':
-                try:
-                    nova.activate_server(server)
-                except nova.WaitForServerStatusTimeout as ex:
-                    raise heat.InvalidStackError(
-                        name=self.stack_name) from ex
-        return stack
-
-
-@pytest.mark.minimal
 @keystone.skip_unless_has_keystone_credentials()
-class CirrosServerTest(testtools.TestCase):
-
-    stack = tobiko.required_fixture(CirrosServerStackFixture)
+class BaseServerTest(testtools.TestCase):
+    __test__ = False  # forbid this test for being recollected
+    stack: tobiko.RequiredFixture[stacks.ServerStackFixture]
     peer_stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     def test_1_server_name(self):
@@ -149,6 +133,7 @@ class CirrosServerTest(testtools.TestCase):
         if status not in [None, server.status]:
             LOG.debug(f"Ensuring server '{server.id}' status changes:\
                       '{server.status}' -> '{status}'")
+            assert isinstance(status, str)
             server = self.stack.ensure_server_status(status)
             self.assertEqual(status, server.status)
         return server
@@ -193,6 +178,27 @@ class CirrosServerTest(testtools.TestCase):
             self.stack.assert_vlan_is_unreachable()
 
 
+class CirrosServerStackFixture(stacks.CirrosServerStackFixture):
+
+    def validate_created_stack(self):
+        stack = super().validate_created_stack()
+        server = nova.get_server(self.server_id)
+        if server.status != 'SHUTOFF':
+            if server.status != 'ACTIVE':
+                try:
+                    nova.activate_server(server)
+                except nova.WaitForServerStatusTimeout as ex:
+                    raise heat.InvalidStackError(
+                        name=self.stack_name) from ex
+        return stack
+
+
+@pytest.mark.minimal
+class CirrosServerTest(BaseServerTest):
+    __test__ = True
+    stack = tobiko.required_fixture(CirrosServerStackFixture)
+
+
 class CloudInitServerStackFixture(stacks.CloudInitServerStackFixture,
                                   abc.ABC):
 
@@ -209,7 +215,8 @@ class UbuntuMinimalServerStackFixture(CloudInitServerStackFixture,
 
 
 @pytest.mark.flaky(reruns=2, reruns_delay=60)
-class UbuntuMinimalServerTest(CirrosServerTest):
+class UbuntuMinimalServerTest(BaseServerTest):
+    __test__ = True
     stack = tobiko.required_fixture(UbuntuMinimalServerStackFixture)
 
 
@@ -218,7 +225,8 @@ class UbuntuServerStackFixture(CloudInitServerStackFixture,
     pass
 
 
-class UbuntuServerTest(CirrosServerTest):
+class UbuntuServerTest(BaseServerTest):
+    __test__ = True
     stack = tobiko.required_fixture(UbuntuServerStackFixture)
 
 
@@ -228,7 +236,8 @@ class FedoraServerStackFixture(CloudInitServerStackFixture,
 
 
 @pytest.mark.flaky(reruns=2, reruns_delay=60)
-class FedoraServerTest(CirrosServerTest):
+class FedoraServerTest(BaseServerTest):
+    __test__ = True
     stack = tobiko.required_fixture(FedoraServerStackFixture)
 
 
@@ -238,7 +247,8 @@ class CentosServerStackFixture(CloudInitServerStackFixture,
 
 
 @pytest.mark.flaky(reruns=2, reruns_delay=60)
-class CentosServerTest(CirrosServerTest):
+class CentosServerTest(BaseServerTest):
+    __test__ = True
     stack = tobiko.required_fixture(CentosServerStackFixture)
 
 
@@ -248,7 +258,8 @@ class RedhatServerStackFixture(CloudInitServerStackFixture,
 
 
 @pytest.mark.flaky(reruns=2, reruns_delay=60)
-class RedhatServerTest(CirrosServerTest):
+class RedhatServerTest(BaseServerTest):
+    __test__ = True
     stack = tobiko.required_fixture(RedhatServerStackFixture)
 
 
@@ -260,7 +271,6 @@ class CrateDeleteServerStackFixture(stacks.CirrosServerStackFixture):
 @pytest.mark.server_delete
 @config.skip_if_prevent_create()
 class CrateDeleteServerStackTest(testtools.TestCase):
-
     stack = tobiko.required_fixture(CrateDeleteServerStackFixture,
                                     setup=False)
 
