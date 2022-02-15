@@ -137,11 +137,16 @@ def _skip_decorator(reason: str,
 
 def _get_skip_method(obj: SkipTarget) -> typing.Callable:
     if inspect.isclass(obj):
-        setup_method = getattr(obj, 'setUp', None)
+        assert isinstance(obj, type)
+        cls = typing.cast(typing.Type, obj)
+        setup_method = getattr(cls, 'setUp', None)
         if callable(setup_method):
             return setup_method
         else:
-            raise TypeError(f"Class {obj} does not implement setUp method")
+            # Dummy setUp method implementation for abstract classes
+            def setUp(self) -> None:
+                super(cls, self).setUp()
+            return setUp
     elif callable(obj):
         return obj
     else:
