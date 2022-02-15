@@ -57,7 +57,7 @@ class FedoraFlavorStackFixture(_nova.FlavorStackFixture):
 class FedoraServerStackFixture(_nova.CloudInitServerStackFixture):
 
     #: Glance image used to create a Nova server instance
-    image_fixture = tobiko.required_setup_fixture(FedoraImageFixture)
+    image_fixture = tobiko.required_fixture(FedoraImageFixture)
 
     #: Flavor used to create a Nova server instance
-    flavor_stack = tobiko.required_setup_fixture(FedoraFlavorStackFixture)
+    flavor_stack = tobiko.required_fixture(FedoraFlavorStackFixture)

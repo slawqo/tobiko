@@ -49,10 +49,10 @@ class OctaviaServicesFaultTest(testtools.TestCase):
     Then we test that traffic which is being sent from the client to the LB
     is received as expected.
     """
-    loadbalancer_stack = tobiko.required_setup_fixture(
+    loadbalancer_stack = tobiko.required_fixture(
         stacks.AmphoraIPv4LoadBalancerStack)
 
-    listener_stack = tobiko.required_setup_fixture(
+    listener_stack = tobiko.required_fixture(
         stacks.HttpRoundRobinAmphoraIpv4Listener)
 
     list_octavia_active_units = ('systemctl list-units ' +

@@ -25,7 +25,7 @@ class UbuntuServerStackTest(test_cirros.CirrosServerStackTest):
     """Tests connectivity to Nova instances via floating IPs"""
 
     #: Stack of resources with a server attached to a floating IP
-    stack = tobiko.required_setup_fixture(stacks.UbuntuServerStackFixture)
+    stack = tobiko.required_fixture(stacks.UbuntuServerStackFixture)
 
     nameservers_filenames = ('/run/systemd/resolve/resolv.conf',)
 
@@ -45,7 +45,7 @@ class UbuntuServerStackTest(test_cirros.CirrosServerStackTest):
 class UbuntuMinimalServerStackTest(UbuntuServerStackTest):
 
     #: Stack of resources with a server attached to a floating IP
-    stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_fixture(
         stacks.UbuntuMinimalServerStackFixture)
 
     def test_ping_fixed_ipv4(self):

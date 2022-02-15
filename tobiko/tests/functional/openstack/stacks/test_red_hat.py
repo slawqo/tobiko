@@ -26,4 +26,4 @@ class RedHatServerStackTest(test_centos.CentosServerStackTest):
     """Test Red Hat server instance"""
 
     #: Stack of resources with a server attached to a floating IP
-    stack = tobiko.required_setup_fixture(stacks.RedHatServerStackFixture)
+    stack = tobiko.required_fixture(stacks.RedHatServerStackFixture)

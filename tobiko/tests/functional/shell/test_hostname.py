@@ -61,14 +61,14 @@ class GetHostnameTest(testtools.TestCase):
             tobiko.skip_test('SSH proxy server is not configured')
         self.test_ssh_hostname(ssh_client=ssh_client)
 
-    cirros_server = tobiko.required_setup_fixture(
+    cirros_server = tobiko.required_fixture(
         stacks.CirrosServerStackFixture)
 
     @keystone.skip_unless_has_keystone_credentials()
     def test_cirros_hostname(self):
         self.test_ssh_hostname(ssh_client=self.cirros_server.ssh_client)
 
-    ubuntu_server = tobiko.required_setup_fixture(
+    ubuntu_server = tobiko.required_fixture(
         stacks.UbuntuServerStackFixture)
 
     @keystone.skip_unless_has_keystone_credentials()

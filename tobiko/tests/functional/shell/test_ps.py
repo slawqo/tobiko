@@ -112,7 +112,7 @@ class LocalPsTest(testtools.TestCase):
 
 class CirrosPsTest(LocalPsTest):
 
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     @property
     def ssh_client(self) -> ssh.SSHClientType:

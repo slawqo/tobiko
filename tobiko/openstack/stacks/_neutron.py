@@ -147,7 +147,7 @@ class NetworkStackFixture(heat.HeatStackFixture):
         """Extra network creation parameters"""
         return {}
 
-    floating_network_stack = tobiko.required_setup_fixture(
+    floating_network_stack = tobiko.required_fixture(
         FloatingNetworkStackFixture)
 
     @property

@@ -102,7 +102,7 @@ class V3CloudsFileFixture(CloudsFileFixture):
 
 class CloudsFileKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
 
-    config = tobiko.required_setup_fixture(
+    config = tobiko.required_fixture(
         _clouds_file.DefaultCloudsFileConfig)
 
     def test_init(self):

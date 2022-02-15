@@ -28,7 +28,7 @@ class FedoraServerStackTest(test_cirros.CirrosServerStackTest):
     """Test Fedora server instance"""
 
     #: Stack of resources with a server attached to a floating IP
-    stack = tobiko.required_setup_fixture(stacks.FedoraServerStackFixture)
+    stack = tobiko.required_fixture(stacks.FedoraServerStackFixture)
 
     nameservers_filenames = ('/run/systemd/resolve/resolv.conf',)
 

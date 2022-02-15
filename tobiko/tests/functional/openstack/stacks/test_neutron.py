@@ -28,7 +28,7 @@ class NetworkTest(testtools.TestCase):
     """Tests network creation"""
 
     #: Stack of resources with a network with a gateway router
-    stack = tobiko.required_setup_fixture(stacks.NetworkStackFixture)
+    stack = tobiko.required_fixture(stacks.NetworkStackFixture)
 
     @neutron.skip_if_missing_networking_extensions('port-security')
     def test_port_security_enabled(self):
@@ -86,7 +86,7 @@ class NetworkTest(testtools.TestCase):
 class NetworkWithNetMtuWriteTest(NetworkTest):
 
     #: Stack of resources with a network with a gateway router
-    stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_fixture(
         stacks.NetworkWithNetMtuWriteStackFixture)
 
     def test_net_mtu_write(self):
@@ -99,7 +99,7 @@ class NetworkWithNetMtuWriteTest(NetworkTest):
 class L3HaNetworkTest(NetworkTest):
 
     #: Stack of resources with a network with a gateway router
-    stack = tobiko.required_setup_fixture(stacks.L3haNetworkStackFixture)
+    stack = tobiko.required_fixture(stacks.L3haNetworkStackFixture)
 
 
 @keystone.skip_unless_has_keystone_credentials()

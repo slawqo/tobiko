@@ -49,7 +49,7 @@ class NeutronNovaCommonReader(tobiko.SharedFixture):
     groups: typing.List[str]
     message_pattern: str
     datetime_pattern: typing.Pattern
-    config = tobiko.required_setup_fixture(_config.OpenStackTopologyConfig)
+    config = tobiko.required_fixture(_config.OpenStackTopologyConfig)
     service_name = neutron.SERVER
 
     def setup_fixture(self):

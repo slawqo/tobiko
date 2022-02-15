@@ -82,7 +82,7 @@ class RedHatServerStackFixture(_centos.CentosServerStackFixture):
     #: Glance image used to create a Nova server instance
     # (alternative is given for cases the RHEL image is failed to be
     # set up)
-    image_fixture = tobiko.required_setup_fixture(RhelImageFixture)
+    image_fixture = tobiko.required_fixture(RhelImageFixture)
 
     #: Flavor used to create a Nova server instance
-    flavor_stack = tobiko.required_setup_fixture(RedHatFlavorStackFixture)
+    flavor_stack = tobiko.required_fixture(RedHatFlavorStackFixture)

@@ -165,10 +165,10 @@ class UbuntuFlavorStackFixture(_nova.FlavorStackFixture):
 class UbuntuMinimalServerStackFixture(_nova.CloudInitServerStackFixture):
 
     #: Glance image used to create a Nova server instance
-    image_fixture = tobiko.required_setup_fixture(UbuntuMinimalImageFixture)
+    image_fixture = tobiko.required_fixture(UbuntuMinimalImageFixture)
 
     #: Flavor used to create a Nova server instance
-    flavor_stack = tobiko.required_setup_fixture(UbuntuFlavorStackFixture)
+    flavor_stack = tobiko.required_fixture(UbuntuFlavorStackFixture)
 
 
 class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture,
@@ -181,7 +181,7 @@ class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture,
     """
 
     #: Glance image used to create a Nova server instance
-    image_fixture = tobiko.required_setup_fixture(UbuntuImageFixture)
+    image_fixture = tobiko.required_fixture(UbuntuImageFixture)
 
     # port of running HTTP server
     @property

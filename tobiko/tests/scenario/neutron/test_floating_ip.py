@@ -39,7 +39,7 @@ class FloatingIPTest(testtools.TestCase):
     """Tests connectivity via floating IPs"""
 
     #: Resources stack with floating IP and Nova server
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     def test_ssh(self):
         """Test SSH connectivity to floating IP address"""
@@ -128,7 +128,7 @@ class FloatingIPWithPortSecurityFixture(stacks.CirrosServerStackFixture):
     """Heat stack for testing a floating IP instance with port security"""
 
     #: Resources stack with security group to allow ping Nova servers
-    security_groups_stack = tobiko.required_setup_fixture(
+    security_groups_stack = tobiko.required_fixture(
         stacks.SecurityGroupsFixture)
 
     @property
@@ -143,7 +143,7 @@ class FloatingIPWithPortSecurityTest(FloatingIPTest):
     """Tests connectivity via floating IPs with port security"""
 
     #: Resources stack with floating IP and Nova server with port security
-    stack = tobiko.required_setup_fixture(FloatingIPWithPortSecurityFixture)
+    stack = tobiko.required_fixture(FloatingIPWithPortSecurityFixture)
 
     def test_ping(self):
         """Test connectivity to floating IP address"""
@@ -195,7 +195,7 @@ class FloatingIPWithICMPSecurityGroupFixture(
 class FloatingIPWithICMPSecurityGroupTest(FloatingIPTest):
     """Tests connectivity via floating IP with security ICMP security group"""
     #: Resources stack with floating IP and Nova server to ping
-    stack = tobiko.required_setup_fixture(
+    stack = tobiko.required_fixture(
         FloatingIPWithICMPSecurityGroupFixture)
 
 
@@ -206,7 +206,7 @@ class FloatingIPWithNetMtuWritableFixture(stacks.CirrosServerStackFixture):
     """Heat stack for testing floating IP with a custom MTU network value"""
 
     #: Heat stack for creating internal network with custom MTU value
-    network_stack = tobiko.required_setup_fixture(
+    network_stack = tobiko.required_fixture(
         stacks.NetworkWithNetMtuWriteStackFixture)
 
 
@@ -215,7 +215,7 @@ class FloatingIpWithMtuWritableTest(FloatingIPTest):
     """Tests connectivity via floating IP with a custom MTU value"""
 
     #: Resources stack with floating IP and Nova server
-    stack = tobiko.required_setup_fixture(FloatingIPWithNetMtuWritableFixture)
+    stack = tobiko.required_fixture(FloatingIPWithNetMtuWritableFixture)
 
     def test_net_mtu_write(self):
         """Test 'mtu' network attribute"""
@@ -234,13 +234,13 @@ class FloatingIpWithMtuWritableTest(FloatingIPTest):
                                            count=2)
 class FloatingIpWithL3HATest(FloatingIPTest):
     #: Resources stack with floating IP and Nova server
-    stack = tobiko.required_setup_fixture(stacks.L3haServerStackFixture)
+    stack = tobiko.required_fixture(stacks.L3haServerStackFixture)
 
 
 @topology.skip_unless_osp_version('16.1', higher=True)
 class TestFloatingIPLogging(testtools.TestCase):
 
-    stack = tobiko.required_setup_fixture(stacks.NetworkStackFixture)
+    stack = tobiko.required_fixture(stacks.NetworkStackFixture)
 
     def setUp(self):
         super(TestFloatingIPLogging, self).setUp()

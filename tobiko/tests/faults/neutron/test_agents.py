@@ -354,7 +354,7 @@ class DHCPAgentTest(BaseAgentTest):
     agent_name = neutron.DHCP_AGENT
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     def test_restart_dhcp_agent(self):
         '''Test that dnsmasq processes are not broken after DHCP agent restart
@@ -407,8 +407,8 @@ class L3AgentTest(BaseAgentTest):
     agent_name = neutron.L3_AGENT
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(stacks.CirrosPeerServerStackFixture)
-    ha_stack = tobiko.required_setup_fixture(stacks.L3haServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosPeerServerStackFixture)
+    ha_stack = tobiko.required_fixture(stacks.L3haServerStackFixture)
 
     def setUp(self):
         super(L3AgentTest, self).setUp()
@@ -543,7 +543,7 @@ class OpenVSwitchAgentTest(BaseAgentTest):
     agent_name = neutron.OPENVSWITCH_AGENT
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     def get_agent_from_host(self, hypervisor_host):
         # pylint: disable=not-an-iterable
@@ -569,7 +569,7 @@ class OvnControllerTest(BaseAgentTest):
     agent_name = neutron.OVN_CONTROLLER
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     def setUp(self):
         super(OvnControllerTest, self).setUp()
@@ -672,7 +672,7 @@ class OvnControllerTest(BaseAgentTest):
 class MetadataAgentTest(BaseAgentTest):
 
     #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     agent_name = neutron.METADATA_AGENT
 

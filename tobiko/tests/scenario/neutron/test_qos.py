@@ -42,9 +42,9 @@ class QoSNetworkTest(testtools.TestCase):
     """Tests QoS basic functionality"""
 
     #: Resources stacks with QoS Policy and QoS Rules and Advanced server
-    network = tobiko.required_setup_fixture(stacks.QosNetworkStackFixture)
-    policy = tobiko.required_setup_fixture(stacks.QosPolicyStackFixture)
-    server = tobiko.required_setup_fixture(stacks.QosServerStackFixture)
+    network = tobiko.required_fixture(stacks.QosNetworkStackFixture)
+    policy = tobiko.required_fixture(stacks.QosPolicyStackFixture)
+    server = tobiko.required_fixture(stacks.QosServerStackFixture)
 
     @pytest.mark.flaky(reruns=3, reruns_delay=120)
     def test_ping_dscp(self):

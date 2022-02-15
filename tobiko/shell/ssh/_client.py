@@ -221,7 +221,7 @@ class SSHClientFixture(tobiko.SharedFixture):
 
     client = None
 
-    default = tobiko.required_setup_fixture(_config.SSHDefaultConfigFixture)
+    default = tobiko.required_fixture(_config.SSHDefaultConfigFixture)
     config_files = None
     host_config = None
     global_host_config = None
@@ -514,7 +514,7 @@ UNDEFINED_CLIENT = 'UNDEFINED_CLIENT'
 
 class SSHClientManager(object):
 
-    default = tobiko.required_setup_fixture(_config.SSHDefaultConfigFixture)
+    default = tobiko.required_fixture(_config.SSHDefaultConfigFixture)
 
     def __init__(self):
         self.clients = {}

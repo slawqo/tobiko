@@ -47,7 +47,7 @@ class QosPolicyStackFixture(heat.HeatStackFixture):
 class QosNetworkStackFixture(_neutron.NetworkStackFixture):
 
     #: stack with the qos policy for the network
-    qos_stack = tobiko.required_setup_fixture(QosPolicyStackFixture)
+    qos_stack = tobiko.required_fixture(QosPolicyStackFixture)
 
     has_qos_policy = True
 
@@ -59,7 +59,7 @@ class QosNetworkStackFixture(_neutron.NetworkStackFixture):
 
 class QosServerStackFixture(_ubuntu.UbuntuServerStackFixture):
     #: stack with the network with a qos policy
-    network_stack = tobiko.required_setup_fixture(QosNetworkStackFixture)
+    network_stack = tobiko.required_fixture(QosNetworkStackFixture)
 
     @property
     def has_vlan(self) -> bool:

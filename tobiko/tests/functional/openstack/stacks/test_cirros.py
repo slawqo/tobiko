@@ -34,7 +34,7 @@ class CirrosServerStackTest(testtools.TestCase):
     """Tests connectivity to Nova instances via floating IPs"""
 
     #: Stack of resources with a server attached to a floating IP
-    stack = tobiko.required_setup_fixture(stacks.CirrosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     nameservers_filenames: typing.Optional[typing.Sequence[str]] = None
 
@@ -126,7 +126,7 @@ class CirrosServerStackTest(testtools.TestCase):
 class EvacuablesServerStackTest(CirrosServerStackTest):
 
     #: Stack of resources with a server attached to a floating IP
-    stack = tobiko.required_setup_fixture(stacks.EvacuableServerStackFixture)
+    stack = tobiko.required_fixture(stacks.EvacuableServerStackFixture)
 
     def test_image_fixture_tags(self):
         image_fixture = self.stack.image_fixture
@@ -141,7 +141,7 @@ class EvacuablesServerStackTest(CirrosServerStackTest):
 class CirrosPeerServerStackTest(CirrosServerStackTest):
 
     #: Stack of resources with an HTTP server
-    stack = tobiko.required_setup_fixture(stacks.CirrosPeerServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CirrosPeerServerStackFixture)
 
     @property
     def peer_ssh_client(self):

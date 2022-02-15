@@ -187,7 +187,7 @@ class OpenStackTopologyNode(object):
 
 class OpenStackTopology(tobiko.SharedFixture):
 
-    config = tobiko.required_setup_fixture(_config.OpenStackTopologyConfig)
+    config = tobiko.required_fixture(_config.OpenStackTopologyConfig)
 
     agent_to_service_name_mappings = {
         neutron.DHCP_AGENT: 'devstack@q-dhcp',
@@ -202,7 +202,7 @@ class OpenStackTopology(tobiko.SharedFixture):
 
     has_containers = False
 
-    _connections = tobiko.required_setup_fixture(
+    _connections = tobiko.required_fixture(
         _connection.SSHConnectionManager)
 
     # In Devstack based env logs can be accessed by journalctl

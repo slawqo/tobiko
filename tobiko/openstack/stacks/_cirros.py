@@ -55,10 +55,10 @@ class CirrosFlavorStackFixture(_nova.FlavorStackFixture):
 class CirrosServerStackFixture(_nova.ServerStackFixture):
 
     #: Glance image used to create a Nova server instance
-    image_fixture = tobiko.required_setup_fixture(CirrosImageFixture)
+    image_fixture = tobiko.required_fixture(CirrosImageFixture)
 
     #: Flavor used to create a Nova server instance
-    flavor_stack = tobiko.required_setup_fixture(CirrosFlavorStackFixture)
+    flavor_stack = tobiko.required_fixture(CirrosFlavorStackFixture)
 
     #: CirrOS can't get IP addresses from config-drive
     need_dhcp = True
@@ -70,7 +70,7 @@ class CirrosServerStackFixture(_nova.ServerStackFixture):
 class CirrosPeerServerStackFixture(CirrosServerStackFixture,
                                    _nova.PeerServerStackFixture):
     #: Peer server used to reach this one
-    peer_stack = tobiko.required_setup_fixture(CirrosServerStackFixture)
+    peer_stack = tobiko.required_fixture(CirrosServerStackFixture)
 
 
 class CirrosSameHostServerStackFixture(
@@ -85,7 +85,7 @@ class CirrosDifferentHostServerStackFixture(
 
 class RebootCirrosServerOperation(sh.RebootHostOperation):
 
-    stack = tobiko.required_setup_fixture(CirrosServerStackFixture)
+    stack = tobiko.required_fixture(CirrosServerStackFixture)
 
     @property
     def ssh_client(self):
@@ -100,7 +100,7 @@ class EvacuableCirrosImageFixture(CirrosImageFixture):
 class EvacuableServerStackFixture(CirrosServerStackFixture):
 
     #: Glance image used to create a Nova server instance
-    image_fixture = tobiko.required_setup_fixture(EvacuableCirrosImageFixture)
+    image_fixture = tobiko.required_fixture(EvacuableCirrosImageFixture)
 
 
 class ExtraDhcpOptsCirrosServerStackFixture(CirrosServerStackFixture):

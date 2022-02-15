@@ -92,10 +92,10 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
     template = _hot.heat_template_file('nova/server.yaml')
 
     #: stack with the key pair for the server instance
-    key_pair_stack = tobiko.required_setup_fixture(KeyPairStackFixture)
+    key_pair_stack = tobiko.required_fixture(KeyPairStackFixture)
 
     #: stack with the internal where the server port is created
-    network_stack = tobiko.required_setup_fixture(_neutron.NetworkStackFixture)
+    network_stack = tobiko.required_fixture(_neutron.NetworkStackFixture)
 
     #: whenever the server relies only on DHCP for address assignation
     @property
@@ -105,10 +105,7 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
     #: whenever the server will use config-drive to get metadata
     config_drive = False
 
-    @property
-    def image_fixture(self) -> glance.GlanceImageFixture:
-        """Glance image used to create a Nova server instance"""
-        raise NotImplementedError
+    image_fixture: tobiko.RequiredFixture[glance.GlanceImageFixture]
 
     def delete_stack(self, stack_id=None):
         if self._outputs:
@@ -133,10 +130,7 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
     def connection_timeout(self) -> tobiko.Seconds:
         return self.image_fixture.connection_timeout
 
-    @property
-    def flavor_stack(self) -> FlavorStackFixture:
-        """stack used to create flavor for Nova server instance"""
-        raise NotImplementedError
+    flavor_stack: tobiko.RequiredFixture[FlavorStackFixture]
 
     @property
     def flavor(self) -> str:
@@ -446,7 +440,7 @@ class ExternalServerStackFixture(ServerStackFixture, abc.ABC):
     # pylint: disable=abstract-method
 
     #: stack with the network where the server port is created
-    network_stack = tobiko.required_setup_fixture(
+    network_stack = tobiko.required_fixture(
         _neutron.ExternalNetworkStackFixture)
 
     # external servers doesn't need floating IPs
@@ -472,10 +466,7 @@ class PeerServerStackFixture(ServerStackFixture, abc.ABC):
 
     has_floating_ip = False
 
-    @property
-    def peer_stack(self) -> ServerStackFixture:
-        """Peer server used to reach this one"""
-        raise NotImplementedError
+    peer_stack: tobiko.RequiredFixture[ServerStackFixture]
 
     @property
     def ssh_client(self) -> ssh.SSHClientFixture:
@@ -567,7 +558,7 @@ class ServerGroupStackFixture(heat.HeatStackFixture):
 
 
 class AffinityServerGroupStackFixture(tobiko.SharedFixture):
-    server_group_stack = tobiko.required_setup_fixture(
+    server_group_stack = tobiko.required_fixture(
         ServerGroupStackFixture)
 
     @property
@@ -576,7 +567,7 @@ class AffinityServerGroupStackFixture(tobiko.SharedFixture):
 
 
 class AntiAffinityServerGroupStackFixture(tobiko.SharedFixture):
-    server_group_stack = tobiko.required_setup_fixture(
+    server_group_stack = tobiko.required_fixture(
         ServerGroupStackFixture)
 
     @property

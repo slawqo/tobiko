@@ -70,7 +70,7 @@ SSHConnectionDict = typing.Dict[SSHConnectionKey, SSHConnection]
 
 class SSHConnectionManager(tobiko.SharedFixture):
 
-    config = tobiko.required_setup_fixture(_config.OpenStackTopologyConfig)
+    config = tobiko.required_fixture(_config.OpenStackTopologyConfig)
 
     def __init__(self):
         super(SSHConnectionManager, self).__init__()

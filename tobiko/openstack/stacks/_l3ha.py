@@ -28,13 +28,13 @@ class L3haNetworkStackFixture(_neutron.NetworkStackFixture):
 @neutron.skip_if_missing_networking_extensions('l3-ha')
 class L3haServerStackFixture(_cirros.CirrosServerStackFixture):
     #: Heat stack for creating internal network with L3HA enabled
-    network_stack = tobiko.required_setup_fixture(
+    network_stack = tobiko.required_fixture(
         L3haNetworkStackFixture)
 
 
 class L3haPeerServerStackFixture(
         L3haServerStackFixture, _nova.PeerServerStackFixture):
-    peer_stack = tobiko.required_setup_fixture(L3haServerStackFixture)
+    peer_stack = tobiko.required_fixture(L3haServerStackFixture)
 
 
 class L3haSameHostServerStackFixture(

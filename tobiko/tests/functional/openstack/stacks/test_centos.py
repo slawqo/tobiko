@@ -28,7 +28,7 @@ class CentosServerStackTest(test_cirros.CirrosServerStackTest):
     """Test CentOS server instance"""
 
     #: Stack of resources with a server attached to a floating IP
-    stack = tobiko.required_setup_fixture(stacks.CentosServerStackFixture)
+    stack = tobiko.required_fixture(stacks.CentosServerStackFixture)
 
     def test_user_data(self):
         user_data = self.stack.user_data
@@ -50,7 +50,7 @@ class CentosServerStackTest(test_cirros.CirrosServerStackTest):
 class Centos7ServerStackTest(CentosServerStackTest):
 
     #: Stack of resources with a server attached to a floating IP
-    stack = tobiko.required_setup_fixture(stacks.Centos7ServerStackFixture)
+    stack = tobiko.required_fixture(stacks.Centos7ServerStackFixture)
 
     def test_python(self):
         python_version = sh.execute(['python', '--version'],

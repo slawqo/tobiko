@@ -44,7 +44,7 @@ class PodmanNodeFixture(tobiko.SharedFixture):
 @keystone.skip_unless_has_keystone_credentials()
 class PodmanClientTest(testtools.TestCase):
 
-    node = tobiko.required_setup_fixture(PodmanNodeFixture)
+    node = tobiko.required_fixture(PodmanNodeFixture)
 
     @property
     def ssh_client(self):

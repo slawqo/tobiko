@@ -124,7 +124,7 @@ class NeutronLogCliTest(BaseCliTest):
 
     LOGS_AMOUNT = 2
 
-    sec_groups_stack = tobiko.required_setup_fixture(
+    sec_groups_stack = tobiko.required_fixture(
         stacks.SecurityGroupsFixture)
 
     def _get_icmp_sec_group_id(self):
