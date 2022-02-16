@@ -14,11 +14,13 @@
 #    under the License.
 from __future__ import absolute_import
 
+import pytest
 import testtools
 
 from tobiko.openstack import nova
 
 
+@pytest.mark.minimal
 class ServiceTest(testtools.TestCase):
 
     def test_all_services_are_up(self):
