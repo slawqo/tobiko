@@ -8,12 +8,13 @@
       jobs:
         - tripleo-ci-centos-8-content-provider
         - tobiko-tripleo-functional
-        - tobiko-tripleo-faults
+        - tobiko-tripleo-minimal
     experimental: &EXPERIMENTAL
       jobs:
         - tripleo-ci-centos-8-content-provider
-        - tobiko-tripleo-faults
+        - tobiko-tripleo-minimal
     #check: *EXPERIMENTAL
+
 
 - job:
     name: tobiko-tripleo
@@ -92,12 +93,12 @@
 
 
 - job:
-    name: tobiko-tripleo-faults
+    name: tobiko-tripleo-minimal
     description: OS faults and scenario testing Tobiko TripleO job
     parent: tobiko-tripleo
     voting: false
     vars:
-      test_workflow: faults
+      test_workflow: create-resources
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/
