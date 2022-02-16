@@ -42,6 +42,7 @@
       playbooks:
         - quickstart.yml
         - multinode-standalone.yml
+      pytest_addopts: '-m minimal'
       remove_tags:
         - build
       run_test_role_vars:
