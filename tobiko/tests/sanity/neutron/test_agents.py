@@ -14,11 +14,13 @@
 #    under the License.
 from __future__ import absolute_import
 
+import pytest
 import testtools
 
 from tobiko.openstack import tests
 
 
+@pytest.mark.minimal
 class NeutronAgentTest(testtools.TestCase):
 
     def test_agents_are_alive(self):

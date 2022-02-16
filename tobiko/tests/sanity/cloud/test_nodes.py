@@ -14,6 +14,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import pytest
 import testtools
 
 import tobiko
@@ -23,6 +24,7 @@ from tobiko.shell import sh
 from tobiko.openstack import topology
 
 
+@pytest.mark.minimal
 class OpenstackNodesTest(testtools.TestCase):
 
     topology = tobiko.required_fixture(
