@@ -23,7 +23,6 @@ import pytest
 import testtools
 
 import tobiko
-from tobiko import config
 from tobiko.openstack import heat
 from tobiko.openstack import keystone
 from tobiko.openstack import nova
@@ -261,47 +260,3 @@ class RedhatServerStackFixture(CloudInitServerStackFixture,
 class RedhatServerTest(BaseServerTest):
     __test__ = True
     stack = tobiko.required_fixture(RedhatServerStackFixture)
-
-
-class CrateDeleteServerStackFixture(stacks.CirrosServerStackFixture):
-    pass
-
-
-@pytest.mark.server_create
-@pytest.mark.server_delete
-@config.skip_if_prevent_create()
-class CrateDeleteServerStackTest(testtools.TestCase):
-    stack = tobiko.required_fixture(CrateDeleteServerStackFixture,
-                                    setup=False)
-
-    def test_1_create_server(self):
-        tobiko.cleanup_fixture(self.stack)
-        self.ensure_server(status='ACTIVE')
-        self.stack.assert_is_reachable()
-
-    def test_2_delete_server(self):
-        server = self.ensure_server(status='ACTIVE')
-        self.stack.assert_is_reachable()
-
-        nova.delete_server(server.id)
-        for _ in tobiko.retry(timeout=60., interval=3.):
-            try:
-                server = nova.get_server(server_id=server.id)
-            except nova.ServerNotFoundError:
-                LOG.debug(f"Server '{server.id}' deleted")
-                break
-            else:
-                LOG.debug(f"Waiting for server deletion:\n"
-                          f" - server.id='{server.id}'"
-                          f" - server.status='{server.status}'")
-        self.stack.assert_is_unreachable()
-
-    def ensure_server(self, status: str):
-        try:
-            server_id: str = self.stack.server_id
-            nova.get_server(server_id=server_id)
-        except heat.HeatStackNotFound:
-            tobiko.setup_fixture(self.stack)
-        except nova.ServerNotFoundError:
-            tobiko.reset_fixture(self.stack)
-        return self.stack.ensure_server_status(status=status)
