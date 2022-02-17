@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 from oslo_log import log
 import testtools
 
@@ -34,28 +36,35 @@ class LocalPsTest(testtools.TestCase):
     def ssh_client(self) -> ssh.SSHClientType:
         return False
 
+    is_cirros = False
+
+    @property
+    def parameters(self) -> typing.Dict[str, typing.Any]:
+        return dict(is_cirros=self.is_cirros,
+                    ssh_client=self.ssh_client)
+
     def test_list_processes(self):
-        processes = sh.list_processes(ssh_client=self.ssh_client)
+        processes = sh.list_processes(**self.parameters)
         self._check_processes(processes,
                               is_kernel=False)
 
     def test_list_kernel_processes(self):
-        processes = sh.list_kernel_processes(ssh_client=self.ssh_client)
+        processes = sh.list_kernel_processes(**self.parameters)
         self._check_processes(processes=processes, is_kernel=True)
 
     def test_list_all_processes(self):
-        processes = sh.list_all_processes(ssh_client=self.ssh_client)
+        processes = sh.list_all_processes(**self.parameters)
         self._check_processes(processes=processes, is_kernel=None)
 
     def test_list_processes_with_pid(self):
-        processes = sh.list_processes(ssh_client=self.ssh_client)
+        processes = sh.list_processes(**self.parameters)
         processes_with_pid = sh.list_processes(pid=processes[0].pid,
-                                               ssh_client=self.ssh_client)
+                                               **self.parameters)
         self.assertEqual(processes[:1], processes_with_pid)
 
     def test_list_processes_with_command(self):
         processes = sh.list_processes(command='systemd',
-                                      ssh_client=self.ssh_client)
+                                      **self.parameters)
         for process in processes:
             self.assertTrue(process.command.startswith('systemd'), process)
 
@@ -64,18 +73,18 @@ class LocalPsTest(testtools.TestCase):
                                  ssh_client=self.ssh_client).execute()
         self.addCleanup(cat_process.kill)
         processes = sh.list_processes(command_line='cat -',
-                                      ssh_client=self.ssh_client)
+                                      **self.parameters)
         for process in processes:
             self.assertEqual('cat', process.command)
             self.assertEqual(('cat', '-'), process.command_line)
         cat_process.kill()
         sh.wait_for_processes(command_line='cat -',
                               timeout=30.,
-                              ssh_client=self.ssh_client)
+                              **self.parameters)
 
     def test_list_processes_with_exact_command(self):
         processes = sh.list_processes(command='^systemd$',
-                                      ssh_client=self.ssh_client)
+                                      **self.parameters)
         self.assertEqual(processes.with_attributes(command='systemd'),
                          processes)
 
@@ -94,17 +103,35 @@ class LocalPsTest(testtools.TestCase):
         # assume the PID of the first execution of PS process is not more there
         # at the second execution
         process = sh.list_processes(command='ps',
-                                    ssh_client=self.ssh_client)[-1]
+                                    **self.parameters).first
         sh.wait_for_processes(pid=process.pid,
                               command='ps',
                               timeout=30.,
-                              ssh_client=self.ssh_client)
+                              **self.parameters)
 
     def test_wait_for_processes_timeout(self):
         # assume there are always to be running processes on host
-        ex = self.assertRaises(sh.PsWaitTimeout, sh.wait_for_processes,
+        ex = self.assertRaises(sh.PsWaitTimeout,
+                               sh.wait_for_processes,
+                               pid=1,
                                timeout=3.,
-                               ssh_client=self.ssh_client)
+                               **self.parameters)
+        self.assertEqual(3., ex.timeout)
+        self.assertEqual(sh.get_hostname(ssh_client=self.ssh_client),
+                         ex.hostname)
+
+    def test_wait(self):
+        process = sh.list_processes(command='ps',
+                                    **self.parameters).first
+        process.wait()
+
+    def test_wait_with_timeout(self):
+        # assume there are always to be running processes on host
+        process = sh.list_processes(pid=1,
+                                    **self.parameters).unique
+        ex = self.assertRaises(sh.PsWaitTimeout,
+                               process.wait,
+                               timeout=3.)
         self.assertEqual(3., ex.timeout)
         self.assertEqual(sh.get_hostname(ssh_client=self.ssh_client),
                          ex.hostname)
@@ -112,6 +139,7 @@ class LocalPsTest(testtools.TestCase):
 
 class CirrosPsTest(LocalPsTest):
 
+    is_cirros = True
     stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     @property

@@ -16,7 +16,6 @@
 from __future__ import absolute_import
 
 import re
-import time
 import typing
 
 from oslo_log import log
@@ -51,6 +50,7 @@ class PsProcessBase:
     command: str
     pid: int
     ssh_client: ssh.SSHClientType
+    is_cirros: typing.Optional[bool] = None
 
     @property
     def is_kernel(self) -> bool:
@@ -68,13 +68,23 @@ class PsProcessBase:
             return None
 
     def kill(self, signal: int = None, **execute_params):
+        execute_params.update(ssh_client=self.ssh_client)
         command_line = _command.shell_command("kill")
         if signal is not None:
             command_line += f"-s {signal}"
         command_line += str(self.pid)
-        _execute.execute(command_line,
-                         ssh_client=self.ssh_client,
-                         **execute_params)
+        _execute.execute(command_line, **execute_params)
+
+    def wait(self,
+             timeout: tobiko.Seconds = None,
+             sleep_interval: tobiko.Seconds = None,
+             **execute_params):
+        execute_params.update(ssh_client=self.ssh_client)
+        wait_for_processes(timeout=timeout,
+                           sleep_interval=sleep_interval,
+                           is_cirros=self.is_cirros,
+                           pid=self.pid,
+                           **execute_params)
 
 
 class PsProcessTuple(typing.NamedTuple):
@@ -83,6 +93,7 @@ class PsProcessTuple(typing.NamedTuple):
     command: str
     pid: int
     ssh_client: ssh.SSHClientType
+    is_cirros: typing.Optional[bool] = None
 
 
 class PsProcess(PsProcessTuple, PsProcessBase):
@@ -141,21 +152,32 @@ def list_processes(
         is_kernel: typing.Optional[bool] = False,
         ssh_client: ssh.SSHClientType = None,
         command_line: _command.ShellCommandType = None,
+        is_cirros: bool = None,
         **execute_params) -> tobiko.Selection[PsProcess]:
     """Returns list of running process
 
     """
-    result = _execute.execute('ps -A', expect_exit_status=None,
-                              ssh_client=ssh_client, **execute_params)
+    ps_command = _command.shell_command('ps')
+    if pid is None or is_cirros in [True, None]:
+        ps_command += '-A'
+    else:
+        ps_command += f"-p {pid}"
+
+    result = _execute.execute(ps_command,
+                              expect_exit_status=None,
+                              ssh_client=ssh_client,
+                              **execute_params)
     output = result.stdout and result.stdout.strip()
-    if result.exit_status or not output:
+    if not output:
         raise PsError(error=result.stderr)
 
     # Extract a list of PsProcess instances from table body
     processes = tobiko.Selection[PsProcess]()
     for process_data in parse_table(lines=output.splitlines(),
                                     schema=PS_TABLE_SCHEMA):
-        processes.append(PsProcess(ssh_client=ssh_client, **process_data))
+        processes.append(PsProcess(ssh_client=ssh_client,
+                                   is_cirros=is_cirros,
+                                   **process_data))
 
     return select_processes(processes,
                             pid=pid,
@@ -164,28 +186,31 @@ def list_processes(
                             command_line=command_line)
 
 
-def wait_for_processes(timeout=float('inf'), sleep_interval=5.,
-                       ssh_client=None, **list_params):
-    start_time = time.time()
-    time_left = timeout
-    while True:
-        processes = list_processes(timeout=time_left,
-                                   ssh_client=ssh_client,
+def wait_for_processes(timeout: tobiko.Seconds = None,
+                       sleep_interval: tobiko.Seconds = None,
+                       ssh_client: ssh.SSHClientType = None,
+                       is_cirros: bool = None,
+                       **list_params):
+    for attempt in tobiko.retry(timeout=timeout,
+                                interval=sleep_interval,
+                                default_interval=5.):
+        processes = list_processes(ssh_client=ssh_client,
+                                   is_cirros=is_cirros,
                                    **list_params)
         if not processes:
             break
 
-        time_left = timeout - (time.time() - start_time)
-        if time_left < sleep_interval:
-            hostname = _hostname.get_hostname(ssh_client=ssh_client)
-            process_lines = [
-                '    {pid} {command}'.format(pid=process.pid,
-                                             command=process.command)
-                for process in processes]
+        hostname = _hostname.get_hostname(ssh_client=ssh_client)
+        process_lines = [
+            '    {pid} {command}'.format(pid=process.pid,
+                                         command=process.command)
+            for process in processes]
+
+        if attempt.is_last:
             raise PsWaitTimeout(timeout=timeout, hostname=hostname,
                                 processes='\n'.join(process_lines))
-
-        time.sleep(sleep_interval)
+        LOG.debug(f"Waiting for process(es) on host {hostname}...\n"
+                  '\n'.join(process_lines))
 
 
 def parse_pid(value):
@@ -216,7 +241,7 @@ def parse_table(lines, schema, header_line=None):
             getters.append((position, getter))
 
     for line in lines:
-        row = line.strip().split()
+        row = line.strip().split(maxsplit=len(column_names) - 1)
         if row:
             yield dict(getter(row[position])
                        for position, getter in getters)
