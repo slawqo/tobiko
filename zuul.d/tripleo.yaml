@@ -24,7 +24,7 @@
     required-projects:
       - openstack/tripleo-ci
       - x/tobiko
-    # nodeset: tobiko-tripleo-centos-9
+    nodeset: tobiko-tripleo-centos-9
     pre-run: playbooks/tripleo/pre.yaml
     run: playbooks/tripleo/run.yaml
     post-run: playbooks/tripleo/post.yaml
