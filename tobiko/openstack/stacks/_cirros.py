@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import io
+
 from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack.stacks import _nova
@@ -82,6 +84,16 @@ class CirrosShellConnection(sh.SSHShellConnection):
     @property
     def is_cirros(self) -> bool:
         return True
+
+    def get_file(self, remote_file: str, local_file: str):
+        content = self.execute(f"cat '{remote_file}'").stdout
+        with io.open(local_file, 'wt') as fd:
+            fd.write(content)
+
+    def put_file(self, local_file: str, remote_file: str):
+        with io.open(local_file, 'rt') as fd:
+            content = fd.read()
+        self.execute(f"cat >'{remote_file}'", stdin=content)
 
 
 class CirrosPeerServerStackFixture(CirrosServerStackFixture,

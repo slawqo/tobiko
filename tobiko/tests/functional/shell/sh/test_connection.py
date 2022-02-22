@@ -16,7 +16,13 @@
 from __future__ import absolute_import
 
 import getpass
+import io
+import os
 import socket
+import shutil
+import tempfile
+import typing
+import uuid
 
 import testtools
 
@@ -25,6 +31,29 @@ from tobiko.openstack import stacks
 from tobiko.openstack import topology
 from tobiko.shell import sh
 from tobiko.shell import ssh
+
+
+class LocalTempDirFixture(tobiko.SharedFixture):
+
+    path: typing.Optional[str] = None
+
+    def setup_fixture(self):
+        self.path = self.create_dir()
+
+    def cleanup_fixture(self):
+        path = self.path
+        if path is not None:
+            try:
+                self.delete_dir()
+            finally:
+                del self.path
+
+    def create_dir(self) -> str:
+        return tempfile.mkdtemp()
+
+    def delete_dir(self):
+        if os.path.isdir(self.path):
+            shutil.rmtree(self.path)
 
 
 class LocalShellConnectionTest(testtools.TestCase):
@@ -99,9 +128,48 @@ class LocalShellConnectionTest(testtools.TestCase):
         is_cirros = sh.is_cirros_connection(ssh_client=self.ssh_client)
         self.assertIs(self.is_cirros, is_cirros)
 
+    @property
+    def local_connection(self) -> sh.LocalShellConnection:
+        return sh.local_shell_connection()
+
+    def test_get_file(self):
+        local_file = os.path.join(self.local_connection.make_temp_dir(),
+                                  'local_file')
+        remote_file = os.path.join(self.connection.make_temp_dir(),
+                                   'remote_file')
+        text = str(uuid.uuid4())
+        sh.execute(f"echo '{text}' > '{remote_file}'",
+                   ssh_client=self.ssh_client)
+        self.assertFalse(os.path.isfile(local_file))
+        sh.get_file(local_file=local_file,
+                    remote_file=remote_file,
+                    ssh_client=self.ssh_client)
+        self.assertTrue(os.path.isfile(local_file), 'file not copied')
+        with io.open(local_file, 'rt') as fd:
+            self.assertEqual(f'{text}\n', fd.read())
+
+    def test_put_file(self):
+        local_file = os.path.join(self.local_connection.make_temp_dir(),
+                                  'local_file')
+        remote_file = os.path.join(self.connection.make_temp_dir(),
+                                   'remote_file')
+        text = str(uuid.uuid4())
+        with io.open(local_file, 'wt') as fd:
+            fd.write(text)
+        self.assertRaises(sh.ShellCommandFailed,
+                          sh.execute, f"cat '{remote_file}'",
+                          ssh_client=self.ssh_client)
+        sh.put_file(remote_file=remote_file,
+                    local_file=local_file,
+                    ssh_client=self.ssh_client)
+        output = sh.execute(f"cat '{remote_file}'",
+                            ssh_client=self.ssh_client).stdout
+        self.assertEqual(text, output)
+
 
 class SSHShellConnectionTest(LocalShellConnectionTest):
     connection_class = sh.SSHShellConnection
+    server = tobiko.required_fixture(stacks.UbuntuMinimalServerStackFixture)
 
     @property
     def ssh_client(self) -> ssh.SSHClientFixture:
@@ -114,8 +182,7 @@ class SSHShellConnectionTest(LocalShellConnectionTest):
             if isinstance(node.ssh_client, ssh.SSHClientFixture):
                 return node.ssh_client
 
-        return tobiko.setup_fixture(
-            stacks.UbuntuMinimalServerStackFixture).ssh_client
+        return self.server.ssh_client
 
     @property
     def is_local(self) -> bool:
@@ -131,14 +198,12 @@ class SSHShellConnectionTest(LocalShellConnectionTest):
 
 
 class CirrosShellConnectionTest(SSHShellConnectionTest):
-
     connection_class = stacks.CirrosShellConnection
-
-    stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
+    server = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
     @property
     def ssh_client(self) -> ssh.SSHClientFixture:
-        return self.stack.ssh_client
+        return self.server.ssh_client
 
     @property
     def is_cirros(self) -> bool:

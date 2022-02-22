@@ -29,7 +29,6 @@ from tobiko.shell.sh import _path
 from tobiko.shell.sh import _process
 from tobiko.shell.sh import _ps
 from tobiko.shell.sh import _reboot
-from tobiko.shell.sh import _sftp
 from tobiko.shell.sh import _ssh
 from tobiko.shell.sh import _systemctl
 from tobiko.shell.sh import _uptime
@@ -48,10 +47,13 @@ SSHShellConnection = _connection.SSHShellConnection
 connection_hostname = _connection.connection_hostname
 connection_login = _connection.connection_login
 connection_username = _connection.connection_username
+local_shell_connection = _connection.local_shell_connection
 register_shell_connection = _connection.register_shell_connection
 shell_connection = _connection.shell_connection
 is_cirros_connection = _connection.is_cirros_connection
 is_local_connection = _connection.is_local_connection
+put_file = _connection.put_file
+get_file = _connection.get_file
 
 ShellError = _exception.ShellError
 ShellCommandFailed = _exception.ShellCommandFailed
@@ -107,9 +109,6 @@ RebootHostMethod = _reboot.RebootHostMethod
 crash_method = RebootHostMethod.CRASH
 hard_reset_method = RebootHostMethod.HARD
 soft_reset_method = RebootHostMethod.SOFT
-
-put_file = _sftp.put_file
-get_file = _sftp.get_file
 
 ssh_process = _ssh.ssh_process
 ssh_execute = _ssh.ssh_execute

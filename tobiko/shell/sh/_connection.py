@@ -16,14 +16,23 @@
 from __future__ import absolute_import
 
 import getpass
+import os.path
+import shutil
 import socket
+import tempfile
 import typing
+
+import paramiko
+from oslo_log import log
 
 import tobiko
 from tobiko.shell.sh import _command
 from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _hostname
 from tobiko.shell import ssh
+
+
+LOG = log.getLogger(__name__)
 
 
 def connection_hostname(ssh_client: ssh.SSHClientType = None) -> str:
@@ -44,6 +53,38 @@ def is_local_connection(ssh_client: ssh.SSHClientType = None) -> bool:
 
 def is_cirros_connection(ssh_client: ssh.SSHClientType = None) -> bool:
     return shell_connection(ssh_client=ssh_client).is_cirros
+
+
+def get_file(remote_file: str,
+             local_file: str,
+             ssh_client: ssh.SSHClientType = None) -> bool:
+    return shell_connection(
+        ssh_client=ssh_client).get_file(remote_file=remote_file,
+                                        local_file=local_file)
+
+
+def put_file(local_file: str,
+             remote_file: str,
+             ssh_client: ssh.SSHClientType = None) -> bool:
+    return shell_connection(
+        ssh_client=ssh_client).put_file(local_file=local_file,
+                                        remote_file=remote_file)
+
+
+def make_temp_dir(ssh_client: ssh.SSHClientType = None,
+                  auto_clean=True) -> str:
+    return shell_connection(ssh_client=ssh_client).make_temp_dir(
+        auto_clean=auto_clean)
+
+
+def remove_files(filename: str, *filenames: str,
+                 ssh_client: ssh.SSHClientType = None) -> str:
+    return shell_connection(ssh_client=ssh_client).remove_files(
+        filename, *filenames)
+
+
+def local_shell_connection() -> 'LocalShellConnection':
+    return tobiko.get_fixture(LocalShellConnection)
 
 
 def shell_connection(ssh_client: ssh.SSHClientType = None,
@@ -96,7 +137,7 @@ class ShellConnectionManager(tobiko.SharedFixture):
     def _setup_shell_connection(ssh_client: ssh.SSHClientFixture = None) \
             -> 'ShellConnection':
         if ssh_client is None:
-            return tobiko.setup_fixture(LocalShellConnection)
+            return local_shell_connection()
         else:
             return tobiko.setup_fixture(SSHShellConnection(
                 ssh_client=ssh_client))
@@ -144,8 +185,20 @@ class ShellConnection(tobiko.SharedFixture):
         execute_params.setdefault('ssh_client', self.ssh_client)
         return _execute.execute(command, *args, **execute_params)
 
+    def put_file(self, local_file: str, remote_file: str):
+        raise NotImplementedError
+
+    def get_file(self, remote_file: str, local_file: str):
+        raise NotImplementedError
+
     def __str__(self) -> str:
         return f"{type(self).__name__}<{self.login}>"
+
+    def make_temp_dir(self, auto_clean=True) -> str:
+        raise NotImplementedError
+
+    def remove_files(self, filename: str, *filenames: str):
+        raise NotImplementedError
 
 
 class LocalShellConnection(ShellConnection):
@@ -165,6 +218,31 @@ class LocalShellConnection(ShellConnection):
     @property
     def hostname(self) -> str:
         return socket.gethostname()
+
+    def put_file(self, local_file: str, remote_file: str):
+        LOG.debug(f"Copy local file as {self.login}: '{local_file}' -> "
+                  f"'{remote_file}' ...")
+        shutil.copyfile(local_file, remote_file)
+
+    def get_file(self, remote_file: str, local_file: str):
+        LOG.debug(f"Copy local file as {self.login}: '{remote_file}' -> "
+                  f"'{local_file}' ...")
+        shutil.copyfile(remote_file, local_file)
+
+    def make_temp_dir(self, auto_clean=True) -> str:
+        temp_dir = tempfile.mkdtemp()
+        LOG.debug(f"Local temporary directory created as {self.login}: "
+                  f"{temp_dir}")
+        if auto_clean:
+            tobiko.add_cleanup(self.remove_files, temp_dir)
+        return temp_dir
+
+    def remove_files(self, filename: str, *filenames: str):
+        filenames = (filename,) + filenames
+        LOG.debug(f"Remove local files as {self.login}: {filenames}")
+        for filename in filenames:
+            if os.path.exists(filename):
+                shutil.rmtree(filename)
 
 
 class SSHShellConnection(ShellConnection):
@@ -201,3 +279,35 @@ class SSHShellConnection(ShellConnection):
         if self._hostname is None:
             self._hostname = _hostname.ssh_hostname(ssh_client=self.ssh_client)
         return self._hostname
+
+    _sftp: typing.Optional[paramiko.SFTPClient] = None
+
+    @property
+    def sftp_client(self) -> paramiko.SFTPClient:
+        if self._sftp is None:
+            self._sftp = self.ssh_client.connect().open_sftp()
+        return self._sftp
+
+    def put_file(self, local_file: str, remote_file: str):
+        LOG.debug(f"Put remote file as {self.login}: '{local_file}' -> "
+                  f"'{remote_file}'...")
+        self.sftp_client.put(local_file, remote_file)
+
+    def get_file(self, remote_file: str, local_file: str):
+        LOG.debug(f"Get remote file as {self.login}: '{remote_file}' -> "
+                  f"'{local_file}'...")
+        self.sftp_client.get(remote_file, local_file)
+
+    def make_temp_dir(self, auto_clean=True) -> str:
+        temp_dir = self.execute('mktemp -d').stdout.strip()
+        LOG.debug(f"Remote temporary directory created as {self.login}: "
+                  f"{temp_dir}")
+        if auto_clean:
+            tobiko.add_cleanup(self.remove_files, temp_dir)
+        return temp_dir
+
+    def remove_files(self, filename: str, *filenames: str):
+        filenames = (filename,) + filenames
+        LOG.debug(f"Remove remote files as {self.login}: {filenames}")
+        command = _command.shell_command('rm -fR') + filenames
+        self.execute(command)
