@@ -17,6 +17,7 @@ from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack.stacks import _nova
 from tobiko.shell import sh
+from tobiko.shell import ssh
 import tobiko.tripleo
 
 
@@ -65,6 +66,22 @@ class CirrosServerStackFixture(_nova.ServerStackFixture):
 
     #: We expect CirrOS based servers to be fast to boot
     is_reachable_timeout: tobiko.Seconds = 300.
+
+    @property
+    def ssh_client(self) -> ssh.SSHClientFixture:
+        ssh_client = super().ssh_client
+        connection = sh.shell_connection(ssh_client=ssh_client)
+        if not connection.is_cirros:
+            connection = CirrosShellConnection(ssh_client=ssh_client)
+            sh.register_shell_connection(connection)
+        return ssh_client
+
+
+class CirrosShellConnection(sh.SSHShellConnection):
+
+    @property
+    def is_cirros(self) -> bool:
+        return True
 
 
 class CirrosPeerServerStackFixture(CirrosServerStackFixture,

@@ -17,6 +17,7 @@ from __future__ import absolute_import
 
 from tobiko.shell.sh import _cmdline
 from tobiko.shell.sh import _command
+from tobiko.shell.sh import _connection
 from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _hostname
@@ -40,6 +41,17 @@ get_command_line = _cmdline.get_command_line
 ShellCommand = _command.ShellCommand
 ShellCommandType = _command.ShellCommandType
 shell_command = _command.shell_command
+
+LocalShellConnection = _connection.LocalShellConnection
+ShellConnection = _connection.ShellConnection
+SSHShellConnection = _connection.SSHShellConnection
+connection_hostname = _connection.connection_hostname
+connection_login = _connection.connection_login
+connection_username = _connection.connection_username
+register_shell_connection = _connection.register_shell_connection
+shell_connection = _connection.shell_connection
+is_cirros_connection = _connection.is_cirros_connection
+is_local_connection = _connection.is_local_connection
 
 ShellError = _exception.ShellError
 ShellCommandFailed = _exception.ShellCommandFailed
