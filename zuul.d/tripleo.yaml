@@ -6,30 +6,29 @@
       TripleO jobs intended to gate Tobiko changes
     periodic: &PERIODIC
       jobs:
-        - tripleo-ci-centos-8-content-provider
-        - tobiko-tripleo-functional
+        - tripleo-ci-centos-9-content-provider
         - tobiko-tripleo-minimal
     experimental: &EXPERIMENTAL
       jobs:
-        - tripleo-ci-centos-8-content-provider
+        - tripleo-ci-centos-9-content-provider
         - tobiko-tripleo-minimal
-    #check: *EXPERIMENTAL
+        - tobiko-tripleo-functional
+    # check: *EXPERIMENTAL
 
 
 - job:
     name: tobiko-tripleo
     abstract: true
     description: Base Tobiko TripleO job
-    parent: tripleo-ci-centos-8-scenario002-standalone
+    parent: tripleo-ci-centos-9-scenario002-standalone
     required-projects:
       - openstack/tripleo-ci
       - x/tobiko
-    nodeset: tobiko-tripleo-centos-8
+    # nodeset: tobiko-tripleo-centos-9
     pre-run: playbooks/tripleo/pre.yaml
     run: playbooks/tripleo/run.yaml
     post-run: playbooks/tripleo/post.yaml
-    dependencies:
-      - tripleo-ci-centos-8-content-provider
+    dependencies: [tripleo-ci-centos-9-content-provider]
     vars:
       build_container_images: false
       consumer_job: true
@@ -110,10 +109,10 @@
 
 
 - nodeset:
-    name: tobiko-tripleo-centos-8
+    name: tobiko-tripleo-centos-9
     nodes:
       - name: primary
-        label: nested-virt-centos-8-stream
+        label: nested-virt-centos-9-stream
     groups:
       - name: switch
         nodes:
