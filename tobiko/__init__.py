@@ -34,6 +34,7 @@ from tobiko.common import _testcase
 from tobiko.common import _time
 from tobiko.common import _utils
 from tobiko.common import _yaml
+from tobiko.common import _background
 
 
 TOBIKO_PACKAGE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -44,6 +45,7 @@ for path_dir in list(sys.path):
     if path_dir.startswith(TOBIKO_PACKAGE_DIR):
         sys.path.remove(path_dir)
 
+BackgroundProcessFixture = _background.BackgroundProcessFixture
 
 cached = _cached.cached
 CachedProperty = _cached.CachedProperty
