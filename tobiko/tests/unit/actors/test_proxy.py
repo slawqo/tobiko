@@ -13,31 +13,32 @@
 #    under the License.
 from __future__ import absolute_import
 
+import abc
 import inspect
 import typing
 from unittest import mock
 
-import tobiko
+from tobiko import actors
 from tobiko.tests import unit
 
 
-@tobiko.protocol
-class MyProto:
-    # pylint: disable=unused-argument
+class MyProto(abc.ABC):
 
+    @abc.abstractmethod
     def call_one(self, arg='a') -> int:
-        return 42
+        raise NotImplementedError
 
+    @abc.abstractmethod
     def call_two(self, *args) -> int:
-        return 42
+        raise NotImplementedError
 
+    @abc.abstractmethod
     def call_three(self, **kwargs) -> int:
-        return 42
+        raise NotImplementedError
 
 
-class MyProtoHandler(tobiko.CallHandler):
-
-    protocol_class = MyProto
+class MyProxy(actors.CallProxy[MyProto]):
+    pass
 
 
 class ProxyTest(unit.TobikoUnitTest):
@@ -52,7 +53,7 @@ class ProxyTest(unit.TobikoUnitTest):
     def test_call_handler(self):
         # pylint: disable=no-member
         handler = self.mock_handler()
-        proxy: MyProto = MyProtoHandler(handler).use_as(MyProto)
+        proxy = MyProxy(handler)
         self.assertIsInstance(proxy, MyProto)
         self.assertTrue(callable(proxy.call_one))
         self.assertEqual(inspect.signature(MyProto.call_one),
@@ -63,8 +64,9 @@ class ProxyTest(unit.TobikoUnitTest):
         handler.assert_called_with(MyProto.call_one, 'a')
 
     def test_call_proxy(self):
+        # pylint: disable=no-member
         handler = self.mock_handler()
-        proxy = tobiko.call_proxy(MyProto, handler).use_as(MyProto)
+        proxy = actors.call_proxy(handler, MyProto)
         self.assertIsInstance(proxy, MyProto)
         self.assertTrue(callable(proxy.call_one))
         self.assertEqual(inspect.signature(MyProto.call_one),

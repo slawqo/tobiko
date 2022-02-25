@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import abc
 import asyncio
 import inspect
 import logging
@@ -23,13 +24,14 @@ import typing
 from oslo_log import log
 
 import tobiko
-from tobiko.actor import _request
+from tobiko.actors import _proxy
+from tobiko.actors import _request
 
 
-T = typing.TypeVar('T')
+P = typing.TypeVar('P', bound=abc.ABC)
 
 
-class ActorRef(tobiko.CallHandler):
+class ActorRef(_proxy.CallProxyBase, typing.Generic[P]):
 
     def __init__(self, actor_id: str, requests: _request.ActorRequestQueue):
         super().__init__()
@@ -65,73 +67,59 @@ def actor_method(obj):
     return obj
 
 
-class Actor(tobiko.SharedFixture):
+class _DummyActorProtocol(abc.ABC):
+    pass
+
+
+class Actor(tobiko.SharedFixture, typing.Generic[P],
+            metaclass=_proxy.GenericMeta):
     max_queue_size: int = 0
 
     log: logging.LoggerAdapter
-    loop: asyncio.AbstractEventLoop
+    event_loop: asyncio.AbstractEventLoop
+    actor_ref: P
 
-    base_ref_class = ActorRef
-
-    _actor_methods: typing.Dict[str, typing.Callable]
-    _ref_class: type
-    _ref: ActorRef
-    _requests: _request.ActorRequestQueue
+    _actor_protocol = _DummyActorProtocol
+    _actor_request_queue: _request.ActorRequestQueue
     _run_actor_task: asyncio.Task
+
+    def __init_subclass__(cls,
+                          *args,
+                          **kwargs):
+        super().__init_subclass__(*args, **kwargs)
+        cls._actor_methods = dict(inspect.getmembers(cls, is_actor_method))
+        cls._actor_ref_class = ActorRef[cls._actor_protocol]
+
+    def __class_getitem__(cls, item: typing.Type[P]):
+        tobiko.check_valid_type(item, type)
+        return type(cls.__name__, (cls, item), dict(_actor_protocol=item))
 
     @property
     def actor_id(self) -> str:
         return self.fixture_name
 
     def setup_fixture(self):
-        self.loop = self.get_loop()
-        self.log = self.create_log()
-        self._requests = self.create_request_queue()
-
-        self._run_actor_task = self.loop.create_task(
+        self.log = self._setup_log()
+        self.event_loop = self._setup_event_loop()
+        self._actor_request_queue = self._setup_actor_request_queue()
+        self.actor_ref = self._setup_actor_ref()
+        self._run_actor_task = self.event_loop.create_task(
             self._run_actor())
 
-    @classmethod
-    def ref_class(cls) -> type:
-        try:
-            return cls._ref_class
-        except AttributeError:
-            pass
-        name = cls.__name__ + 'Ref'
-        bases = cls.base_ref_class,
-        namespace = {'__module__': cls.__module__,
-                     'protocol_class': cls}
-        return type(name, bases, namespace)
-
-    @property
-    def ref(self) -> ActorRef:
-        try:
-            return self._ref
-        except AttributeError:
-            pass
-        ref_class = self.ref_class()
-        self._ref = ref = ref_class(actor_id=self.actor_id,
-                                    requests=self._requests)
-        return ref
-
-    def get_loop(self) -> asyncio.AbstractEventLoop:
-        return asyncio.get_event_loop()
-
-    @classmethod
-    def _get_actor_methods(cls) -> typing.Dict[str, typing.Callable]:
-        try:
-            return cls._actor_methods
-        except AttributeError:
-            pass
-        cls._actor_methods = dict(inspect.getmembers(cls, is_actor_method))
-        return cls._actor_methods
-
-    def create_log(self):
+    def _setup_log(self):
         return log.getLogger(self.actor_id)
 
-    def create_request_queue(self) -> _request.ActorRequestQueue:
+    @staticmethod
+    def _setup_event_loop() -> asyncio.AbstractEventLoop:
+        return asyncio.get_event_loop()
+
+    def _setup_actor_request_queue(self) -> _request.ActorRequestQueue:
         return _request.create_request_queue(max_size=self.max_queue_size,
-                                             loop=self.loop)
+                                             loop=self.event_loop)
+
+    def _setup_actor_ref(self) -> P:
+        return self._actor_ref_class(actor_id=self.actor_id,
+                                     requests=self._actor_request_queue)
 
     async def setup_actor(self):
         pass
@@ -159,7 +147,8 @@ class Actor(tobiko.SharedFixture):
             while True:
                 request = None
                 try:
-                    request = await self._requests.receive_request()
+                    request = await (
+                        self._actor_request_queue.receive_request())
                     if not isinstance(request, _request.ActorRequest):
                         raise TypeError(
                             f"Invalid actor request type: {request}")
@@ -174,8 +163,7 @@ class Actor(tobiko.SharedFixture):
             await self.on_cleanup_error()
 
     def _get_actor_method(self, name: str) -> typing.Callable:
-        methods = self._get_actor_methods()
-        method = methods.get(name)
+        method = self._actor_methods.get(name)
         if method is None:
             raise ValueError(f"Invalid request method name: {name}")
         return method
@@ -190,10 +178,10 @@ class Actor(tobiko.SharedFixture):
             request.future.set_result(result)
 
 
-def create_actor(obj: typing.Union[str, Actor, typing.Type[Actor]],
+def create_actor(obj: typing.Type[P],
                  fixture_id: typing.Optional[str] = None,
-                 manager=None) -> ActorRef:
+                 manager=None) -> P:
     actor = tobiko.setup_fixture(obj,
                                  fixture_id=fixture_id,
                                  manager=manager)
-    return actor.ref
+    return actor.actor_ref

@@ -15,36 +15,34 @@
 #    under the License.
 from __future__ import absolute_import
 
-from unittest import mock
+import abc
+import typing
 
-import tobiko
 from tobiko.tests import unit
-from tobiko import actor
+from tobiko import actors
 
 
-@tobiko.protocol
-class Greeter:
+class Greeter(abc.ABC):
 
+    @abc.abstractmethod
     async def greet(self, whom: str, greeted: 'Greeted'):
         raise NotImplementedError
 
 
-@tobiko.protocol
 class Greeted:
 
-    def greeted(self, whom: str, greeter: Greeter):
-        raise NotImplementedError
+    greeter: typing.Optional[Greeter] = None
+    whom: typing.Optional[str] = None
+
+    async def greeted(self, whom: str, greeter: Greeter):
+        self.greeter = greeter
+        self.whom = whom
 
 
-class GreeterRef(actor.ActorRef):
-    pass
-
-
-class GreeterActor(Greeter, actor.Actor):
+class GreeterActor(actors.Actor[Greeter]):
 
     setup_called = False
     cleanup_called = False
-    base_ref_class = GreeterRef
 
     async def setup_actor(self):
         self.setup_called = True
@@ -52,41 +50,35 @@ class GreeterActor(Greeter, actor.Actor):
     async def cleanup_actor(self):
         self.cleanup_called = True
 
-    @actor.actor_method
+    @actors.actor_method
     async def greet(self, whom: str, greeted: Greeted):
+        assert isinstance(self, Greeter)
+        assert isinstance(self, GreeterActor)
         assert self.setup_called
         assert not self.cleanup_called
         if not whom:
             raise ValueError("'whom' parameter can't be empty")
 
         self.log.info(f"Hello {whom}!")
-        greeted.greeted(whom=whom, greeter=self.ref.use_as(Greeter))
+        await greeted.greeted(whom=whom, greeter=self.actor_ref)
 
 
 class ActorTest(unit.TobikoUnitTest):
 
-    def test_greeter_ref_class(self):
-        ref_class = GreeterActor.ref_class()
-        self.assertTrue(issubclass(ref_class, actor.ActorRef))
-        self.assertTrue(issubclass(ref_class, GreeterRef))
-        self.assertTrue(issubclass(ref_class, Greeter))
-
     async def test_async_request(self):
-        greeter = actor.create_actor(GreeterActor).use_as(Greeter)
-        self.assertIsInstance(greeter, actor.ActorRef)
-        self.assertIsInstance(greeter, GreeterRef)
+        greeter = actors.create_actor(GreeterActor)
+        self.assertIsInstance(greeter, actors.ActorRef)
         self.assertIsInstance(greeter, Greeter)
-        greeted = mock.MagicMock(spec=Greeted)
-
+        greeted = Greeted()
         await greeter.greet(whom=self.id(), greeted=greeted)
-        greeted.greeted.assert_called_with(whom=self.id(),
-                                           greeter=greeter)
+        self.assertEqual(self.id(), greeted.whom)
+        self.assertIs(greeter, greeted.greeter)
 
     async def test_async_request_failure(self):
-        greeter = actor.create_actor(GreeterActor).use_as(Greeter)
-        self.assertIsInstance(greeter, actor.ActorRef)
+        greeter = actors.create_actor(GreeterActor)
+        self.assertIsInstance(greeter, actors.ActorRef)
         self.assertIsInstance(greeter, Greeter)
-        greeted = mock.MagicMock(spec=Greeted)
+        greeted = Greeted()
 
         try:
             await greeter.greet(whom="", greeted=greeted)
@@ -94,4 +86,5 @@ class ActorTest(unit.TobikoUnitTest):
             self.assertEqual("'whom' parameter can't be empty", str(ex))
         else:
             self.fail("Exception not raised")
-        greeted.greeted.assert_not_called()
+        self.assertIsNone(greeted.whom)
+        self.assertIsNone(greeted.greeter)

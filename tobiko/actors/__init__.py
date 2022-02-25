@@ -15,7 +15,13 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.actor import _actor
+from tobiko.actors import _actor
+from tobiko.actors import _proxy
+
+call_proxy = _proxy.create_call_proxy
+call_proxy_class = _proxy.create_call_proxy_class
+CallProxy = _proxy.CallProxy
+CallProxyBase = _proxy.CallProxyBase
 
 create_actor = _actor.create_actor
 actor_method = _actor.actor_method
