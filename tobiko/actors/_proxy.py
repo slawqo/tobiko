@@ -21,8 +21,6 @@ import typing
 
 import decorator
 
-import tobiko
-
 
 P = typing.TypeVar('P', bound=abc.ABC)
 
@@ -37,16 +35,18 @@ if hasattr(typing, 'GenericMeta'):
 
 class GenericMeta(GenericMetaBase):
     def __getitem__(self, item):
+        # pylint: disable=not-callable
+        cls = self
         getitem = getattr(super(), '__getitem__', None)
         if callable(getitem):
-            cls = getitem(item)  # pylint: disable=not-callable
-            if hasattr(cls, '__class_getitem__'):
-                cls = cls.__class_getitem__(cls, item)
-            return cls
-        elif hasattr(self, '__class_getitem__'):
-            return self.__class_getitem__(item)
-        else:
-            return self
+            cls = getitem(item)
+        class_getitem = getattr(cls, '__class_getitem__', None)
+        if callable(class_getitem):
+            if inspect.ismethod(class_getitem):
+                cls = class_getitem(item)
+            else:
+                cls = class_getitem(cls, item)
+        return cls
 
 
 def is_public_function(obj):
@@ -57,7 +57,8 @@ def is_public_function(obj):
 class CallHandler(abc.ABC):
 
     @abc.abstractmethod
-    def _handle_call(self, method: typing.Callable, *args, **kwargs):
+    def _handle_call(self, method: typing.Callable, *args, **kwargs) \
+            -> typing.Any:
         raise NotImplementedError
 
 
@@ -65,10 +66,12 @@ class CallProxyBase(CallHandler, typing.Generic[P], abc.ABC,
                     metaclass=GenericMeta):
 
     def __class_getitem__(cls, item: typing.Type[P]):
-        tobiko.check_valid_type(item, type)
-        return create_call_proxy_class(protocols=(item,),
-                                       class_name=cls.__name__,
-                                       bases=(cls,))
+        if isinstance(item, type):
+            return create_call_proxy_class(protocols=(item,),
+                                           class_name=cls.__name__,
+                                           bases=(cls,))
+        else:
+            return cls
 
     def __init_subclass__(cls,
                           *args,

@@ -18,6 +18,7 @@ from __future__ import absolute_import
 import abc
 import typing
 
+import tobiko
 from tobiko.tests import unit
 from tobiko import actors
 
@@ -60,22 +61,44 @@ class GreeterActor(actors.Actor[Greeter]):
             raise ValueError("'whom' parameter can't be empty")
 
         self.log.info(f"Hello {whom}!")
-        await greeted.greeted(whom=whom, greeter=self.actor_ref)
+        await greeted.greeted(whom=whom, greeter=self)
 
 
 class ActorTest(unit.TobikoUnitTest):
 
+    actor = tobiko.required_fixture(GreeterActor, setup=False)
+
+    async def test_setup_actor(self):
+        self.assertFalse(self.actor.setup_called)
+        self.assertFalse(self.actor.cleanup_called)
+        await actors.setup_actor(self.actor)
+        self.assertTrue(self.actor.setup_called)
+        self.assertFalse(self.actor.cleanup_called)
+
+    async def test_cleanup_actor(self):
+        await actors.setup_actor(self.actor)
+        self.assertTrue(self.actor.setup_called)
+        self.assertFalse(self.actor.cleanup_called)
+        await actors.cleanup_actor(self.actor)
+        self.assertTrue(self.actor.setup_called)
+        self.assertTrue(self.actor.cleanup_called)
+
+    async def test_ping_actor(self):
+        ref = actors.start_actor(self.actor)
+        result = await ref.ping_actor(self.id())
+        self.assertEqual(self.id(), result)
+
     async def test_async_request(self):
-        greeter = actors.create_actor(GreeterActor)
+        greeter = actors.start_actor(self.actor)
         self.assertIsInstance(greeter, actors.ActorRef)
         self.assertIsInstance(greeter, Greeter)
         greeted = Greeted()
         await greeter.greet(whom=self.id(), greeted=greeted)
         self.assertEqual(self.id(), greeted.whom)
-        self.assertIs(greeter, greeted.greeter)
+        self.assertIs(self.actor, greeted.greeter)
 
     async def test_async_request_failure(self):
-        greeter = actors.create_actor(GreeterActor)
+        greeter = actors.start_actor(self.actor)
         self.assertIsInstance(greeter, actors.ActorRef)
         self.assertIsInstance(greeter, Greeter)
         greeted = Greeted()

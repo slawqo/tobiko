@@ -15,36 +15,96 @@
 #    under the License.
 from __future__ import absolute_import
 
+import abc
 import asyncio
 import typing
 
 
 class ActorRequest(typing.NamedTuple):
     future: asyncio.Future
+    actor_id: str
     method: str
     arguments: typing.Dict[str, typing.Any]
 
 
-class ActorRequestQueue(object):
+class ActorRequestQueue(abc.ABC):
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, max_size=0):
-        self._queue: asyncio.Queue = asyncio.Queue(maxsize=max_size)
+    @abc.abstractmethod
+    def send_request(self,
+                     actor_id: str,
+                     method: str,
+                     arguments: typing.Dict[str, typing.Any]) \
+            -> asyncio.Future:
+        raise NotImplementedError
+
+    async def cancel_requests(self,
+                              actor_id: str = None) \
+            -> typing.List[ActorRequest]:
+        return await self.drain_requests(actor_id=actor_id,
+                                         cancel=True)
+
+    @abc.abstractmethod
+    async def drain_requests(self,
+                             actor_id: str = None,
+                             cancel=False) -> typing.List[ActorRequest]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    async def receive_request(self) -> ActorRequest:
+        raise NotImplementedError
+
+
+class AsyncioActorRequestQueue(ActorRequestQueue):
+
+    def __init__(self,
+                 loop: asyncio.AbstractEventLoop,
+                 max_size=0):
+        self.max_size = max_size
         self._loop = loop
+        self._queue: asyncio.Queue = self._init_queue()
+
+    def _init_queue(self) -> asyncio.Queue:
+        return asyncio.Queue(maxsize=self.max_size)
 
     def send_request(self,
+                     actor_id: str,
                      method: str,
-                     arguments: typing.Dict[str, typing.Any]):
+                     arguments: typing.Dict[str, typing.Any]) \
+            -> asyncio.Future:
         future = self._loop.create_future()
         request = ActorRequest(future=future,
+                               actor_id=actor_id,
                                method=method,
                                arguments=arguments)
         self._queue.put_nowait(request)
         return future
 
-    async def receive_request(self):
+    async def drain_requests(self, actor_id: str = None,
+                             cancel=False) \
+            -> typing.List[ActorRequest]:
+        old_queue = self._queue
+        self._queue = self._init_queue()
+        keep_requests = []
+        drained_requests = []
+        while True:
+            try:
+                request: ActorRequest = old_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+            if actor_id in [None, request.actor_id]:
+                drained_requests.append(request)
+                if cancel:
+                    request.future.cancel()
+            else:
+                keep_requests.append(request)
+        for request in keep_requests:
+            await self._queue.put(request)
+        return drained_requests
+
+    async def receive_request(self) -> ActorRequest:
         return await self._queue.get()
 
 
-def create_request_queue(loop: asyncio.AbstractEventLoop, max_size=0) \
-        -> ActorRequestQueue:
-    return ActorRequestQueue(loop=loop, max_size=max_size)
+def create_request_queue(loop: asyncio.AbstractEventLoop,
+                         max_size=0) -> ActorRequestQueue:
+    return AsyncioActorRequestQueue(loop=loop, max_size=max_size)
