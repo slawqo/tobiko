@@ -21,6 +21,7 @@ import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack import octavia
 from tobiko.openstack import stacks
+from tobiko.shell import sh
 from tobiko import tripleo
 
 
@@ -61,13 +62,25 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         self.listener_stack.wait_for_members_to_be_reachable()
 
-        # Send traffic
-        octavia.check_members_balanced(
-            pool_id=self.listener_stack.pool_id,
-            ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.listener_stack.lb_algorithm,
-            protocol=self.listener_stack.lb_protocol,
-            port=self.listener_stack.lb_port)
+        # For 5 minutes we ignore specific exceptions as we know
+        # that Octavia resources are being provisioned
+        for attempt in tobiko.retry(timeout=300.):
+            try:
+                octavia.check_members_balanced(
+                    pool_id=self.listener_stack.pool_id,
+                    ip_address=self.loadbalancer_stack.floating_ip_address,
+                    lb_algorithm=self.listener_stack.lb_algorithm,
+                    protocol=self.listener_stack.lb_protocol,
+                    port=self.listener_stack.lb_port)
+                break
+            except (octavia.RoundRobinException,
+                    octavia.TrafficTimeoutError,
+                    sh.ShellCommandFailed):
+                LOG.exception(f"Traffic didn't reach all members after "
+                              f"#{attempt.number} attempts and "
+                              f"{attempt.elapsed_time} seconds")
+                if attempt.is_last:
+                    raise
 
     def test_reboot_amphora_compute_node(self):
         amphora_compute_host = octavia.get_amphora_compute_node(
@@ -102,9 +115,22 @@ class OctaviaBasicFaultTest(testtools.TestCase):
         self.listener_stack.wait_for_active_members()
 
         # Verify Octavia functionality
-        octavia.check_members_balanced(
-            pool_id=self.listener_stack.pool_id,
-            ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.listener_stack.lb_algorithm,
-            protocol=self.listener_stack.lb_protocol,
-            port=self.listener_stack.lb_port)
+        # For 5 minutes we ignore specific exceptions as we know
+        # that Octavia resources are being provisioned/migrated
+        for attempt in tobiko.retry(timeout=300.):
+            try:
+                octavia.check_members_balanced(
+                    pool_id=self.listener_stack.pool_id,
+                    ip_address=self.loadbalancer_stack.floating_ip_address,
+                    lb_algorithm=self.listener_stack.lb_algorithm,
+                    protocol=self.listener_stack.lb_protocol,
+                    port=self.listener_stack.lb_port)
+                break
+            except (octavia.RoundRobinException,
+                    octavia.TrafficTimeoutError,
+                    sh.ShellCommandFailed):
+                LOG.exception(f"Traffic didn't reach all members after "
+                              f"#{attempt.number} attempts and "
+                              f"{attempt.elapsed_time} seconds")
+                if attempt.is_last:
+                    raise

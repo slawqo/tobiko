@@ -134,7 +134,8 @@ def get_master_amphora(amphorae, ip_address, lb_port, lb_protocol,
         ip_address=ip_address,
         protocol=lb_protocol,
         port=lb_port,
-        members_count=1)
+        members_count=1,
+        requests_count=1)
 
     # The amphora which has total_connections > 0 is the master.
     for amphora in amphorae:
