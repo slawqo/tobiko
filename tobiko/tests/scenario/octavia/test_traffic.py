@@ -77,12 +77,12 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
                 break
             except (octavia.RoundRobinException,
                     octavia.TrafficTimeoutError,
-                    sh.ShellCommandFailed) as e:
+                    sh.ShellCommandFailed):
                 LOG.exception(f"Traffic didn't reach all members after "
                               f"#{attempt.number} attempts and "
                               f"{attempt.elapsed_time} seconds")
                 if attempt.is_last:
-                    raise e
+                    raise
 
 
 @neutron.skip_unless_is_ovn()
