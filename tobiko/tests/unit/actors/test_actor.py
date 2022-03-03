@@ -15,7 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import abc
 import typing
 
 import tobiko
@@ -23,11 +22,26 @@ from tobiko.tests import unit
 from tobiko import actors
 
 
-class Greeter(abc.ABC):
+class Greeter(actors.Actor):
 
-    @abc.abstractmethod
+    setup_called = False
+    cleanup_called = False
+
+    async def setup_actor(self):
+        self.setup_called = True
+
+    async def cleanup_actor(self):
+        self.cleanup_called = True
+
+    @actors.actor_method
     async def greet(self, whom: str, greeted: 'Greeted'):
-        raise NotImplementedError
+        assert self.setup_called
+        assert not self.cleanup_called
+        if not whom:
+            raise ValueError("'whom' parameter can't be empty")
+
+        self.log.info(f"Hello {whom}!")
+        await greeted.greeted(whom=whom, greeter=self)
 
 
 class Greeted:
@@ -40,33 +54,9 @@ class Greeted:
         self.whom = whom
 
 
-class GreeterActor(actors.Actor[Greeter]):
-
-    setup_called = False
-    cleanup_called = False
-
-    async def setup_actor(self):
-        self.setup_called = True
-
-    async def cleanup_actor(self):
-        self.cleanup_called = True
-
-    @actors.actor_method
-    async def greet(self, whom: str, greeted: Greeted):
-        assert isinstance(self, Greeter)
-        assert isinstance(self, GreeterActor)
-        assert self.setup_called
-        assert not self.cleanup_called
-        if not whom:
-            raise ValueError("'whom' parameter can't be empty")
-
-        self.log.info(f"Hello {whom}!")
-        await greeted.greeted(whom=whom, greeter=self)
-
-
 class ActorTest(unit.TobikoUnitTest):
 
-    actor = tobiko.required_fixture(GreeterActor, setup=False)
+    actor = tobiko.required_fixture(Greeter, setup=False)
 
     async def test_setup_actor(self):
         self.assertFalse(self.actor.setup_called)
@@ -76,6 +66,13 @@ class ActorTest(unit.TobikoUnitTest):
         self.assertFalse(self.actor.cleanup_called)
 
     async def test_cleanup_actor(self):
+        self.assertFalse(self.actor.setup_called)
+        self.assertFalse(self.actor.cleanup_called)
+        await actors.cleanup_actor(self.actor)
+        self.assertFalse(self.actor.setup_called)
+        self.assertFalse(self.actor.cleanup_called)
+
+    async def test_cleanup_actor_after_setup(self):
         await actors.setup_actor(self.actor)
         self.assertTrue(self.actor.setup_called)
         self.assertFalse(self.actor.cleanup_called)
@@ -90,8 +87,7 @@ class ActorTest(unit.TobikoUnitTest):
 
     async def test_async_request(self):
         greeter = actors.start_actor(self.actor)
-        self.assertIsInstance(greeter, actors.ActorRef)
-        self.assertIsInstance(greeter, Greeter)
+        self.assertIsInstance(greeter, actors.ActorRef[Greeter])
         greeted = Greeted()
         await greeter.greet(whom=self.id(), greeted=greeted)
         self.assertEqual(self.id(), greeted.whom)
@@ -99,8 +95,7 @@ class ActorTest(unit.TobikoUnitTest):
 
     async def test_async_request_failure(self):
         greeter = actors.start_actor(self.actor)
-        self.assertIsInstance(greeter, actors.ActorRef)
-        self.assertIsInstance(greeter, Greeter)
+        self.assertIsInstance(greeter, actors.ActorRef[Greeter])
         greeted = Greeted()
 
         try:

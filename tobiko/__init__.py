@@ -22,8 +22,8 @@ from tobiko.common import _deprecation
 from tobiko.common import _detail
 from tobiko.common import _exception
 from tobiko.common import _fixture
+from tobiko.common import _loader
 from tobiko.common import _logging
-from tobiko.common.managers import loader as loader_manager
 from tobiko.common import _operation
 from tobiko.common import _os
 from tobiko.common import _retry
@@ -84,8 +84,8 @@ RequiredFixture = _fixture.RequiredFixture
 
 CaptureLogFixture = _logging.CaptureLogFixture
 
-load_object = loader_manager.load_object
-load_module = loader_manager.load_module
+load_object = _loader.load_object
+load_module = _loader.load_module
 
 makedirs = _os.makedirs
 open_output_file = _os.open_output_file

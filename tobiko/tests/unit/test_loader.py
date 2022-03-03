@@ -16,7 +16,7 @@ from __future__ import absolute_import
 import sys
 
 import tobiko
-from tobiko.common.managers import loader
+from tobiko.common import _loader
 from tobiko.tests.unit import TobikoUnitTest
 
 
@@ -33,8 +33,8 @@ class TestLoader(TobikoUnitTest):
 
     def setUp(self):
         super(TestLoader, self).setUp()
-        self.manager = loader.LoaderManager()
-        self.patch(loader, 'LOADERS', self.manager)
+        self.manager = _loader.LoaderManager()
+        self.patch(_loader, 'LOADERS', self.manager)
 
     def test_load_object_with_none(self):
         object_id = '.'.join([__name__, 'SOME_NONE'])

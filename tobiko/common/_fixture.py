@@ -23,10 +23,10 @@ import fixtures
 from oslo_log import log
 import testtools
 
-import tobiko
 from tobiko.common import _detail
 from tobiko.common import _exception
 from tobiko.common import _testcase
+from tobiko.common import _loader
 
 LOG = log.getLogger(__name__)
 
@@ -93,9 +93,8 @@ def get_fixture(obj: FixtureType,
     """
     if isinstance(obj, fixtures.Fixture):
         return typing.cast(F, obj)
-    if manager is None:
-        manager = FIXTURES
-    return manager.get_fixture(obj, fixture_id=fixture_id)
+    return fixture_manager(obj, manager).get_fixture(
+        obj, fixture_id=fixture_id)
 
 
 def get_fixture_name(obj) -> str:
@@ -113,7 +112,7 @@ def get_fixture_name(obj) -> str:
 def get_fixture_class(obj: FixtureType) -> typing.Type[fixtures.Fixture]:
     """It gets fixture class"""
     if isinstance(obj, str):
-        obj = tobiko.load_object(obj)
+        obj = _loader.load_object(obj)
 
     if not inspect.isclass(obj):
         obj = type(obj)
@@ -145,8 +144,8 @@ def remove_fixture(obj: FixtureType,
                    fixture_id: typing.Any = None,
                    manager: 'FixtureManager' = None) -> typing.Optional[F]:
     """Unregister fixture identified by given :param obj: if any"""
-    manager = manager or FIXTURES
-    return manager.remove_fixture(obj, fixture_id=fixture_id)
+    return fixture_manager(obj, manager).remove_fixture(
+        obj, fixture_id=fixture_id)
 
 
 @typing.overload
@@ -277,7 +276,7 @@ def use_fixture(obj: FixtureType,
     with on the fixture
     """
     fixture = setup_fixture(obj, fixture_id=fixture_id, manager=manager)
-    _testcase.add_cleanup(tobiko.cleanup_fixture, fixture)
+    _testcase.add_cleanup(cleanup_fixture, fixture)
     return fixture
 
 
@@ -294,7 +293,7 @@ def get_name_and_object(obj: F) -> typing.Tuple[str, F]:
 def get_name_and_object(obj: typing.Any) -> typing.Tuple[str, typing.Any]:
     '''Get (name, obj) tuple identified by given :param obj:'''
     if isinstance(obj, str):
-        return obj, tobiko.load_object(obj)
+        return obj, _loader.load_object(obj)
     else:
         return get_object_name(obj), obj
 
@@ -459,7 +458,7 @@ def get_object_name(obj) -> str:
     raise TypeError(f"Unable to get fixture name from object {obj!r}")
 
 
-class FixtureManager(object):
+class FixtureManager:
 
     def __init__(self):
         self.fixtures: typing.Dict[str, F] = {}
@@ -497,6 +496,18 @@ class FixtureManager(object):
         return self.fixtures.pop(name, None)
 
 
+def fixture_manager(obj: FixtureType,
+                    manager: FixtureManager = None) -> FixtureManager:
+    if manager is None:
+        if isinstance(obj, str):
+            obj = _loader.load_object(obj)
+        if hasattr(obj, 'get_fixture_manager'):
+            manager = obj.get_fixture_manager()
+        else:
+            manager = FIXTURES
+    return _exception.check_valid_type(manager, FixtureManager)
+
+
 FIXTURES = FixtureManager()
 
 
@@ -526,7 +537,12 @@ class SharedFixture(fixtures.Fixture):
     __tobiko_fixture_name__: typing.Optional[str] = None
     __tobiko_fixture_id__: typing.Any = None
 
+    @classmethod
+    def get_fixture_manager(cls) -> FixtureManager:
+        return FIXTURES
+
     def __init__(self):
+        super().__init__()
         # make sure class states can be used before setUp
         self._clear_cleanups()
 
@@ -586,7 +602,7 @@ class SharedFixture(fixtures.Fixture):
 class FixtureProperty(property):
 
     def __get__(self, instance, owner):
-        instance = instance or tobiko.get_fixture(owner)
+        instance = instance or get_fixture(owner)
         return super(FixtureProperty, self).__get__(instance, owner)
 
 

@@ -16,17 +16,19 @@
 from __future__ import absolute_import
 
 from tobiko.actors import _actor
+from tobiko.actors import _manager
 from tobiko.actors import _proxy
+
+actor_method = _actor.actor_method
+Actor = _actor.Actor
+ActorRef = _actor.ActorRef
+
+cleanup_actor = _manager.cleanup_actor
+setup_actor = _manager.setup_actor
+start_actor = _manager.start_actor
+stop_actor = _manager.stop_actor
 
 call_proxy = _proxy.create_call_proxy
 call_proxy_class = _proxy.create_call_proxy_class
 CallProxy = _proxy.CallProxy
 CallProxyBase = _proxy.CallProxyBase
-
-actor_method = _actor.actor_method
-cleanup_actor = _actor.cleanup_actor
-setup_actor = _actor.setup_actor
-start_actor = _actor.start_actor
-stop_actor = _actor.stop_actor
-Actor = _actor.Actor
-ActorRef = _actor.ActorRef

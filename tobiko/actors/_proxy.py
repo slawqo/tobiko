@@ -14,15 +14,15 @@
 from __future__ import absolute_import
 
 import abc
+import functools
 import inspect
-import sys
 import types
 import typing
 
 import decorator
 
 
-P = typing.TypeVar('P', bound=abc.ABC)
+P = typing.TypeVar('P')
 
 GenericMetaBase = abc.ABCMeta
 if hasattr(typing, 'GenericMeta'):
@@ -34,6 +34,8 @@ if hasattr(typing, 'GenericMeta'):
 
 
 class GenericMeta(GenericMetaBase):
+
+    @functools.lru_cache(maxsize=4096)
     def __getitem__(self, item):
         # pylint: disable=not-callable
         cls = self
@@ -49,9 +51,21 @@ class GenericMeta(GenericMetaBase):
         return cls
 
 
-def is_public_function(obj):
+class Generic(typing.Generic[P], metaclass=GenericMeta):
+    pass
+
+
+PredicateFunction = typing.Callable[[typing.Any], bool]
+
+
+def is_public_function(obj) -> bool:
     return (inspect.isfunction(obj) and
             getattr(obj, '__name__', '_')[0] != '_')
+
+
+def is_public_abstract_method(obj) -> bool:
+    return (is_public_function(obj) and
+            getattr(obj, "__isabstractmethod__", False))
 
 
 class CallHandler(abc.ABC):
@@ -62,29 +76,26 @@ class CallHandler(abc.ABC):
         raise NotImplementedError
 
 
-class CallProxyBase(CallHandler, typing.Generic[P], abc.ABC,
-                    metaclass=GenericMeta):
+class CallProxyBase(CallHandler, Generic[P], abc.ABC):
 
     def __class_getitem__(cls, item: typing.Type[P]):
         if isinstance(item, type):
             return create_call_proxy_class(protocols=(item,),
                                            class_name=cls.__name__,
-                                           bases=(cls,))
+                                           bases=(cls, item),
+                                           predicate=cls._is_proxy_method)
         else:
             return cls
 
-    def __init_subclass__(cls,
-                          *args,
-                          **kwargs):
-        super().__init_subclass__(*args, **kwargs)
-        # On python < 3.8 must ensure __class_getitem__ is there
-        if sys.version_info < (3, 8):
-            cls.__class_getitem__ = CallProxyBase.__class_getitem__
+    @classmethod
+    def _is_proxy_method(cls, obj) -> bool:
+        return is_public_abstract_method(obj)
 
 
-class CallProxy(CallProxyBase, typing.Generic[P]):
+class CallProxy(CallProxyBase, Generic[P]):
 
     def __init__(self, handle_call: typing.Callable):
+        super(CallProxy, self).__init__()
         assert callable(handle_call)
         self._handle_call = handle_call  # type: ignore
 
@@ -93,33 +104,35 @@ class CallProxy(CallProxyBase, typing.Generic[P]):
 
 
 def create_call_proxy_class(
-        protocols: typing.Tuple[typing.Type[P], ...],
+        protocols: typing.Tuple[type, ...],
         class_name: str,
-        bases: typing.Tuple[typing.Type, ...] = None,
-        namespace: dict = None) -> typing.Type[P]:
+        bases: typing.Tuple[type, ...] = None,
+        namespace: dict = None,
+        predicate: PredicateFunction = None) -> type:
     if bases is None:
         bases = tuple()
+    if predicate is None:
+        predicate = is_public_abstract_method
 
     def exec_body(ns: typing.Dict[str, typing.Any]):
         if namespace is not None:
             ns.update(namespace)
         for cls in protocols:
-            for member_name, member in list_abstract_methods(cls):
-                if member_name not in ns and is_public_function(member):
+            for member_name, member in inspect.getmembers(cls, predicate):
+                if member_name not in ns:
                     method = create_call_proxy_method(member)
                     ns[member_name] = method
 
-    proxy_class = types.new_class(name=class_name,
-                                  bases=bases + protocols,
-                                  exec_body=exec_body)
-    return typing.cast(typing.Type[P], proxy_class)
+    return types.new_class(name=class_name,
+                           bases=bases,
+                           exec_body=exec_body)
 
 
 def create_call_proxy(handle_call: typing.Callable,
                       *protocols: typing.Type[P]) -> P:
     cls = create_call_proxy_class(protocols=protocols,
                                   class_name='CallProxy',
-                                  bases=(CallProxy,))
+                                  bases=(CallProxy,) + protocols)
     return cls(handle_call)  # type: ignore[call-arg]
 
 
@@ -135,10 +148,9 @@ def list_abstract_classes(cls: typing.Type) \
 def list_abstract_methods(cls: typing.Type) \
         -> typing.List[typing.Tuple[str, typing.Callable]]:
     methods: typing.List[typing.Tuple[str, typing.Callable]] = []
-    if inspect.isabstract(cls):
-        for name, member in inspect.getmembers(cls, inspect.isfunction):
-            if getattr(member, "__isabstractmethod__", False):
-                methods.append((name, member))
+    for name, member in inspect.getmembers(cls, inspect.isfunction):
+        if getattr(member, "__isabstractmethod__", False):
+            methods.append((name, member))
     return methods
 
 
