@@ -1,4 +1,11 @@
 ---
+- name: "cleanup Loadbalancers created by Tobiko tests"
+  shell: |
+    source {{ stackrc_file }}
+    openstack loadbalancer list -f value -c 'name' | \
+        grep "^tobiko\." | \
+        xargs -r openstack loadbalancer delete --cascade --wait
+  ignore_errors: yes
 
 - name: "cleanup Heat stacks created by Tobiko tests"
   shell: |
