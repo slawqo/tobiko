@@ -83,13 +83,26 @@ class OctaviaServicesFaultTest(testtools.TestCase):
 
         self.listener_stack.wait_for_members_to_be_reachable()
 
+        # For 5 minutes we ignore specific exceptions as we know
+        # that Octavia resources are being provisioned
         # Sending initial traffic before we stop octavia services
-        octavia.check_members_balanced(
-            pool_id=self.listener_stack.pool_id,
-            ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.listener_stack.lb_algorithm,
-            protocol=self.listener_stack.lb_protocol,
-            port=self.listener_stack.lb_port)
+        for attempt in tobiko.retry(timeout=300.):
+            try:
+                octavia.check_members_balanced(
+                    pool_id=self.listener_stack.pool_id,
+                    ip_address=self.loadbalancer_stack.floating_ip_address,
+                    lb_algorithm=self.listener_stack.lb_algorithm,
+                    protocol=self.listener_stack.lb_protocol,
+                    port=self.listener_stack.lb_port)
+                break
+            except (octavia.RoundRobinException,
+                    octavia.TrafficTimeoutError,
+                    sh.ShellCommandFailed):
+                LOG.exception(f"Traffic didn't reach all members after "
+                              f"#{attempt.number} attempts and "
+                              f"{attempt.elapsed_time} seconds")
+                if attempt.is_last:
+                    raise
 
     def test_services_fault(self):
         # excluded_services are the services which will be stopped
@@ -174,12 +187,23 @@ class OctaviaServicesFaultTest(testtools.TestCase):
 
         self.loadbalancer_stack.wait_for_octavia_service()
 
-        octavia.check_members_balanced(
-            pool_id=self.listener_stack.pool_id,
-            ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.listener_stack.lb_algorithm,
-            protocol=self.listener_stack.lb_protocol,
-            port=self.listener_stack.lb_port)
+        # For 30 seconds we ignore the OctaviaClientException as we know
+        # that Octavia services are being stopped and restarted
+        for attempt in tobiko.retry(timeout=30.):
+            try:
+                octavia.check_members_balanced(
+                    pool_id=self.listener_stack.pool_id,
+                    ip_address=self.loadbalancer_stack.floating_ip_address,
+                    lb_algorithm=self.listener_stack.lb_algorithm,
+                    protocol=self.listener_stack.lb_protocol,
+                    port=self.listener_stack.lb_port)
+                break
+            except octavia.OctaviaClientException:
+                LOG.exception(f"Octavia service was unavailable after "
+                              f"#{attempt.number} attempts and "
+                              f"{attempt.elapsed_time} seconds")
+                if attempt.is_last:
+                    raise
 
     def _start_octavia_main_services(
             self, controllers: typing.List[OpenStackTopologyNode] = None):

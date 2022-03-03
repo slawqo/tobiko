@@ -64,7 +64,7 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
         self.listener_stack.wait_for_members_to_be_reachable()
 
     def test_round_robin_traffic(self):
-        # For 5 minutes seconds we ignore specific exceptions as we know
+        # For 5 minutes we ignore specific exceptions as we know
         # that Octavia resources are being provisioned
         for attempt in tobiko.retry(timeout=300.):
             try:
