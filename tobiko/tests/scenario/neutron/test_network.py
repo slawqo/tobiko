@@ -59,8 +59,11 @@ class NetworkTest(testtools.TestCase):
         self.assertEqual(self.stack.network_stack.ha,
                          gateway['ha'])
 
-    @pytest.mark.background
-    @undercloud.skip_if_missing_undercloud
+
+@pytest.mark.background
+@undercloud.skip_if_missing_undercloud
+class BackgroundProcessTest(NetworkTest):
+
     def test_check_background_vm_ping(self):
         """ Tests that are designed to run in the background ,
             then collect results.
