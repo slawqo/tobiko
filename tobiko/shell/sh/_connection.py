@@ -29,6 +29,7 @@ import tobiko
 from tobiko.shell.sh import _command
 from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _hostname
+from tobiko.shell.sh import _mktemp
 from tobiko.shell import ssh
 
 
@@ -72,15 +73,23 @@ def put_file(local_file: str,
 
 
 def make_temp_dir(ssh_client: ssh.SSHClientType = None,
-                  auto_clean=True) -> str:
+                  auto_clean=True,
+                  sudo: bool = None) -> str:
     return shell_connection(ssh_client=ssh_client).make_temp_dir(
-        auto_clean=auto_clean)
+        auto_clean=auto_clean, sudo=sudo)
 
 
 def remove_files(filename: str, *filenames: str,
                  ssh_client: ssh.SSHClientType = None) -> str:
     return shell_connection(ssh_client=ssh_client).remove_files(
         filename, *filenames)
+
+
+def make_dirs(name: str,
+              exist_ok=True,
+              ssh_client: ssh.SSHClientType = None) -> str:
+    return shell_connection(ssh_client=ssh_client).make_dirs(
+        name=name, exist_ok=exist_ok)
 
 
 def local_shell_connection() -> 'LocalShellConnection':
@@ -194,10 +203,13 @@ class ShellConnection(tobiko.SharedFixture):
     def __str__(self) -> str:
         return f"{type(self).__name__}<{self.login}>"
 
-    def make_temp_dir(self, auto_clean=True) -> str:
+    def make_temp_dir(self, auto_clean=True, sudo: bool = None) -> str:
         raise NotImplementedError
 
     def remove_files(self, filename: str, *filenames: str):
+        raise NotImplementedError
+
+    def make_dirs(self, name: str, exist_ok=True):
         raise NotImplementedError
 
 
@@ -229,13 +241,17 @@ class LocalShellConnection(ShellConnection):
                   f"'{local_file}' ...")
         shutil.copyfile(remote_file, local_file)
 
-    def make_temp_dir(self, auto_clean=True) -> str:
-        temp_dir = tempfile.mkdtemp()
-        LOG.debug(f"Local temporary directory created as {self.login}: "
-                  f"{temp_dir}")
-        if auto_clean:
-            tobiko.add_cleanup(self.remove_files, temp_dir)
-        return temp_dir
+    def make_temp_dir(self, auto_clean=True, sudo: bool = None) -> str:
+        if sudo:
+            return _mktemp.make_temp_dir(ssh_client=self.ssh_client,
+                                         sudo=True)
+        else:
+            temp_dir = tempfile.mkdtemp()
+            LOG.debug(f"Local temporary directory created as {self.login}: "
+                      f"{temp_dir}")
+            if auto_clean:
+                tobiko.add_cleanup(self.remove_files, temp_dir)
+            return temp_dir
 
     def remove_files(self, filename: str, *filenames: str):
         filenames = (filename,) + filenames
@@ -243,6 +259,10 @@ class LocalShellConnection(ShellConnection):
         for filename in filenames:
             if os.path.exists(filename):
                 shutil.rmtree(filename)
+
+    def make_dirs(self, name: str, exist_ok=True):
+        os.makedirs(name=name,
+                    exist_ok=exist_ok)
 
 
 class SSHShellConnection(ShellConnection):
@@ -298,8 +318,8 @@ class SSHShellConnection(ShellConnection):
                   f"'{local_file}'...")
         self.sftp_client.get(remote_file, local_file)
 
-    def make_temp_dir(self, auto_clean=True) -> str:
-        temp_dir = self.execute('mktemp -d').stdout.strip()
+    def make_temp_dir(self, auto_clean=True, sudo: bool = None) -> str:
+        temp_dir = self.execute('mktemp -d', sudo=sudo).stdout.strip()
         LOG.debug(f"Remote temporary directory created as {self.login}: "
                   f"{temp_dir}")
         if auto_clean:
@@ -310,4 +330,11 @@ class SSHShellConnection(ShellConnection):
         filenames = (filename,) + filenames
         LOG.debug(f"Remove remote files as {self.login}: {filenames}")
         command = _command.shell_command('rm -fR') + filenames
+        self.execute(command)
+
+    def make_dirs(self, name: str, exist_ok=True):
+        command = _command.shell_command('mkdir')
+        if exist_ok:
+            command += '-p'
+        command += name
         self.execute(command)

@@ -23,7 +23,6 @@ from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _hostname
 from tobiko.shell.sh import _io
 from tobiko.shell.sh import _local
-from tobiko.shell.sh import _mktemp
 from tobiko.shell.sh import _nameservers
 from tobiko.shell.sh import _path
 from tobiko.shell.sh import _process
@@ -54,6 +53,8 @@ is_cirros_connection = _connection.is_cirros_connection
 is_local_connection = _connection.is_local_connection
 put_file = _connection.put_file
 get_file = _connection.get_file
+make_temp_dir = _connection.make_temp_dir
+make_dirs = _connection.make_dirs
 
 ShellError = _exception.ShellError
 ShellCommandFailed = _exception.ShellCommandFailed
@@ -79,8 +80,6 @@ local_execute = _local.local_execute
 local_process = _local.local_process
 LocalShellProcessFixture = _local.LocalShellProcessFixture
 LocalExecutePathFixture = _local.LocalExecutePathFixture
-
-make_temp_dir = _mktemp.make_temp_dir
 
 ListNameserversFixture = _nameservers.ListNameserversFixture
 list_nameservers = _nameservers.list_nameservers
