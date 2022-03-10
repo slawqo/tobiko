@@ -68,7 +68,7 @@
     description: |
       Run functional tests for an OpenStack Python project inside a Docker container
       with Python 3.10
-    voting: true
+    voting: false
     parent: tobiko-docker-py3
     vars:
         docker_compose_service: py310
