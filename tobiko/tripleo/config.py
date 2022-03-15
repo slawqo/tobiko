@@ -17,6 +17,7 @@ import itertools
 
 from oslo_config import cfg
 
+
 GROUP_NAME = 'tripleo'
 OPTIONS = [
     # Undercloud options
@@ -74,7 +75,10 @@ def list_options():
 
 def setup_tobiko_config(conf):
     # pylint: disable=unused-argument
+    from tobiko.tripleo import ansible
     from tobiko.tripleo import overcloud
     from tobiko.tripleo import topology
+
+    ansible.setup_undercloud_ansible_plabook()
     overcloud.setup_overcloud_keystone_crederntials()
     topology.setup_tripleo_topology()

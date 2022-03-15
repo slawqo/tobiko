@@ -17,7 +17,9 @@ import io
 import os
 
 import tobiko
+from tobiko.shell import ansible
 from tobiko.shell import sh
+from tobiko.shell import ssh
 from tobiko.tripleo import _undercloud
 from tobiko.tripleo import _config
 
@@ -81,3 +83,37 @@ def read_tripleo_ansible_inventory():
         undercloud_rcfile=tripleo.undercloud_rcfile[0],
         overcloud_ssh_username=tripleo.overcloud_ssh_username)
     return sh.execute('/bin/bash', stdin=script, ssh_client=ssh_client).stdout
+
+
+class UndercloudAnsiblePlaybook(ansible.AnsiblePlaybook):
+
+    @property
+    def ssh_client(self) -> ssh.SSHClientType:
+        return _undercloud.undercloud_ssh_client()
+
+    def setup_fixture(self):
+        self._inventory_filename = get_tripleo_ansible_inventory_file()
+        super(UndercloudAnsiblePlaybook, self).setup_fixture()
+
+
+def undercloud_ansible_playbook() -> UndercloudAnsiblePlaybook:
+    return tobiko.get_fixture(UndercloudAnsiblePlaybook)
+
+
+def run_playbook_from_undercloud(command: sh.ShellCommand = None,
+                                 playbook: str = None,
+                                 playbook_dirname: str = None,
+                                 playbook_filename: str = None,
+                                 inventory_filename: str = None):
+    return undercloud_ansible_playbook().run_playbook(
+        command=command,
+        playbook=playbook,
+        playbook_dirname=playbook_dirname,
+        playbook_filename=playbook_filename,
+        inventory_filename=inventory_filename)
+
+
+def setup_undercloud_ansible_plabook():
+    if _undercloud.has_undercloud():
+        ansible.register_ansible_playbook(
+            undercloud_ansible_playbook())
