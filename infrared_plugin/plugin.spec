@@ -237,6 +237,9 @@ subparsers:
         options:
           collect-dir:
             type: Value
-            help: local directory where report files are going to be copied to
+            help: Local directory where report files are going to be copied to
             ansible_variable: test_collect_dir
-            default: '{{ inventory_dir }}/{{ test_report_name }}'
+          results-dir:
+            type: Value
+            help: Local directory where report files are going to be copied to
+            ansible_variable: test_collect_dir
