@@ -12,7 +12,11 @@
     source {{ stackrc_file }}
     openstack stack list -f value -c 'Stack Name' | \
         grep "^tobiko\." | \
-        xargs -r openstack stack delete -y --wait
+        xargs -r timeout 180 openstack stack delete -y --wait
+  register: result
+  retries: 5
+  delay: 5
+  until: result.rc == 0
   ignore_errors: yes
 
 - name: "cleanup Glance images created by Tobiko tests"
