@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 import io
 import os
+import typing
 
 import tobiko
 from tobiko.shell import ansible
@@ -104,13 +105,15 @@ def run_playbook_from_undercloud(command: sh.ShellCommand = None,
                                  playbook: str = None,
                                  playbook_dirname: str = None,
                                  playbook_filename: str = None,
-                                 inventory_filename: str = None):
+                                 inventory_filename: str = None,
+                                 vars_files: typing.Iterable[str] = None):
     return undercloud_ansible_playbook().run_playbook(
         command=command,
         playbook=playbook,
         playbook_dirname=playbook_dirname,
         playbook_filename=playbook_filename,
-        inventory_filename=inventory_filename)
+        inventory_filename=inventory_filename,
+        vars_files=vars_files)
 
 
 def setup_undercloud_ansible_plabook():
