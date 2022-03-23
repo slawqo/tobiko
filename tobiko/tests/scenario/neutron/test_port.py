@@ -149,6 +149,7 @@ class PortLogsTest(testtools.TestCase):
 
     stack = tobiko.required_fixture(PortLogsStack)
 
+    @neutron.skip_unless_is_ovn()
     def test_nova_port_notification_on_activate(self):
         self.stack.ensure_server_status('SHUTOFF')
         topology.read_neutron_nova_responses()
