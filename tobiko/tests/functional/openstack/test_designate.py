@@ -1,4 +1,4 @@
-# Copyright (c) 2019 Red Hat, Inc.
+# Copyright (c) 2022 Red Hat, Inc.
 #
 # All Rights Reserved.
 #
@@ -41,9 +41,3 @@ class DesignateClientTest(testtools.TestCase):
         self.assertEqual(zone['id'], self.stack.zone_id)
         self.assertEqual(zone['name'], self.stack.zone_name)
         self.assertEqual(zone, self.stack.zone_details)
-
-    def test_designate_zone_id(self):
-        self.assertEqual('some-id',
-                         designate.designate_zone_id('some-id'))
-        self.assertEqual('some-id',
-                         designate.designate_zone_id({'id': 'some-id'}))
