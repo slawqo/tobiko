@@ -76,24 +76,30 @@ class AnsiblePlaybook(tobiko.SharedFixture):
             return None
         return self._ensure_work_file(inventory_filename, 'inventory')
 
-    def _ensure_playbook_filename(self,
-                                  playbook: str = None,
-                                  playbook_dirname: str = None,
-                                  playbook_filename: str = None) \
-            -> typing.Optional[str]:
-        if playbook_filename is None:
-            playbook_filename = self._get_playbook_filename(
-                playbook=playbook, playbook_dirname=playbook_dirname)
-        return self._ensure_work_file(playbook_filename)
-
     def _get_playbook_filename(self,
-                               playbook: str = None,
-                               playbook_dirname: str = None) -> str:
-        if playbook is None:
-            playbook = self._playbook
-        if playbook_dirname is None:
-            playbook_dirname = self.playbook_dirname
-        return os.path.join(playbook_dirname, playbook + '.yaml')
+                               basename: str = None,
+                               dirname: str = None) -> str:
+        if basename is None:
+            basename = self._playbook
+        if dirname is None:
+            dirname = self.playbook_dirname
+        return os.path.join(dirname, basename)
+
+    def _ensure_vars_files(self,
+                           vars_files: typing.Iterable[str],
+                           sub_dir: str = None,
+                           dirname: str = None) -> typing.List[str]:
+        work_filenames = []
+        for vars_file in vars_files:
+            filename = self._get_playbook_filename(basename=vars_file,
+                                                   dirname=dirname)
+            if sub_dir is None and dirname is not None:
+                sub_dir = os.path.relpath(os.path.dirname(filename), dirname)
+
+            work_filename = self._ensure_work_file(filename=filename,
+                                                   sub_dir=sub_dir)
+            work_filenames.append(work_filename)
+        return work_filenames
 
     def _ensure_work_file(self, filename: str, sub_dir: str = None) -> str:
         filename = os.path.realpath(filename)
@@ -123,7 +129,8 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                      playbook: str = None,
                      playbook_dirname: str = None,
                      playbook_filename: str = None,
-                     inventory_filename: str = None) -> \
+                     inventory_filename: str = None,
+                     vars_files: typing.Iterable[str] = None) -> \
             sh.ShellCommand:
         # ensure command
         if command is None:
@@ -137,11 +144,15 @@ class AnsiblePlaybook(tobiko.SharedFixture):
             command += ['-i', work_inventory_filename]
 
         # ensure playbook file
-        command += [self._ensure_playbook_filename(
-            playbook=playbook,
-            playbook_dirname=playbook_dirname,
-            playbook_filename=playbook_filename)]
+        if playbook_filename is None:
+            playbook_filename = self._get_playbook_filename(
+                basename=playbook, dirname=playbook_dirname)
+            playbook_dirname = os.path.dirname(playbook_filename)
+        command += [self._ensure_work_file(playbook_filename)]
 
+        if vars_files is not None:
+            self._ensure_vars_files(vars_files=vars_files,
+                                    dirname=playbook_dirname)
         return command
 
     def run_playbook(self,
@@ -149,13 +160,15 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                      playbook: str = None,
                      playbook_dirname: str = None,
                      playbook_filename: str = None,
-                     inventory_filename: str = None):
+                     inventory_filename: str = None,
+                     vars_files: typing.Iterable[str] = None):
         tobiko.setup_fixture(self)
         command = self._get_command(command=command,
                                     playbook=playbook,
                                     playbook_dirname=playbook_dirname,
                                     playbook_filename=playbook_filename,
-                                    inventory_filename=inventory_filename)
+                                    inventory_filename=inventory_filename,
+                                    vars_files=vars_files)
         return self.sh_connection.execute(command, current_dir=self.work_dir)
 
 

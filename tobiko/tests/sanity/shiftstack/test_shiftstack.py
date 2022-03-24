@@ -29,5 +29,11 @@ class OpenShiftTest(testtools.TestCase):
     @tripleo.skip_if_missing_tripleo_ansible_inventory
     def test_ping_all_hosts(self):
         tripleo.run_playbook_from_undercloud(
-            playbook='ping-shiftstack',
+            playbook='ping-shiftstack.yaml',
             playbook_dirname=PLAYBOOK_DIRNAME)
+
+    def test_debug_vars(self):
+        tripleo.run_playbook_from_undercloud(
+            playbook='debug-vars.yaml',
+            playbook_dirname=PLAYBOOK_DIRNAME,
+            vars_files=['vars/some-vars.yaml'])
