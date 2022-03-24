@@ -29,7 +29,6 @@ from tobiko.shell import ping
 from tobiko.shell import ip
 from tobiko.shell import sh
 from tobiko.openstack import neutron
-from tobiko.openstack import nova
 from tobiko.openstack import stacks
 from tobiko.openstack import topology
 
@@ -136,73 +135,6 @@ class UbuntuExternalPortTest(PortTest):
 class L3HAPortTest(PortTest):
     #: Resources stack with floating IP and Nova server
     stack = tobiko.required_fixture(stacks.L3haServerStackFixture)
-
-
-# --- Port events logging ----------------------------------------------------
-
-class PortLogsStack(stacks.CirrosServerStackFixture):
-    pass
-
-
-@neutron.skip_unless_is_ovs()
-class PortLogsTest(testtools.TestCase):
-
-    stack = tobiko.required_fixture(PortLogsStack)
-
-    @neutron.skip_unless_is_ovn()
-    def test_nova_port_notification_on_activate(self):
-        self.stack.ensure_server_status('SHUTOFF')
-        topology.read_neutron_nova_responses()
-
-        LOG.debug("Activate server")
-        nova.activate_server(self.stack.server_id)
-        self.assert_last_response(name='network-vif-plugged',
-                                  new_lines=True)
-
-    valid_response_names = frozenset(['network-vif-plugged',
-                                      'network-vif-unplugged'])
-
-    def is_valid_response(self,
-                          response: topology.NeutronNovaResponse) -> bool:
-        return response.name in self.valid_response_names
-
-    def assert_last_response(self,
-                             name: str,
-                             new_lines: bool,
-                             retry_timeout: tobiko.Seconds = None,
-                             retry_interval: tobiko.Seconds = None):
-        self.assertIn(name, self.valid_response_names)
-        for attempt in tobiko.retry(timeout=retry_timeout,
-                                    interval=retry_interval,
-                                    default_timeout=60.,
-                                    default_interval=1.):
-            responses = topology.read_neutron_nova_responses(
-                server_uuid=self.stack.server_id,
-                tag=self.stack.port_id,
-                status='completed',
-                new_lines=new_lines).select(self.is_valid_response)
-            try:
-                found = responses.with_attributes(name=name).last
-            except tobiko.ObjectNotFound:
-                new_lines = True
-                if attempt.is_last:
-                    responses_text = ''.join(f'\t{r}\n' for r in responses)
-                    tobiko.fail(
-                        f"Nova response with name '{name}' not logged by "
-                        "Neutron server:\n"
-                        f"{responses_text}\n")
-            else:
-                break
-        else:
-            raise RuntimeError("Broken retry loop")
-
-        if found is responses.last:
-            LOG.debug("Found expected response: "
-                      f"{json.dumps(found, sort_keys=True, indent=4)}")
-        else:
-            responses_text = ''.join(f'\t{r}\n' for r in responses)
-            tobiko.fail(f"Unexpected events found after '{name}':\n"
-                        f"{responses_text}")
 
 
 class ExtraDhcpOptsPortTest(PortTest):
