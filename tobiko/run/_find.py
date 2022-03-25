@@ -28,15 +28,17 @@ from tobiko.run import _config
 LOG = log.getLogger(__name__)
 
 
-def find_test_files(test_path: typing.Iterable[str] = None,
+def find_test_files(test_path: typing.Union[str, typing.Iterable[str]] = None,
                     test_filename: str = None,
                     config: _config.RunConfigFixture = None) \
         -> typing.List[str]:
     config = _config.run_confing(config)
-    if test_path:
-        test_path = list(test_path)
-    if not test_path:
+    if test_path is None:
         test_path = config.test_path
+    elif isinstance(test_path, str):
+        test_path = [test_path]
+    else:
+        test_path = list(test_path)
     if not test_filename:
         test_filename = config.test_filename
     test_files: typing.List[str] = []
@@ -56,14 +58,20 @@ def find_test_files(test_path: typing.Iterable[str] = None,
 
         LOG.debug("Find test files...\n"
                   f"  dir: '{find_dir}'\n"
-                  f"  name: '{find_name}'\n")
-        output = subprocess.check_output(
-            ['find', find_dir, '-name', find_name],
-            universal_newlines=True)
+                  f"  name: '{find_name}'")
+        try:
+            output = subprocess.check_output(
+                ['find', find_dir, '-name', find_name],
+                universal_newlines=True)
+        except subprocess.CalledProcessError as ex:
+            LOG.exception("Test files not found.")
+            raise FileNotFoundError('Test files not found: \n'
+                                    f"  dir: '{find_dir}'\n"
+                                    f"  name: '{find_name}'") from ex
+
         for line in output.splitlines():
             line = line.strip()
             if line:
-                assert os.path.isfile(line)
                 test_files.append(line)
 
         LOG.debug("Found test file(s):\n"

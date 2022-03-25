@@ -32,7 +32,7 @@ from tobiko.run import _worker
 LOG = log.getLogger(__name__)
 
 
-def find_test_ids(test_path: typing.Iterable[str],
+def find_test_ids(test_path: typing.Union[str, typing.Iterable[str]],
                   test_filename: str = None,
                   python_path: typing.Iterable[str] = None,
                   forked: bool = None,

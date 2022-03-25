@@ -36,7 +36,7 @@ class RunConfigFixture(tobiko.SharedFixture):
 
     @property
     def forked(self) -> bool:
-        return self.workers_count != 1
+        return self.workers_count is not None and self.workers_count != 1
 
 
 def run_confing(obj=None) -> RunConfigFixture:

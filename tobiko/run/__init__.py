@@ -17,9 +17,14 @@ from __future__ import absolute_import
 
 from tobiko.run import _discover
 from tobiko.run import _find
+from tobiko.run import _run
+
 
 discover_test_ids = _discover.discover_test_ids
 find_test_ids = _discover.find_test_ids
 forked_discover_test_ids = _discover.forked_discover_test_ids
 
 find_test_files = _find.find_test_files
+
+run_tests = _run.run_tests
+run_test_ids = _run.run_test_ids

@@ -15,7 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
-import multiprocessing.pool
+import multiprocessing
+from multiprocessing import pool
 import typing
 
 import tobiko
@@ -26,7 +27,7 @@ class WorkersPoolFixture(tobiko.SharedFixture):
 
     config = tobiko.required_fixture(_config.RunConfigFixture)
 
-    pool: multiprocessing.pool.Pool
+    pool: pool.Pool
     workers_count: int = 0
 
     def __init__(self, workers_count: int = None):
@@ -39,14 +40,15 @@ class WorkersPoolFixture(tobiko.SharedFixture):
         if not workers_count:
             workers_count = self.config.workers_count
         self.workers_count = workers_count or 0
-        self.pool = multiprocessing.pool.Pool(processes=workers_count or None)
+        context = multiprocessing.get_context('spawn')
+        self.pool = context.Pool(processes=workers_count or None)
 
 
-def workers_pool() -> multiprocessing.pool.Pool:
+def workers_pool() -> pool.Pool:
     return tobiko.setup_fixture(WorkersPoolFixture).pool
 
 
 def call_async(func: typing.Callable,
                *args,
-               **kwargs) -> multiprocessing.pool.AsyncResult:
+               **kwargs):
     return workers_pool().apply_async(func, args=args, kwds=kwargs)
