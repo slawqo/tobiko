@@ -79,6 +79,6 @@ def setup_tobiko_config(conf):
     from tobiko.tripleo import overcloud
     from tobiko.tripleo import topology
 
-    ansible.setup_undercloud_ansible_plabook()
+    ansible.setup_undercloud_ansible_playbook()
     overcloud.setup_overcloud_keystone_crederntials()
     topology.setup_tripleo_topology()

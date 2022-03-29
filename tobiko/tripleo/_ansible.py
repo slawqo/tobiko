@@ -116,7 +116,7 @@ def run_playbook_from_undercloud(command: sh.ShellCommand = None,
         playbook_files=playbook_files)
 
 
-def setup_undercloud_ansible_plabook():
+def setup_undercloud_ansible_playbook():
     if _undercloud.has_undercloud():
         ansible.register_ansible_playbook(
             undercloud_ansible_playbook())
