@@ -85,13 +85,13 @@ class AnsiblePlaybook(tobiko.SharedFixture):
             dirname = self.playbook_dirname
         return os.path.join(dirname, basename)
 
-    def _ensure_vars_files(self,
-                           vars_files: typing.Iterable[str],
-                           sub_dir: str = None,
-                           dirname: str = None) -> typing.List[str]:
+    def _ensure_playbook_files_files(self,
+                                     playbook_files: typing.Iterable[str],
+                                     sub_dir: str = None,
+                                     dirname: str = None) -> typing.List[str]:
         work_filenames = []
-        for vars_file in vars_files:
-            filename = self._get_playbook_filename(basename=vars_file,
+        for playbook_file in playbook_files:
+            filename = self._get_playbook_filename(basename=playbook_file,
                                                    dirname=dirname)
             if sub_dir is None and dirname is not None:
                 sub_dir = os.path.relpath(os.path.dirname(filename), dirname)
@@ -130,7 +130,7 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                      playbook_dirname: str = None,
                      playbook_filename: str = None,
                      inventory_filename: str = None,
-                     vars_files: typing.Iterable[str] = None) -> \
+                     playbook_files: typing.Iterable[str] = None) -> \
             sh.ShellCommand:
         # ensure command
         if command is None:
@@ -150,9 +150,10 @@ class AnsiblePlaybook(tobiko.SharedFixture):
             playbook_dirname = os.path.dirname(playbook_filename)
         command += [self._ensure_work_file(playbook_filename)]
 
-        if vars_files is not None:
-            self._ensure_vars_files(vars_files=vars_files,
-                                    dirname=playbook_dirname)
+        if playbook_files is not None:
+            self._ensure_playbook_files_files(
+                playbook_files=playbook_files,
+                dirname=playbook_dirname)
         return command
 
     def run_playbook(self,
@@ -161,14 +162,14 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                      playbook_dirname: str = None,
                      playbook_filename: str = None,
                      inventory_filename: str = None,
-                     vars_files: typing.Iterable[str] = None):
+                     playbook_files: typing.Iterable[str] = None):
         tobiko.setup_fixture(self)
         command = self._get_command(command=command,
                                     playbook=playbook,
                                     playbook_dirname=playbook_dirname,
                                     playbook_filename=playbook_filename,
                                     inventory_filename=inventory_filename,
-                                    vars_files=vars_files)
+                                    playbook_files=playbook_files)
         return self.sh_connection.execute(command, current_dir=self.work_dir)
 
 

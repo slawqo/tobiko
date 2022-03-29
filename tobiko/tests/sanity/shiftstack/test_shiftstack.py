@@ -36,4 +36,4 @@ class OpenShiftTest(testtools.TestCase):
         tripleo.run_playbook_from_undercloud(
             playbook='debug-vars.yaml',
             playbook_dirname=PLAYBOOK_DIRNAME,
-            vars_files=['vars/some-vars.yaml'])
+            playbook_files=['vars/some-vars.yaml'])

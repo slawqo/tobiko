@@ -106,14 +106,14 @@ def run_playbook_from_undercloud(command: sh.ShellCommand = None,
                                  playbook_dirname: str = None,
                                  playbook_filename: str = None,
                                  inventory_filename: str = None,
-                                 vars_files: typing.Iterable[str] = None):
+                                 playbook_files: typing.Iterable[str] = None):
     return undercloud_ansible_playbook().run_playbook(
         command=command,
         playbook=playbook,
         playbook_dirname=playbook_dirname,
         playbook_filename=playbook_filename,
         inventory_filename=inventory_filename,
-        vars_files=vars_files)
+        playbook_files=playbook_files)
 
 
 def setup_undercloud_ansible_plabook():
