@@ -5,17 +5,21 @@
     description: |
       Infrared jobs intended to gate infrared Tobiko plugin changes
     check:
-      jobs: &CHECK
+      jobs:
         - tobiko-infrared-centos-7
         - tobiko-infrared-centos-8
-        - tobiko-infrared-centos-9
         - tobiko-infrared-fedora-35
         - tobiko-infrared-ubuntu
     gate:
       jobs:
         - tobiko-infrared
     periodic:
-      jobs: *CHECK
+      jobs:
+        - tobiko-infrared-centos-7
+        - tobiko-infrared-centos-8
+        - tobiko-infrared-centos-9
+        - tobiko-infrared-fedora-35
+        - tobiko-infrared-ubuntu
 
 
 - job:
