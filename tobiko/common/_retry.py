@@ -53,12 +53,14 @@ class RetryAttempt(object):
                  elapsed_time: float,
                  count: typing.Optional[int] = None,
                  timeout: _time.Seconds = None,
+                 sleep_time: _time.Seconds = None,
                  interval: _time.Seconds = None):
         self.number = number
         self.start_time = start_time
         self.elapsed_time = elapsed_time
         self.count = count
         self.timeout = _time.to_seconds(timeout)
+        self.sleep_time = _time.to_seconds(sleep_time)
         self.interval = _time.to_seconds(interval)
 
     def __eq__(self, other):
@@ -67,6 +69,7 @@ class RetryAttempt(object):
                 other.elapsed_time == self.elapsed_time and
                 other.count == self.count and
                 other.timeout == self.timeout and
+                other.sleep_time == self.sleep_time and
                 other.interval == self.interval)
 
     def __hash__(self):
@@ -110,6 +113,8 @@ class RetryAttempt(object):
         details.append(f"elapsed_time={self.elapsed_time}")
         if self.timeout is not None:
             details.append(f"timeout={self.timeout}")
+        if self.sleep_time is not None:
+            details.append(f"timeout={self.sleep_time}")
         if self.interval is not None:
             details.append(f"interval={self.interval}")
         return ', '.join(details)
@@ -136,12 +141,15 @@ def retry_attempt(number: int = 0,
                   elapsed_time: float = 0.,
                   count: typing.Optional[int] = None,
                   timeout: _time.Seconds = None,
+                  sleep_time: _time.Seconds = None,
                   interval: _time.Seconds = None) -> RetryAttempt:
     return RetryAttempt(number=number,
                         count=count,
                         start_time=start_time,
                         elapsed_time=elapsed_time,
-                        timeout=timeout, interval=interval)
+                        timeout=timeout,
+                        sleep_time=sleep_time,
+                        interval=interval)
 
 
 class Retry(object):
@@ -149,14 +157,17 @@ class Retry(object):
     def __init__(self,
                  count: typing.Optional[int] = None,
                  timeout: _time.Seconds = None,
+                 sleep_time: _time.Seconds = None,
                  interval: _time.Seconds = None):
         self.count = count
         self.timeout = _time.to_seconds(timeout)
+        self.sleep_time = _time.to_seconds(sleep_time)
         self.interval = _time.to_seconds(interval)
 
     def __eq__(self, other):
         return (other.count == self.count and
                 other.timeout == self.timeout and
+                other.sleep_time == self.sleep_time and
                 other.interval == self.interval)
 
     def __hash__(self):
@@ -171,6 +182,7 @@ class Retry(object):
                                     start_time=start_time,
                                     elapsed_time=elapsed_time,
                                     timeout=self.timeout,
+                                    sleep_time=self.sleep_time,
                                     interval=self.interval)
 
             yield attempt
@@ -178,9 +190,11 @@ class Retry(object):
             attempt.check_limits()
 
             elapsed_time = _time.time() - start_time
-            interval = self.interval
-            if interval is not None:
-                sleep_time = attempt.number * interval - elapsed_time
+            sleep_time = self.sleep_time
+            if sleep_time is None and self.interval is not None:
+                sleep_time = attempt.number * self.interval - elapsed_time
+
+            if sleep_time is not None:
                 sleep_time = max(0., sleep_time)
                 time_left = attempt.time_left
                 if sleep_time > 0.:
@@ -197,6 +211,8 @@ class Retry(object):
             details.append(f"count={self.count}")
         if self.timeout is not None:
             details.append(f"timeout={self.timeout}")
+        if self.sleep_time is not None:
+            details.append(f"sleep_time={self.sleep_time}")
         if self.interval is not None:
             details.append(f"interval={self.interval}")
         return ', '.join(details)
@@ -208,9 +224,11 @@ class Retry(object):
 def retry(other_retry: typing.Optional[Retry] = None,
           count: typing.Optional[int] = None,
           timeout: _time.Seconds = None,
+          sleep_time: _time.Seconds = None,
           interval: _time.Seconds = None,
           default_count: typing.Optional[int] = None,
           default_timeout: _time.Seconds = None,
+          default_sleep_time: _time.Seconds = None,
           default_interval: _time.Seconds = None) -> Retry:
 
     if other_retry is not None:
@@ -218,14 +236,19 @@ def retry(other_retry: typing.Optional[Retry] = None,
         _exception.check_valid_type(other_retry, Retry)
         count = count or other_retry.count
         timeout = timeout or other_retry.timeout
+        sleep_time = sleep_time or other_retry.sleep_time
         interval = interval or other_retry.interval
 
     # Apply default values
     count = count or default_count
     timeout = timeout or default_timeout
+    sleep_time = sleep_time or default_sleep_time
     interval = interval or default_interval
 
-    return Retry(count=count, timeout=timeout, interval=interval)
+    return Retry(count=count,
+                 timeout=timeout,
+                 sleep_time=sleep_time,
+                 interval=interval)
 
 
 def retry_on_exception(
@@ -234,9 +257,11 @@ def retry_on_exception(
         other_retry: typing.Optional[Retry] = None,
         count: typing.Optional[int] = None,
         timeout: _time.Seconds = None,
+        sleep_time: _time.Seconds = None,
         interval: _time.Seconds = None,
         default_count: typing.Optional[int] = None,
         default_timeout: _time.Seconds = None,
+        default_sleep_time: _time.Seconds = None,
         default_interval: _time.Seconds = None,
         on_exception: typing.Optional[typing.Callable] = None) -> \
         typing.Callable[[typing.Callable], typing.Callable]:
@@ -244,9 +269,11 @@ def retry_on_exception(
     retry_object = retry(other_retry=other_retry,
                          count=count,
                          timeout=timeout,
+                         sleep_time=sleep_time,
                          interval=interval,
                          default_count=default_count,
                          default_timeout=default_timeout,
+                         default_sleep_time=default_sleep_time,
                          default_interval=default_interval)
     exceptions = (exception,) + exceptions
 
@@ -274,6 +301,7 @@ def retry_on_exception(
 def retry_test_case(*exceptions: Exception,
                     count: typing.Optional[int] = None,
                     timeout: _time.Seconds = None,
+                    sleep_time: _time.Seconds = None,
                     interval: _time.Seconds = None) -> \
                     typing.Callable[[typing.Callable], typing.Callable]:
     """Re-run test case method in case it fails
@@ -282,6 +310,7 @@ def retry_test_case(*exceptions: Exception,
     return retry_on_exception(*exceptions,
                               count=count,
                               timeout=timeout,
+                              sleep_time=sleep_time,
                               interval=interval,
                               default_count=3,
                               on_exception=on_test_case_retry_exception)
