@@ -17,6 +17,8 @@ from __future__ import absolute_import
 import pytest
 import testtools
 
+import tobiko
+from tobiko.openstack import neutron
 from tobiko.openstack import tests
 
 
@@ -25,3 +27,18 @@ class NeutronAgentTest(testtools.TestCase):
 
     def test_agents_are_alive(self):
         tests.test_neutron_agents_are_alive()
+
+    def test_alive_agents_are_consistent_along_time(self):
+        alive_agents = {agent['id']: agent
+                        for agent in tests.test_neutron_agents_are_alive()}
+        for attempt in tobiko.retry(sleep_time=5., count=5):
+            agents = neutron.list_agents()
+            actual = {agent['id']: agent
+                      for agent in agents}
+            self.assertEqual(set(alive_agents), set(actual),
+                             'Agents appeared or disappeared')
+            dead_agents = agents.with_items(alive=False)
+            self.assertEqual([], dead_agents,
+                             "Neutron agent(s) no more alive")
+            if attempt.is_last:
+                break
