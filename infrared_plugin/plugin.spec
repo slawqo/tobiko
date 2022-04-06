@@ -225,6 +225,17 @@ subparsers:
             type: Flag
             help: Ignore flaky test cases
             ansible_variable: test_flaky
+          quota:
+            type: NestedDict
+            action: append
+            ansible_variable: quota
+            help: |
+                Configure quota values for different resources
+                These quotas will be applied to the admin openstack project
+                Example:
+                    --quota routers=30
+                    --quota secgroups=50
+                Check "openstack quota set --help" for more information
 
       - title: Cleanup stage
         options:

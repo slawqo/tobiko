@@ -1,0 +1,7 @@
+---
+
+- name: apply quotas to the openstack admin project
+  shell: |
+    source {{ stackrc_file }}
+    openstack quota set --{{ item.key }} {{ item.value }} $OS_PROJECT_NAME
+  with_dict: "{{ quota | default({}) }}"

@@ -63,6 +63,9 @@
         name: validations-common
         state: present
 
+    - name: apply pre-requisites before tests run
+      include_role: name=tobiko-ir-before-run
+
     - name: "initialize test execution"
       include_role: name=tobiko-configure
 
