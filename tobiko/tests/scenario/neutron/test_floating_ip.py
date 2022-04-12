@@ -108,7 +108,11 @@ class FloatingIPTest(testtools.TestCase):
     @property
     def observed_net_mtu(self):
         """Actual MTU value for internal network"""
-        return self.stack.network_stack.outputs.mtu
+        network_stack = self.stack.network_stack
+        mtu = network_stack.mtu
+        if network_stack.has_gateway:
+            mtu = min(mtu, network_stack.gateway_stack.mtu)
+        return mtu
 
     # --- test l3_ha extension ------------------------------------------------
 
@@ -219,7 +223,8 @@ class FloatingIpWithMtuWritableTest(FloatingIPTest):
 
     def test_net_mtu_write(self):
         """Test 'mtu' network attribute"""
-        self.assertEqual(self.expected_net_mtu, self.observed_net_mtu)
+        self.assertEqual(self.expected_net_mtu,
+                         self.stack.network_stack.mtu)
 
     @property
     def expected_net_mtu(self):

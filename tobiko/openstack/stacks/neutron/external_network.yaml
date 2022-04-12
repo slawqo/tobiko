@@ -62,3 +62,8 @@ outputs:
     description: router ID
     condition: create_router
     value: {get_resource: _router}
+
+  mtu:
+    description: Network MTU value (integer)
+    value: {get_attr: [_network, mtu]}
+    condition: has_external_id
