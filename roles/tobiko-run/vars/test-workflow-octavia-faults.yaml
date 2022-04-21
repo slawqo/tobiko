@@ -9,7 +9,13 @@ test_workflow_steps:
 
   - tox_description: 'run Octavia disruptive test cases'
     tox_envlist: octavia_faults
-    tox_step_name: octavia_faults
+    tox_step_name: verify_octavia_faults
+
+  - tox_description: 'run sanity test cases after disruptive test cases'
+    tox_envlist: sanity
+    tox_step_name: verify_services_after_faults
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: no
 
   - tox_description: 'verify Octavia resources'
     tox_envlist: octavia
