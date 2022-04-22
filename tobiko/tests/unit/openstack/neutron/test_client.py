@@ -66,3 +66,34 @@ class NeutronClientTest(openstack.OpenstackTest):
         client = neutron.neutron_client(fixture)
         self.assertIsInstance(client, neutronclient.Client)
         self.assertIs(client, fixture.client)
+
+    def test_get_floating_ip_id_with_str(self):
+        self.assertEqual('some_id', neutron.get_floating_ip_id('some_id'))
+
+    def test_get_floating_ip_id_with_dict(self):
+        self.assertEqual('some_id',
+                         neutron.get_floating_ip_id({'id': 'some_id'}))
+
+    def test_get_network_id_with_str(self):
+        self.assertEqual('some_id', neutron.get_network_id('some_id'))
+
+    def test_get_network_id_with_dict(self):
+        self.assertEqual('some_id', neutron.get_network_id({'id': 'some_id'}))
+
+    def test_get_port_id_with_str(self):
+        self.assertEqual('some_id', neutron.get_port_id('some_id'))
+
+    def test_get_port_id_with_dict(self):
+        self.assertEqual('some_id', neutron.get_port_id({'id': 'some_id'}))
+
+    def test_get_router_id_with_str(self):
+        self.assertEqual('some_id', neutron.get_router_id('some_id'))
+
+    def test_get_router_id_with_dict(self):
+        self.assertEqual('some_id', neutron.get_router_id({'id': 'some_id'}))
+
+    def test_get_subnet_id_with_str(self):
+        self.assertEqual('some_id', neutron.get_subnet_id('some_id'))
+
+    def test_get_subnet_id_with_dict(self):
+        self.assertEqual('some_id', neutron.get_subnet_id({'id': 'some_id'}))

@@ -177,9 +177,13 @@ outputs:
     description: fixed IP addresses of server
     value: {get_attr: [port, fixed_ips]}
 
+  floating_ip_id:
+    description: server floating IP ID
+    value: {get_resource: floating_ip}
+
   floating_ip_address:
     description: Floating IP address of server in public network
-    value: { get_attr: [ floating_ip, floating_ip_address ] }
+    value: {get_attr: [floating_ip, floating_ip_address ] }
     condition: has_floating_ip
 
   port_security_enabled:

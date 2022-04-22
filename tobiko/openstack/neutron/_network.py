@@ -19,38 +19,50 @@ import netaddr
 
 import tobiko
 from tobiko.openstack.neutron import _client
+from tobiko.openstack.neutron import _subnet
+
+
+NetworkType = typing.Dict[str, typing.Any]
+NetworkIdType = typing.Union[str, NetworkType]
 
 
 class NoSuchNetwork(tobiko.ObjectNotFound):
     message = "No such network found for {id!r}"
 
 
-NeutronNetworkType = typing.Dict[str, typing.Any]
+def get_network_id(network: NetworkIdType) -> str:
+    if isinstance(network, str):
+        return network
+    else:
+        return network['id']
 
 
-def get_network(network, client=None, **params) -> NeutronNetworkType:
+def get_network(network: NetworkIdType,
+                client: _client.NeutronClientType = None,
+                **params) -> NetworkType:
+    network_id = get_network_id(network)
     try:
-        return _client.neutron_client(
-            client).show_network(network, **params)['network']
+        return _client.neutron_client(client).show_network(
+            network_id, **params)['network']
     except _client.neutronclient.exceptions.NotFound as ex:
-        raise NoSuchNetwork(id=network) from ex
+        raise NoSuchNetwork(id=network_id) from ex
 
 
-def list_networks(client=None, **params) -> \
-        tobiko.Selection[NeutronNetworkType]:
+def list_networks(client: _client.NeutronClientType = None,
+                  **params) -> \
+        tobiko.Selection[NetworkType]:
     networks = _client.neutron_client(client).list_networks(
         **params)['networks']
     return tobiko.select(networks)
 
 
-_RAISE_ERROR = object()
-
-
-def find_network(client=None, unique=False, default=_RAISE_ERROR,
-                 **attributes) -> NeutronNetworkType:
+def find_network(client: _client.NeutronClientType = None,
+                 unique=False,
+                 default: NetworkType = None,
+                 **attributes) -> NetworkType:
     """Look for a network matching some property values"""
     networks = list_networks(client=client, **attributes)
-    if default is _RAISE_ERROR or networks:
+    if default is None or networks:
         if unique:
             return networks.unique
         else:
@@ -59,41 +71,37 @@ def find_network(client=None, unique=False, default=_RAISE_ERROR,
         return default
 
 
-def create_network(client=None, **params) -> NeutronNetworkType:
-    return _client.neutron_client(client).create_network(
+def create_network(client: _client.NeutronClientType = None,
+                   add_cleanup=True,
+                   **params) -> NetworkType:
+    network = _client.neutron_client(client).create_network(
         body={'network': params})['network']
+    if add_cleanup:
+        tobiko.add_cleanup(cleanup_network, network=network, client=client)
+    return network
 
 
-def delete_network(network, client=None):
-    return _client.neutron_client(client).delete_network(network=network)
+def cleanup_network(network: NetworkIdType,
+                    client: _client.NeutronClientType = None):
+    try:
+        delete_network(network=network, client=client)
+    except NoSuchNetwork:
+        pass
 
 
-class NeutronNetworkFixture(_client.HasNeutronClientFixture):
-
-    details: typing.Optional[NeutronNetworkType] = None
-
-    def __init__(self, name: typing.Optional[str] = None,
-                 obj: _client.NeutronClientType = None):
-        super(NeutronNetworkFixture, self).__init__(obj=obj)
-        if name is None:
-            name = self.fixture_name
-        self.name: str = name
-
-    @property
-    def id(self):
-        return self.details['id']
-
-    def setup_fixture(self):
-        super(NeutronNetworkFixture, self).setup_fixture()
-        self.name = self.fixture_name
-        self.details = create_network(client=self.client, name=self.name)
-        self.addCleanup(delete_network, network=self.id, client=self.client)
+def delete_network(network: NetworkIdType,
+                   client: _client.NeutronClientType = None):
+    network_id = get_network_id(network)
+    try:
+        _client.neutron_client(client).delete_network(network=network_id)
+    except _client.NotFound as ex:
+        raise NoSuchNetwork(id=network_id) from ex
 
 
 def list_network_nameservers(network_id: typing.Optional[str] = None,
                              ip_version: typing.Optional[int] = None) -> \
         tobiko.Selection[netaddr.IPAddress]:
-    subnets = _client.list_subnets(network_id=network_id)
+    subnets = _subnet.list_subnets(network_id=network_id)
     nameservers = tobiko.Selection[netaddr.IPAddress](
         netaddr.IPAddress(nameserver)
         for subnets in subnets

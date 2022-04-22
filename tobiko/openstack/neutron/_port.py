@@ -19,16 +19,103 @@ import netaddr
 
 import tobiko
 from tobiko.openstack.neutron import _client
+from tobiko.openstack.neutron import _network
+from tobiko.openstack.neutron import _subnet
 from tobiko.shell import ssh
 from tobiko.shell import ping
 
 
-NeutronPortType = typing.Dict[str, typing.Any]
+PortType = typing.Dict[str, typing.Any]
+PortIdType = typing.Union[str, PortType]
 
 
-def list_port_ip_addresses(port: NeutronPortType,
-                           subnet_id: typing.Optional[str] = None,
-                           ip_version: typing.Optional[int] = None,
+def get_port_id(port: PortIdType) -> str:
+    if isinstance(port, str):
+        return port
+    else:
+        return port['id']
+
+
+def get_port(port: PortIdType,
+             client: _client.NeutronClientType = None,
+             **params) -> PortType:
+    port_id = get_port_id(port)
+    try:
+        return _client.neutron_client(client).show_port(
+            port_id, **params)['port']
+    except _client.NotFound as ex:
+        raise NoSuchPort(id=port_id) from ex
+
+
+def create_port(client: _client.NeutronClientType = None,
+                network: _network.NetworkIdType = None,
+                add_cleanup=True,
+                **params) -> PortType:
+    if 'network_id' not in params:
+        if network is None:
+            from tobiko.openstack import stacks
+            network_id = tobiko.setup_fixture(
+                stacks.NetworkStackFixture).network_id
+        else:
+            network_id = _network.get_network_id(network)
+        params['network_id'] = network_id
+    port = _client.neutron_client(client).create_port(
+        body={'port': params})['port']
+    if add_cleanup:
+        tobiko.add_cleanup(cleanup_port, port=port, client=client)
+    return port
+
+
+def cleanup_port(port: PortIdType,
+                 client: _client.NeutronClientType = None):
+    try:
+        delete_port(port=port, client=client)
+    except NoSuchPort:
+        pass
+
+
+def update_port(port: PortIdType,
+                client: _client.NeutronClientType = None,
+                **params) -> PortType:
+    port_id = get_port_id(port)
+    reply = _client.neutron_client(client).update_port(port_id,
+                                                       body={'port': params})
+    return reply['port']
+
+
+def delete_port(port: PortIdType,
+                client: _client.NeutronClientType = None):
+    port_id = get_port_id(port)
+    try:
+        _client.neutron_client(client).delete_port(port_id)
+    except _client.NotFound as ex:
+        raise NoSuchPort(id=port_id) from ex
+
+
+def list_ports(client: _client.NeutronClientType = None,
+               **params) -> tobiko.Selection[PortType]:
+    ports = _client.neutron_client(client).list_ports(**params)['ports']
+    return tobiko.select(ports)
+
+
+def find_port(client: _client.NeutronClientType = None,
+              unique=False,
+              default: PortType = None,
+              **params):
+    """Look for a port matching some property values"""
+    ports = list_ports(client=client, **params)
+    if default is None or ports:
+        if unique:
+            return ports.unique
+        else:
+            return ports.first
+    else:
+        return default
+
+
+def list_port_ip_addresses(port: PortType,
+                           subnet_id: str = None,
+                           ip_version: int = None,
                            check_connectivity: bool = False,
                            ssh_client: ssh.SSHClientFixture = None) -> \
         tobiko.Selection[netaddr.IPAddress]:
@@ -44,7 +131,8 @@ def list_port_ip_addresses(port: NeutronPortType,
     return addresses
 
 
-def find_port_ip_address(port: NeutronPortType, unique: bool = False,
+def find_port_ip_address(port: PortType,
+                         unique: bool = False,
                          **kwargs) -> netaddr.IPAddress:
     addresses = list_port_ip_addresses(port=port, **kwargs)
     if unique:
@@ -54,19 +142,22 @@ def find_port_ip_address(port: NeutronPortType, unique: bool = False,
 
 
 def list_device_ip_addresses(device_id: str,
-                             network_id: typing.Optional[str] = None,
-                             ip_version: typing.Optional[int] = None,
+                             network_id: str = None,
+                             ip_version: int = None,
                              check_connectivity: bool = False,
                              ssh_client: ssh.SSHClientFixture = None,
-                             need_dhcp: typing.Optional[bool] = None,
+                             need_dhcp: bool = None,
+                             client: _client.NeutronClientType = None,
                              **subnet_params) -> \
         tobiko.Selection[netaddr.IPAddress]:
-    ports = _client.list_ports(device_id=device_id,
-                               network_id=network_id)
+    ports = list_ports(device_id=device_id,
+                       network_id=network_id,
+                       client=client)
     if need_dhcp is not None:
         subnet_params['enable_dhcp'] = bool(need_dhcp)
-    subnets = _client.list_subnets(network_id=network_id,
+    subnets = _subnet.list_subnets(network_id=network_id,
                                    ip_version=ip_version,
+                                   client=client,
                                    **subnet_params)
     addresses = tobiko.Selection[netaddr.IPAddress](
         port_ip
@@ -81,9 +172,15 @@ def list_device_ip_addresses(device_id: str,
     return addresses
 
 
-def find_device_ip_address(device_id: str, unique: bool = False, **kwargs):
+def find_device_ip_address(device_id: str,
+                           unique: bool = False,
+                           **kwargs):
     addresses = list_device_ip_addresses(device_id=device_id,  **kwargs)
     if unique:
         return addresses.unique
     else:
         return addresses.first
+
+
+class NoSuchPort(tobiko.ObjectNotFound):
+    message = "No such port found for {id!r}"

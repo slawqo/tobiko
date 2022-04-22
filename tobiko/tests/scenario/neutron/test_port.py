@@ -143,9 +143,8 @@ class ExtraDhcpOptsPortTest(PortTest):
         stacks.ExtraDhcpOptsCirrosServerStackFixture)
 
     def test_extra_dhcp_opts(self):
-        extra_dhcp_options = neutron.get_port_extra_dhcp_opts(
-            self.stack.port_id)
-        for option in extra_dhcp_options:
+        port = neutron.get_port(self.stack.port_id)
+        for option in port['extra_dhcp_opts']:
             if 'domain-name' == option['opt_name']:
                 domain = option['opt_value'].replace('"', '')
                 break

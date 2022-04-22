@@ -20,17 +20,78 @@ from oslo_log import log
 
 import tobiko
 from tobiko.openstack.neutron import _agent
+from tobiko.openstack.neutron import _client
+from tobiko.openstack.neutron import _network
+from tobiko.openstack.neutron import _port
+from tobiko.openstack.neutron import _subnet
 
 
 LOG = log.getLogger(__name__)
 
 
+RouterType = typing.Dict[str, typing.Any]
+RouterIdType = typing.Union[str, RouterType]
+
+
+def get_router_id(router: RouterIdType) -> str:
+    if isinstance(router, str):
+        return router
+    else:
+        return router['id']
+
+
+def get_router(router: RouterIdType, client=None, **params) -> RouterType:
+    router_id = get_router_id(router)
+    try:
+        return _client.neutron_client(client).show_router(
+            router_id, **params)['router']
+    except _client.NotFound as ex:
+        raise NoSuchRouter(id=router_id) from ex
+
+
+def create_router(client: _client.NeutronClientType = None,
+                  network: _network.NetworkIdType = None,
+                  add_cleanup=True,
+                  **params) -> RouterType:
+    if 'external_gateway_info' not in params:
+        if network is None:
+            from tobiko.openstack import stacks
+            network_id = tobiko.setup_fixture(
+                stacks.FloatingNetworkStackFixture).external_id
+        else:
+            network_id = _network.get_network_id(network)
+        params['external_gateway_info'] = dict(network_id=network_id)
+    router = _client.neutron_client(client).create_router(
+        body={'router': params})['router']
+    if add_cleanup:
+        tobiko.add_cleanup(cleanup_router, router=router, client=client)
+    return router
+
+
+def cleanup_router(router: RouterIdType,
+                   client: _client.NeutronClientType = None):
+    try:
+        delete_router(router=router, client=client)
+    except NoSuchRouter:
+        pass
+
+
+def delete_router(router: RouterIdType,
+                  client: _client.NeutronClientType = None):
+    router_id = get_router_id(router)
+    try:
+        _client.neutron_client(client).delete_router(router_id)
+    except _client.NotFound as ex:
+        raise NoSuchRouter(id=router_id) from ex
+
+
 def wait_for_master_and_backup_agents(
-        router_id: str,
+        router: RouterIdType,
         unique_master: bool = True,
         timeout: tobiko.Seconds = None,
         interval: tobiko.Seconds = None) -> \
         typing.Tuple[typing.Dict, typing.List[typing.Dict]]:
+    router_id = get_router_id(router)
     for attempt in tobiko.retry(timeout=timeout,
                                 interval=interval,
                                 default_timeout=300.,
@@ -69,3 +130,58 @@ def wait_for_master_and_backup_agents(
         raise RuntimeError("tobiko retry loop ended before break?")
 
     return master_agent, backup_agents
+
+
+RouterInterfaceType = typing.Dict[str, typing.Any]
+
+
+def add_router_interface(router: RouterIdType,
+                         subnet: _subnet.SubnetIdType = None,
+                         port: _port.PortIdType = None,
+                         client: _client.NeutronClientType = None,
+                         add_cleanup=True,
+                         **params) -> RouterInterfaceType:
+    router_id = get_router_id(router)
+    if 'port_id' not in params and port is not None:
+        params['port_id'] = _port.get_port_id(port)
+    elif 'subnet_id' not in params and subnet is not None:
+        params['subnet_id'] = _subnet.get_subnet_id(subnet)
+    interface = _client.neutron_client(client).add_interface_router(
+        router=router_id, body=params)
+    if add_cleanup:
+        tobiko.add_cleanup(cleanup_router_interface, router=router,
+                           subnet=subnet, port=port, client=client)
+    return interface
+
+
+def cleanup_router_interface(router: RouterIdType,
+                             subnet: _subnet.SubnetIdType = None,
+                             port: _port.PortIdType = None,
+                             client: _client.NeutronClientType = None,
+                             **params):
+    try:
+        remove_router_interface(router=router, subnet=subnet,
+                                port=port, client=client, **params)
+    except tobiko.ObjectNotFound:
+        pass
+
+
+def remove_router_interface(router: RouterIdType,
+                            subnet: _subnet.SubnetIdType = None,
+                            port: _port.PortIdType = None,
+                            client: _client.NeutronClientType = None,
+                            **params):
+    router_id = get_router_id(router)
+    if 'port_id' not in params and port is not None:
+        params['port_id'] = _port.get_port_id(port)
+    elif 'subnet_id' not in params and subnet is not None:
+        params['subnet_id'] = _subnet.get_subnet_id(subnet)
+    try:
+        _client.neutron_client(client).remove_interface_router(
+            router=router_id, body=params)
+    except _client.NotFound as ex:
+        raise tobiko.ObjectNotFound() from ex
+
+
+class NoSuchRouter(tobiko.ObjectNotFound):
+    message = "No such router found for {id!r}"

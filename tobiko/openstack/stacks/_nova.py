@@ -398,6 +398,10 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
                                       ssh_client=ssh_client,
                                       timeout=timeout)
 
+    @property
+    def floating_ip_details(self):
+        return neutron.get_floating_ip(self.floating_ip_id)
+
     user_data = None
 
 

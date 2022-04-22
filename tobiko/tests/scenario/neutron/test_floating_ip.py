@@ -244,29 +244,14 @@ class TestFloatingIPLogging(testtools.TestCase):
 
     def setUp(self):
         super(TestFloatingIPLogging, self).setUp()
-        net = self.stack.network_id
-        self.port = neutron.create_port(**{'network_id': net})
-        self.addCleanup(self.cleanup_port)
+        self.port = neutron.create_port(network_id=self.stack.network_id)
         self.fip = neutron.create_floating_ip()
-        self.addCleanup(self.cleanup_floatingip)
         log_filename = '/var/log/containers/neutron/server.log'
         self.log_digger = files.MultihostLogFileDigger(filename=log_filename,
                                                        sudo=True)
         for node in topology.list_openstack_nodes(group='controller'):
             self.log_digger.add_host(hostname=node.hostname,
                                      ssh_client=node.ssh_client)
-
-    def cleanup_port(self):
-        try:
-            neutron.delete_port(self.port['id'])
-        except neutron.NoSuchPort:
-            pass
-
-    def cleanup_floatingip(self):
-        try:
-            neutron.delete_floating_ip(self.fip['id'])
-        except neutron.NoSuchFIP:
-            pass
 
     def test_fip_attach_log(self):
         '''Test log that FIP is attached to VM'''
