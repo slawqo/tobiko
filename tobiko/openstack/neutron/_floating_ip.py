@@ -71,8 +71,7 @@ def create_floating_ip(network: _network.NetworkIdType = None,
     if 'floating_network_id' not in params:
         if network is None:
             from tobiko.openstack import stacks
-            network_id = tobiko.setup_fixture(
-                    stacks.FloatingNetworkStackFixture).external_id
+            network_id = stacks.get_floating_network_id()
         else:
             network_id = _network.get_network_id(network)
 

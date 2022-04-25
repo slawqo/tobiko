@@ -65,7 +65,7 @@ L3haDifferentHostServerStackFixture = _l3ha.L3haDifferentHostServerStackFixture
 L3haSameHostServerStackFixture = _l3ha.L3haSameHostServerStackFixture
 
 NetworkStackFixture = _neutron.NetworkStackFixture
-FloatingNetworkStackFixture = _neutron.FloatingNetworkStackFixture
+RouterStackFixture = _neutron.RouterStackFixture
 NetworkWithNetMtuWriteStackFixture = (
     _neutron.NetworkWithNetMtuWriteStackFixture)
 SecurityGroupsFixture = _neutron.SecurityGroupsFixture
@@ -73,9 +73,15 @@ SecurityGroupsFixture = _neutron.SecurityGroupsFixture
 get_external_network = _neutron.get_external_network
 has_external_network = _neutron.has_external_network
 skip_unless_has_external_network = _neutron.skip_unless_has_external_network
+get_floating_network_id = _neutron.get_floating_network_id
 get_floating_network = _neutron.get_floating_network
 has_floating_network = _neutron.has_floating_network
 skip_unless_has_floating_network = _neutron.skip_unless_has_floating_network
+get_router_id = _neutron.get_router_id
+get_router = _neutron.get_router
+has_router = _neutron.has_router
+skip_unless_has_router = _neutron.skip_unless_has_router
+
 
 ServerStackFixture = _nova.ServerStackFixture
 KeyPairStackFixture = _nova.KeyPairStackFixture

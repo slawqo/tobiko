@@ -68,23 +68,13 @@ parameters:
     type: boolean
     default: false
 
-  gateway_network:
-    description: Optional gateway network to route packages to
+  gateway:
+    description: Optional gateway to route packages to
     type: string
-    default: '<no-gateway-network>'
-
-  gateway_value_specs:
-    description: Extra gateway router creation parameters
-    type: json
-    default: {}
+    default: '<no-gateway-id>'
 
   has_net_mtu:
     description: whenever net-mtu extension is available
-    type: boolean
-    default: false
-
-  has_l3_ha:
-    description: whenever l3-ha extension is available
     type: boolean
     default: false
 
@@ -117,101 +107,94 @@ conditions:
   has_net_mtu:
     get_param: has_net_mtu
 
-  has_l3_ha:
-    and:
-    - get_param: has_l3_ha
-    - get_param: has_gateway
-
   has_qos_policy:
     get_param: has_qos_policy
 
 
 resources:
 
-  network:
+  _network:
     type: OS::Neutron::Net
     properties:
       port_security_enabled: {get_param: port_security_enabled}
       value_specs: {get_param: network_value_specs}
 
-  ipv4_subnet:
+  _ipv4_subnet:
     type: OS::Neutron::Subnet
     condition: has_ipv4
     properties:
-      network: {get_resource: network}
+      network: {get_resource: _network}
       ip_version: 4
       cidr: {get_param: ipv4_cidr}
       dns_nameservers: {get_param: ipv4_dns_nameservers}
 
-  ipv6_subnet:
+  _ipv6_subnet:
     type: OS::Neutron::Subnet
     condition: has_ipv6
     properties:
-      network: {get_resource: network}
+      network: {get_resource: _network}
       ip_version: 6
       cidr: {get_param: ipv6_cidr}
       dns_nameservers: {get_param: ipv6_dns_nameservers}
       ipv6_address_mode: {get_param: ipv6_address_mode}
       ipv6_ra_mode: {get_param: ipv6_ra_mode}
 
-  gateway:
+  _gateway:
     type: OS::Neutron::Router
     condition: has_gateway
-    properties:
-      external_gateway_info:
-        network: {get_param: gateway_network}
-      value_specs: {get_param: gateway_value_specs}
+    external_id: {get_param: gateway}
 
-  ipv4_gateway_interface:
+  _ipv4_gateway_interface:
     type: OS::Neutron::RouterInterface
     condition: has_ipv4_gateway
     properties:
-      router: {get_resource: gateway}
-      subnet: {get_resource: ipv4_subnet}
+      router: {get_resource: _gateway}
+      subnet: {get_resource: _ipv4_subnet}
 
-  ipv6_gateway_interface:
+  _ipv6_gateway_interface:
     type: OS::Neutron::RouterInterface
     condition: has_ipv6_gateway
     properties:
-      router: {get_resource: gateway}
-      subnet: {get_resource: ipv6_subnet}
+      router: {get_resource: _gateway}
+      subnet: {get_resource: _ipv6_subnet}
+
 
 outputs:
 
   network_id:
     description: Network ID
-    value: {get_resource: network}
+    value: {get_resource: _network}
 
   port_security_enabled:
     description: whenever port security has been enabled on created network
-    value: {get_attr: [network, port_security_enabled]}
+    value: {get_attr: [_network, port_security_enabled]}
 
   ipv4_subnet_id:
     description: IPv4 subnet ID
-    value: {get_resource: ipv4_subnet}
+    value: {get_resource: _ipv4_subnet}
     condition: has_ipv4
 
   ipv6_subnet_id:
     description: IPv6 subnet ID
-    value: {get_resource: ipv6_subnet}
+    value: {get_resource: _ipv6_subnet}
     condition: has_ipv6
 
   gateway_id:
     description: Gateway router ID
-    value: {get_resource: gateway}
+    value: {get_resource: _gateway}
     condition: has_gateway
 
   gateway_network_id:
     description: Gateway network ID
-    value: {get_attr: [gateway, external_gateway_info, network_id]}
+    value: {get_attr: [_gateway, external_gateway_info, network_id]}
     condition: has_gateway
 
   mtu:
     description: Network MTU value (integer)
-    value: {get_attr: [network, mtu]}
+    value: {get_attr: [_network, mtu]}
     condition: has_net_mtu
 
   qos_policy_id:
     description: QoS Policy ID attached to the network
-    value:  {get_attr: [network, qos_policy_id]}
+    value:  {get_attr: [_network, qos_policy_id]}
     condition: has_qos_policy

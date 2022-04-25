@@ -21,8 +21,13 @@ from tobiko.openstack.stacks import _nova
 
 
 @neutron.skip_if_missing_networking_extensions('l3-ha')
-class L3haNetworkStackFixture(_neutron.NetworkStackFixture):
+class L3haRouterStackFixture(_neutron.RouterStackFixture):
     ha = True
+
+
+@neutron.skip_if_missing_networking_extensions('l3-ha')
+class L3haNetworkStackFixture(_neutron.NetworkStackFixture):
+    gateway_stack = tobiko.required_fixture(L3haRouterStackFixture)
 
 
 @neutron.skip_if_missing_networking_extensions('l3-ha')

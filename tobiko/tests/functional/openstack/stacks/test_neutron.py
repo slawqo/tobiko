@@ -104,7 +104,7 @@ class L3HaNetworkTest(NetworkTest):
 
 @keystone.skip_unless_has_keystone_credentials()
 @stacks.skip_unless_has_external_network
-class ExternalNetworkStackTest(testtools.TestCase):
+class ExternalNetworkTest(testtools.TestCase):
 
     def test_get_external_network(self):
         network = stacks.get_external_network()
@@ -120,7 +120,7 @@ class ExternalNetworkStackTest(testtools.TestCase):
 
 @keystone.skip_unless_has_keystone_credentials()
 @stacks.skip_unless_has_floating_network
-class FloatingNetworkStackTest(testtools.TestCase):
+class RouterTest(testtools.TestCase):
 
     def test_get_floating_network(self):
         network = stacks.get_floating_network()
@@ -129,4 +129,14 @@ class FloatingNetworkStackTest(testtools.TestCase):
         self.assertEqual('ACTIVE', network['status'])
 
     def test_has_floating_network(self):
-        self.assertIs(True, stacks.has_floating_network())
+        self.assertTrue(stacks.has_floating_network())
+
+    def test_get_router(self):
+        router = stacks.get_router()
+        self.assertIsNotNone(router)
+        self.assertEqual(
+            stacks.get_floating_network_id(),
+            router['external_gateway_info']['network_id'])
+
+    def test_has_router(self):
+        self.assertTrue(stacks.has_router())

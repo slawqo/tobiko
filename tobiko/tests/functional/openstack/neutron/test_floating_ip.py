@@ -28,16 +28,13 @@ class FloatingIpTest(testtools.TestCase):
 
     server = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
-    floating_network_stack = tobiko.required_fixture(
-        stacks.FloatingNetworkStackFixture)
-
     @property
     def floating_network_id(self) -> str:
-        return self.floating_network_stack.external_id
+        return stacks.get_floating_network_id()
 
     @property
     def floating_network_details(self) -> neutron.NetworkType:
-        return neutron.get_network(self.floating_network_stack.external_id)
+        return stacks.get_floating_network()
 
     def test_create_floating_ip(self,
                                 network: neutron.NetworkIdType = None) -> \

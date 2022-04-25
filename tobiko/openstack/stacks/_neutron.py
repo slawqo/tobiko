@@ -34,23 +34,21 @@ from tobiko.shell import ssh
 CONF = config.CONF
 LOG = log.getLogger(__name__)
 
-NeutronNetworkType = typing.Dict[str, typing.Any]
-
 
 class ExternalNetworkStackFixture(heat.HeatStackFixture):
 
     template = _hot.heat_template_file('neutron/external_network.yaml')
 
     @property
-    def external_name(self):
+    def external_name(self) -> typing.Optional[str]:
         return tobiko.tobiko_config().neutron.external_network
 
     subnet_enable_dhcp: typing.Optional[bool] = False
 
-    _external_network: typing.Optional[NeutronNetworkType] = None
+    _external_network: typing.Optional[neutron.NetworkType] = None
 
     @property
-    def external_network(self) -> typing.Optional[NeutronNetworkType]:
+    def external_network(self) -> typing.Optional[neutron.NetworkType]:
         external_network = self._external_network
         if external_network is None:
             subnet_parameters = {}
@@ -84,28 +82,72 @@ class ExternalNetworkStackFixture(heat.HeatStackFixture):
         return external_network
 
     @property
-    def external_id(self):
+    def external_id(self) -> typing.Optional[str]:
         network = self.external_network
-        return network and network['id'] or None
+        if network is None:
+            return None
+        else:
+            return network['id']
 
     @property
     def has_external_id(self):
-        return bool(self.external_id)
+        return bool(self.external_network)
 
     @property
-    def network_details(self):
+    def network_details(self) -> neutron.NetworkType:
         return neutron.get_network(self.network_id)
+
+    @property
+    def has_network(self) -> bool:
+        return bool(self.network_id)
 
     has_gateway = False
 
-
-class FloatingNetworkStackFixture(ExternalNetworkStackFixture):
+    @property
+    def create_router(self) -> bool:
+        return False
 
     @property
-    def external_name(self):
+    def has_l3_ha(self):
+        """Whenever can obtain gateway router HA value"""
+        return neutron.has_networking_extensions('l3-ha')
+
+    ha = False
+
+    @property
+    def router_value_specs(self) -> typing.Dict[str, typing.Any]:
+        value_specs: typing.Dict[str, typing.Any] = {}
+        if self.has_l3_ha:
+            value_specs.update(ha=bool(self.ha))
+        return value_specs
+
+    @property
+    def has_router(self) -> bool:
+        return bool(self.router_id)
+
+    @property
+    def router_details(self) -> neutron.RouterType:
+        return neutron.get_router(self.router_id)
+
+
+class RouterStackFixture(ExternalNetworkStackFixture):
+
+    @property
+    def external_name(self) -> typing.Optional[str]:
         return tobiko.tobiko_config().neutron.floating_network
 
     subnet_enable_dhcp = None
+
+    @property
+    def create_router(self) -> bool:
+        return self.has_external_id
+
+    @property
+    def neutron_required_quota_set(self) -> typing.Dict[str, int]:
+        requirements = super().neutron_required_quota_set
+        if self.create_router:
+            requirements['router'] += 1
+        return requirements
 
 
 @neutron.skip_if_missing_networking_extensions('port-security')
@@ -147,27 +189,25 @@ class NetworkStackFixture(heat.HeatStackFixture):
         """Extra network creation parameters"""
         return {}
 
-    floating_network_stack = tobiko.required_fixture(
-        FloatingNetworkStackFixture)
+    gateway_stack = tobiko.required_fixture(RouterStackFixture)
+
+    @property
+    def ha(self) -> bool:
+        return self.gateway_stack.ha
 
     @property
     def floating_network(self):
         """Network ID where the Neutron floating IPs are created"""
-        return self.floating_network_stack.network_id
+        return self.gateway_stack.network_id
 
     @property
     def gateway_network(self):
         """Network ID where gateway routes packages to"""
         return self.floating_network
 
-    ha = False
-
     @property
-    def gateway_value_specs(self):
-        value_specs = {}
-        if self.has_l3_ha:
-            value_specs.update(ha=(self.ha or False))
-        return value_specs
+    def gateway(self) -> str:
+        return self.gateway_stack.router_id
 
     @property
     def has_gateway(self):
@@ -287,8 +327,6 @@ class NetworkStackFixture(heat.HeatStackFixture):
             requirements['subnet'] += 1
         if self.has_ipv6:
             requirements['subnet'] += 1
-        if self.has_gateway:
-            requirements['router'] += 1
         return requirements
 
     def is_router_distributed(self) -> bool:
@@ -330,9 +368,9 @@ class SecurityGroupsFixture(heat.HeatStackFixture):
     template = _hot.heat_template_file('neutron/security_groups.yaml')
 
 
-def list_external_networks(name: typing.Optional[str] = None) -> \
-        tobiko.Selection[NeutronNetworkType]:
-    networks = tobiko.Selection[NeutronNetworkType]()
+def list_external_networks(name: str = None) -> \
+        tobiko.Selection[neutron.NetworkType]:
+    networks = tobiko.Selection[neutron.NetworkType]()
     if name is not None:
         try:
             network = neutron.get_network(name)
@@ -367,20 +405,36 @@ skip_unless_has_external_network = tobiko.skip_unless(
     'External network not found', has_external_network)
 
 
-def get_floating_network_id():
-    return tobiko.setup_fixture(FloatingNetworkStackFixture).network_id
+def get_floating_network_id() -> str:
+    return tobiko.setup_fixture(RouterStackFixture).network_id
 
 
-def get_floating_network():
-    return tobiko.setup_fixture(FloatingNetworkStackFixture).network_details
+def get_floating_network() -> neutron.NetworkType:
+    return tobiko.setup_fixture(RouterStackFixture).network_details
 
 
-def has_floating_network():
-    return tobiko.setup_fixture(FloatingNetworkStackFixture).has_network
+def has_floating_network() -> bool:
+    return tobiko.setup_fixture(RouterStackFixture).has_network
 
 
 skip_unless_has_floating_network = tobiko.skip_unless(
     'Floating network not found', has_floating_network)
+
+
+def get_router_id() -> str:
+    return tobiko.setup_fixture(RouterStackFixture).router_id
+
+
+def get_router() -> neutron.RouterType:
+    return tobiko.setup_fixture(RouterStackFixture).router_details
+
+
+def has_router() -> bool:
+    return tobiko.setup_fixture(RouterStackFixture).has_router
+
+
+skip_unless_has_router = tobiko.skip_unless(
+    'External router not created', has_router)
 
 
 class DefaultNameserversFixture(tobiko.SharedFixture):

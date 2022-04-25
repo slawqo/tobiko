@@ -56,8 +56,7 @@ def create_router(client: _client.NeutronClientType = None,
     if 'external_gateway_info' not in params:
         if network is None:
             from tobiko.openstack import stacks
-            network_id = tobiko.setup_fixture(
-                stacks.FloatingNetworkStackFixture).external_id
+            network_id = stacks.get_floating_network_id()
         else:
             network_id = _network.get_network_id(network)
         params['external_gateway_info'] = dict(network_id=network_id)
