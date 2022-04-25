@@ -65,6 +65,7 @@ skip_if_missing_networking_extensions = (
 
 create_floating_ip = _floating_ip.create_floating_ip
 delete_floating_ip = _floating_ip.delete_floating_ip
+ensure_floating_ip = _floating_ip.ensure_floating_ip
 get_floating_ip = _floating_ip.get_floating_ip
 get_floating_ip_id = _floating_ip.get_floating_ip_id
 find_floating_ip = _floating_ip.find_floating_ip
@@ -108,6 +109,7 @@ NetworkIdType = _network.NetworkIdType
 add_router_interface = _router.add_router_interface
 create_router = _router.create_router
 delete_router = _router.delete_router
+ensure_router_interface = _router.ensure_router_interface
 get_router = _router.get_router
 get_router_id = _router.get_router_id
 remove_router_interface = _router.remove_router_interface

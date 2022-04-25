@@ -258,14 +258,6 @@ class OctaviaBasicFaultTest(testtools.TestCase):
             ip_address=self.loadbalancer_stack.floating_ip_address,
             lb_port=self.listener_stack.lb_port,
             lb_protocol=self.listener_stack.lb_protocol)
-
-        # Finding the loadbalancer's management port
-        lb_network_ip = amphora['lb_network_ip']
-        port = neutron.find_port(device_id=amphora['compute_id'],
-                                 fixed_ips=[f'ip_address={lb_network_ip}'])
-        # Ensure there is a floating IP which is set to the LB management port
-        try:
-            floating_ip = neutron.find_floating_ip(port_id=port['id'])
-        except tobiko.ObjectNotFound:
-            floating_ip = neutron.create_floating_ip(port_id=port['id'])
-        return floating_ip
+        return neutron.ensure_floating_ip(
+            fixed_ip_address=amphora['lb_network_ip'],
+            device_id=amphora['compute_id'])

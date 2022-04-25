@@ -69,7 +69,7 @@ RouterStackFixture = _neutron.RouterStackFixture
 NetworkWithNetMtuWriteStackFixture = (
     _neutron.NetworkWithNetMtuWriteStackFixture)
 SecurityGroupsFixture = _neutron.SecurityGroupsFixture
-
+FloatingIpStackFixture = _neutron.FloatingIpStackFixture
 get_external_network = _neutron.get_external_network
 has_external_network = _neutron.has_external_network
 skip_unless_has_external_network = _neutron.skip_unless_has_external_network

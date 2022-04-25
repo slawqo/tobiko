@@ -18,6 +18,9 @@ import typing
 import tobiko
 from tobiko.openstack.neutron import _client
 from tobiko.openstack.neutron import _network
+from tobiko.openstack.neutron import _port
+from tobiko.openstack.neutron import _router
+
 
 FloatingIpType = typing.Dict[str, typing.Any]
 FloatingIpIdType = typing.Union[str, FloatingIpType]
@@ -58,25 +61,28 @@ def find_floating_ip(client: _client.NeutronClientType = None,
 
 def list_floating_ips(client: _client.NeutronClientType = None,
                       retrieve_all=True,
+                      port: _port.PortIdType = None,
                       **params) -> tobiko.Selection[FloatingIpType]:
+    if port is not None:
+        params['port_id'] = _port.get_port_id(port)
     floating_ips = _client.neutron_client(client).list_floatingips(
         retrieve_all=retrieve_all, **params)['floatingips']
     return tobiko.select(floating_ips)
 
 
 def create_floating_ip(network: _network.NetworkIdType = None,
+                       port: _port.PortIdType = None,
                        client: _client.NeutronClientType = None,
                        add_cleanup=True,
                        **params) -> FloatingIpType:
-    if 'floating_network_id' not in params:
+    if network is None:
+        network = params.get('floating_network_id')
         if network is None:
             from tobiko.openstack import stacks
-            network_id = stacks.get_floating_network_id()
-        else:
-            network_id = _network.get_network_id(network)
-
-        if network_id is not None:
-            params['floating_network_id'] = network_id
+            network = stacks.get_floating_network_id()
+    params['floating_network_id'] = _network.get_network_id(network)
+    if port is not None:
+        params['port_id'] = _port.get_port_id(port)
     floating_ip: FloatingIpType = _client.neutron_client(
         client).create_floatingip(body={'floatingip': params})['floatingip']
     if add_cleanup:
@@ -113,6 +119,22 @@ def update_floating_ip(floating_ip: FloatingIpIdType,
                 floating_ip_id, body={'floatingip': params})['floatingip']
     except _client.NotFound as ex:
         raise NoSuchFloatingIp(id=floating_ip_id) from ex
+
+
+def ensure_floating_ip(fixed_ip_address: str,
+                       device_id: str = None) \
+        -> FloatingIpType:
+    port = _port.find_port(device_id=device_id,
+                           fixed_ips=[f'ip_address={fixed_ip_address}'])
+    try:
+        return find_floating_ip(port=port)
+    except tobiko.ObjectNotFound:
+        from tobiko.openstack import stacks
+        subnet = tobiko.select(port['fixed_ips']).with_attributes(
+            ip_address=fixed_ip_address).unique['subnet_id']
+        _router.ensure_router_interface(subnet=subnet)
+        fixture = stacks.FloatingIpStackFixture(port=port)
+        return tobiko.setup_fixture(fixture).floating_ip_details
 
 
 class NoSuchFloatingIp(tobiko.ObjectNotFound):

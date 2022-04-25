@@ -504,3 +504,50 @@ def default_nameservers(
     if ip_version is not None:
         nameservers = nameservers.with_attributes(version=ip_version)
     return nameservers
+
+
+class FloatingIpStackFixture(heat.HeatStackFixture):
+
+    #: Heat template file
+    template = _hot.heat_template_file('neutron/floating_ip.yaml')
+
+    router_stack = tobiko.required_fixture(RouterStackFixture)
+
+    def __init__(self,
+                 stack_name: str = None,
+                 network: neutron.NetworkIdType = None,
+                 port: neutron.PortIdType = None):
+        self._network = network
+        self._port = port
+        if port is not None and stack_name is None:
+            stack_name = (f"{tobiko.get_object_name(self)}-"
+                          f"{neutron.get_port_id(port)}")
+        super(FloatingIpStackFixture, self).__init__(stack_name=stack_name)
+
+    @property
+    def network(self) -> str:
+        network = self._network
+        if network is None:
+            return self.router_stack.network_id
+        else:
+            return neutron.get_network_id(network)
+
+    @property
+    def port(self) -> str:
+        port = self._port
+        if port is None:
+            raise ValueError(f"Undefined floating IP port ID for stack"
+                             f" {self.stack_name}")
+        return neutron.get_port_id(port)
+
+    @property
+    def network_details(self) -> neutron.NetworkType:
+        return neutron.get_network(self.network_id)
+
+    @property
+    def router_details(self) -> neutron.RouterType:
+        return neutron.get_network(self.router_id)
+
+    @property
+    def floating_ip_details(self) -> neutron.FloatingIpType:
+        return neutron.get_floating_ip(self.floating_ip_id)
