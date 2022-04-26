@@ -130,9 +130,8 @@ def ensure_floating_ip(fixed_ip_address: str,
         return find_floating_ip(port=port)
     except tobiko.ObjectNotFound:
         from tobiko.openstack import stacks
-        subnet = tobiko.select(port['fixed_ips']).with_attributes(
-            ip_address=fixed_ip_address).unique['subnet_id']
-        _router.ensure_router_interface(subnet=subnet)
+        for fixed_ip in port['fixed_ips']:
+            _router.ensure_router_interface(subnet=fixed_ip['subnet_id'])
         fixture = stacks.FloatingIpStackFixture(port=port)
         return tobiko.setup_fixture(fixture).floating_ip_details
 

@@ -25,12 +25,12 @@ parameters:
 resources:
 
   _network:
-    type: OS::Neutron::Network
-    external_id: network
+    type: OS::Neutron::Net
+    external_id: {get_param: network}
 
   _port:
     type: OS::Neutron::Port
-    external_id: port
+    external_id: {get_param: port}
 
   _floating_ip:
     type: OS::Neutron::FloatingIP
@@ -55,3 +55,7 @@ outputs:
 
   port_id:
     value: {get_resource: _port}
+
+  floating_ip_id:
+    description: floating IP identifier
+    value: { get_resource: _floating_ip }

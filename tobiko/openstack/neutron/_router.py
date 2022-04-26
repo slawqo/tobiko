@@ -187,19 +187,28 @@ def ensure_router_interface(subnet: _subnet.SubnetIdType,
                             client: _client.NeutronClientType = None):
     if isinstance(subnet, str):
         subnet = _subnet.get_subnet(subnet=subnet, client=client)
-    if 'gateway_ip' not in subnet:
-        if router is None:
-            from tobiko.openstack import stacks
-            router = stacks.get_router_id()
-        LOG.debug("Add router interface: subnet={subnet['id']}")
-        interface = add_router_interface(router=router,
-                                         subnet=subnet,
-                                         add_cleanup=False,
-                                         client=client)
-        interface_dump = json.dumps(interface, sort_keys=True, indent=4)
-        LOG.info(f"Added router interface:\n{interface_dump}")
-        subnet = _subnet.get_subnet(subnet=subnet, client=client)
-        assert subnet['gateway_ip']
+    gateway_ip = subnet.get('gateway_ip')
+    if gateway_ip is not None:
+        try:
+            gateway_port = _port.find_port(fixed_ip=f'ip_address={gateway_ip}')
+        except _port.NoSuchPort:
+            pass
+        else:
+            if gateway_port['device_owner'] == 'network:router_interface':
+                return
+
+    if router is None:
+        from tobiko.openstack import stacks
+        router = stacks.get_router_id()
+    LOG.debug("Add router interface: subnet={subnet['id']}")
+    interface = add_router_interface(router=router,
+                                     subnet=subnet,
+                                     add_cleanup=False,
+                                     client=client)
+    interface_dump = json.dumps(interface, sort_keys=True, indent=4)
+    LOG.info(f"Added router interface:\n{interface_dump}")
+    subnet = _subnet.get_subnet(subnet=subnet, client=client)
+    assert subnet['gateway_ip']
 
 
 class NoSuchRouter(tobiko.ObjectNotFound):

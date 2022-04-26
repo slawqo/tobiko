@@ -113,5 +113,16 @@ def find_subnet(client: _client.NeutronClientType = None,
         return default
 
 
+def update_subnet(subnet: SubnetIdType,
+                  client: _client.NeutronClientType = None,
+                  **params) -> SubnetType:
+    subnet_id = get_subnet_id(subnet)
+    try:
+        return _client.neutron_client(client).update_subnet(
+                subnet_id, body={'subnet': params})['subnet']
+    except _client.NotFound as ex:
+        raise NoSuchSubnet(id=subnet_id) from ex
+
+
 class NoSuchSubnet(tobiko.ObjectNotFound):
     message = "No such subnet found for {id!r}"
