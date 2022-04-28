@@ -130,6 +130,10 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
     def connection_timeout(self) -> tobiko.Seconds:
         return self.image_fixture.connection_timeout
 
+    @property
+    def disabled_algorithms(self) -> typing.Dict[str, typing.Any]:
+        return self.image_fixture.disabled_algorithms
+
     flavor_stack: tobiko.RequiredFixture[FlavorStackFixture]
 
     @property
@@ -165,14 +169,19 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         return bool(self.floating_network)
 
     @property
-    def ssh_client(self) -> ssh.SSHClientFixture:
-        return ssh.ssh_client(host=self.ip_address,
-                              username=self.username,
-                              password=self.password,
-                              connection_timeout=self.connection_timeout)
+    def ssh_client_parameters(self) -> typing.Dict[str, typing.Any]:
+        return dict(host=self.ip_address,
+                    username=self.username,
+                    password=self.password,
+                    connection_timeout=self.connection_timeout,
+                    disabled_algorithms=self.disabled_algorithms)
 
     @property
-    def peer_ssh_client(self) -> typing.Optional[ssh.SSHClientFixture]:
+    def ssh_client(self) -> ssh.SSHClientFixture:
+        return ssh.ssh_client(**self.ssh_client_parameters)
+
+    @property
+    def peer_ssh_client(self) -> ssh.SSHClientType:
         """Nearest SSH client to an host that can see server fixed IPs ports
 
         """
@@ -473,12 +482,10 @@ class PeerServerStackFixture(ServerStackFixture, abc.ABC):
     peer_stack: tobiko.RequiredFixture[ServerStackFixture]
 
     @property
-    def ssh_client(self) -> ssh.SSHClientFixture:
-        return ssh.ssh_client(host=self.ip_address,
-                              username=self.username,
-                              password=self.password,
-                              connection_timeout=self.connection_timeout,
-                              proxy_jump=self.peer_ssh_client)
+    def ssh_client_parameters(self) -> typing.Dict[str, typing.Any]:
+        parameters = super().ssh_client_parameters
+        parameters.update(proxy_jump=self.peer_ssh_client)
+        return parameters
 
     @property
     def peer_ssh_client(self) -> ssh.SSHClientFixture:

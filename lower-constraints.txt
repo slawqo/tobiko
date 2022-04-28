@@ -10,7 +10,7 @@ netaddr==0.8.0
 neutron-lib==2.7.0
 oslo.config==8.4.0
 oslo.log==4.4.0
-paramiko==2.7.2
+paramiko==2.9.2
 pbr==5.5.1
 psutil==5.8.0
 pytest===6.2.5

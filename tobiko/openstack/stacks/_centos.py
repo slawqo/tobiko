@@ -35,6 +35,7 @@ class CentosImageFixture(glance.URLGlanceImageFixture):
     username = CONF.tobiko.centos.username or 'centos'
     password = CONF.tobiko.centos.password
     connection_timeout = CONF.tobiko.centos.connection_timeout or 800.
+    disabled_algorithms = CONF.tobiko.centos.disabled_algorithms
 
 
 CENTOS7_IMAGE_URL = (

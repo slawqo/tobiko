@@ -281,7 +281,7 @@ ovs===2.16.0
 ovsdbapp===1.13.0
 packaging===21.3
 pact===1.12.0
-paramiko===2.8.1
+paramiko===2.10.4
 passlib===1.7.4
 Paste===3.5.0
 PasteDeploy===2.1.1

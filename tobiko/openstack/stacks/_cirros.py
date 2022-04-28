@@ -49,6 +49,10 @@ class CirrosImageFixture(glance.URLGlanceImageFixture):
     username = CONF.tobiko.cirros.username or 'cirros'
     password = CONF.tobiko.cirros.password or 'gocubsgo'
     connection_timeout = CONF.tobiko.cirros.connection_timeout or 200.
+    disabled_algorithms = CONF.tobiko.cirros.disabled_algorithms or {
+        #: disabled_algorithms is required to connect to CirrOS servers
+        # when using recent Paramiko versions (>= 2.9.2)
+        'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}
 
 
 class CirrosFlavorStackFixture(_nova.FlavorStackFixture):

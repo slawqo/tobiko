@@ -71,6 +71,7 @@ class RhelImageFixture(glance.URLGlanceImageFixture):
     username = CONF.tobiko.rhel.username or 'cloud-user'
     password = CONF.tobiko.rhel.password
     connection_timeout = CONF.tobiko.rhel.connection_timeout
+    disabled_algorithms = CONF.tobiko.rhel.disabled_algorithms
 
 
 class RedHatFlavorStackFixture(_centos.CentosFlavorStackFixture):

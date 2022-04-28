@@ -38,6 +38,7 @@ class FedoraBaseImageFixture(glance.URLGlanceImageFixture):
     username = CONF.tobiko.fedora.username or 'fedora'
     password = CONF.tobiko.fedora.password
     connection_timeout = CONF.tobiko.fedora.connection_timeout or 800.
+    disabled_algorithms = CONF.tobiko.fedora.disabled_algorithms
 
 
 class FedoraImageFixture(FedoraBaseImageFixture,

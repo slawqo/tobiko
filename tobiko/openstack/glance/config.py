@@ -65,7 +65,13 @@ def get_images_options():
              cfg.FloatOpt('connection_timeout',
                           default=None,
                           help=("Default " + name +
-                                " SSH connection timeout (seconds)")), ]
+                                " SSH connection timeout (seconds)")),
+             cfg.DictOpt('disabled_algorithms',
+                         default=None,
+                         help=("Allow to disable SSH auth algorithms"
+                               "in order to SSH to old servers like"
+                               "CirrOS ones")),
+             ]
         )]
 
     return options

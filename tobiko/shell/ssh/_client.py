@@ -151,6 +151,9 @@ SSH_CONNECT_PARAMETERS = {
 
     #: Command to be executed to open proxy sock
     'proxy_command': str,
+
+    #: Allow to disable some algorithms for old servers
+    'disabled_algorithms': dict
 }
 
 

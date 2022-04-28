@@ -44,6 +44,7 @@ class UbuntuMinimalImageFixture(glance.URLGlanceImageFixture):
     username = CONF.tobiko.ubuntu.username or 'ubuntu'
     password = CONF.tobiko.ubuntu.password or 'ununtu'
     connection_timeout = CONF.tobiko.ubuntu.connection_timeout or 600.
+    disabled_algorithms = CONF.tobiko.ubuntu.disabled_algorithms
 
 
 IPERF3_SERVICE_FILE = """

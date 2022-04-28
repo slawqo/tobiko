@@ -87,6 +87,7 @@ class GlanceImageFixture(_client.HasGlanceClientMixin, tobiko.SharedFixture):
     image_name: typing.Optional[str] = None
     username: typing.Optional[str] = None
     password: typing.Optional[str] = None
+    disabled_algorithms: typing.Optional[typing.Dict[str, typing.Any]] = None
     image = None
     wait_interval = 5.
 
