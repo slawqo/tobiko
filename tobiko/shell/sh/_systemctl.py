@@ -123,6 +123,13 @@ def stop_systemd_unit(unit,
     return _execute.execute(command, ssh_client=ssh_client, sudo=sudo)
 
 
+def start_systemd_unit(unit,
+                       ssh_client: ssh.SSHClientType = None,
+                       sudo: bool = None):
+    command = systemctl_command('start', unit)
+    return _execute.execute(command, ssh_client=ssh_client, sudo=sudo)
+
+
 def wait_for_active_systemd_units(*pattern: str,
                                   state: str = None,
                                   type: str = None,
