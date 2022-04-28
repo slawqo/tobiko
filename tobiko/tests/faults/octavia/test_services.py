@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import typing
+import collections
 
 import testtools
 from oslo_log import log
@@ -23,10 +24,9 @@ import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack import octavia
 from tobiko.openstack import stacks
-from tobiko.shell.ssh import SSHClientFixture
 from tobiko.openstack import topology
 from tobiko.shell import sh
-from tobiko.openstack.topology import OpenStackTopologyNode
+from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
@@ -55,20 +55,28 @@ class OctaviaServicesFaultTest(testtools.TestCase):
     listener_stack = tobiko.required_fixture(
         stacks.HttpRoundRobinAmphoraIpv4Listener)
 
-    list_octavia_active_units = ('systemctl list-units ' +
-                                 '--state=active tripleo_octavia_*')
-
-    controllers = None
+    # ssh clients of the participating TripleO nodes
+    ssh_clients: typing.List[ssh.SSHClientFixture] = list()
 
     def setUp(self):
         # pylint: disable=no-member
         super(OctaviaServicesFaultTest, self).setUp()
 
-        # Skip the test if there are no 3 available controllers -> e.g. Tripleo
-        self.controllers = topology.list_openstack_nodes(group='controller')
+        # Skipping the test if there are not enough instances of the services
+        # (if there is only 1 controller and 1 networker, we cannot stop any
+        # Octavia service)
+        critical_nodes_number = len(
+            topology.list_openstack_nodes(group='controller'))
+        try:
+            networker_nodes = topology.list_openstack_nodes(group='networker')
+            critical_nodes_number += len(networker_nodes)
+        except topology.NoSuchOpenStackTopologyNodeGroup:
+            pass  # Current Octavia architecture doesn't support networker node
 
-        if 3 != len(self.controllers):
-            skip_reason = "The number of controllers should be 3 for this test"
+        if critical_nodes_number < 2:
+            skip_reason = "The number of controllers and networker should be" \
+                          " more than 1 for this test, otherwise each " \
+                          "service is necessary."
             self.skipTest(skip_reason)
 
         # Wait for Octavia objects to be active
@@ -105,85 +113,98 @@ class OctaviaServicesFaultTest(testtools.TestCase):
                     raise
 
     def test_services_fault(self):
-        # excluded_services are the services which will be stopped
-        # on each controller
-        excluded_services = {
-            "controller-0": [octavia.API_SERVICE],
-            "controller-1": [octavia.WORKER_SERVICE],
-            "controller-2": [octavia.HM_SERVICE, octavia.HOUSEKEEPING_SERVICE]
-        }
+        # We get the services we want to stop on all nodes, in a way we leave
+        # only one instance of every service on all nodes accumulatively
+        services_to_stop = self._get_services_to_stop()
 
         try:
-            for controller in self.controllers:
-                self._make_sure_octavia_services_are_active(controller)
-
-                self._stop_octavia_main_services(
-                    controller, excluded_services[controller.name])
+            self._stop_octavia_main_services(services_to_stop)
 
         finally:
-            self._start_octavia_main_services(self.controllers)
+            self._start_octavia_main_services()
 
-    def _make_sure_octavia_services_are_active(
-            self, controller: OpenStackTopologyNode):
+    def _get_services_to_stop(self) -> dict:
+        """Return the running octavia services on controller & networker nodes.
 
-        actual_services = self._list_octavia_services(controller.ssh_client)
-        for service in octavia.OCTAVIA_SERVICES:
-            err_msg = (f'{service} is inactive on {controller.name}. '
-                       + 'It should have been active')
-            self.assertTrue(service in actual_services, err_msg)
-        LOG.debug("All Octavia services are running")
+        This method returns a dictionary of the services we are going to stop
+        as keys, and the nodes we are going to stop the services on as values.
 
-    def _list_octavia_services(self, ssh_client: SSHClientFixture) -> str:
-        """Return the octavia services status.
+        For example:
+        {
+            'tripleo_octavia_worker.service': [ssh_client_of_controller-0,
+                                               ssh_client_of_controller-1],
+            'tripleo_octavia_api.service': [ssh_client_of_controller-1,
+                                            ssh_client_of_controller-2]
+             and so on....
+        }
 
-        This method returns the OUTPUT of the command we run to enlist the
-        services.
+        We are leaving exactly one running instance of each service on all
+        nodes together.
+        The Octavia service that will remain running will be chosen randomly.
         """
 
-        # Return "list Octavia services" command's output
-        octavia_services = sh.execute(self.list_octavia_active_units,
-                                      ssh_client=ssh_client, sudo=True).stdout
-        octavia_services_output = f'Octavia units are:\n{octavia_services}'
-        LOG.debug(octavia_services_output)
-        return octavia_services
+        # Gather all controller ssh clients
+        for controller in topology.list_openstack_nodes(group='controller'):
+            self.ssh_clients.append(controller.ssh_client)
 
-    def _stop_octavia_main_services(self, controller: OpenStackTopologyNode,
-                                    excluded_services: typing.List[str]):
+        # Gather all networker ssh clients if reachable
+        # (for Composable and Upgrade jobs)
+        try:
+            for networker in topology.list_openstack_nodes(
+                    group='networker'):
+                self.ssh_clients.append(networker.ssh_client)
+        except topology.NoSuchOpenStackTopologyNodeGroup:
+            pass
+
+        # Creating initial mapping of Octavia active units (services) which are
+        # currently running on the nodes we gathered above
+        services_on_nodes = collections.defaultdict(list)
+
+        # Gathering all Octavia active units (services) which are currently
+        # running on the nodes we gathered above
+        for ssh_client in self.ssh_clients:
+            for service in sh.list_systemd_units(ssh_client=ssh_client):
+                if service.unit in octavia.OCTAVIA_SERVICES:
+                    services_on_nodes[service.unit].append(ssh_client)
+
+        # Example of the curret services_on_nodes:
+        # {
+        #     'tripleo_octavia_worker.service': [ssh_client_of_controller-0,
+        #                                        ssh_client_of_controller-1],
+        #     'tripleo_octavia_api.service': [ssh_client_of_controller-1,
+        #                                     ssh_client_of_controller-2]
+        #      and so on....
+        # }
+
+        LOG.debug(f'Full services_on_nodes dictionary:\n {services_on_nodes}')
+
+        # Pop one random node's ssh client from each service.
+        # We do that so we could leave exactly one single instance of each
+        # service running on all nodes
+        import random
+        for service in services_on_nodes:
+            nodes_length = len(services_on_nodes[service])
+            services_on_nodes[service].pop(random.randint(0, nodes_length - 1))
+
+        return services_on_nodes
+
+    def _stop_octavia_main_services(self, services_to_stop: dict):
 
         """Stops the provided octavia services.
 
-        This method stops the provided octavia services, except for the ones
-        which are in excluded_services.
-        After it runs the "stop command" (e.g. `systemctl stop`),
-        it makes sure that the Octavia's stopped services do not appear on
-        the running Octavia services.
+        This method stops the provided octavia services.
 
         It then sends traffic to validate the Octavia's functionality
         """
 
-        # Preparing the services to stop
-        services_to_stop = octavia.OCTAVIA_SERVICES
+        LOG.debug(f'Services we are going to stop:\n {services_to_stop}')
 
-        if excluded_services:
-            services_to_stop = [service for service in services_to_stop if (
-                    service not in excluded_services)]
-
-        # Stopping the Octavia services
-        for service in services_to_stop:
-            command = f"systemctl stop {service}"
-
-            sh.execute(command, ssh_client=controller.ssh_client, sudo=True)
-
-            log_msg = f"Stopping {service} on {controller.name}"
-            LOG.info(log_msg)
-
-        # Making sure the Octavia services were stopped
-        octavia_active_units = self._list_octavia_services(
-            controller.ssh_client)
-
-        for service in services_to_stop:
-            err_msg = f'{service} was not stopped on {controller.name}'
-            self.assertTrue(service not in octavia_active_units, err_msg)
+        for service, ssh_clients in services_to_stop.items():
+            for ssh_client in ssh_clients:
+                sh.stop_systemd_units(service,
+                                      ssh_client=ssh_client,
+                                      sudo=True)
+                LOG.debug(f'We stopped {service} on {ssh_client.host}')
 
         self.loadbalancer_stack.wait_for_octavia_service()
 
@@ -205,29 +226,20 @@ class OctaviaServicesFaultTest(testtools.TestCase):
                 if attempt.is_last:
                     raise
 
-    def _start_octavia_main_services(
-            self, controllers: typing.List[OpenStackTopologyNode] = None):
+    def _start_octavia_main_services(self):
 
-        """Starts the provided octavia services.
+        """Start the octavia services.
 
-        This method starts the provided octavia services.
-        After it runs the "start command" (e.g. `systemctl start`), it makes
-        sure that the Octavia services appear on the active Octavia units.
+        This method starts the provided octavia services on the nodes we
+        gathered before.
 
         It then sends traffic to validate the Octavia's functionality
         """
 
-        controllers = controllers or topology.list_openstack_nodes(
-            group='controller')
-        for controller in controllers:
-
-            # Starting the Octavia services
-            for service in octavia.OCTAVIA_SERVICES:
-                sh.execute(f"systemctl start {service}",
-                           ssh_client=controller.ssh_client, sudo=True)
-
-            # Making sure the Octavia services were started
-            self._make_sure_octavia_services_are_active(controller)
+        for ssh_client in self.ssh_clients:
+            sh.start_systemd_units(*octavia.OCTAVIA_SERVICES,
+                                   ssh_client=ssh_client,
+                                   sudo=True)
 
         octavia.check_members_balanced(
             pool_id=self.listener_stack.pool_id,
