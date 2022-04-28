@@ -25,9 +25,9 @@ from tobiko.shell import sh
 
 CONF = config.CONF
 
-UBUNTU_IMAGE_VERSION = 'focal'
+UBUNTU_IMAGE_VERSION = 'jammy'
 
-UBUNTU_IMAGE_VERSION_NUMBER = '20.04'
+UBUNTU_IMAGE_VERSION_NUMBER = '22.04'
 
 UBUNTU_MINIMAL_IMAGE_URL = (
     'https://cloud-images.ubuntu.com/minimal/releases/'
