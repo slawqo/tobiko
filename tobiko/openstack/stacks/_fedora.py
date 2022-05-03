@@ -23,13 +23,10 @@ from tobiko.openstack.stacks import _nova
 
 CONF = config.CONF
 
-FEDORA_IMAGE_VERSION = '35'
-FEDORA_IMAGE_RELEASE = '35-1.2'
 
 FEDORA_IMAGE_URL = (
-    'https://download.fedoraproject.org/pub/fedora/linux/releases/'
-    f'{FEDORA_IMAGE_VERSION}/Cloud/x86_64/images/'
-    f'Fedora-Cloud-Base-{FEDORA_IMAGE_RELEASE}.x86_64.qcow2')
+    'https://download.fedoraproject.org/pub/fedora/linux/releases/34/Cloud/'
+    'x86_64/images/Fedora-Cloud-Base-34-1.2.x86_64.qcow2')
 
 
 class FedoraBaseImageFixture(glance.URLGlanceImageFixture):
