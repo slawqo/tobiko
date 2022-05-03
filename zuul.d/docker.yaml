@@ -39,6 +39,15 @@
     post-run: playbooks/docker/post.yaml
     vars:
         docker_compose_service: py3
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/
+      - ^releasenotes/
+      - ^report/
+      - ^tobiko/tests/faults/
+      - ^tobiko/tests/functional/
+      - ^tobiko/tests/sanity/
+      - ^tobiko/tests/scenario/
 
 
 - job:
