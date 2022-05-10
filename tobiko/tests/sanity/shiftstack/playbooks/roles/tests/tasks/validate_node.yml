@@ -1,0 +1,11 @@
+- name: Check status of node
+  fail:
+    msg: "{{ item.message }}"
+  when: item.type == 'Ready' and item.status == 'False'
+  with_items: "{{ oc_node.status.conditions }}"
+
+- name: Check conditions of node
+  fail:
+    msg: "{{ item.message }}"
+  when: item.type != 'Ready' and item.status == 'True'
+  with_items: "{{ oc_node.status.conditions }}"

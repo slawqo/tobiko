@@ -1,0 +1,19 @@
+- name: Get Instances, Nodes, Machines, and MachineSets information
+  block:
+    - name: Get OCP machinesets status
+      shell: 'oc get machinesets -A'
+
+    - name: Get OCP machines status
+      shell: 'oc get machines -A'
+
+    - name: Get OCP nodes status
+      shell: 'oc get nodes'
+
+    - name: Get the project's instances status
+      shell: |
+        source {{ user_env_file }}
+        openstack server list
+
+    - name: Fail inside rescue block
+      fail:
+        msg: "The MachineSets health check failed. See above commands output for more information."

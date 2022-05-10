@@ -1,0 +1,51 @@
+- name: re-create demo project
+  import_tasks: recreate_ocp_project.yml
+  vars:
+    project_name: demo
+
+- name: Run the demo application
+  vars:
+    ansible_python_interpreter: "{{ k8s_venv_python_interpreter }}"
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', '../files/demo.yml') }}"
+    namespace: demo
+
+- name: Wait for for 3 Pods labelled app=demo
+  vars:
+    ansible_python_interpreter: "{{ k8s_venv_python_interpreter }}"
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: demo
+    label_selectors:
+      - app = demo
+    field_selectors:
+      - status.phase=Running
+  register: demo_pods
+  retries: 15
+  delay: 15
+  until: demo_pods.resources|length == 3
+
+- name: Get the first pod
+  set_fact:
+    first_pod_name: "{{ demo_pods | json_query('resources[*].metadata.name') | first }} "
+
+- name: Get the demo service
+  vars:
+    ansible_python_interpreter: "{{ k8s_venv_python_interpreter }}"
+  kubernetes.core.k8s_info:
+    kind: Service
+    name: demo
+    namespace: demo
+  register: demo_svc
+
+- name: Get demo service IP
+  set_fact:
+    demo_svc_ip: "{{ demo_svc| json_query('resources[0].spec.clusterIP') }}"
+
+- name: Check connectivity between the first pod and the demo service
+  shell: "oc exec -t {{ first_pod_name }} -n demo -- curl {{ demo_svc_ip }}"
+  register: pod_result
+  retries: 30
+  delay: 10
+  until: pod_result.stdout is search('HELLO! I AM ALIVE!!!')

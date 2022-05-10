@@ -1,0 +1,40 @@
+- name: Check if {{ project_name }} project exists
+  vars:
+    ansible_python_interpreter: "{{ k8s_venv_python_interpreter }}"
+  kubernetes.core.k8s_info:
+    kind: Project
+    name: "{{ project_name }}"
+    api_version: project.openshift.io/v1
+  register: oc_project
+
+- name: Delete the {{ project_name }} project
+  vars:
+    ansible_python_interpreter: "{{ k8s_venv_python_interpreter }}"
+  kubernetes.core.k8s:
+    state: absent
+    api_version: project.openshift.io/v1
+    kind: Project
+    name: "{{ project_name }}"
+  when:
+    - oc_project.resources
+
+- name: Wait for the {{ project_name }} project to be deleted
+  vars:
+    ansible_python_interpreter: "{{ k8s_venv_python_interpreter }}"
+  kubernetes.core.k8s_info:
+    kind: Project
+    name: "{{ project_name }}"
+    api_version: project.openshift.io/v1
+  register: oc_project
+  retries: 30
+  delay: 10
+  until: oc_project.resources|length == 0
+
+- name: Create the {{ project_name }} project
+  vars:
+    ansible_python_interpreter: "{{ k8s_venv_python_interpreter }}"
+  kubernetes.core.k8s:
+    state: present
+    api_version: project.openshift.io/v1
+    kind: Project
+    name: "{{ project_name }}"

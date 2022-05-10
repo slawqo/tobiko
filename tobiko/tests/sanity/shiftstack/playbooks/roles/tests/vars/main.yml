@@ -1,0 +1,11 @@
+user_cloud: "shiftstack"
+user_env_file: "/home/stack/shiftstackrc"
+k8s_venv_path: "/var/tmp/venv_k8s"
+k8s_venv_python_interpreter: "{{ k8s_venv_path }}/bin/python"
+k8s_venv_pip_package_list:
+    - openstacksdk
+    - setuptools==59.6.0
+    - openshift
+    - kubernetes==22.6.0
+    - kubernetes-validate
+    - selinux

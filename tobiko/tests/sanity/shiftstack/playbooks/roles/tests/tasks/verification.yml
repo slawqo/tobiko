@@ -1,0 +1,177 @@
+- name: Create a symlink to the kubeconfig in the installer host
+  block:
+    - name: Create oc config directory .kube/ in the installer host
+      file:
+        path: ~/.kube
+        state: directory
+
+    - name: Create symlink in .kube/ dir to the kubeconfig file in the installer host
+      file:
+        src: ~/ostest/auth/kubeconfig
+        dest: ~/.kube/config
+        state: link
+
+- name: Get the Network type
+  shell: oc get network cluster -o json | jq .spec.networkType
+  register: oc_network
+
+- name: Set the Network type
+  set_fact:
+    ocp_network_type: oc_network.stdout
+
+- name: Check OpenShift api status
+  shell: 'oc status'
+  retries: 10
+  delay: 10
+  until: oc_status.rc == 0
+  register: oc_status
+
+- name: Build/use the virtualenv for verification
+  pip:
+    name: "{{ k8s_venv_pip_package_list }}"
+    state: present
+    virtualenv: "{{ k8s_venv_path }}"
+  register: _install_venv_pip_packages
+  retries: 5
+  delay: 10
+  until: _install_venv_pip_packages is success
+
+- name: discover running ocp release
+  command: oc get clusterversion
+  register: oc_get_clusterversion
+- set_fact:
+    discovered_openshift_release: "{{ oc_get_clusterversion.stdout_lines[-1] | regex_replace('version +([0-9]+.[0-9]+).*$','\\1') }}"
+
+- name: Prepare setup for OSP < 16
+  package:
+    name:
+      - python3
+      - libselinux-python3
+    state: present
+  become: true
+  when: openstack_version|default('16')|int < 16
+
+- name: Check the project's instances healthy
+  block:
+    - name: Get information about the "{{ user_cloud }}" project servers
+      vars:
+        ansible_python_interpreter: "{{ k8s_venv_python_interpreter }}"
+      openstack.cloud.server_info:
+        cloud: "{{ user_cloud }}"
+      register: project_servers
+
+    - name: Fail if not all project servers are active
+      vars:
+        error_msg: >
+          Failed! The {{ item.name }} server in the {{ user_cloud }} project
+          is in {{ item.vm_state }} status.
+      fail:
+        msg: "{{ error_msg }}"
+      when: item.vm_state != "active"
+      loop: "{{ project_servers.openstack_servers }}"
+  rescue:
+    - name: Get Instances, Machines, and MachineSets information for unhealthy project instances
+      include_tasks: debug_machines.yml
+
+- name: Check the MachineSets healthy
+  block:
+    - name: Get the MachineSets status
+      vars:
+        ansible_python_interpreter: "{{ k8s_venv_python_interpreter }}"
+      kubernetes.core.k8s_info:
+        api_version: machine.openshift.io/v1beta1
+        kind: MachineSet
+      register: oc_machines
+
+    - name: Fail if the number of OCP desired machines is not equal to the available machines
+      vars:
+        error_msg: >
+          Failed! The replicas value of MachineSet {{ item.metadata.name }} is
+          not corresponding with the MachineSet available replicas status.
+      fail:
+        msg: "{{ error_msg }}"
+      when: item.status.availableReplicas is not defined or
+            item.status.replicas != item.status.availableReplicas
+      loop: "{{ oc_machines.resources }}"
+  rescue:
+    - name: Get Instances, Machines, and MachineSets information for unhealthy MachineSets
+      include_tasks: debug_machines.yml
+
+- name: Check number of OpenShift nodes
+  shell: 'oc get nodes -o json'
+  retries: 10
+  delay: 10
+  no_log: true
+  until: oc_nodes.rc == 0
+  register: oc_nodes
+
+- set_fact:
+    oc_get_nodes_result: "{{ oc_nodes.stdout | from_json }}"
+
+- name: Validate node statuses
+  include_tasks: "validate_node.yml"
+  with_items: "{{ oc_get_nodes_result['items'] }}"
+  loop_control:
+    loop_var: oc_node
+
+- name: Wait for pods to be ready
+  script: ../scripts/pods_ready.sh
+  ignore_errors: yes
+  register: pods_ready
+
+- name: Get PODs statuses
+  shell: 'oc get pods --all-namespaces -o json'
+  no_log: true
+  register: oc_pods
+
+- set_fact:
+    oc_get_pods_result: "{{ oc_pods.stdout | from_json }}"
+  no_log: true
+
+- name: Check we have at least one registry pod
+  vars:
+    query: "items[?starts_with(metadata.name, 'image-registry')]"
+  fail:
+    msg: "There should be at least one image-registry pod"
+  # the to_json | from_json w/a is to avoid a known issue of ansible:
+  # https://github.com/ansible/ansible/issues/20379#issuecomment-284034650
+  when: oc_get_pods_result | to_json | from_json | json_query(query) | length == 0
+
+- name: Check we have at least one router pod
+  vars:
+    query: "items[?starts_with(metadata.name, 'router')]"
+  fail:
+    msg: "There should be at least one router pod"
+  when: oc_get_pods_result | to_json | from_json | json_query(query) | length == 0
+
+- name: get the disabled load balancers listeners
+  shell: |-
+    source {{ user_env_file }}
+    openstack loadbalancer listener list --disable -f value
+  register: osp_lbs_listeners
+
+- name: Fail when there are disabled load balancers listeners
+  fail:
+      msg: |
+          "The following load balancers are in disabled state:"
+          "{{ osp_lbs_listeners.stdout }}"
+  when: osp_lbs_listeners.stdout_lines|length > 0
+
+- name: Active wait until all the ClusterOperators are ready
+  vars:
+    ansible_python_interpreter: "{{ k8s_venv_python_interpreter }}"
+  kubernetes.core.k8s_info:
+    api_version: config.openshift.io/v1
+    kind: ClusterOperator
+  register: cluster_operators
+  until:
+    - cluster_operators is not failed
+    - cluster_operators.resources is defined
+    - cluster_operators | json_query('resources[*].status.conditions[?type==`Available`].status') | unique == [["True"]]
+    - cluster_operators | json_query('resources[*].status.conditions[?type==`Progressing`].status') | unique == [["False"]]
+    - cluster_operators | json_query('resources[*].status.conditions[?type==`Degraded`].status') | unique == [["False"]]
+  retries: 20
+  delay: 30
+
+- name: Create a demo app and check connectivity
+  include_tasks: check_demo_app.yml

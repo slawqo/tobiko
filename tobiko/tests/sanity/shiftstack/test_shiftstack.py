@@ -17,6 +17,7 @@ import os
 
 import testtools
 
+from tobiko import shiftstack
 from tobiko import tripleo
 
 
@@ -24,16 +25,14 @@ PLAYBOOK_DIRNAME = os.path.join(os.path.dirname(__file__), 'playbooks')
 
 
 @tripleo.skip_if_missing_tripleo_ansible_inventory
+@shiftstack.skip_unless_has_shiftstack()
 class OpenShiftTest(testtools.TestCase):
 
-    def test_ping_all_hosts(self):
+    def test_ocp_cluster(self):
+        clouds_file_path = shiftstack.get_clouds_file_path()
         tripleo.run_playbook_from_undercloud(
-            playbook='ping-shiftstack.yaml',
+            playbook='verify-shiftstack.yaml',
             playbook_dirname=PLAYBOOK_DIRNAME,
-            roles=['ping'])
-
-    def test_debug_vars(self):
-        tripleo.run_playbook_from_undercloud(
-            playbook='debug-vars.yaml',
-            playbook_dirname=PLAYBOOK_DIRNAME,
-            playbook_files=['vars/some-vars.yaml'])
+            playbook_files=[clouds_file_path],
+            requirements_files=['requirements.yaml'],
+            roles=['tests'])
