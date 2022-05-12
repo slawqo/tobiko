@@ -132,6 +132,11 @@ class ExternalNetworkStackFixture(heat.HeatStackFixture):
 
 class RouterStackFixture(ExternalNetworkStackFixture):
 
+    def __init__(self,
+                 neutron_client: neutron.NeutronClientType = None):
+        super(RouterStackFixture, self).__init__()
+        self._neutron_client = neutron_client
+
     @property
     def external_name(self) -> typing.Optional[str]:
         return tobiko.tobiko_config().neutron.floating_network
@@ -148,6 +153,44 @@ class RouterStackFixture(ExternalNetworkStackFixture):
         if self.create_router:
             requirements['router'] += 1
         return requirements
+
+    def ensure_router_interface(self,
+                                subnet: neutron.SubnetIdType):
+        ensure_router_interface(subnet=subnet,
+                                router=self.router_id,
+                                client=self.neutron_client)
+
+    @property
+    def neutron_client(self) -> neutron.NeutronClientType:
+        if self._neutron_client is None:
+            self._neutron_client = neutron.neutron_client()
+        return self._neutron_client
+
+
+def ensure_router_interface(subnet: neutron.SubnetIdType,
+                            router: neutron.RouterIdType = None,
+                            client: neutron.NeutronClientType = None) \
+        -> neutron.PortType:
+    if router is None:
+        router = get_router_id()
+    router_id = neutron.get_router_id(router)
+    subnet_id = neutron.get_subnet_id(subnet)
+    try:
+        return neutron.find_port(fixed_ips=f"subnet_id={subnet_id}",
+                                 device_id=router_id)
+    except tobiko.ObjectNotFound:
+        pass
+
+    LOG.debug(f"Add router interface: subnet={subnet_id}")
+    subnet = neutron.ensure_subnet_gateway(subnet=subnet)
+    interface = neutron.add_router_interface(router=router,
+                                             subnet=subnet,
+                                             add_cleanup=False,
+                                             client=client)
+    interface_dump = json.dumps(interface, sort_keys=True, indent=4)
+    LOG.info(f"Added router interface:\n{interface_dump}")
+    return neutron.find_port(fixed_ips=f"subnet_id={subnet_id}",
+                             device_id=router_id)
 
 
 @neutron.skip_if_missing_networking_extensions('port-security')
@@ -516,12 +559,15 @@ class FloatingIpStackFixture(heat.HeatStackFixture):
     def __init__(self,
                  stack_name: str = None,
                  network: neutron.NetworkIdType = None,
-                 port: neutron.PortIdType = None):
+                 port: neutron.PortIdType = None,
+                 device_id: str = None,
+                 fixed_ip_address: str = None,
+                 neutron_client: neutron.NeutronClientType = None):
         self._network = network
         self._port = port
-        if port is not None and stack_name is None:
-            stack_name = (f"{tobiko.get_object_name(self)}-"
-                          f"{neutron.get_port_id(port)}")
+        self._neutron_client = neutron_client
+        self._device_id = device_id
+        self._fixed_ip_address = fixed_ip_address
         super(FloatingIpStackFixture, self).__init__(stack_name=stack_name)
 
     @property
@@ -534,11 +580,50 @@ class FloatingIpStackFixture(heat.HeatStackFixture):
 
     @property
     def port(self) -> str:
-        port = self._port
-        if port is None:
-            raise ValueError(f"Undefined floating IP port ID for stack"
-                             f" {self.stack_name}")
-        return neutron.get_port_id(port)
+        if isinstance(self._port, str):
+            return self._port
+        else:
+            return self.port_details['id']
+
+    @property
+    def port_details(self) -> neutron.PortType:
+        if self._port is None:
+            params: typing.Dict[str, typing.Any] = {}
+            device_id = self.device_id
+            if device_id is not None:
+                params['device_id'] = device_id
+            self._port = neutron.find_port(
+                client=self.neutron_client,
+                fixed_ips=[f'ip_address={self.fixed_ip_address}'],
+                **params)
+        elif isinstance(self._port, str):
+            self._port = neutron.get_port(self.port,
+                                          client=self.neutron_client)
+        assert isinstance(self._port, dict)
+        return self._port
+
+    @property
+    def fixed_ip_address(self) -> str:
+        if self._fixed_ip_address is None:
+            raise ValueError(
+                'Must specify at least a port or a fixed IP address')
+        return self._fixed_ip_address
+
+    @property
+    def device_id(self) -> typing.Optional[str]:
+        return self._device_id
+
+    def setup_stack_name(self) -> str:
+        stack_name = self.stack_name
+        if stack_name is None:
+            self.stack_name = stack_name = f"{self.fixture_name}-{self.port}"
+        return stack_name
+
+    def prepare_external_resources(self):
+        super().prepare_external_resources()
+        for fixed_ip in self.port_details['fixed_ips']:
+            self.router_stack.ensure_router_interface(
+                subnet=fixed_ip['subnet_id'])
 
     @property
     def network_details(self) -> neutron.NetworkType:
@@ -546,8 +631,14 @@ class FloatingIpStackFixture(heat.HeatStackFixture):
 
     @property
     def router_details(self) -> neutron.RouterType:
-        return neutron.get_network(self.router_id)
+        return neutron.get_router(self.router_id)
 
     @property
     def floating_ip_details(self) -> neutron.FloatingIpType:
         return neutron.get_floating_ip(self.floating_ip_id)
+
+    @property
+    def neutron_client(self) -> neutron.NeutronClientType:
+        if self._neutron_client is None:
+            self._neutron_client = self.router_stack.neutron_client
+        return self._neutron_client

@@ -13,23 +13,34 @@
 #    under the License.
 from __future__ import absolute_import
 
+from tobiko.openstack.octavia import _amphora
 from tobiko.openstack.octavia import _client
-from tobiko.openstack.octavia import _waiters
 from tobiko.openstack.octavia import _constants
-from tobiko.openstack.octavia import _validators
 from tobiko.openstack.octavia import _exceptions
+from tobiko.openstack.octavia import _load_balancer
+from tobiko.openstack.octavia import _validators
+from tobiko.openstack.octavia import _waiters
 
+AmphoraIdType = _amphora.AmphoraIdType
+AmphoraType = _amphora.AmphoraType
+get_amphora_id = _amphora.get_amphora_id
+get_amphora = _amphora.get_amphora
+get_amphora_compute_node = _amphora.get_amphora_compute_node
+get_master_amphora = _amphora.get_master_amphora
+list_amphorae = _amphora.list_amphorae
 
 OCTAVIA_CLIENT_CLASSSES = _client.OCTAVIA_CLIENT_CLASSSES
 get_octavia_client = _client.get_octavia_client
 octavia_client = _client.octavia_client
 OctaviaClientFixture = _client.OctaviaClientFixture
-get_loadbalancer = _client.get_loadbalancer
+OctaviaClientType = _client.OctaviaClientType
 get_member = _client.get_member
 list_members = _client.list_members
-list_amphorae = _client.list_amphorae
-get_amphora_compute_node = _client.get_amphora_compute_node
-get_master_amphora = _client.get_master_amphora
+
+LoadBalancerIdType = _load_balancer.LoadBalancerIdType
+LoadBalancerType = _load_balancer.LoadBalancerType
+get_load_balancer = _load_balancer.get_load_balancer
+get_load_balancer_id = _load_balancer.get_load_balancer_id
 
 # Waiters
 wait_for_status = _waiters.wait_for_status

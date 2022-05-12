@@ -223,6 +223,8 @@ class HeatStackFixture(tobiko.SharedFixture):
         # a new stack
         self.ensure_quota_limits()
 
+        self.prepare_external_resources()
+
         LOG.debug('Begin creating stack %r...', self.stack_name)
         try:
             stack_id: str = self.setup_client().stacks.create(
@@ -252,6 +254,9 @@ class HeatStackFixture(tobiko.SharedFixture):
         LOG.debug('Stack successfully created "'
                   f"(name={self.stack_name}, id={stack.id}).")
         return stack
+
+    def prepare_external_resources(self):
+        pass
 
     _resources = None
 

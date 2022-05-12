@@ -115,13 +115,31 @@ def find_subnet(client: _client.NeutronClientType = None,
 
 def update_subnet(subnet: SubnetIdType,
                   client: _client.NeutronClientType = None,
+                  gateway_ip: typing.Union[str, netaddr.IPAddress] = None,
                   **params) -> SubnetType:
     subnet_id = get_subnet_id(subnet)
+    if gateway_ip is not None:
+        params['gateway_ip'] = str(gateway_ip)
     try:
         return _client.neutron_client(client).update_subnet(
                 subnet_id, body={'subnet': params})['subnet']
     except _client.NotFound as ex:
         raise NoSuchSubnet(id=subnet_id) from ex
+
+
+def ensure_subnet_gateway(subnet: SubnetIdType,
+                          client: _client.NeutronClientType = None) \
+        -> SubnetType:
+    """Make sure given subnet has a gateway IP"""
+    if isinstance(subnet, str):
+        subnet = get_subnet(subnet, client=client)
+    if not subnet.get('gateway_ip'):
+        cidr = netaddr.IPNetwork(subnet['cidr'])
+        gateway_ip = netaddr.IPAddress(cidr.first + 1)
+        subnet = update_subnet(subnet=subnet,
+                               client=client,
+                               gateway_ip=gateway_ip)
+    return subnet
 
 
 class NoSuchSubnet(tobiko.ObjectNotFound):

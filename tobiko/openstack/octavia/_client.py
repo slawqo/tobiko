@@ -13,17 +13,20 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 from octaviaclient.api.v2 import octavia
 
 import tobiko
 from tobiko.openstack import _client
 from tobiko.openstack import keystone
-from tobiko.openstack import nova
-from tobiko.openstack.octavia import _validators
-from tobiko.openstack import topology
 
 
 OCTAVIA_CLIENT_CLASSSES = octavia.OctaviaAPI,
+
+
+OctaviaClientType = typing.Union[octavia.OctaviaAPI,
+                                 'OctaviaClientFixture']
 
 
 def get_octavia_endpoint(keystone_client=None):
@@ -48,8 +51,8 @@ class OctaviaClientManager(_client.OpenstackClientManager):
 CLIENTS = OctaviaClientManager()
 
 
-def octavia_client(obj):
-    if not obj:
+def octavia_client(obj: OctaviaClientType = None) -> octavia.OctaviaAPI:
+    if obj is None:
         return get_octavia_client()
 
     if isinstance(obj, OCTAVIA_CLIENT_CLASSSES):
@@ -72,10 +75,6 @@ def get_octavia_client(session=None, shared=True, init_client=None,
     return client.client
 
 
-def get_loadbalancer(loadbalancer_id: str, client=None):
-    return octavia_client(client).load_balancer_show(lb_id=loadbalancer_id)
-
-
 def get_member(pool_id: str, member_id: str, client=None):
     return octavia_client(client).member_show(pool_id=pool_id,
                                               member_id=member_id)
@@ -83,78 +82,3 @@ def get_member(pool_id: str, member_id: str, client=None):
 
 def list_members(pool_id: str, client=None):
     return octavia_client(client).member_list(pool_id=pool_id)['members']
-
-
-def list_amphorae(loadbalancer_id: str, client=None):
-    return octavia_client(client).amphora_list(
-        loadbalancer_id=loadbalancer_id)['amphorae']
-
-
-def get_amphora_compute_node(loadbalancer_id: str,
-                             lb_port: int,
-                             lb_protocol: str,
-                             ip_address: str) -> (
-        topology.OpenStackTopologyNode):
-    """Gets the compute node which hosts the LB amphora
-
-    This function finds the Overcloud compute node which
-    hosts the amphora. In case there are more than 1 amphora
-    (e.g. if the LB's topology is Active/standby), so the compute node which
-    hosts the master amphora will be returned.
-
-    :param loadbalancer_id (str): The loadbalancer ID.
-    :param lb_port (int): The loadbalancer port.
-    :param lb_protocol (str): The loadbalancer protocol.
-    :param ip_address (str): The ip adress of the loadbalancer.
-    :return (TripleoTopologyNode): The compute node which hosts the Amphora.
-    """
-
-    amphorae = list_amphorae(loadbalancer_id)
-    if len(amphorae) > 1:  # For a high available LB
-        amphora = get_master_amphora(amphorae=amphorae,
-                                     lb_port=lb_port,
-                                     lb_protocol=lb_protocol,
-                                     ip_address=ip_address)
-    else:
-        amphora = amphorae[0]
-
-    server = nova.get_server(amphora['compute_id'])
-    hostname = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname')
-    return topology.get_openstack_node(hostname=hostname)
-
-
-def get_master_amphora(amphorae: dict,
-                       lb_port: int,
-                       lb_protocol: str,
-                       ip_address: str,
-                       client=None) -> dict:
-    """Gets the master Amphora in a High Available LB
-    (a loadbalancer which uses the Active/standby topology)
-
-    :param amphorae (dict): The list of amphoras (each represented by
-     JSON).
-    :param lb_port (int): The loadbalancer port.
-    :param lb_protocol (str): The loadbalancer protocol.
-    :param ip_address (str): The ip adress of the loadbalancer.
-    :param client (optional): Any client with access to the Octavia APIs.
-    :return amphora (dict): JSON of the Master Amphora.
-    """
-
-    # Generate traffic on the LB so we can identify the current Master
-    _validators.check_members_balanced(
-        ip_address=ip_address,
-        protocol=lb_protocol,
-        port=lb_port,
-        members_count=1,
-        requests_count=1)
-
-    # The amphora which has total_connections > 0 is the master.
-    # Backup amphora will always have total_connections == 0.
-    for amphora in amphorae:
-        amphora_stats = octavia_client(client).amphora_stats_show(
-            amphora['id'])
-        for listener in list(amphora_stats.values())[0]:
-            if listener['total_connections'] > 0:
-                return amphora
-
-    raise ValueError("Master Amphora wasn't found!")

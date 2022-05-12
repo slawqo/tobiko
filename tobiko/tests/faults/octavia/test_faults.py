@@ -14,15 +14,12 @@
 #    under the License.
 from __future__ import absolute_import
 
-import typing
-
 import testtools
 from oslo_log import log
 
 import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack import octavia
-from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.shell import ssh
 from tobiko.shell import sh
@@ -49,8 +46,6 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
     listener_stack = tobiko.required_fixture(
         stacks.HttpRoundRobinAmphoraIpv4Listener)
-
-    amphora_ssh_client: typing.Optional[ssh.SSHClientFixture] = None
 
     def setUp(self):
         # pylint: disable=no-member
@@ -88,20 +83,15 @@ class OctaviaBasicFaultTest(testtools.TestCase):
                 if attempt.is_last:
                     raise
 
-        # Attach a FIP to the LB
-        fip = self._set_fip_to_amphora()
-
-        # Get an ssh_client and execute the command on the Amphora
-        self.amphora_ssh_client = ssh.ssh_client(
-            host=fip['floating_ip_address'],
-            username='cloud-user',
-            connection_timeout=10)
+    @property
+    def amphora_ssh_client(self) -> ssh.SSHClientType:
+        return self.listener_stack.amphora_ssh_client
 
     def test_reboot_amphora_compute_node(self):
         amphora_compute_host = octavia.get_amphora_compute_node(
-            loadbalancer_id=self.loadbalancer_stack.loadbalancer_id,
-            lb_port=self.listener_stack.lb_port,
-            lb_protocol=self.listener_stack.lb_protocol,
+            load_balancer=self.loadbalancer_stack.loadbalancer_id,
+            port=self.listener_stack.lb_port,
+            protocol=self.listener_stack.lb_protocol,
             ip_address=self.loadbalancer_stack.floating_ip_address)
 
         LOG.debug('Rebooting compute node...')
@@ -245,19 +235,3 @@ class OctaviaBasicFaultTest(testtools.TestCase):
             lb_algorithm=self.listener_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,
             port=self.listener_stack.lb_port)
-
-    def _set_fip_to_amphora(self):
-        """Set a FIP to the LB management network port
-
-        This method sets a FIP to the LB management network port, which will
-        allow us afterwards to ssh the MASTER/SINGLE Amphora.
-        """
-        amphora = octavia.get_master_amphora(
-            amphorae=octavia.list_amphorae(
-                self.loadbalancer_stack.loadbalancer_id),
-            ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_port=self.listener_stack.lb_port,
-            lb_protocol=self.listener_stack.lb_protocol)
-        return neutron.ensure_floating_ip(
-            fixed_ip_address=amphora['lb_network_ip'],
-            device_id=amphora['compute_id'])

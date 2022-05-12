@@ -15,16 +15,20 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 from oslo_log import log
 
 import tobiko
 from tobiko import config
 from tobiko.openstack import heat
 from tobiko.openstack import octavia
+from tobiko.openstack import neutron
 from tobiko.openstack.stacks import _hot
 from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _ubuntu
 from tobiko.shell import sh
+from tobiko.shell import ssh
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)
@@ -59,7 +63,7 @@ class AmphoraIPv4LoadBalancerStack(heat.HeatStackFixture):
                                      timeout: tobiko.Seconds = None):
         octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
                                 status=octavia.ACTIVE,
-                                get_client=octavia.get_loadbalancer,
+                                get_client=octavia.get_load_balancer,
                                 object_id=self.loadbalancer_id,
                                 timeout=timeout)
 
@@ -67,7 +71,7 @@ class AmphoraIPv4LoadBalancerStack(heat.HeatStackFixture):
                                      timeout: tobiko.Seconds = None):
         octavia.wait_for_status(status_key=octavia.PROVISIONING_STATUS,
                                 status=octavia.PENDING_UPDATE,
-                                get_client=octavia.get_loadbalancer,
+                                get_client=octavia.get_load_balancer,
                                 object_id=self.loadbalancer_id,
                                 timeout=timeout)
 
@@ -229,6 +233,34 @@ class HttpRoundRobinAmphoraIpv4Listener(heat.HeatStackFixture):
     def get_member_address(self, server_stack):
         return str(server_stack.find_fixed_ip(ip_version=self.ip_version))
 
+    @property
+    def amphora(self) -> octavia.AmphoraType:
+        return octavia.get_master_amphora(
+            amphorae=octavia.list_amphorae(
+                self.loadbalancer.loadbalancer_id),
+            ip_address=self.loadbalancer.floating_ip_address,
+            port=self.lb_port,
+            protocol=self.lb_protocol)
+
+    _amphora_floating_ip_stack: typing.Optional[
+        'AmphoraFloatingIpStack'] = None
+
+    @property
+    def amphora_floating_ip(self) -> neutron.FloatingIpType:
+        if self._amphora_floating_ip_stack is None:
+            self._amphora_floating_ip_stack = AmphoraFloatingIpStack(
+                amphora=self.amphora)
+        return tobiko.setup_fixture(
+            self._amphora_floating_ip_stack).floating_ip_details
+
+    @property
+    def amphora_ssh_client(self) -> ssh.SSHClientType:
+        """Get an ssh_client and execute the command on the Amphora"""
+        floating_ip = self.amphora_floating_ip
+        return ssh.ssh_client(host=floating_ip['floating_ip_address'],
+                              username='cloud-user',
+                              connection_timeout=10)
+
 
 class HttpRoundRobinAmphoraIpv6Listener(HttpRoundRobinAmphoraIpv4Listener):
     ip_version = 6
@@ -274,3 +306,46 @@ class TcpSourceIpPortOvnIpv4Listener(HttpRoundRobinAmphoraIpv4Listener):
 
 class TcpSourceIpPortOvnIpv6Listener(TcpSourceIpPortOvnIpv4Listener):
     ip_version = 6
+
+
+class AmphoraFloatingIpStack(_neutron.FloatingIpStackFixture):
+
+    def __init__(self,
+                 amphora: octavia.AmphoraIdType = None,
+                 stack_name: str = None,
+                 network: neutron.NetworkIdType = None,
+                 neutron_client: neutron.NeutronClientType = None,
+                 octavia_client: octavia.OctaviaClientType = None):
+        super().__init__(stack_name=stack_name,
+                         network=network,
+                         neutron_client=neutron_client)
+        self._amphora = amphora
+        self._octavia_client = octavia_client
+
+    @property
+    def amphora(self) -> str:
+        return octavia.get_amphora_id(self.amphora_details)
+
+    @property
+    def amphora_details(self) -> octavia.AmphoraType:
+        if self._amphora is None:
+            raise ValueError('Amphora not specified')
+        if isinstance(self._amphora, str):
+            self._amphora = octavia.get_amphora(self._amphora)
+        assert isinstance(self._amphora, dict)
+        return self._amphora
+
+    def setup_stack_name(self) -> str:
+        stack_name = self.stack_name
+        if stack_name is None:
+            self.stack_name = stack_name = (
+                f"{self.fixture_name}-{self.amphora}")
+        return stack_name
+
+    @property
+    def fixed_ip_address(self) -> str:
+        return self.amphora_details['lb_network_ip']
+
+    @property
+    def device_id(self) -> typing.Optional[str]:
+        return self.amphora_details['compute_id']
