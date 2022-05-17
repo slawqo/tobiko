@@ -184,6 +184,9 @@ class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture,
     #: Glance image used to create a Nova server instance
     image_fixture = tobiko.required_fixture(UbuntuImageFixture)
 
+    # I expect Ubuntu based servers to be slow to boot
+    is_reachable_timeout = 900.
+
     # port of running HTTP server
     @property
     def http_port(self) -> int:
