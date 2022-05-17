@@ -20,7 +20,7 @@
       - openstack-python3-yoga-jobs
       - openstack-python3-yoga-jobs-arm64
       - publish-to-pypi
-      # - tobiko-docker
+      - tobiko-docker
       - tobiko-infrared
       - tobiko-tripleo
     vars:

@@ -37,6 +37,7 @@ FROM base as source
 
 # Install binary dependencies
 RUN ${INSTALL_PACKAGES} git
+RUN git config --global --add safe.directory "${TOBIKO_DIR}"
 
 ADD .gitignore \
     extra-requirements.txt \

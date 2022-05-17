@@ -98,7 +98,7 @@
     name: tobiko-docker-infrared
     description: |
       Run Tobiko InfraRed plugin inside of a Docker container
-    voting: true
+    voting: false
     parent: tobiko-docker-py3
     timeout: 3600
     vars:
