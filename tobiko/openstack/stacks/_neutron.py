@@ -175,22 +175,49 @@ def ensure_router_interface(subnet: neutron.SubnetIdType,
         router = get_router_id()
     router_id = neutron.get_router_id(router)
     subnet_id = neutron.get_subnet_id(subnet)
+    client = neutron.neutron_client(client)
     try:
-        return neutron.find_port(fixed_ips=f"subnet_id={subnet_id}",
-                                 device_id=router_id)
+        port = neutron.find_port(fixed_ips=f"subnet_id={subnet_id}",
+                                 device_id=router_id,
+                                 client=client)
     except tobiko.ObjectNotFound:
         pass
+    else:
+        port_dump = json.dumps(port, indent=4, sort_keys=True)
+        LOG.debug(f'Router interface already exist:\n{port_dump}')
+        return port
 
-    LOG.debug(f"Add router interface: subnet={subnet_id}")
-    subnet = neutron.ensure_subnet_gateway(subnet=subnet)
-    interface = neutron.add_router_interface(router=router,
-                                             subnet=subnet,
-                                             add_cleanup=False,
-                                             client=client)
+    subnet = neutron.ensure_subnet_gateway(subnet=subnet,
+                                           client=client)
+    gateway_ip = subnet['gateway_ip']
+    try:
+        port = neutron.find_port(fixed_ips=[f'ip_address={gateway_ip}'],
+                                 client=client)
+    except tobiko.ObjectNotFound:
+        LOG.info(f"Add router interface: subnet={subnet_id}")
+        interface = neutron.add_router_interface(router=router,
+                                                 subnet=subnet,
+                                                 add_cleanup=False,
+                                                 client=client)
+        port = neutron.find_port(fixed_ips=f"subnet_id={subnet_id}",
+                                 device_id=router_id)
+    else:
+        port_dump = json.dumps(port, indent=4, sort_keys=True)
+        LOG.debug(f'Port with gateway IP already exists:\n{port_dump}')
+        port = neutron.create_port(client=client,
+                                   network=subnet['network_id'],
+                                   add_cleanup=False)
+        interface = neutron.add_router_interface(router=router,
+                                                 port=port,
+                                                 add_cleanup=False,
+                                                 client=client)
+
     interface_dump = json.dumps(interface, sort_keys=True, indent=4)
-    LOG.info(f"Added router interface:\n{interface_dump}")
-    return neutron.find_port(fixed_ips=f"subnet_id={subnet_id}",
-                             device_id=router_id)
+    port_dump = json.dumps(port, indent=4, sort_keys=True)
+    LOG.info("Router interface added:\n"
+             f"{interface_dump}\n"
+             f"{port_dump}\n")
+    return port
 
 
 @neutron.skip_if_missing_networking_extensions('port-security')
