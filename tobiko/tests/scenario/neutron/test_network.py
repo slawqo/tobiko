@@ -14,6 +14,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import unittest
+
 import pytest
 import testtools
 
@@ -60,6 +62,7 @@ class NetworkTest(testtools.TestCase):
                          gateway['ha'])
 
 
+@unittest.skip("wip until added skipping around compute resets etc..")
 @pytest.mark.background
 @undercloud.skip_if_missing_undercloud
 class BackgroundProcessTest(NetworkTest):
