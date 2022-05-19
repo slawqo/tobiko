@@ -494,3 +494,9 @@ def check_ping_statistics(failure_limit=10):
                                     f'{ping_line["destination"]}')
             LOG.info(f'no failures in ping log file: {filename}')
             rename_ping_staistics_file_to_checked(filename)
+
+
+def skip_check_ping_statistics():
+    for filename in list(get_vm_ping_log_files()):
+        rename_ping_staistics_file_to_checked(filename)
+        LOG.info(f'skipping ping failures in ping log file: {filename}')

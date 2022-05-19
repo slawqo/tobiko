@@ -64,3 +64,4 @@ UNRECEIVED = _ping.UNRECEIVED
 PingStatistics = _statistics.PingStatistics
 write_ping_to_file = _ping.write_ping_to_file
 check_ping_statistics = _ping.check_ping_statistics
+skip_check_ping_statistics = _ping.skip_check_ping_statistics
