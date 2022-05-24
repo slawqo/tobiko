@@ -18,30 +18,39 @@ from __future__ import absolute_import
 import os
 import typing
 
+from oslo_log import log
+
 import tobiko
 from tobiko.shell import sh
 from tobiko.shell import ssh
+
+
+LOG = log.getLogger(__name__)
 
 
 class AnsiblePlaybook(tobiko.SharedFixture):
 
     def __init__(self,
                  command: sh.ShellCommandType = 'ansible-playbook',
-                 inventory_filename: str = None,
+                 inventory_filenames: typing.Iterable[str] = None,
                  playbook: str = 'main',
                  playbook_dirname: str = None,
                  ssh_client: ssh.SSHClientType = None,
-                 work_dir: str = None):
+                 work_dir: str = None,
+                 roles_path: typing.Iterable[str] = None):
         super(AnsiblePlaybook, self).__init__()
         self._command = sh.shell_command(command)
-        self._inventory_filename = inventory_filename
+        if inventory_filenames is None:
+            inventory_filenames = []
+        self._inventory_filenames = list(inventory_filenames)
         self._playbook = playbook
         self._playbook_dirname = playbook_dirname
+        self._roles_path = roles_path
         self._ssh_client = ssh_client
         self._work_dir = work_dir
         self._work_files: typing.Dict[str, str] = {}
 
-    def setup_fixture(self):
+    def get_inventory_file(self, inventory_filename: str):
         pass
 
     @property
@@ -68,13 +77,41 @@ class AnsiblePlaybook(tobiko.SharedFixture):
     def playbook_dirname(self) -> str:
         return tobiko.check_valid_type(self._playbook_dirname, str)
 
-    def _ensure_inventory_filename(self, inventory_filename: str = None) \
-            -> typing.Optional[str]:
-        if inventory_filename is None:
-            inventory_filename = self._inventory_filename
-        if inventory_filename is None:
-            return None
-        return self._ensure_work_file(inventory_filename, 'inventory')
+    @property
+    def roles_path(self) -> typing.List[str]:
+        roles_path = self._roles_path
+        if roles_path is None:
+            if roles_path is None:
+                roles_path = []
+            else:
+                roles_path = list(roles_path)
+            playbook_dirname = self._playbook_dirname
+            if playbook_dirname is not None:
+                playbook_roles_dir = os.path.join(playbook_dirname, 'roles')
+                roles_path = ([playbook_roles_dir] +
+                              roles_path +
+                              [playbook_dirname])
+            self._roles_path = roles_path
+        return list(roles_path)
+
+    def _ensure_inventory_files(self, *inventory_filenames: str) \
+            -> typing.List[str]:
+        filenames = list(inventory_filenames)
+        filenames.extend(self._inventory_filenames)
+        filenames.extend(tobiko.tobiko_config().ansible.inventory)
+        existing_filenames = []
+        for filename in sorted(filenames):
+            filename = tobiko.tobiko_config_path(filename)
+            if (filename not in existing_filenames and
+                    os.path.isfile(filename)):
+                existing_filenames.append(filename)
+        if existing_filenames:
+            self._ensure_work_files(*existing_filenames, sub_dir='inventory')
+            return [os.path.join(self.work_dir, 'inventory')]
+        dump_filenames = '  \n'.join(filenames)
+        LOG.warning("Any Ansible inventory file(s) found:\n"
+                    f"  {dump_filenames}\n")
+        return []
 
     def _get_playbook_filename(self,
                                basename: str = None,
@@ -85,10 +122,35 @@ class AnsiblePlaybook(tobiko.SharedFixture):
             dirname = self.playbook_dirname
         return os.path.join(dirname, basename)
 
-    def _ensure_playbook_files_files(self,
-                                     playbook_files: typing.Iterable[str],
-                                     sub_dir: str = None,
-                                     dirname: str = None) -> typing.List[str]:
+    def _ensure_roles(self, roles: typing.Iterable[str],
+                      dirname: str = None,
+                      roles_path: typing.Iterable[str] = None) \
+            -> typing.List[str]:
+        role_dirs = []
+        for role in roles:
+            if roles_path is None:
+                roles_path = self.roles_path
+            else:
+                roles_path = list(roles_path)
+            if dirname is not None:
+                dirname = os.path.realpath(dirname)
+                roles_path = ([os.path.join(dirname, 'roles')] +
+                              roles_path +
+                              [dirname])
+            for roles_dir in roles_path:
+                role_dir = os.path.join(roles_dir, role)
+                if os.path.isdir(role_dir):
+                    role_dirs.append(role_dir)
+                    break
+            else:
+                raise ValueError(
+                    f'Role {role} not found in directories {self.roles_path}')
+        return self._ensure_work_files(*role_dirs, sub_dir='roles')
+
+    def _ensure_playbook_files(self,
+                               playbook_files: typing.Iterable[str],
+                               sub_dir: str = None,
+                               dirname: str = None) -> typing.List[str]:
         work_filenames = []
         for playbook_file in playbook_files:
             filename = self._get_playbook_filename(basename=playbook_file,
@@ -117,6 +179,31 @@ class AnsiblePlaybook(tobiko.SharedFixture):
             self._work_files[filename] = work_filename
         return work_filename
 
+    def _ensure_work_files(self, *filenames: str, sub_dir: str = None) \
+            -> typing.List[str]:
+        missing_filenames = set()
+        work_filenames = set()
+        for filename in filenames:
+            filename = os.path.realpath(filename)
+            work_filename = self._work_files.get(filename)
+            if work_filename is None:
+                missing_filenames.add(filename)
+            else:
+                work_filenames.add(work_filename)
+        if missing_filenames:
+            if sub_dir is None:
+                work_dir = self.work_dir
+            else:
+                work_dir = os.path.join(self.work_dir, sub_dir)
+            self.sh_connection.put_files(*sorted(missing_filenames),
+                                         remote_dir=work_dir)
+            for filename in filenames:
+                work_filename = os.path.join(
+                    work_dir, os.path.basename(filename))
+                self._work_files[filename] = work_filename
+                work_filenames.add(work_filename)
+        return sorted(work_filenames)
+
     def cleanup_fixture(self):
         self._sh_connection = None
         self._work_files = None
@@ -129,8 +216,10 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                      playbook: str = None,
                      playbook_dirname: str = None,
                      playbook_filename: str = None,
-                     inventory_filename: str = None,
-                     playbook_files: typing.Iterable[str] = None) -> \
+                     inventory_filenames: typing.Iterable[str] = None,
+                     playbook_files: typing.Iterable[str] = None,
+                     roles: typing.Iterable[str] = None,
+                     roles_path: typing.Iterable[str] = None) -> \
             sh.ShellCommand:
         # ensure command
         if command is None:
@@ -138,22 +227,31 @@ class AnsiblePlaybook(tobiko.SharedFixture):
         assert isinstance(command, sh.ShellCommand)
 
         # ensure inventory
-        work_inventory_filename = self._ensure_inventory_filename(
-            inventory_filename)
-        if work_inventory_filename is not None:
-            command += ['-i', work_inventory_filename]
+        if inventory_filenames is None:
+            inventory_filenames = []
+
+        for inventory_work_file in self._ensure_inventory_files(*list(
+                inventory_filenames)):
+            command += ['-i', inventory_work_file]
 
         # ensure playbook file
         if playbook_filename is None:
             playbook_filename = self._get_playbook_filename(
                 basename=playbook, dirname=playbook_dirname)
-            playbook_dirname = os.path.dirname(playbook_filename)
+        else:
+            playbook_filename = os.path.realpath(playbook_filename)
+        playbook_dirname = os.path.dirname(playbook_filename)
         command += [self._ensure_work_file(playbook_filename)]
 
         if playbook_files is not None:
-            self._ensure_playbook_files_files(
-                playbook_files=playbook_files,
-                dirname=playbook_dirname)
+            self._ensure_playbook_files(playbook_files=playbook_files,
+                                        dirname=playbook_dirname)
+
+        if roles is not None:
+            self._ensure_roles(roles=roles,
+                               dirname=playbook_dirname,
+                               roles_path=roles_path)
+
         return command
 
     def run_playbook(self,
@@ -161,15 +259,19 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                      playbook: str = None,
                      playbook_dirname: str = None,
                      playbook_filename: str = None,
-                     inventory_filename: str = None,
-                     playbook_files: typing.Iterable[str] = None):
+                     inventory_filenames: typing.Iterable[str] = None,
+                     playbook_files: typing.Iterable[str] = None,
+                     roles: typing.Iterable[str] = None,
+                     roles_path: typing.Iterable[str] = None):
         tobiko.setup_fixture(self)
         command = self._get_command(command=command,
                                     playbook=playbook,
                                     playbook_dirname=playbook_dirname,
                                     playbook_filename=playbook_filename,
-                                    inventory_filename=inventory_filename,
-                                    playbook_files=playbook_files)
+                                    inventory_filenames=inventory_filenames,
+                                    playbook_files=playbook_files,
+                                    roles=roles,
+                                    roles_path=roles_path)
         return self.sh_connection.execute(command, current_dir=self.work_dir)
 
 
@@ -237,7 +339,10 @@ def run_playbook(command: sh.ShellCommand = None,
                  playbook: str = None,
                  playbook_dirname: str = None,
                  playbook_filename: str = None,
-                 inventory_filename: str = None,
+                 inventory_filenames: typing.Iterable[str] = None,
+                 playbook_files: typing.Iterable[str] = None,
+                 roles: typing.Iterable[str] = None,
+                 roles_path: typing.Iterable[str] = None,
                  ssh_client: ssh.SSHClientType = None,
                  manager: AnsiblePlaybookManager = None) \
         -> sh.ShellExecuteResult:
@@ -247,4 +352,7 @@ def run_playbook(command: sh.ShellCommand = None,
                             playbook=playbook,
                             playbook_dirname=playbook_dirname,
                             playbook_filename=playbook_filename,
-                            inventory_filename=inventory_filename)
+                            inventory_filenames=inventory_filenames,
+                            playbook_files=playbook_files,
+                            roles=roles,
+                            roles_path=roles_path)

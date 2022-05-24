@@ -1,6 +1,5 @@
 ---
 
 - hosts: all
-  tasks:
-    - name: 'Ping shiftstack hosts'
-      ping:
+  roles:
+    - ping

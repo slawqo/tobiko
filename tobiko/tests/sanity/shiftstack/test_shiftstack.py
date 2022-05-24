@@ -30,7 +30,8 @@ class OpenShiftTest(testtools.TestCase):
     def test_ping_all_hosts(self):
         tripleo.run_playbook_from_undercloud(
             playbook='ping-shiftstack.yaml',
-            playbook_dirname=PLAYBOOK_DIRNAME)
+            playbook_dirname=PLAYBOOK_DIRNAME,
+            roles=['ping'])
 
     def test_debug_vars(self):
         tripleo.run_playbook_from_undercloud(

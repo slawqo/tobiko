@@ -93,27 +93,36 @@ class UndercloudAnsiblePlaybook(ansible.AnsiblePlaybook):
         return _undercloud.undercloud_ssh_client()
 
     def setup_fixture(self):
-        self._inventory_filename = get_tripleo_ansible_inventory_file()
+        self._inventory_filenames.append(self.get_ansible_inventory_file())
         super(UndercloudAnsiblePlaybook, self).setup_fixture()
+
+    @staticmethod
+    def get_ansible_inventory_file() -> str:
+        return get_tripleo_ansible_inventory_file()
 
 
 def undercloud_ansible_playbook() -> UndercloudAnsiblePlaybook:
     return tobiko.get_fixture(UndercloudAnsiblePlaybook)
 
 
-def run_playbook_from_undercloud(command: sh.ShellCommand = None,
-                                 playbook: str = None,
-                                 playbook_dirname: str = None,
-                                 playbook_filename: str = None,
-                                 inventory_filename: str = None,
-                                 playbook_files: typing.Iterable[str] = None):
+def run_playbook_from_undercloud(
+        command: sh.ShellCommand = None,
+        playbook: str = None,
+        playbook_dirname: str = None,
+        playbook_filename: str = None,
+        inventory_filenames: typing.Iterable[str] = None,
+        playbook_files: typing.Iterable[str] = None,
+        roles: typing.Iterable[str] = None,
+        roles_path: typing.Iterable[str] = None):
     return undercloud_ansible_playbook().run_playbook(
         command=command,
         playbook=playbook,
         playbook_dirname=playbook_dirname,
         playbook_filename=playbook_filename,
-        inventory_filename=inventory_filename,
-        playbook_files=playbook_files)
+        inventory_filenames=inventory_filenames,
+        playbook_files=playbook_files,
+        roles=roles,
+        roles_path=roles_path)
 
 
 def setup_undercloud_ansible_playbook():
