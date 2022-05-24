@@ -166,6 +166,26 @@ class LocalShellConnectionTest(testtools.TestCase):
                             ssh_client=self.ssh_client).stdout
         self.assertEqual(text, output)
 
+    def test_put_files(self):
+        local_dir = self.local_connection.make_temp_dir()
+        local_file = os.path.join(local_dir, 'some_file')
+        remote_dir = self.connection.make_temp_dir()
+        remote_file = os.path.join(remote_dir,
+                                   os.path.basename(local_dir),
+                                   'some_file')
+        text = str(uuid.uuid4())
+        with io.open(local_file, 'wt') as fd:
+            fd.write(text)
+        self.assertRaises(sh.ShellCommandFailed,
+                          sh.execute, f"cat '{remote_file}'",
+                          ssh_client=self.ssh_client)
+        sh.put_files(local_dir,
+                     remote_dir=remote_dir,
+                     ssh_client=self.ssh_client)
+        output = sh.execute(f"cat '{remote_file}'",
+                            ssh_client=self.ssh_client).stdout
+        self.assertEqual(text, output)
+
 
 class SSHShellConnectionTest(LocalShellConnectionTest):
     connection_class = sh.SSHShellConnection

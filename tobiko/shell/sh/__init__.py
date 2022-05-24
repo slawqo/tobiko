@@ -52,6 +52,7 @@ shell_connection = _connection.shell_connection
 is_cirros_connection = _connection.is_cirros_connection
 is_local_connection = _connection.is_local_connection
 put_file = _connection.put_file
+put_files = _connection.put_files
 get_file = _connection.get_file
 make_temp_dir = _connection.make_temp_dir
 make_dirs = _connection.make_dirs

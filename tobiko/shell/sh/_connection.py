@@ -72,6 +72,14 @@ def put_file(local_file: str,
                                         remote_file=remote_file)
 
 
+def put_files(*local_files: str,
+              remote_dir: str,
+              ssh_client: ssh.SSHClientType = None) -> bool:
+    return shell_connection(
+        ssh_client=ssh_client).put_files(*local_files,
+                                         remote_dir=remote_dir)
+
+
 def make_temp_dir(ssh_client: ssh.SSHClientType = None,
                   auto_clean=True,
                   sudo: bool = None) -> str:
@@ -196,6 +204,37 @@ class ShellConnection(tobiko.SharedFixture):
 
     def put_file(self, local_file: str, remote_file: str):
         raise NotImplementedError
+
+    def put_files(self,
+                  *local_files: str,
+                  remote_dir: str,
+                  make_dirs=True):
+        # pylint: disable=redefined-outer-name
+        remote_dir = os.path.normpath(remote_dir)
+        put_files = {}
+        for local_file in local_files:
+            local_file = os.path.normpath(local_file)
+            if os.path.isdir(local_file):
+                top_dir = os.path.dirname(local_file)
+                for local_dir, _, files in os.walk(local_file):
+                    for filename in files:
+                        local_file = os.path.join(local_dir, filename)
+                        remote_file = os.path.join(
+                            remote_dir,
+                            os.path.relpath(local_file, start=top_dir))
+                        put_files[os.path.realpath(local_file)] = remote_file
+            else:
+                remote_file = os.path.join(
+                    remote_dir, os.path.basename(local_file))
+                put_files[os.path.realpath(local_file)] = remote_file
+        remote_dirs = set()
+        for local_file, remote_file in sorted(put_files.items()):
+            if make_dirs:
+                remote_dir = os.path.dirname(remote_file)
+                if remote_dir not in remote_dirs:
+                    self.make_dirs(remote_dir, exist_ok=True)
+                    remote_dirs.add(remote_dir)
+            self.put_file(local_file, remote_file)
 
     def get_file(self, remote_file: str, local_file: str):
         raise NotImplementedError
