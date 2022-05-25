@@ -23,10 +23,9 @@ from tobiko import tripleo
 PLAYBOOK_DIRNAME = os.path.join(os.path.dirname(__file__), 'playbooks')
 
 
-@tripleo.skip_if_missing_undercloud
+@tripleo.skip_if_missing_tripleo_ansible_inventory
 class OpenShiftTest(testtools.TestCase):
 
-    @tripleo.skip_if_missing_tripleo_ansible_inventory
     def test_ping_all_hosts(self):
         tripleo.run_playbook_from_undercloud(
             playbook='ping-shiftstack.yaml',

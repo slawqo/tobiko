@@ -13,20 +13,20 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.tripleo import _ansible as ansible
+from tobiko.tripleo import _ansible
 from tobiko.tripleo import _overcloud as overcloud
 from tobiko.tripleo import _topology as topology
 from tobiko.tripleo import _undercloud as undercloud
 
 
-get_tripleo_ansible_inventory = ansible.get_tripleo_ansible_inventory
+get_tripleo_ansible_inventory = _ansible.get_tripleo_ansible_inventory
 get_tripleo_ansible_inventory_file = \
-    ansible.get_tripleo_ansible_inventory_file
-has_tripleo_ansible_inventory = ansible.has_tripleo_ansible_inventory
-read_tripleo_ansible_inventory = ansible.read_tripleo_ansible_inventory
+    _ansible.get_tripleo_ansible_inventory_file
+has_tripleo_ansible_inventory = _ansible.has_tripleo_ansible_inventory
+read_tripleo_ansible_inventory = _ansible.read_tripleo_ansible_inventory
 skip_if_missing_tripleo_ansible_inventory = \
-    ansible.skip_if_missing_tripleo_ansible_inventory
-run_playbook_from_undercloud = ansible.run_playbook_from_undercloud
+    _ansible.skip_if_missing_tripleo_ansible_inventory
+run_playbook_from_undercloud = _ansible.run_playbook_from_undercloud
 
 find_overcloud_node = overcloud.find_overcloud_node
 list_overcloud_nodes = overcloud.list_overcloud_nodes

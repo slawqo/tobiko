@@ -98,7 +98,7 @@ class AnsiblePlaybook(tobiko.SharedFixture):
             -> typing.List[str]:
         filenames = list(inventory_filenames)
         filenames.extend(self._inventory_filenames)
-        filenames.extend(tobiko.tobiko_config().ansible.inventory)
+        filenames.extend(tobiko.tobiko_config().ansible.inventory_files)
         existing_filenames = []
         for filename in sorted(filenames):
             filename = tobiko.tobiko_config_path(filename)

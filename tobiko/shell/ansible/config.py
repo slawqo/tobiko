@@ -21,7 +21,7 @@ from oslo_config import cfg
 
 GROUP_NAME = 'ansible'
 OPTIONS = [
-    cfg.ListOpt('inventory',
+    cfg.ListOpt('inventory_files',
                 default=['/etc/ansible/hosts'],
                 help="Default Ansible inventory files"),
 ]

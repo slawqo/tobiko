@@ -45,8 +45,8 @@ tobiko.conf
 .infrared
 workspace.tgz
 
-# Tripleo files
-tripleo-hosts.yaml
+# Ansible files
+.ansible/
 
 # Report files
 tobiko_results*

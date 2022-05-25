@@ -59,7 +59,7 @@ OPTIONS = [
 
     # Other options
     cfg.StrOpt('inventory_file',
-               default='tripleo-hosts.yaml',
+               default='.ansible/inventory/tripleo.yaml',
                help="path to where to export tripleo inventory file"),
 
 ]
@@ -75,10 +75,10 @@ def list_options():
 
 def setup_tobiko_config(conf):
     # pylint: disable=unused-argument
-    from tobiko.tripleo import ansible
+    from tobiko.tripleo import _ansible
     from tobiko.tripleo import overcloud
     from tobiko.tripleo import topology
 
-    ansible.setup_undercloud_ansible_playbook()
+    _ansible.setup_undercloud_ansible_playbook()
     overcloud.setup_overcloud_keystone_crederntials()
     topology.setup_tripleo_topology()
