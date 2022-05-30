@@ -177,10 +177,9 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         self._skip_if_not_active_standby()
 
-        sh.stop_systemd_unit(
-            unit='octavia-keepalived',
-            ssh_client=self.amphora_ssh_client,
-            sudo=True)
+        sh.stop_systemd_units('octavia-keepalived',
+                              ssh_client=self.amphora_ssh_client,
+                              sudo=True)
 
         self._wait_for_failover_and_test_functionality()
 
@@ -195,14 +194,9 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         self._skip_if_not_active_standby()
 
-        haproxy_service = sh.list_systemd_units(
-            'haproxy-*',
-            ssh_client=self.amphora_ssh_client)
-
-        sh.stop_systemd_unit(
-            unit=haproxy_service,
-            ssh_client=self.amphora_ssh_client,
-            sudo=True)
+        sh.stop_systemd_units('haproxy-*',
+                              ssh_client=self.amphora_ssh_client,
+                              sudo=True)
 
         self._wait_for_failover_and_test_functionality()
 

@@ -43,8 +43,23 @@ class SystemdUnit(typing.NamedTuple):
 IS_WORD_PATTERN = re.compile(r'\S+')
 
 
+SystemdUnitType = typing.Union[str, SystemdUnit]
+
+
+def get_systemd_unit_names(*units: SystemdUnitType) -> tobiko.Selection[str]:
+    return tobiko.select(get_systemd_unit_name(unit)
+                         for unit in units)
+
+
+def get_systemd_unit_name(unit: SystemdUnitType) -> str:
+    if isinstance(unit, str):
+        return unit
+    else:
+        return tobiko.check_valid_type(unit, SystemdUnit).unit
+
+
 def systemctl_command(command: str,
-                      *units: str,
+                      *units: SystemdUnitType,
                       all: bool = None,
                       no_pager: bool = None,
                       plain: bool = None,
@@ -63,23 +78,27 @@ def systemctl_command(command: str,
     if type is not None:
         command_line += f'-t "{type}"'
     if units:
-        command_line += units
+        command_line += get_systemd_unit_names(*units)
     return command_line
 
 
-def list_systemd_units(*pattern: str,
+def list_systemd_units(*units: SystemdUnitType,
                        all: bool = None,
                        state: str = None,
                        type: str = None,
                        ssh_client: ssh.SSHClientType = None,
                        sudo: bool = None) \
         -> tobiko.Selection[SystemdUnit]:
-    command = systemctl_command('list-units', *pattern, all=all,
+    command = systemctl_command('list-units', *units, all=all,
                                 no_pager=True, plain=True, state=state,
                                 type=type)
     output = _execute.execute(command,
                               ssh_client=ssh_client,
                               sudo=sudo).stdout
+    result = tobiko.Selection[SystemdUnit]()
+    if output.startswith('0 loaded units listed.'):
+        return result
+
     table_lines = iter(output.splitlines())
     first_line = next(table_lines)
     search_pos = 0
@@ -94,7 +113,6 @@ def list_systemd_units(*pattern: str,
         search_pos = match.end()
     ends: typing.List[int] = list(starts[1:]) + [-1]
 
-    units = tobiko.Selection[SystemdUnit]()
     for line in table_lines:
         message = line.strip()
         if not message:
@@ -107,30 +125,30 @@ def list_systemd_units(*pattern: str,
         data: typing.Dict[str, str] = {}
         for name, start, end in zip(names, starts, ends):
             data[name] = line[start:end].strip()
-        units.append(SystemdUnit(unit=data.get('unit', ''),
-                                 load=data.get('load', ''),
-                                 active=data.get('active', ''),
-                                 sub=data.get('sub', ''),
-                                 description=data.get('description', ''),
-                                 data=data))
-    return units
+        result.append(SystemdUnit(unit=data.get('unit', ''),
+                                  load=data.get('load', ''),
+                                  active=data.get('active', ''),
+                                  sub=data.get('sub', ''),
+                                  description=data.get('description', ''),
+                                  data=data))
+    return result
 
 
-def stop_systemd_unit(unit,
-                      ssh_client: ssh.SSHClientType = None,
-                      sudo: bool = None):
-    command = systemctl_command('stop', unit)
-    return _execute.execute(command, ssh_client=ssh_client, sudo=sudo)
-
-
-def start_systemd_unit(unit,
+def stop_systemd_units(*units: SystemdUnitType,
                        ssh_client: ssh.SSHClientType = None,
                        sudo: bool = None):
-    command = systemctl_command('start', unit)
-    return _execute.execute(command, ssh_client=ssh_client, sudo=sudo)
+    command = systemctl_command('stop', *units)
+    _execute.execute(command, ssh_client=ssh_client, sudo=sudo)
 
 
-def wait_for_active_systemd_units(*pattern: str,
+def start_systemd_units(*units: SystemdUnitType,
+                        ssh_client: ssh.SSHClientType = None,
+                        sudo: bool = None):
+    command = systemctl_command('start', *units)
+    _execute.execute(command, ssh_client=ssh_client, sudo=sudo)
+
+
+def wait_for_active_systemd_units(*units: SystemdUnitType,
                                   state: str = None,
                                   type: str = None,
                                   timeout: tobiko.Seconds = None,
@@ -139,7 +157,7 @@ def wait_for_active_systemd_units(*pattern: str,
                                   sudo: bool = None) \
         -> tobiko.Selection[SystemdUnit]:
     return wait_for_systemd_units_state(match_unit_state(active='ACTIVE'),
-                                        *pattern,
+                                        *units,
                                         state=state,
                                         type=type,
                                         timeout=timeout,
@@ -159,8 +177,7 @@ def compile_pattern(pattern: typing.Optional[PatternType]) \
         return MATCH_ALL
     elif isinstance(pattern, str):
         return re.compile(pattern, re.IGNORECASE)
-    tobiko.check_valid_type(pattern, Pattern)
-    return pattern
+    return tobiko.check_valid_type(pattern, Pattern)
 
 
 class MatchUnitState(typing.NamedTuple):
@@ -201,7 +218,7 @@ def match_unit_state(load: PatternType = None,
 
 def wait_for_systemd_units_state(
         match_unit: typing.Callable[[SystemdUnit], bool],
-        *pattern: str,
+        *units: SystemdUnitType,
         state: str = None,
         type: str = None,
         ssh_client: ssh.SSHClientType = None,
@@ -210,37 +227,37 @@ def wait_for_systemd_units_state(
         timeout: tobiko.Seconds = None,
         interval: tobiko.Seconds = None) \
         -> tobiko.Selection[SystemdUnit]:
+    missing_units = tobiko.select(units)
     all_units: typing.Dict[str, SystemdUnit] = collections.OrderedDict()
-    bad_units = tobiko.Selection[SystemdUnit]()
     for attempt in tobiko.retry(timeout=timeout,
                                 interval=interval,
                                 default_timeout=30.,
                                 default_interval=5.):
-        units = list_systemd_units(*pattern,
-                                   all=True,
-                                   state=state,
-                                   type=type,
-                                   ssh_client=ssh_client,
-                                   sudo=sudo)
-        assert units
-        all_units.update((unit.unit, unit) for unit in units)
+        actual_units = list_systemd_units(*missing_units,
+                                          all=True,
+                                          state=state,
+                                          type=type,
+                                          ssh_client=ssh_client,
+                                          sudo=sudo)
 
-        bad_units = units.select(match_unit, expect=False)
-        if not bad_units:
+        all_units.update((unit.unit, unit) for unit in actual_units)
+        missing_units = typing.cast(
+            tobiko.Selection[SystemdUnitType],
+            actual_units.select(match_unit, expect=False))
+        if not missing_units:
             break
 
         LOG.info('Systemd unit(s) still on unexpected state:'
                  f' expected: ({match_unit})...:\n'
                  '  actual: \n'
-                 '\n'.join(f'    - {u}' for u in bad_units))
+                 '\n'.join(f'    - {u}' for u in missing_units))
         if attempt.is_last:
             break
-        pattern = tuple(u.unit for u in bad_units)
 
     if check:
-        if bad_units:
+        if missing_units:
             raise UnexpectedSystemctlUnitState(matcher=match_unit,
-                                               units=bad_units)
+                                               units=missing_units)
     return tobiko.Selection(all_units.values())
 
 
