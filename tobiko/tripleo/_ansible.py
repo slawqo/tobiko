@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import functools
 import io
 import os
 import typing
@@ -33,7 +34,7 @@ def get_tripleo_ansible_inventory():
 
 def has_tripleo_ansible_inventory() -> bool:
     inventory_file = get_tripleo_ansible_inventory_file()
-    return bool(inventory_file)
+    return inventory_file is not None
 
 
 skip_if_missing_tripleo_ansible_inventory = \
@@ -41,11 +42,14 @@ skip_if_missing_tripleo_ansible_inventory = \
                        has_tripleo_ansible_inventory)
 
 
+@functools.lru_cache()
 def get_tripleo_ansible_inventory_file() -> typing.Optional[str]:
     if _undercloud.has_undercloud():
         inventory_file = _config.get_tripleo_config().inventory_file
         if inventory_file:
-            return tobiko.tobiko_config_path(inventory_file)
+            inventory_file = tobiko.tobiko_config_path(inventory_file)
+            fetch_tripleo_inventary_file(inventory_file=inventory_file)
+            return inventory_file
     return None
 
 
@@ -76,7 +80,7 @@ def read_tripleo_ansible_inventory():
     return sh.execute('/bin/bash', stdin=script, ssh_client=ssh_client).stdout
 
 
-def create_tripleo_inventary_file(inventory_file: str):
+def fetch_tripleo_inventary_file(inventory_file: str):
     content = read_tripleo_ansible_inventory()
     tobiko.makedirs(os.path.dirname(inventory_file))
     with io.open(inventory_file, 'w') as fd:
@@ -93,8 +97,6 @@ class UndercloudAnsiblePlaybook(ansible.AnsiblePlaybook):
             -> typing.List[str]:
         inventory_file = get_tripleo_ansible_inventory_file()
         if inventory_file is not None:
-            if not os.path.isfile(inventory_file):
-                create_tripleo_inventary_file(inventory_file=inventory_file)
             inventory_filenames += (inventory_file,)
         return super()._ensure_inventory_files(*inventory_filenames)
 
