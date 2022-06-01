@@ -1,9 +1,21 @@
 ---
 
 test_workflow_steps:
+  - tox_description: 'run sanity test cases before disruptive tests'
+    tox_envlist: sanity
+    tox_step_name: before
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: no
+
   - tox_description: 'run disruptive test cases'
     tox_envlist: faults
     tox_step_name: faults
+
+  - tox_description: 'run sanity test cases after disruptive tests'
+    tox_envlist: sanity
+    tox_step_name: after
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: no
 
   - tox_description: 'verify workload resources'
     tox_envlist: scenario
