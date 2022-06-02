@@ -14,6 +14,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 import pytest
 from oslo_log import log
 import testtools
@@ -22,6 +24,7 @@ import tobiko
 from tobiko import config
 from tobiko.shell import ping
 from tobiko.shell import ip
+from tobiko.shell import ssh
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.openstack import topology
@@ -143,34 +146,73 @@ class L3HARouterTest(RouterTest):
                 backup_agent['host'], state="backup")
 
 
-class NetworkWithNoServersStack(stacks.NetworkStackFixture):
-    pass
+class DistributedRouterStackFixture(stacks.RouterStackFixture):
+    distributed = True
 
 
-@neutron.skip_unless_is_ovs()
-class DVRTest(testtools.TestCase):
+@pytest.mark.ovn_migration
+class RouterNamespaceTest(testtools.TestCase):
 
-    router_stack = tobiko.required_fixture(NetworkWithNoServersStack)
-    server_stack = tobiko.required_fixture(
-            stacks.CirrosServerStackFixture)
+    server_stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
+    distributed_router_stack = (
+        tobiko.required_fixture(DistributedRouterStackFixture))
 
-    def setUp(self):
-        super(DVRTest, self).setUp()
-        if not self.router_stack.gateway_details.get('distributed'):
-            tobiko.skip_test('No DVR enabled')
+    @neutron.skip_unless_is_ovn()
+    def test_router_namespace_on_ovn(self):
+        """Check router namespace is being created on compute host
 
-    def test_router_not_created_on_compute_if_no_instance_connected(self):
-        '''Test that no router namespace is created for DVR on compute node
+        When A VM running in a compute node is expected to route
+        packages to a router, a network namespace is expected to exist on
+        compute name that is named after the router ID
+        """
+        router = self.server_stack.network_stack.gateway_details
+        self.assert_has_not_router_namespace(router=router)
 
-        Namespace should be only created if there is VM with router that is set
-        as a default gateway. Need to verify that there will be no namespace
-        created on the compute node where VM is connected to the external
-        network. The same network is used as the default gateway for the router
-        '''
+    @neutron.skip_unless_is_ovs()
+    def test_router_namespace_on_ovs(self):
+        """Check router namespace is being created on compute host
 
-        router_namespace = f'qrouter-{self.router_stack.gateway_details["id"]}'
-        cirros_hypervisor = topology.get_openstack_node(
-                hostname=self.server_stack.hypervisor_host)
-        namespaces = ip.list_network_namespaces(
-            ssh_client=cirros_hypervisor.ssh_client)
-        self.assertNotIn(router_namespace, namespaces)
+        When A VM running in a compute node is expected to route
+        packages to a router, a network namespace is expected to exist on
+        compute name that is named after the router ID
+        """
+        router = self.server_stack.network_stack.gateway_details
+        self.assert_has_router_namespace(router=router)
+
+    @neutron.skip_unless_is_ovs()
+    @neutron.skip_if_missing_networking_extensions('dvr')
+    def test_distributed_router_namespace(self):
+        """Test that no router namespace is created for DVR on compute node
+
+        When A VM running in a compute node is not expected to route
+        packages to a given router, a network namespace is not expected to
+        exist on compute name that is named after the router ID
+        """
+        router = self.distributed_router_stack.router_details
+        self.assertTrue(router['distributed'])
+        self.assert_has_not_router_namespace(router=router)
+
+    def assert_has_router_namespace(self, router: neutron.RouterType):
+        router_namespace = f"qrouter-{router['id']}"
+        self.assertIn(router_namespace,
+                      self.list_network_namespaces(),
+                      "No such router network namespace on hypervisor host")
+
+    def assert_has_not_router_namespace(self, router: neutron.RouterType):
+        router_namespace = f"qrouter-{router['id']}"
+        self.assertNotIn(router_namespace,
+                         self.list_network_namespaces(),
+                         "Router network namespace found on hypervisor host")
+
+    @property
+    def hypervisor_ssh_client(self) -> ssh.SSHClientFixture:
+        # Check the VM can reach a working gateway
+        ping.assert_reachable_hosts([self.server_stack.ip_address])
+        # List namespaces on hypervisor node
+        hypervisor = topology.get_openstack_node(
+            hostname=self.server_stack.hypervisor_host)
+        return hypervisor.ssh_client
+
+    def list_network_namespaces(self) -> typing.List[str]:
+        return ip.list_network_namespaces(
+            ssh_client=self.hypervisor_ssh_client)

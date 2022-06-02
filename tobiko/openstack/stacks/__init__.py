@@ -64,13 +64,13 @@ L3haPeerServerStackFixture = _l3ha.L3haPeerServerStackFixture
 L3haDifferentHostServerStackFixture = _l3ha.L3haDifferentHostServerStackFixture
 L3haSameHostServerStackFixture = _l3ha.L3haSameHostServerStackFixture
 
+FloatingIpStackFixture = _neutron.FloatingIpStackFixture
 NetworkStackFixture = _neutron.NetworkStackFixture
-RouterInterfaceStackFixture = _neutron.RouterInterfaceStackFixture
-RouterStackFixture = _neutron.RouterStackFixture
 NetworkWithNetMtuWriteStackFixture = (
     _neutron.NetworkWithNetMtuWriteStackFixture)
+RouterInterfaceStackFixture = _neutron.RouterInterfaceStackFixture
+RouterStackFixture = _neutron.RouterStackFixture
 SecurityGroupsFixture = _neutron.SecurityGroupsFixture
-FloatingIpStackFixture = _neutron.FloatingIpStackFixture
 get_external_network = _neutron.get_external_network
 has_external_network = _neutron.has_external_network
 skip_unless_has_external_network = _neutron.skip_unless_has_external_network

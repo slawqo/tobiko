@@ -112,13 +112,21 @@ class ExternalNetworkStackFixture(heat.HeatStackFixture):
         """Whenever can obtain gateway router HA value"""
         return neutron.has_networking_extensions('l3-ha')
 
+    @property
+    def has_dvr(self):
+        """Whenever to require a distributed router"""
+        return neutron.has_networking_extensions('dvr')
+
     ha = False
+    distributed: typing.Optional[bool] = None
 
     @property
     def router_value_specs(self) -> typing.Dict[str, typing.Any]:
         value_specs: typing.Dict[str, typing.Any] = {}
         if self.has_l3_ha:
             value_specs.update(ha=bool(self.ha))
+        if self.distributed is not None and self.has_dvr:
+            value_specs.update(distributed=bool(self.distributed))
         return value_specs
 
     @property
@@ -142,6 +150,8 @@ class RouterStackFixture(ExternalNetworkStackFixture):
         return tobiko.tobiko_config().neutron.floating_network
 
     subnet_enable_dhcp = None
+
+    distributed: typing.Optional[bool] = None
 
     @property
     def create_router(self) -> bool:
