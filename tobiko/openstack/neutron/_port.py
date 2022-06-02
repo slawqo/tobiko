@@ -92,10 +92,31 @@ def delete_port(port: PortIdType,
         raise NoSuchPort(id=port_id) from ex
 
 
+DeviceType = typing.Dict[str, typing.Any]
+DeviceIdType = typing.Union[str, DeviceType]
+
+
 def list_ports(client: _client.NeutronClientType = None,
+               device: DeviceIdType = None,
+               network: _network.NetworkIdType = None,
+               subnet: _subnet.SubnetIdType = None,
                **params) -> tobiko.Selection[PortType]:
+    if device is not None:
+        params.setdefault('device_id', get_device_id(device))
+    if network is not None:
+        params.setdefault('network_id', _network.get_network_id(network))
+    if subnet is not None:
+        subnet_id = _subnet.get_subnet_id(subnet)
+        params.setdefault('fixed_ips', f'subnet_id={subnet_id}')
     ports = _client.neutron_client(client).list_ports(**params)['ports']
     return tobiko.select(ports)
+
+
+def get_device_id(device: DeviceIdType) -> str:
+    if isinstance(device, str):
+        return device
+    else:
+        return device['id']
 
 
 def find_port(client: _client.NeutronClientType = None,

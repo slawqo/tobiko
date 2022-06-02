@@ -19,7 +19,6 @@ import netaddr
 
 import tobiko
 from tobiko.openstack.neutron import _client
-from tobiko.openstack.neutron import _subnet
 
 
 NetworkType = typing.Dict[str, typing.Any]
@@ -101,6 +100,7 @@ def delete_network(network: NetworkIdType,
 def list_network_nameservers(network_id: typing.Optional[str] = None,
                              ip_version: typing.Optional[int] = None) -> \
         tobiko.Selection[netaddr.IPAddress]:
+    from tobiko.openstack.neutron import _subnet
     subnets = _subnet.list_subnets(network_id=network_id)
     nameservers = tobiko.Selection[netaddr.IPAddress](
         netaddr.IPAddress(nameserver)

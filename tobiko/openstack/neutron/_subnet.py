@@ -21,6 +21,7 @@ import netaddr
 import tobiko
 from tobiko.openstack.neutron import _client
 from tobiko.openstack.neutron import _network
+from tobiko.openstack.neutron import _cidr
 
 
 SubnetType = typing.Dict[str, typing.Any]
@@ -48,6 +49,8 @@ def get_subnet(subnet: SubnetIdType,
 def create_subnet(client: _client.NeutronClientType = None,
                   network: _network.NetworkIdType = None,
                   add_cleanup=True,
+                  ip_version=4,
+                  cidr: str = None,
                   **params) -> SubnetType:
     if 'network_id' not in params:
         if network is None:
@@ -57,6 +60,15 @@ def create_subnet(client: _client.NeutronClientType = None,
         else:
             network_id = _network.get_network_id(network)
         params['network_id'] = network_id
+    params['ip_version'] = ip_version
+    if cidr is None:
+        if ip_version == 4:
+            cidr = _cidr.new_ipv4_cidr()
+        elif ip_version == 6:
+            cidr = _cidr.new_ipv6_cidr()
+        else:
+            raise ValueError(f'Invalid ip version: {ip_version}')
+    params['cidr'] = cidr
     subnet = _client.neutron_client(client).create_subnet(
         body={'subnet': params})['subnet']
     if add_cleanup:
@@ -83,19 +95,16 @@ def delete_subnet(subnet: SubnetIdType,
 
 def list_subnets(client: _client.NeutronClientType = None,
                  ip_version: int = None,
+                 network: _network.NetworkIdType = None,
                  **params) -> tobiko.Selection[SubnetType]:
     if ip_version is not None:
         params['ip_version'] = ip_version
+    if network is not None:
+        params.setdefault('network_id', _network.get_network_id(network))
     subnets = _client.neutron_client(client).list_subnets(**params)
     if isinstance(subnets, abc.Mapping):
         subnets = subnets['subnets']
     return tobiko.select(subnets)
-
-
-def list_subnet_cidrs(client: _client.NeutronClientType = None,
-                      **params) -> tobiko.Selection[netaddr.IPNetwork]:
-    return tobiko.select(netaddr.IPNetwork(subnet['cidr'])
-                         for subnet in list_subnets(client=client, **params))
 
 
 def find_subnet(client: _client.NeutronClientType = None,

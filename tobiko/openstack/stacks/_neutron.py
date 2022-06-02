@@ -51,7 +51,7 @@ class ExternalNetworkStackFixture(heat.HeatStackFixture):
     def external_network(self) -> typing.Optional[neutron.NetworkType]:
         external_network = self._external_network
         if external_network is None:
-            subnet_parameters = {}
+            subnet_parameters: typing.Dict[str, typing.Any] = {}
             if self.subnet_enable_dhcp is not None:
                 subnet_parameters['enable_dhcp'] = self.subnet_enable_dhcp
             for network in list_external_networks(name=self.external_name):

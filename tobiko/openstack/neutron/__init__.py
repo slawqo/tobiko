@@ -56,6 +56,7 @@ get_neutron_client = _client.get_neutron_client
 
 new_ipv4_cidr = _cidr.new_ipv4_cidr
 new_ipv6_cidr = _cidr.new_ipv6_cidr
+list_subnet_cidrs = _cidr.list_subnet_cidrs
 
 get_networking_extensions = _extension.get_networking_extensions
 missing_networking_extensions = _extension.missing_networking_extensions
@@ -123,7 +124,6 @@ get_subnet = _subnet.get_subnet
 get_subnet_id = _subnet.get_subnet_id
 find_subnet = _subnet.find_subnet
 list_subnets = _subnet.list_subnets
-list_subnet_cidrs = _subnet.list_subnet_cidrs
 SubnetType = _subnet.SubnetType
 SubnetIdType = _subnet.SubnetIdType
 NoSuchSubnet = _subnet.NoSuchSubnet

@@ -22,7 +22,6 @@ from netaddr.strategy import ipv6
 
 import tobiko
 from tobiko.openstack.neutron import _client
-from tobiko.openstack.neutron import _subnet
 
 
 def new_ipv4_cidr(seed=None):
@@ -63,7 +62,7 @@ class CIDRGeneratorFixture(tobiko.SharedFixture):
         self.client = _client.neutron_client(self.client)
 
     def new_cidr(self, seed):
-        used_cidrs = set(_subnet.list_subnet_cidrs(client=self.client))
+        used_cidrs = set(list_subnet_cidrs(client=self.client))
         for cidr in random_subnets(cidr=self.cidr, prefixlen=self.prefixlen,
                                    seed=seed):
             if cidr not in used_cidrs:
@@ -133,3 +132,11 @@ def random_subnets(cidr, prefixlen, seed=None):
         subnet.prefixlen = prefixlen
         i += 1
         yield subnet
+
+
+def list_subnet_cidrs(client: _client.NeutronClientType = None,
+                      **params) -> tobiko.Selection[netaddr.IPNetwork]:
+    from tobiko.openstack.neutron import _subnet
+    subnets = _subnet.list_subnets(client=client, **params)
+    return tobiko.select(netaddr.IPNetwork(subnet['cidr'])
+                         for subnet in subnets)
