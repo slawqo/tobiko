@@ -155,8 +155,10 @@ class RouterStackFixture(ExternalNetworkStackFixture):
         return requirements
 
     def ensure_router_interface(self,
-                                subnet: neutron.SubnetIdType):
-        ensure_router_interface(subnet=subnet,
+                                subnet: neutron.SubnetIdType = None,
+                                network: neutron.NetworkIdType = None):
+        ensure_router_interface(network=network,
+                                subnet=subnet,
                                 router=self.router_id,
                                 client=self.neutron_client)
 
@@ -167,18 +169,21 @@ class RouterStackFixture(ExternalNetworkStackFixture):
         return self._neutron_client
 
 
-def ensure_router_interface(subnet: neutron.SubnetIdType,
-                            router: neutron.RouterIdType = None,
-                            client: neutron.NeutronClientType = None) \
-        -> neutron.PortType:
+def ensure_router_interface(
+        router: neutron.RouterIdType = None,
+        subnet: neutron.SubnetIdType = None,
+        network: neutron.NetworkIdType = None,
+        client: neutron.NeutronClientType = None,
+        add_cleanup=False) -> neutron.PortType:
+    client = neutron.neutron_client(client)
     if router is None:
         router = get_router_id()
-    router_id = neutron.get_router_id(router)
-    subnet_id = neutron.get_subnet_id(subnet)
-    client = neutron.neutron_client(client)
+    if subnet is None and network is None:
+        raise ValueError('Must specify a network or a subnet')
     try:
-        port = neutron.find_port(fixed_ips=f"subnet_id={subnet_id}",
-                                 device_id=router_id,
+        port = neutron.find_port(network=network,
+                                 device=router,
+                                 subnet=subnet,
                                  client=client)
     except tobiko.ObjectNotFound:
         pass
@@ -187,37 +192,44 @@ def ensure_router_interface(subnet: neutron.SubnetIdType,
         LOG.debug(f'Router interface already exist:\n{port_dump}')
         return port
 
-    subnet = neutron.ensure_subnet_gateway(subnet=subnet,
-                                           client=client)
-    gateway_ip = subnet['gateway_ip']
-    try:
-        port = neutron.find_port(fixed_ips=[f'ip_address={gateway_ip}'],
-                                 client=client)
-    except tobiko.ObjectNotFound:
-        LOG.info(f"Add router interface: subnet={subnet_id}")
-        interface = neutron.add_router_interface(router=router,
-                                                 subnet=subnet,
-                                                 add_cleanup=False,
-                                                 client=client)
-        port = neutron.find_port(fixed_ips=f"subnet_id={subnet_id}",
-                                 device_id=router_id)
+    if subnet is None:
+        assert network is not None
+        LOG.info("Add router interface to network "
+                 f"{neutron.get_network_id(network)}")
+        for _subnet in neutron.list_subnets(network=network,
+                                            client=client):
+            neutron.ensure_subnet_gateway(subnet=_subnet,
+                                          client=client)
     else:
-        port_dump = json.dumps(port, indent=4, sort_keys=True)
-        LOG.debug(f'Port with gateway IP already exists:\n{port_dump}')
-        port = neutron.create_port(client=client,
-                                   network=subnet['network_id'],
-                                   add_cleanup=False)
-        interface = neutron.add_router_interface(router=router,
-                                                 port=port,
-                                                 add_cleanup=False,
-                                                 client=client)
+        subnet = neutron.ensure_subnet_gateway(subnet=subnet,
+                                               client=client)
+        gateway_ip = subnet['gateway_ip']
+        try:
+            port = neutron.find_port(fixed_ips=[f'ip_address={gateway_ip}'],
+                                     client=client)
+        except tobiko.ObjectNotFound:
+            LOG.info("Add router interface to subnet "
+                     f"{neutron.get_subnet_id(subnet)}")
+        else:
+            # it must force router to bind new network port because subnet
+            # gateway IP address is already being used
+            port_dump = json.dumps(port, indent=4, sort_keys=True)
+            LOG.debug(f'Port with gateway IP already exists:\n{port_dump}')
+            if network is None:
+                network = subnet['network_id']
+            subnet = None
+            LOG.info("Add router interface to network "
+                     f"{neutron.get_network_id(network)}")
 
-    interface_dump = json.dumps(interface, sort_keys=True, indent=4)
-    port_dump = json.dumps(port, indent=4, sort_keys=True)
-    LOG.info("Router interface added:\n"
-             f"{interface_dump}\n"
-             f"{port_dump}\n")
-    return port
+    stack = RouterInterfaceStackFixture(router=router,
+                                        subnet=subnet,
+                                        network=network,
+                                        neutron_client=client)
+    if add_cleanup:
+        tobiko.use_fixture(stack)
+    else:
+        tobiko.setup_fixture(stack)
+    return stack.port_details
 
 
 @neutron.skip_if_missing_networking_extensions('port-security')
@@ -668,4 +680,101 @@ class FloatingIpStackFixture(heat.HeatStackFixture):
     def neutron_client(self) -> neutron.NeutronClientType:
         if self._neutron_client is None:
             self._neutron_client = self.router_stack.neutron_client
+        return self._neutron_client
+
+
+class RouterInterfaceStackFixture(heat.HeatStackFixture):
+
+    #: Heat template file
+    template = _hot.heat_template_file('neutron/router_interface.yaml')
+
+    def __init__(self,
+                 stack_name: str = None,
+                 router: neutron.RouterIdType = None,
+                 network: neutron.NetworkIdType = None,
+                 subnet: neutron.SubnetIdType = None,
+                 neutron_client: neutron.NeutronClientType = None):
+        self._router = router
+        self._network = network
+        self._subnet = subnet
+        self._neutron_client = neutron_client
+        super().__init__(stack_name=stack_name)
+
+    @property
+    def router(self) -> str:
+        if self._router is None:
+            self._router = get_router_id()
+        return neutron.get_router_id(self._router)
+
+    @property
+    def router_details(self) -> neutron.RouterType:
+        if self._router is None or isinstance(self._router, str):
+            self._router = neutron.get_router(self.router,
+                                              client=self.neutron_client)
+        return self._router
+
+    @property
+    def network(self) -> str:
+        if self._network is None:
+            subnet = self.subnet_details
+            if subnet is None:
+                raise ValueError('Must specify at least network or subnet')
+            self._network = subnet['network_id']
+        return neutron.get_network_id(self._network)
+
+    @property
+    def network_details(self) -> neutron.NetworkType:
+        if self._network is None or isinstance(self._network, str):
+            self._network = neutron.get_network(self.network,
+                                                client=self.neutron_client)
+        return self._network
+
+    @property
+    def subnet(self) -> typing.Optional[str]:
+        if self._subnet is None:
+            return None
+        else:
+            return neutron.get_subnet_id(self._subnet)
+
+    @property
+    def subnet_details(self) -> typing.Optional[neutron.SubnetType]:
+        if self._subnet is None:
+            return None
+        if isinstance(self._subnet, str):
+            self._subnet = neutron.get_subnet(self._subnet,
+                                              client=self.neutron_client)
+        return self._subnet
+
+    @property
+    def has_subnet(self) -> bool:
+        return self.subnet is not None
+
+    def setup_stack_name(self) -> str:
+        if self.stack_name is None:
+            if self.has_subnet:
+                self.stack_name = f"{self.fixture_name}-{self.subnet}"
+            else:
+                self.stack_name = f"{self.fixture_name}-{self.network}"
+        return self.stack_name
+
+    _port: typing.Optional[neutron.PortIdType] = None
+
+    @property
+    def port_details(self) -> neutron.PortType:
+        if self._port is None:
+            port_id = self.port_id
+            if port_id is None:
+                self._port = neutron.find_port(network_id=self.network_id,
+                                               device_id=self.router_id,
+                                               client=self.neutron_client)
+            else:
+                self._port = neutron.get_port(port_id,
+                                              client=self.neutron_client)
+        assert isinstance(self._port, dict)
+        return self._port
+
+    @property
+    def neutron_client(self) -> neutron.NeutronClientType:
+        if self._neutron_client is None:
+            self._neutron_client = neutron.get_neutron_client()
         return self._neutron_client

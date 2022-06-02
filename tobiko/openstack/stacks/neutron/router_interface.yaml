@@ -1,0 +1,103 @@
+heat_template_version: newton
+
+
+description: Add a router interface on given network
+
+
+parameters:
+
+  router:
+    description: Router to add port to
+    type: string
+    constraints:
+    - custom_constraint: neutron.router
+
+  network:
+    description: Network where to create router port
+    type: string
+    constraints:
+    - custom_constraint: neutron.network
+
+  has_subnet:
+    description: Whenever to specify subnet for router interface
+    type: boolean
+    default: false
+
+  subnet:
+    description: Subnet to be used for router interface
+    type: string
+    default: '<NO-SUBNET>'
+
+
+conditions:
+
+  has_subnet:
+    {get_param: has_subnet}
+
+  create_port:
+    not: {get_param: has_subnet}
+
+
+resources:
+
+  _router:
+    type: OS::Neutron::Router
+    external_id: {get_param: router}
+
+  _network:
+    type: OS::Neutron::Net
+    external_id: {get_param: network}
+
+  _subnet:
+    type: OS::Neutron::Subnet
+    condition: has_subnet
+    external_id: {get_param: subnet}
+
+  _router_interface_subnet:
+    type: OS::Neutron::RouterInterface
+    condition: has_subnet
+    properties:
+      router: {get_resource: _router}
+      subnet: {get_resource: _subnet}
+
+  _port:
+    type: OS::Neutron::Port
+    condition: create_port
+    properties:
+      network: {get_resource: _network}
+
+  _router_interface_port:
+    type: OS::Neutron::RouterInterface
+    condition: create_port
+    properties:
+      router: {get_resource: _router}
+      port: {get_resource: _port}
+
+
+outputs:
+
+  router_id:
+    description: Router ID
+    value: {get_resource: _router}
+
+  network_id:
+    description: Tenant network ID
+    value: {get_resource: _network}
+
+  subnet_id:
+    description: Tenant subnet ID
+    condition: has_subnet
+    value: {get_resource: _subnet}
+
+  port_id:
+    description: Router tenant port ID
+    condition: create_port
+    value: {get_resource: _port}
+
+  external_network_id:
+    description: External router network ID
+    value: {get_attr: [_router, external_gateway_info, network_id]}
+
+  mtu:
+    description: Network MTU value (integer)
+    value: {get_attr: [_network, mtu]}

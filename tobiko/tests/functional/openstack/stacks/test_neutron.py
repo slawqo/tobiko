@@ -15,12 +15,16 @@
 #    under the License.
 from __future__ import absolute_import
 
+from oslo_log import log
 import testtools
 
 import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
+
+
+LOG = log.getLogger(__name__)
 
 
 @keystone.skip_unless_has_keystone_credentials()
@@ -140,3 +144,78 @@ class RouterTest(testtools.TestCase):
 
     def test_has_router(self):
         self.assertTrue(stacks.has_router())
+
+
+class RouterInterfaceTestRouter(stacks.RouterStackFixture):
+    pass
+
+
+class RouterInterfaceTestNetwork(stacks.NetworkStackFixture):
+    pass
+
+
+@keystone.skip_unless_has_keystone_credentials()
+@stacks.skip_unless_has_floating_network
+class RouterInterfaceTest(testtools.TestCase):
+
+    router_stack = tobiko.required_fixture(RouterInterfaceTestRouter)
+    network_stack = tobiko.required_fixture(RouterInterfaceTestNetwork)
+
+    required_fixtures = [router_stack, network_stack]
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        for fixture in cls.required_fixtures:
+            try:
+                tobiko.cleanup_fixture(fixture.fixture)
+            except Exception:
+                LOG.exception(f'Error cleaning up fixture: {fixture.fixture}')
+
+    def test_ensure_router_interface_with_subnet(self,
+                                                 ip_version=4):
+        network = neutron.create_network()
+        subnet = neutron.create_subnet(network=network,
+                                       ip_version=ip_version)
+        self._test_ensure_router(subnet=subnet)
+
+    def test_ensure_router_interface_with_ipv6_subnet(self):
+        self.test_ensure_router_interface_with_subnet(ip_version=6)
+
+    def test_ensure_router_interface_with_routed_ipv4_subnet(self):
+        self._test_ensure_router(subnet=self.network_stack.ipv4_subnet_id)
+
+    def test_ensure_router_interface_with_routed_ipv6_subnet(self):
+        self._test_ensure_router(subnet=self.network_stack.ipv6_subnet_id)
+
+    def test_ensure_router_interface_with_network(self):
+        network = neutron.create_network()
+        neutron.create_subnet(network=network)
+        self._test_ensure_router(network=network)
+
+    def test_ensure_router_interface_with_routed_network(self):
+        self._test_ensure_router(network=self.network_stack.network_id)
+
+    def _test_ensure_router(self,
+                            network: neutron.NetworkIdType = None,
+                            subnet: neutron.SubnetIdType = None):
+        router = self.router_stack.router_details
+        self.assertRaises(tobiko.ObjectNotFound,
+                          neutron.find_port,
+                          device=router,
+                          subnet=subnet,
+                          network=network)
+        port = stacks.ensure_router_interface(router=router,
+                                              network=network,
+                                              subnet=subnet,
+                                              add_cleanup=True)
+        self.assertEqual(router['id'], port['device_id'])
+        self.assertEqual(neutron.find_port(device=router,
+                                           network=network,
+                                           subnet=subnet),
+                         port)
+        self.assertEqual(port,
+                         stacks.ensure_router_interface(router=router,
+                                                        network=network,
+                                                        subnet=subnet,
+                                                        add_cleanup=True))
+        return port
