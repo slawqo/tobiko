@@ -211,11 +211,12 @@ class RouterInterfaceTest(testtools.TestCase):
         self.assertEqual(router['id'], port['device_id'])
         self.assertEqual(neutron.find_port(device=router,
                                            network=network,
-                                           subnet=subnet),
-                         port)
-        self.assertEqual(port,
-                         stacks.ensure_router_interface(router=router,
-                                                        network=network,
-                                                        subnet=subnet,
-                                                        add_cleanup=True))
+                                           subnet=subnet)['id'],
+                         port['id'])
+        self.assertEqual(port['id'],
+                         stacks.ensure_router_interface(
+                             router=router,
+                             network=network,
+                             subnet=subnet,
+                             add_cleanup=True)['id'])
         return port
