@@ -1,0 +1,8 @@
+---
+
+- hosts: undercloud
+  tasks:
+
+  - name: Authenticate to the cloud and retrieve the service catalog
+    openstack.cloud.auth:
+      cloud: overcloud

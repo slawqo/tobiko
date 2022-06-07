@@ -76,3 +76,9 @@ class PlaybookTest(testtools.TestCase):
         tripleo.run_playbook_from_undercloud(
             playbook='test_undercloud_current_dir.yaml',
             playbook_dirname=PLAYBOOK_DIRNAME)
+
+    def test_overcloud_openstack_auth(self):
+        tripleo.run_playbook_from_undercloud(
+            playbook='test_overcloud_openstack_auth.yaml',
+            playbook_dirname=PLAYBOOK_DIRNAME,
+            requirements_files=['requirements/openstack-cloud.yaml'])

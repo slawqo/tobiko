@@ -35,6 +35,7 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                  inventory_filenames: typing.Iterable[str] = None,
                  playbook: str = 'main',
                  playbook_dirname: str = None,
+                 requirement_files: typing.Iterable[str] = None,
                  roles_path: typing.Iterable[str] = None,
                  ssh_client: ssh.SSHClientType = None,
                  verbosity: int = None,
@@ -46,6 +47,9 @@ class AnsiblePlaybook(tobiko.SharedFixture):
         self._inventory_filenames = list(inventory_filenames)
         self._playbook = playbook
         self._playbook_dirname = playbook_dirname
+        if requirement_files is None:
+            requirement_files = []
+        self._requirement_files = list(requirement_files)
         self._roles_path = roles_path
         self._ssh_client = ssh_client
         self._verbosity = verbosity
@@ -226,6 +230,7 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                      playbook_filename: str = None,
                      inventory_filenames: typing.Iterable[str] = None,
                      playbook_files: typing.Iterable[str] = None,
+                     requirements_files: typing.Iterable[str] = None,
                      roles: typing.Iterable[str] = None,
                      roles_path: typing.Iterable[str] = None,
                      verbosity: int = None) -> \
@@ -266,7 +271,43 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                                dirname=playbook_dirname,
                                roles_path=roles_path)
 
+        self._ensure_collections(requirements_files=requirements_files,
+                                 dirname=playbook_dirname)
         return command
+
+    def _ensure_collections(self,
+                            requirements_files: typing.Iterable[str] = None,
+                            dirname: str = None):
+        work_files = self._ensure_requirements_files(
+            requirements_files=requirements_files,
+            dirname=dirname)
+        if work_files:
+            collections_dirname = os.path.join(self.work_dir, 'collections')
+            command = sh.shell_command('ansible-galaxy collection install')
+            command += ['-p', collections_dirname]
+            for work_file in work_files:
+                command += ['-r', work_file]
+            self.sh_connection.execute(command=command)
+
+    def _ensure_requirements_files(
+            self,
+            requirements_files: typing.Iterable[str] = None,
+            dirname: str = None) \
+            -> typing.List[str]:
+        if requirements_files is None:
+            requirements_files = []
+        else:
+            requirements_files = list(requirements_files)
+        for filename in self._requirement_files:
+            if filename not in requirements_files:
+                requirements_files.append(filename)
+        if requirements_files:
+            return self._ensure_playbook_files(
+                playbook_files=requirements_files,
+                sub_dir='requirements',
+                dirname=dirname)
+        else:
+            return []
 
     def run_playbook(self,
                      command: sh.ShellCommand = None,
@@ -275,6 +316,7 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                      playbook_filename: str = None,
                      inventory_filenames: typing.Iterable[str] = None,
                      playbook_files: typing.Iterable[str] = None,
+                     requirements_files: typing.Iterable[str] = None,
                      roles: typing.Iterable[str] = None,
                      roles_path: typing.Iterable[str] = None,
                      verbosity: int = None):
@@ -285,6 +327,7 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                                     playbook_filename=playbook_filename,
                                     inventory_filenames=inventory_filenames,
                                     playbook_files=playbook_files,
+                                    requirements_files=requirements_files,
                                     roles=roles,
                                     roles_path=roles_path,
                                     verbosity=verbosity)

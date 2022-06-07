@@ -112,6 +112,7 @@ def run_playbook_from_undercloud(
         playbook_filename: str = None,
         inventory_filenames: typing.Iterable[str] = None,
         playbook_files: typing.Iterable[str] = None,
+        requirements_files: typing.Iterable[str] = None,
         roles: typing.Iterable[str] = None,
         roles_path: typing.Iterable[str] = None,
         verbosity: int = None):
@@ -122,6 +123,7 @@ def run_playbook_from_undercloud(
         playbook_filename=playbook_filename,
         inventory_filenames=inventory_filenames,
         playbook_files=playbook_files,
+        requirements_files=requirements_files,
         roles=roles,
         roles_path=roles_path,
         verbosity=verbosity)
