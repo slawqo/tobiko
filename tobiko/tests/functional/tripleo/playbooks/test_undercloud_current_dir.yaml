@@ -1,0 +1,13 @@
+---
+
+- hosts: undercloud
+  tasks:
+    - name: Run pwd
+      shell:
+        cmd: pwd
+        chdir: /home/stack
+      register: run_pwd
+    - debug: var=run_pwd
+    - name: test current dir
+      assert:
+        that: "run_pwd.stdout == '/home/stack'"
