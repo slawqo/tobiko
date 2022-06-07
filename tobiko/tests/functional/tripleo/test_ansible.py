@@ -23,6 +23,7 @@ from tobiko import tripleo
 
 
 CONF = config.CONF
+PLAYBOOK_DIRNAME = os.path.join(os.path.dirname(__file__), 'playbooks')
 
 
 @tripleo.skip_if_missing_undercloud
@@ -54,3 +55,24 @@ class InventoryFileTest(testtools.TestCase):
         self.assertIn('Undercloud', inventory)
         self.assertIn('Controller', inventory)
         self.assertIn('Compute', inventory)
+
+
+@tripleo.skip_if_missing_tripleo_ansible_inventory
+class PlaybookTest(testtools.TestCase):
+
+    def test_ping_hosts(self):
+        tripleo.run_playbook_from_undercloud(
+            playbook='test_ping_hosts.yaml',
+            playbook_dirname=PLAYBOOK_DIRNAME,
+            roles=['ping'])
+
+    def test_debug_vars(self):
+        tripleo.run_playbook_from_undercloud(
+            playbook='test_debug_vars.yaml',
+            playbook_dirname=PLAYBOOK_DIRNAME,
+            playbook_files=['vars/some-vars.yaml'])
+
+    def test_undecloud_current_dir(self):
+        tripleo.run_playbook_from_undercloud(
+            playbook='test_undercloud_current_dir.yaml',
+            playbook_dirname=PLAYBOOK_DIRNAME)

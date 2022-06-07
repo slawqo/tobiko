@@ -1,0 +1,8 @@
+---
+
+- hosts: localhost
+  vars_files:
+    - vars/some-vars.yaml
+  tasks:
+    - debug: var=var1
+    - debug: var=var2
