@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
 import typing
 
 import testtools
@@ -42,8 +43,13 @@ class ExecuteTest(testtools.TestCase):
         else:
             return SSH_EXPECTED_SHELL
 
-    def test_succeed(self, command='true', stdin=None, stdout=None,
-                     stderr=None, expect_exit_status=0, **kwargs):
+    def test_succeed(self,
+                     command: sh.ShellCommandType = 'true',
+                     stdin: str = None,
+                     stdout: str = None,
+                     stderr: str = None,
+                     expect_exit_status: typing.Optional[int] = 0,
+                     **kwargs):
         process = self.execute(command=command,
                                stdin=stdin,
                                stdout=bool(stdout),
@@ -88,6 +94,13 @@ class ExecuteTest(testtools.TestCase):
 
     def test_succeed_with_no_exit_status(self):
         self.test_succeed(command='false', expect_exit_status=None)
+
+    def test_succeed_with_current_dir(self):
+        temp_file = self.make_temporary()
+        self.execute(command=f"echo '{self.id()}' > '{temp_file}'")
+        self.test_succeed(command=f"cat './{os.path.basename(temp_file)}'",
+                          current_dir=os.path.dirname(temp_file),
+                          stdout=f"{self.id()}\n")
 
     def test_fails(self, command='false', exit_status=None, stdin=None,
                    stdout=None, stderr=None, expect_exit_status=0,
@@ -161,6 +174,17 @@ class ExecuteTest(testtools.TestCase):
         else:
             self.assertIsNone(ex.stderr)
         self.assertEqual(timeout, ex.timeout)
+
+    def make_temporary(self,
+                       directory=False,
+                       add_cleanup=True) -> str:
+        command = sh.shell_command('mktemp')
+        if directory:
+            command += '-d'
+        temporary_path = self.execute(command=command).stdout.strip()
+        if add_cleanup:
+            self.addCleanup(sh.execute, f"rm -fR '{temporary_path}'")
+        return temporary_path
 
     def execute(self, **kwargs):
         return sh.execute(**kwargs)

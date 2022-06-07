@@ -89,6 +89,7 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
         tobiko.check_valid_type(ssh_client, ssh.SSHClientFixture)
         tobiko.check_valid_type(parameters, SSHShellProcessParameters)
         environment = parameters.environment
+        current_dir = parameters.current_dir
 
         for attempt in tobiko.retry(
                 timeout=self.parameters.timeout,
@@ -98,6 +99,7 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
 
             timeout = attempt.time_left
             details = (f"command='{command}', "
+                       f"current_dir='{current_dir}', "
                        f"login={ssh_client.login}, "
                        f"timeout={timeout}, "
                        f"attempt={attempt}, "
@@ -111,6 +113,8 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
                         f"{name}={shlex.quote(value)}"
                         for name, value in self.environment.items())
                     command = variables + " " + command
+                if current_dir is not None:
+                    command = f"cd {current_dir} && {command}"
                 process.exec_command(command)
                 LOG.debug(f"Remote process created. ({details})")
                 return process
