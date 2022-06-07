@@ -168,7 +168,9 @@ class AnsiblePlaybook(tobiko.SharedFixture):
             filename = self._get_playbook_filename(basename=playbook_file,
                                                    dirname=dirname)
             if sub_dir is None and dirname is not None:
-                sub_dir = os.path.relpath(os.path.dirname(filename), dirname)
+                if filename.startswith(dirname):
+                    sub_dir = os.path.relpath(os.path.dirname(filename),
+                                              dirname)
 
             work_filename = self._ensure_work_file(filename=filename,
                                                    sub_dir=sub_dir)

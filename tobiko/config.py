@@ -39,6 +39,7 @@ CONFIG_MODULES = ['tobiko.openstack.glance.config',
                   'tobiko.shell.ping.config',
                   'tobiko.shell.iperf3.config',
                   'tobiko.shell.sh.config',
+                  'tobiko.shiftstack.config',
                   'tobiko.tripleo.config']
 
 

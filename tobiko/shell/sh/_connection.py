@@ -278,6 +278,10 @@ class LocalShellConnection(ShellConnection):
     def get_file(self, remote_file: str, local_file: str):
         LOG.debug(f"Copy local file as {self.login}: '{remote_file}' -> "
                   f"'{local_file}' ...")
+        if local_file.startswith('~'):
+            local_file = os.path.expanduser(local_file)
+        if remote_file.startswith('~'):
+            remote_file = os.path.expanduser(remote_file)
         shutil.copyfile(remote_file, local_file)
 
     def make_temp_dir(self, auto_clean=True, sudo: bool = None) -> str:
@@ -355,6 +359,10 @@ class SSHShellConnection(ShellConnection):
     def get_file(self, remote_file: str, local_file: str):
         LOG.debug(f"Get remote file as {self.login}: '{remote_file}' -> "
                   f"'{local_file}'...")
+        if local_file.startswith('~'):
+            local_file = os.path.expanduser(local_file)
+        if remote_file.startswith('~'):
+            remote_file = self.execute(f'echo {remote_file}').stdout.strip()
         self.sftp_client.get(remote_file, local_file)
 
     def make_temp_dir(self, auto_clean=True, sudo: bool = None) -> str:

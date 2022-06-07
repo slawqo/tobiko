@@ -56,7 +56,7 @@ OPTIONS = [
                      "clouds.*")),
     cfg.ListOpt('clouds_file_dirs',
                 default=['.', '~/.config/openstack', '/etc/openstack'],
-                help=("Directories where to look for clouds files")),
+                help="Directories where to look for clouds files"),
     cfg.ListOpt('clouds_file_names',
                 default=['clouds.yaml', 'clouds.yml', 'clouds.json'],
                 help="Clouds file names")]
