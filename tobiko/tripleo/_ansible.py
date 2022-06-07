@@ -113,7 +113,8 @@ def run_playbook_from_undercloud(
         inventory_filenames: typing.Iterable[str] = None,
         playbook_files: typing.Iterable[str] = None,
         roles: typing.Iterable[str] = None,
-        roles_path: typing.Iterable[str] = None):
+        roles_path: typing.Iterable[str] = None,
+        verbosity: int = None):
     return undercloud_ansible_playbook().run_playbook(
         command=command,
         playbook=playbook,
@@ -122,7 +123,8 @@ def run_playbook_from_undercloud(
         inventory_filenames=inventory_filenames,
         playbook_files=playbook_files,
         roles=roles,
-        roles_path=roles_path)
+        roles_path=roles_path,
+        verbosity=verbosity)
 
 
 def setup_undercloud_ansible_playbook():
