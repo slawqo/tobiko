@@ -24,6 +24,9 @@ OPTIONS = [
     cfg.ListOpt('inventory_files',
                 default=['/etc/ansible/hosts'],
                 help="Default Ansible inventory files"),
+    cfg.IntOpt('verbosity',
+               default=None,
+               help="Default Ansible playbook verbosity"),
 ]
 
 

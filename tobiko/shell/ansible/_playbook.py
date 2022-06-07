@@ -35,9 +35,10 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                  inventory_filenames: typing.Iterable[str] = None,
                  playbook: str = 'main',
                  playbook_dirname: str = None,
+                 roles_path: typing.Iterable[str] = None,
                  ssh_client: ssh.SSHClientType = None,
-                 work_dir: str = None,
-                 roles_path: typing.Iterable[str] = None):
+                 verbosity: int = None,
+                 work_dir: str = None):
         super(AnsiblePlaybook, self).__init__()
         self._command = sh.shell_command(command)
         if inventory_filenames is None:
@@ -47,6 +48,7 @@ class AnsiblePlaybook(tobiko.SharedFixture):
         self._playbook_dirname = playbook_dirname
         self._roles_path = roles_path
         self._ssh_client = ssh_client
+        self._verbosity = verbosity
         self._work_dir = work_dir
         self._work_files: typing.Dict[str, str] = {}
 
@@ -93,6 +95,12 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                               [playbook_dirname])
             self._roles_path = roles_path
         return list(roles_path)
+
+    @property
+    def verbosity(self) -> typing.Optional[int]:
+        if self._verbosity is None:
+            self._verbosity = tobiko.tobiko_config().ansible.verbosity
+        return self._verbosity
 
     def _ensure_inventory_files(self, *inventory_filenames: str) \
             -> typing.List[str]:
@@ -219,12 +227,18 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                      inventory_filenames: typing.Iterable[str] = None,
                      playbook_files: typing.Iterable[str] = None,
                      roles: typing.Iterable[str] = None,
-                     roles_path: typing.Iterable[str] = None) -> \
+                     roles_path: typing.Iterable[str] = None,
+                     verbosity: int = None) -> \
             sh.ShellCommand:
         # ensure command
         if command is None:
             command = self._command
         assert isinstance(command, sh.ShellCommand)
+
+        if verbosity is None:
+            verbosity = self.verbosity
+        if verbosity is not None and verbosity > 0:
+            command += '-' + ('v' * verbosity)
 
         # ensure inventory
         if inventory_filenames is None:
@@ -262,7 +276,8 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                      inventory_filenames: typing.Iterable[str] = None,
                      playbook_files: typing.Iterable[str] = None,
                      roles: typing.Iterable[str] = None,
-                     roles_path: typing.Iterable[str] = None):
+                     roles_path: typing.Iterable[str] = None,
+                     verbosity: int = None):
         tobiko.setup_fixture(self)
         command = self._get_command(command=command,
                                     playbook=playbook,
@@ -271,7 +286,8 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                                     inventory_filenames=inventory_filenames,
                                     playbook_files=playbook_files,
                                     roles=roles,
-                                    roles_path=roles_path)
+                                    roles_path=roles_path,
+                                    verbosity=verbosity)
         return self.sh_connection.execute(command, current_dir=self.work_dir)
 
 
@@ -343,16 +359,18 @@ def run_playbook(command: sh.ShellCommand = None,
                  playbook_files: typing.Iterable[str] = None,
                  roles: typing.Iterable[str] = None,
                  roles_path: typing.Iterable[str] = None,
+                 verbosity: int = None,
                  ssh_client: ssh.SSHClientType = None,
                  manager: AnsiblePlaybookManager = None) \
         -> sh.ShellExecuteResult:
     return ansible_playbook(ssh_client=ssh_client,
                             manager=manager).run_playbook(
                             command=command,
+                            inventory_filenames=inventory_filenames,
                             playbook=playbook,
                             playbook_dirname=playbook_dirname,
                             playbook_filename=playbook_filename,
-                            inventory_filenames=inventory_filenames,
                             playbook_files=playbook_files,
                             roles=roles,
-                            roles_path=roles_path)
+                            roles_path=roles_path,
+                            verbosity=verbosity)
