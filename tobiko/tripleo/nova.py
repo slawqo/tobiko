@@ -2,6 +2,8 @@ from __future__ import absolute_import
 
 import time
 import typing  # noqa
+from functools import wraps
+
 
 from oslo_log import log
 import pandas
@@ -244,3 +246,27 @@ def check_or_start_background_vm_ping():
         bg_process_name='tobiko_background_ping',
         check_function=ping.check_ping_statistics,
         ping_ip=ping_vm_fip)
+
+
+# Test is inteded for D/S env
+@tripleo.skip_if_missing_overcloud
+def skip_check_or_start_background_vm_ping():
+    """Like the above, but skips the ping check, truncates results
+    and reexecutes the test"""
+    ping_vm_fip = get_nova_server_floating_ip()
+    sh.check_or_start_background_process(
+        bg_function=ping.write_ping_to_file,
+        bg_process_name='tobiko_background_ping',
+        check_function=ping.skip_check_ping_statistics,
+        ping_ip=ping_vm_fip)
+
+
+def skip_background_vm_ping_checks(func):
+    """Skip ping_check_decorator - to be used when traffic to vm
+    must be dropped for the duration of the test - func"""
+    @wraps(func)
+    def wrapper(*args):  # pylint: disable=W0613
+        check_or_start_background_vm_ping()
+        func(*args)
+        skip_check_or_start_background_vm_ping()
+    return wrapper

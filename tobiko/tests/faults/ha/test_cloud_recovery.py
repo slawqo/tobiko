@@ -125,11 +125,13 @@ class DisruptTripleoNodesTest(testtools.TestCase):
     def test_0vercloud_health_check(self):
         OvercloudHealthCheck.run_before(skip_mac_table_size_test=False)
 
+    @nova.skip_background_vm_ping_checks
     def test_hard_reboot_controllers_recovery(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_all_controller_nodes()
         OvercloudHealthCheck.run_after()
 
+    @nova.skip_background_vm_ping_checks
     def test_soft_reboot_computes_recovery(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_all_compute_nodes(hard_reset=False)
