@@ -308,7 +308,7 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         return server
 
     @property
-    def server_details(self):
+    def server_details(self) -> nova.NovaServer:
         return nova.get_server(self.server_id)
 
     @property
