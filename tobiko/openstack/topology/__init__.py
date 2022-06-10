@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 from tobiko.openstack.topology import _assert
 from tobiko.openstack.topology import _exception
+from tobiko.openstack.topology import _namespace
 from tobiko.openstack.topology import _neutron
 from tobiko.openstack.topology import _topology
 from tobiko.openstack.topology import _sh
@@ -24,6 +25,16 @@ assert_unreachable_nodes = _assert.assert_unreachable_nodes
 
 NoSuchOpenStackTopologyNodeGroup = _exception.NoSuchOpenStackTopologyNodeGroup
 NoSuchOpenStackTopologyNode = _exception.NoSuchOpenStackTopologyNode
+
+NeutronNovaResponse = _neutron.NeutronNovaResponse
+NeutronNovaResponseReader = _neutron.NeutronNovaResponseReader
+read_neutron_nova_responses = _neutron.read_neutron_nova_responses
+assert_ovn_unsupported_dhcp_option_messages = (
+    _neutron.assert_ovn_unsupported_dhcp_option_messages)
+
+get_hosts_namespaces = _namespace.get_hosts_namespaces
+assert_namespace_in_hosts = _namespace.assert_namespace_in_hosts
+assert_namespace_not_in_hosts = _namespace.assert_namespace_not_in_hosts
 
 list_nodes_processes = _sh.list_nodes_processes
 
@@ -47,9 +58,3 @@ OpenStackTopologyNode = _topology.OpenStackTopologyNode
 set_default_openstack_topology_class = (
     _topology.set_default_openstack_topology_class)
 verify_osp_version = _topology.verify_osp_version
-
-NeutronNovaResponse = _neutron.NeutronNovaResponse
-NeutronNovaResponseReader = _neutron.NeutronNovaResponseReader
-read_neutron_nova_responses = _neutron.read_neutron_nova_responses
-assert_ovn_unsupported_dhcp_option_messages = (
-    _neutron.assert_ovn_unsupported_dhcp_option_messages)

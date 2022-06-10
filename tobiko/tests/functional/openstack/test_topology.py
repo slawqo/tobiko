@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
 from collections import abc
 import random
 import re
@@ -171,3 +172,63 @@ class OpenStackTopologyTest(testtools.TestCase):
 
 def node_name_from_hostname(hostname):
     return hostname.split('.', 1)[0].lower()
+
+
+class HostsNamespaceTest(testtools.TestCase):
+
+    @property
+    def all_hostnames(self) -> typing.List[str]:
+        nodes = topology.list_openstack_nodes()
+        return sorted(node.hostname for node in nodes)
+
+    def selected_hostames(self, hostnames: typing.Iterable[str] = None) -> \
+            typing.Set[str]:
+        if hostnames is None:
+            return set(self.all_hostnames)
+        else:
+            return set(hostnames)
+
+    def test_get_hosts_namespaces(self,
+                                  hostnames: typing.Iterable[str] = None):
+        namespaces = topology.get_hosts_namespaces(hostnames=hostnames)
+        self.assertIsInstance(namespaces, dict)
+        for namespace, _hostnames in namespaces.items():
+            self.assertIsInstance(namespace, str)
+            self.assertIsInstance(_hostnames, list)
+            self.assertEqual(
+                set(_hostnames),
+                self.selected_hostames(hostnames) & set(_hostnames))
+
+    def test_get_hosts_namespaces_with_hostnames(self):
+        self.test_get_hosts_namespaces(hostnames=self.all_hostnames[:1])
+
+    def test_assert_namespace_in_hosts(self,
+                                       hostnames: typing.Iterable[str] = None):
+        namespaces = topology.get_hosts_namespaces(hostnames=hostnames)
+        for namespace, hostnames in namespaces.items():
+            topology.assert_namespace_in_hosts(namespace,
+                                               hostnames=hostnames)
+
+    def test_assert_namespace_in_hosts_with_hostnames(self):
+        self.test_assert_namespace_in_hosts(hostnames=self.all_hostnames[:1])
+
+    def test_assert_namespaces_in_host_failure(self):
+        self.assertRaises(self.failureException,
+                          topology.assert_namespace_in_hosts,
+                          '<invalid>')
+
+    def test_assert_namespace_not_in_hosts(
+            self, hostnames: typing.Iterable[str] = None):
+        topology.assert_namespace_not_in_hosts('<invalid>',
+                                               hostnames=hostnames)
+
+    def test_assert_namespace_not_in_hosts_with_hostnames(self):
+        self.test_assert_namespace_not_in_hosts(
+            hostnames=self.all_hostnames[:1])
+
+    def test_assert_namespace_not_in_hosts_failure(self):
+        namespaces = topology.get_hosts_namespaces()
+        for namespace in namespaces:
+            self.assertRaises(self.failureException,
+                              topology.assert_namespace_not_in_hosts,
+                              namespace)
