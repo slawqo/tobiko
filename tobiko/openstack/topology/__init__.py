@@ -35,6 +35,7 @@ assert_ovn_unsupported_dhcp_option_messages = (
 get_hosts_namespaces = _namespace.get_hosts_namespaces
 assert_namespace_in_hosts = _namespace.assert_namespace_in_hosts
 assert_namespace_not_in_hosts = _namespace.assert_namespace_not_in_hosts
+wait_for_namespace_in_hosts = _namespace.wait_for_namespace_in_hosts
 
 list_nodes_processes = _sh.list_nodes_processes
 

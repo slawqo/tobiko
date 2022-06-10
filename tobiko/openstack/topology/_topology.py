@@ -46,10 +46,19 @@ OpenstackGroupNamesType = typing.Union[OpenstackGroupNameType, typing.Iterable[
     OpenstackGroupNameType]]
 
 
-def list_openstack_nodes(topology: 'OpenStackTopology' = None,
+HostAddressType = typing.Union[str, netaddr.IPAddress]
+
+
+def list_openstack_nodes(addresses: typing.Iterable[netaddr.IPAddress] = None,
                          group: OpenstackGroupNamesType = None,
-                         hostnames=None, **kwargs):
-    topology = topology or get_openstack_topology()
+                         hostnames: typing.Iterable[str] = None,
+                         topology: 'OpenStackTopology' = None,
+                         **kwargs) \
+        -> tobiko.Selection['OpenStackTopologyNode']:
+    if topology is None:
+        topology = get_openstack_topology()
+
+    nodes: tobiko.Selection[OpenStackTopologyNode]
     if group is None:
         nodes = topology.nodes
     elif isinstance(group, str):
@@ -60,7 +69,40 @@ def list_openstack_nodes(topology: 'OpenStackTopology' = None,
         assert isinstance(group, abc.Iterable)
         nodes = topology.get_groups(groups=group)
 
-    if hostnames:
+    return select_openstack_nodes(nodes,
+                                  addresses=addresses,
+                                  hostnames=hostnames,
+                                  **kwargs)
+
+
+def split_addresses_and_names(*hosts: HostAddressType) \
+        -> typing.Tuple[typing.Set[netaddr.IPAddress], typing.Set[str]]:
+    addresses = set()
+    hostnames = set()
+    for host in hosts:
+        try:
+            addresses.add(netaddr.IPAddress(host))
+        except netaddr.AddrFormatError:
+            hostnames.add(host)
+    return addresses, hostnames
+
+
+def select_openstack_nodes(
+        nodes: tobiko.Selection['OpenStackTopologyNode'],
+        addresses: typing.Iterable[netaddr.IPAddress] = None,
+        hostnames: typing.Iterable[str] = None,
+        **kwargs) \
+        -> tobiko.Selection['OpenStackTopologyNode']:
+    for selector in addresses, hostnames:
+        if selector is not None and not selector:
+            return tobiko.Selection()
+
+    if addresses is not None:
+        _addresses = set(addresses)
+        nodes = nodes.select(
+            lambda node: bool(set(node.addresses) & _addresses))
+
+    if hostnames is not None:
         names = {node_name_from_hostname(hostname)
                  for hostname in hostnames}
         nodes = nodes.select(lambda node: node.name in names)
@@ -70,8 +112,18 @@ def list_openstack_nodes(topology: 'OpenStackTopology' = None,
     return nodes
 
 
-def find_openstack_node(topology=None, unique=False, **kwargs):
-    nodes = list_openstack_nodes(topology=topology, **kwargs)
+def find_openstack_node(addresses: typing.Iterable[netaddr.IPAddress] = None,
+                        group: OpenstackGroupNamesType = None,
+                        hostnames: typing.Iterable[str] = None,
+                        topology: 'OpenStackTopology' = None,
+                        unique=False,
+                        **kwargs) \
+        -> 'OpenStackTopologyNode':
+    nodes = list_openstack_nodes(topology=topology,
+                                 addresses=addresses,
+                                 group=group,
+                                 hostnames=hostnames,
+                                 **kwargs)
     if unique:
         return nodes.unique
     else:
@@ -156,12 +208,13 @@ class OpenStackTopologyNode(object):
     _podman_client = None
 
     def __init__(self, topology, name: str, ssh_client: ssh.SSHClientFixture,
-                 addresses: typing.List[netaddr.IPAddress], hostname: str):
+                 addresses: typing.Iterable[netaddr.IPAddress], hostname: str):
         self._topology = weakref.ref(topology)
         self.name = name
         self.ssh_client = ssh_client
         self.groups: typing.Set[str] = set()
-        self.addresses: typing.List[netaddr.IPAddress] = list(addresses)
+        self.addresses: tobiko.Selection[netaddr.IPAddress] = tobiko.select(
+            addresses)
         self.hostname: str = hostname
 
     _connection: typing.Optional[sh.ShellConnection] = None
@@ -618,7 +671,7 @@ def get_openstack_version():
 DEFAULT_TOPOLOGY_CLASS = OpenStackTopology
 
 
-def node_name_from_hostname(hostname):
+def node_name_from_hostname(hostname: str):
     return hostname.split('.', 1)[0].lower()
 
 
