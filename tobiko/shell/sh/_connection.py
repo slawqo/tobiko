@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import getpass
+import io
 import os.path
 import shutil
 import socket
@@ -62,6 +63,17 @@ def get_file(remote_file: str,
     return shell_connection(
         ssh_client=ssh_client).get_file(remote_file=remote_file,
                                         local_file=local_file)
+
+
+def open_file(filename: typing.Union[str, bytes],
+              mode: str,
+              buffering: int = None,
+              ssh_client: ssh.SSHClientType = None) \
+            -> typing.Union[typing.IO, paramiko.sftp_file.SFTPFile]:
+    return shell_connection(
+        ssh_client=ssh_client).open_file(filename=filename,
+                                         mode=mode,
+                                         buffering=buffering)
 
 
 def put_file(local_file: str,
@@ -239,6 +251,13 @@ class ShellConnection(tobiko.SharedFixture):
     def get_file(self, remote_file: str, local_file: str):
         raise NotImplementedError
 
+    def open_file(self,
+                  filename: typing.Union[str, bytes],
+                  mode: str,
+                  buffering: int = None) \
+            -> typing.Union[typing.IO, paramiko.sftp_file.SFTPFile]:
+        raise NotImplementedError
+
     def __str__(self) -> str:
         return f"{type(self).__name__}<{self.login}>"
 
@@ -283,6 +302,15 @@ class LocalShellConnection(ShellConnection):
         if remote_file.startswith('~'):
             remote_file = os.path.expanduser(remote_file)
         shutil.copyfile(remote_file, local_file)
+
+    def open_file(self,
+                  filename: typing.Union[str, bytes],
+                  mode: str,
+                  buffering: int = None) -> typing.IO:
+        params: typing.Dict[str, typing.Any] = {}
+        if buffering is not None:
+            params.update(buffering=buffering)
+        return io.open(file=filename, mode=mode, **params)
 
     def make_temp_dir(self, auto_clean=True, sudo: bool = None) -> str:
         if sudo:
@@ -355,6 +383,16 @@ class SSHShellConnection(ShellConnection):
         LOG.debug(f"Put remote file as {self.login}: '{local_file}' -> "
                   f"'{remote_file}'...")
         self.sftp_client.put(local_file, remote_file)
+
+    def open_file(self,
+                  filename: typing.Union[str, bytes],
+                  mode: str,
+                  buffering: int = None) -> paramiko.sftp_file.SFTPFile:
+        if buffering is None:
+            buffering = -1
+        return self.sftp_client.open(filename=filename,
+                                     mode=mode,
+                                     bufsize=buffering)
 
     def get_file(self, remote_file: str, local_file: str):
         LOG.debug(f"Get remote file as {self.login}: '{remote_file}' -> "
