@@ -98,7 +98,11 @@ class RouterTest(testtools.TestCase):
     @pytest.mark.flaky(reruns=3, reruns_delay=60)
     @neutron.skip_if_missing_networking_extensions('l3_agent_scheduler')
     def test_router_is_scheduled_on_l3_agents(self):
-        router_agent = neutron.find_l3_agent_hosting_router(self.router['id'],
+        router = self.router
+        if router.get('distributed'):
+            # TODO(fressi): check whenever a DVR router can be scheduled
+            self.skipTest("Router is distributed")
+        router_agent = neutron.find_l3_agent_hosting_router(router['id'],
                                                             unique=True)
         self._check_routers_namespace_on_host(router_agent['host'])
 
