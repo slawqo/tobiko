@@ -261,12 +261,12 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         return stack
 
     @property
-    def hypervisor_host(self):
-        return getattr(self.server_details, 'OS-EXT-SRV-ATTR:host')
+    def hypervisor_hostname(self):
+        return nova.get_server_hypervisor(server=self.server_details)
 
     def validate_scheduler_hints(self):
         if self.scheduler_hints:
-            hypervisor = self.hypervisor_host
+            hypervisor = self.hypervisor_hostname
             try:
                 self.validate_same_host_scheduler_hints(hypervisor=hypervisor)
                 self.validate_different_host_scheduler_hints(

@@ -545,14 +545,14 @@ class OpenVSwitchAgentTest(BaseAgentTest):
     #: Resources stack with Nova server to send messages to
     stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
 
-    def get_agent_from_host(self, hypervisor_host):
+    def get_agent_from_host(self, hypervisor_hostname):
         # pylint: disable=not-an-iterable
-        short_name = tobiko.get_short_hostname(hypervisor_host)
+        short_name = tobiko.get_short_hostname(hypervisor_hostname)
         for agent in self.agents:
             if short_name == tobiko.get_short_hostname(agent['host']):
                 return agent
         raise neutron.AgentNotFoundOnHost(agent_type=neutron.OPENVSWITCH_AGENT,
-                                          host=hypervisor_host)
+                                          host=hypervisor_hostname)
 
     def test_vm_reachability_during_stop_ovs_agent(self):
         # Check if vm is reachable before stopping service
@@ -560,7 +560,7 @@ class OpenVSwitchAgentTest(BaseAgentTest):
         ping.ping_until_received(self.stack.ip_address).assert_replied()
 
         # Check if vm is reachable after stopping service
-        self.stop_agent(hosts=[self.stack.hypervisor_host])
+        self.stop_agent(hosts=[self.stack.hypervisor_hostname])
         ping.ping_until_received(self.stack.ip_address).assert_replied()
 
 

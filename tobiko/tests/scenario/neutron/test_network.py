@@ -89,8 +89,8 @@ class SameHostNetworkTest(NetworkTest):
         receiver = self.stack.server_details
         self.assertEqual({'same_host': [sender.id]},
                          self.stack.scheduler_hints)
-        self.assertEqual(getattr(sender, 'OS-EXT-SRV-ATTR:host'),
-                         getattr(receiver, 'OS-EXT-SRV-ATTR:host'))
+        self.assertEqual(nova.get_server_hypervisor(sender),
+                         nova.get_server_hypervisor(receiver))
 
 
 @pytest.mark.migrate_server
@@ -106,8 +106,8 @@ class DifferentHostNetworkTest(NetworkTest):
         receiver = self.stack.server_details
         self.assertEqual({'different_host': [sender.id]},
                          self.stack.scheduler_hints)
-        self.assertNotEqual(getattr(sender, 'OS-EXT-SRV-ATTR:host'),
-                            getattr(receiver, 'OS-EXT-SRV-ATTR:host'))
+        self.assertNotEqual(nova.get_server_hypervisor(sender),
+                            nova.get_server_hypervisor(receiver))
 
 
 # --- l3-ha extension VM to VM scenario ---------------------------------------
