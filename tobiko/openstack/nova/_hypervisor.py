@@ -68,4 +68,4 @@ def list_servers_hypervisors(servers: typing.Iterable[_client.ServerType],
 def get_server_hypervisor(server, client=None):
     if isinstance(server, str):
         server = _client.get_server(server, client=client)
-    return getattr(server, 'OS-EXT-SRV-ATTR:host')
+    return getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname')

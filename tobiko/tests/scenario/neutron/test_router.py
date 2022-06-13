@@ -210,7 +210,7 @@ class RouterNamespaceTest(testtools.TestCase):
         ping.assert_reachable_hosts([self.server_stack.ip_address])
         # List namespaces on hypervisor node
         hypervisor = topology.get_openstack_node(
-            hostname=self.server_stack.hypervisor_host)
+            hostname=self.server_stack.hypervisor_hostname)
         return hypervisor.ssh_client
 
     def list_network_namespaces(self) -> typing.List[str]:
