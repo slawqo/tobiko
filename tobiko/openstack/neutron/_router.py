@@ -184,3 +184,7 @@ def remove_router_interface(router: RouterIdType,
 
 class NoSuchRouter(tobiko.ObjectNotFound):
     message = "No such router found for {id!r}"
+
+
+def get_ovs_router_namespace(router: RouterIdType):
+    return f"qrouter-{get_router_id(router)}"

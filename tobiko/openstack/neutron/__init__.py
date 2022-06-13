@@ -109,6 +109,7 @@ NetworkIdType = _network.NetworkIdType
 add_router_interface = _router.add_router_interface
 create_router = _router.create_router
 delete_router = _router.delete_router
+get_ovs_router_namespace = _router.get_ovs_router_namespace
 get_router = _router.get_router
 get_router_id = _router.get_router_id
 remove_router_interface = _router.remove_router_interface
