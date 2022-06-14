@@ -17,9 +17,14 @@ from collections import abc
 import re
 import typing
 
+from oslo_log import log
+
 import tobiko
 from tobiko.openstack.neutron import _client
+from tobiko.shell import sh
 
+
+LOG = log.getLogger(__name__)
 
 # Agent binary names
 DHCP_AGENT = 'neutron-dhcp-agent'
@@ -74,6 +79,20 @@ def list_dhcp_agent_hosting_network(network, client=None, **params):
     if isinstance(agents, abc.Mapping):
         agents = agents['agents']
     return tobiko.select(agents)
+
+
+def get_l3_agent_mode(
+        l3_agent_conf_path: str,
+        default='legacy',
+        connection: sh.ShellConnectionType = None) -> str:
+    with sh.open_file(l3_agent_conf_path, 'rt',
+                      connection=connection) as fd:
+        content = tobiko.parse_ini_file(fd)
+    try:
+        return content['DEFAULT', 'agent_mode']
+    except KeyError:
+        LOG.error(f"agent_mode not found in file {l3_agent_conf_path}")
+        return default
 
 
 class NetworkingAgentFixture(tobiko.SharedFixture):

@@ -35,6 +35,7 @@ OVN_METADATA_AGENT = _agent.OVN_METADATA_AGENT
 NEUTRON_OVN_METADATA_AGENT = _agent.NEUTRON_OVN_METADATA_AGENT
 AgentNotFoundOnHost = _agent.AgentNotFoundOnHost
 NeutronAgentType = _agent.NeutronAgentType
+get_l3_agent_mode = _agent.get_l3_agent_mode
 find_l3_agent_hosting_router = _agent.find_l3_agent_hosting_router
 list_agents = _agent.list_agents
 list_dhcp_agent_hosting_network = _agent.list_dhcp_agent_hosting_network

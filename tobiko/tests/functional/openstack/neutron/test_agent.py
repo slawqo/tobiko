@@ -15,11 +15,16 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
+
 import testtools
 
+import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack import neutron
 from tobiko.openstack import tests
+from tobiko.openstack import stacks
+from tobiko.shell import sh
 
 
 @keystone.skip_unless_has_keystone_credentials()
@@ -66,3 +71,78 @@ class AgentTest(testtools.TestCase):
         agent = neutron.list_agents().first
         agents = neutron.list_agents(binary=agent['binary'])
         self.assertIn(agent['id'], {a['id'] for a in agents})
+
+
+class GetL3AgentModeTest(testtools.TestCase):
+
+    @property
+    def connection(self) -> sh.ShellConnection:
+        return sh.local_shell_connection()
+
+    def create_file(self, text: str) -> str:
+        temp_dir = self.connection.make_temp_dir()
+        temp_file = os.path.join(temp_dir, 'l3_agent.ini')
+        with self.connection.open_file(temp_file, 'wt') as fd:
+            fd.write(text)
+        return temp_file
+
+    def test_get_l3_agent_mode(self):
+        text = """
+        agent_mode=dvr
+        """
+        l3_agent_conf_path = self.create_file(text=text)
+        result = neutron.get_l3_agent_mode(
+            l3_agent_conf_path=l3_agent_conf_path,
+            connection=self.connection)
+        self.assertEqual('dvr', result)
+
+    def test_get_l3_agent_mode_with_empty(self):
+        l3_agent_conf_path = self.create_file(text='')
+        result = neutron.get_l3_agent_mode(
+            l3_agent_conf_path=l3_agent_conf_path,
+            connection=self.connection)
+        self.assertEqual('legacy', result)
+
+    def test_get_l3_agent_mode_with_section(self):
+        text = """
+        [DEFAULT]
+        agent_mode=dvr_no_external
+        """
+        l3_agent_conf_path = self.create_file(text=text)
+        result = neutron.get_l3_agent_mode(
+            l3_agent_conf_path=l3_agent_conf_path,
+            connection=self.connection)
+        self.assertEqual('dvr_no_external', result)
+
+    def test_get_l3_agent_mode_with_wrong_section(self):
+        text = """
+        [wrong-section]
+        agent_mode=dvr
+        """
+        l3_agent_conf_path = self.create_file(text=text)
+        result = neutron.get_l3_agent_mode(
+            l3_agent_conf_path=l3_agent_conf_path,
+            connection=self.connection)
+        self.assertEqual('legacy', result)
+
+    def test_get_l3_agent_mode_with_tricky_option(self):
+        text = """
+        agent_mode_2=dvr
+        """
+        l3_agent_conf_path = self.create_file(text=text)
+        result = neutron.get_l3_agent_mode(
+            l3_agent_conf_path=l3_agent_conf_path,
+            connection=self.connection)
+        self.assertEqual('legacy', result)
+
+
+class SSHGetL3AgentModeTest(GetL3AgentModeTest):
+
+    server_stack = tobiko.required_fixture(stacks.UbuntuServerStackFixture)
+
+    @property
+    def connection(self) -> sh.SSHShellConnection:
+        connection = sh.shell_connection()
+        if isinstance(connection, sh.SSHShellConnection):
+            return connection
+        return self.server_stack.connection
