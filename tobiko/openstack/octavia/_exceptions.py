@@ -37,3 +37,7 @@ class RoundRobinException(tobiko.TobikoException):
 
 class TrafficTimeoutError(tobiko.TobikoException):
     message = "Traffic timeout error: {reason}"
+
+
+class AmphoraMgmtPortNotFound(tobiko.TobikoException):
+    message = "Amphora's network management port was not found: {reason}"
