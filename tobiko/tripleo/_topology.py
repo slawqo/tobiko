@@ -139,6 +139,9 @@ class TripleoTopologyNode(topology.OpenStackTopologyNode):
 
     overcloud_server: typing.Optional[nova.NovaServer] = None
 
+    l3_agent_conf_path = (
+        '/var/lib/config-data/neutron/etc/neutron/l3_agent.ini')
+
     def reboot_overcloud_node(self, reactivate_servers=True):
         """Reboot overcloud node
 

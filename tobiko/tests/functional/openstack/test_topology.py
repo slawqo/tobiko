@@ -24,6 +24,7 @@ import testtools
 
 import tobiko
 from tobiko.openstack import keystone
+from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import topology
 from tobiko.shell import ping
@@ -168,6 +169,18 @@ class OpenStackTopologyTest(testtools.TestCase):
                 break
             if attempt.is_last:
                 self.fail("Process listed after killing it")
+
+    @neutron.skip_unless_is_ovs()
+    def test_l3_agent_mode(self):
+        for node in topology.list_openstack_nodes(
+                group=['controller', 'compute', 'overcloud']):
+            assert isinstance(node, topology.OpenStackTopologyNode)
+            self.assertEqual(
+                neutron.get_l3_agent_mode(
+                    l3_agent_conf_path=node.l3_agent_conf_path,
+                    connection=node.connection),
+                node.l3_agent_mode)
+            self.assertIs(node.l3_agent_mode, node.l3_agent_mode)
 
 
 def node_name_from_hostname(hostname):

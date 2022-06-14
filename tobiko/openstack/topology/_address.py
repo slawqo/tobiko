@@ -47,6 +47,8 @@ def list_addresses(obj,
         addresses = tobiko.Selection()
         for item in iter(obj):
             addresses.extend(list_addresses(item))
+    else:
+        raise TypeError(f'{obj} object is not of a valid address(es) type')
 
     if addresses and ip_version is not None:
         addresses = addresses.with_attributes(version=ip_version)

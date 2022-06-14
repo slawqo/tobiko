@@ -78,9 +78,26 @@ def find_openstack_node(topology=None, unique=False, **kwargs):
         return nodes.first
 
 
-def get_openstack_node(hostname, address=None, topology=None):
-    topology = topology or get_openstack_topology()
-    return topology.get_node(hostname=hostname, address=address)
+def get_l3_agent_mode(name: str = None,
+                      hostname: str = None,
+                      address=None,
+                      topology: 'OpenStackTopology' = None):
+    return get_openstack_node(name=name,
+                              hostname=hostname,
+                              address=address,
+                              topology=topology).l3_agent_mode
+
+
+def get_openstack_node(name: str = None,
+                       hostname: str = None,
+                       address=None,
+                       topology: 'OpenStackTopology' = None) \
+        -> 'OpenStackTopologyNode':
+    if topology is None:
+        topology = get_openstack_topology()
+    return topology.get_node(name=name,
+                             hostname=hostname,
+                             address=address)
 
 
 def list_openstack_node_groups(topology=None):
@@ -147,6 +164,14 @@ class OpenStackTopologyNode(object):
         self.addresses: typing.List[netaddr.IPAddress] = list(addresses)
         self.hostname: str = hostname
 
+    _connection: typing.Optional[sh.ShellConnection] = None
+
+    @property
+    def connection(self) -> sh.ShellConnection:
+        if self._connection is None:
+            self._connection = sh.shell_connection(self.ssh_client)
+        return self._connection
+
     @property
     def topology(self):
         return self._topology()
@@ -179,6 +204,23 @@ class OpenStackTopologyNode(object):
             self._podman_client = podman_client = podman.get_podman_client(
                 ssh_client=self.ssh_client)
         return podman_client
+
+    l3_agent_conf_path = '/etc/neutron/l3_agent.ini'
+    _l3_agent_mode: typing.Optional[str] = None
+
+    @property
+    def l3_agent_mode(self) -> typing.Optional[str]:
+        if self._l3_agent_mode is None:
+            try:
+                self._l3_agent_mode = neutron.get_l3_agent_mode(
+                    l3_agent_conf_path=self.l3_agent_conf_path,
+                    connection=self.connection)
+            except sh.ShellCommandFailed:
+                LOG.debug('Unable to read L3 agent mode for host '
+                          f'{self.hostname}. Assuming legacy mode.',
+                          exc_info=1)
+                self._l3_agent_mode = 'legacy'
+        return self._l3_agent_mode
 
     def __repr__(self):
         return "{cls!s}<name={name!r}>".format(cls=type(self).__name__,
@@ -383,17 +425,22 @@ class OpenStackTopology(tobiko.SharedFixture):
                           f"used by node '{address_node.name}'")
         return node
 
-    def get_node(self, name=None, hostname=None, address=None):
-        name = name or (hostname and node_name_from_hostname(hostname))
+    def get_node(self,
+                 name: str = None,
+                 hostname: str = None,
+                 address=None) \
+            -> 'OpenStackTopologyNode':
+        if name is None and hostname is not None:
+            name = node_name_from_hostname(hostname)
         details = {}
-        if name:
+        if name is not None:
             tobiko.check_valid_type(name, str)
             details['name'] = name
             try:
                 return self._names[name]
             except KeyError:
                 pass
-        if address:
+        if address is not None:
             details['address'] = address
             for address in self._list_addresses(address):
                 try:
