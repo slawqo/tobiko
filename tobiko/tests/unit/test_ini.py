@@ -13,6 +13,10 @@
 #    under the License.
 from __future__ import absolute_import
 
+import io
+import os
+import tempfile
+
 import tobiko
 from tobiko.tests import unit
 
@@ -23,8 +27,30 @@ class ParseIniFileTest(unit.TobikoUnitTest):
         text = """
         my_option = my value
         """
-        result = tobiko.parse_ini_file(text=text, section='default-section')
-        self.assertEqual({('default-section', 'my_option'): 'my value'},
+        result = tobiko.parse_ini_file(text=text)
+        self.assertEqual({('DEFAULT', 'my_option'): 'my value'},
+                         result)
+
+    def test_parse_ini_with_lines(self):
+        lines = ['a = 3',
+                 'b=4']
+        result = tobiko.parse_ini_file(text=lines)
+        self.assertEqual({('DEFAULT', 'a'): '3',
+                          ('DEFAULT', 'b'): '4'},
+                         result)
+
+    def test_parse_ini_with_io(self):
+        text = """
+        my_option = my value
+        """
+        fd, temp_file = tempfile.mkstemp(text=True)
+        self.addCleanup(os.remove, temp_file)
+        with os.fdopen(fd, 'wt') as stream:
+            stream.write(text)
+
+        with io.open(temp_file, 'rt') as stream:
+            result = tobiko.parse_ini_file(text=stream)
+        self.assertEqual({('DEFAULT', 'my_option'): 'my value'},
                          result)
 
     def test_parse_ini_file_with_default_section(self):

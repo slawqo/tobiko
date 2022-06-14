@@ -15,11 +15,16 @@ from __future__ import absolute_import
 
 import typing
 
+IniFileTextType = typing.Union[str, typing.Iterable[str]]
 
-def parse_ini_file(text: str, section='DEFAULT') \
+
+def parse_ini_file(text: IniFileTextType,
+                   section='DEFAULT') \
         -> typing.Dict[typing.Tuple[str, str], typing.Any]:
+    if isinstance(text, str):
+        text = text.splitlines()
     content: typing.Dict[typing.Tuple[str, str], typing.Any] = {}
-    for line in text.splitlines():
+    for line in text:
         line = line.rsplit('#', 1)[0]  # Remove comments
         line = line.strip()  # strip whitespaces
         if not line:
