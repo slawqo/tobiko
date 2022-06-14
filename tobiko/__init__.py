@@ -22,6 +22,7 @@ from tobiko.common import _deprecation
 from tobiko.common import _detail
 from tobiko.common import _exception
 from tobiko.common import _fixture
+from tobiko.common import _ini
 from tobiko.common import _loader
 from tobiko.common import _logging
 from tobiko.common import _operation
@@ -81,6 +82,8 @@ list_required_fixtures = _fixture.list_required_fixtures
 SharedFixture = _fixture.SharedFixture
 FixtureManager = _fixture.FixtureManager
 RequiredFixture = _fixture.RequiredFixture
+
+parse_ini_file = _ini.parse_ini_file
 
 CaptureLogFixture = _logging.CaptureLogFixture
 
