@@ -25,11 +25,11 @@ class ShiftStackCloudsFileFixture(tobiko.SharedFixture):
     def __init__(self,
                  local_clouds_file_path: str = None,
                  remote_clouds_file_path: str = None,
-                 sh_connection: sh.ShellConnection = None):
+                 connection: sh.ShellConnection = None):
         super(ShiftStackCloudsFileFixture, self).__init__()
         self._local_clouds_file_path = local_clouds_file_path
         self._remote_clouds_file_path = remote_clouds_file_path
-        self._sh_connection = sh_connection
+        self._connection = connection
 
     @property
     def local_clouds_file_path(self) -> str:
@@ -48,18 +48,17 @@ class ShiftStackCloudsFileFixture(tobiko.SharedFixture):
         return self._remote_clouds_file_path
 
     @property
-    def sh_connection(self) -> sh.ShellConnection:
-        if self._sh_connection is None:
-            self._sh_connection = sh.shell_connection(
-                ssh_client=tripleo.undercloud_ssh_client())
-        assert isinstance(self._sh_connection, sh.ShellConnection)
-        return self._sh_connection
+    def connection(self) -> sh.ShellConnection:
+        if self._connection is None:
+            self._connection = sh.shell_connection(
+                tripleo.undercloud_ssh_client())
+        assert isinstance(self._connection, sh.ShellConnection)
+        return self._connection
 
     def setup_fixture(self):
         tobiko.makedirs(os.path.dirname(self.local_clouds_file_path),
                         exist_ok=True)
-        self.sh_connection.execute(f'cat {self.remote_clouds_file_path}')
-        self.sh_connection.get_file(
+        self.connection.get_file(
             remote_file=self.remote_clouds_file_path,
             local_file=self.local_clouds_file_path)
 

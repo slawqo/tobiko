@@ -188,6 +188,10 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         return self.ssh_client
 
     @property
+    def connection(self) -> sh.SSHShellConnection:
+        return sh.ssh_shell_connection(self.ssh_client)
+
+    @property
     def ssh_command(self) -> sh.ShellCommand:
         return ssh.ssh_command(host=self.ip_address,
                                username=self.username)

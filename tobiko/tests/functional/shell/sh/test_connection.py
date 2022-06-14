@@ -64,12 +64,12 @@ class LocalShellConnectionTest(testtools.TestCase):
 
     @property
     def connection(self) -> sh.ShellConnection:
-        return sh.shell_connection(ssh_client=self.ssh_client)
+        return sh.shell_connection(self.ssh_client)
 
     connection_class = sh.LocalShellConnection
 
     def test_shell_connection(self):
-        connection = sh.shell_connection(ssh_client=self.ssh_client)
+        connection = sh.shell_connection(self.ssh_client)
         self.assertIsInstance(connection, self.connection_class)
         self.assertIs(self.connection, connection)
 
@@ -81,7 +81,7 @@ class LocalShellConnectionTest(testtools.TestCase):
         self.assertIs(self.is_local, self.connection.is_local)
 
     def test_is_local_connection(self):
-        is_local = sh.is_local_connection(ssh_client=self.ssh_client)
+        is_local = sh.is_local_connection(self.ssh_client)
         self.assertIs(self.is_local, is_local)
 
     @property
@@ -92,7 +92,7 @@ class LocalShellConnectionTest(testtools.TestCase):
         self.assertEqual(self.hostname, self.connection.hostname)
 
     def test_connection_hostname(self):
-        hostname = sh.connection_hostname(ssh_client=self.ssh_client)
+        hostname = sh.connection_hostname(self.ssh_client)
         self.assertEqual(self.hostname, hostname)
 
     @property
@@ -103,7 +103,7 @@ class LocalShellConnectionTest(testtools.TestCase):
         self.assertEqual(self.login, self.connection.login)
 
     def test_connection_login(self):
-        login = sh.connection_login(ssh_client=self.ssh_client)
+        login = sh.connection_login(self.ssh_client)
         self.assertEqual(self.login, login)
 
     @property
@@ -114,7 +114,7 @@ class LocalShellConnectionTest(testtools.TestCase):
         self.assertEqual(self.username, self.connection.username)
 
     def test_connection_username(self):
-        username = sh.connection_username(ssh_client=self.ssh_client)
+        username = sh.connection_username(self.ssh_client)
         self.assertEqual(self.username, username)
 
     @property
@@ -125,7 +125,7 @@ class LocalShellConnectionTest(testtools.TestCase):
         self.assertIs(self.is_cirros, self.connection.is_cirros)
 
     def test_is_cirros_connection(self):
-        is_cirros = sh.is_cirros_connection(ssh_client=self.ssh_client)
+        is_cirros = sh.is_cirros_connection(self.ssh_client)
         self.assertIs(self.is_cirros, is_cirros)
 
     @property
@@ -143,7 +143,7 @@ class LocalShellConnectionTest(testtools.TestCase):
         self.assertFalse(os.path.isfile(local_file))
         sh.get_file(local_file=local_file,
                     remote_file=remote_file,
-                    ssh_client=self.ssh_client)
+                    connection=self.ssh_client)
         self.assertTrue(os.path.isfile(local_file), 'file not copied')
         with io.open(local_file, 'rt') as fd:
             self.assertEqual(f'{text}\n', fd.read())
@@ -161,7 +161,7 @@ class LocalShellConnectionTest(testtools.TestCase):
                           ssh_client=self.ssh_client)
         sh.put_file(remote_file=remote_file,
                     local_file=local_file,
-                    ssh_client=self.ssh_client)
+                    connection=self.ssh_client)
         output = sh.execute(f"cat '{remote_file}'",
                             ssh_client=self.ssh_client).stdout
         self.assertEqual(text, output)
@@ -181,7 +181,7 @@ class LocalShellConnectionTest(testtools.TestCase):
                           ssh_client=self.ssh_client)
         sh.put_files(local_dir,
                      remote_dir=remote_dir,
-                     ssh_client=self.ssh_client)
+                     connection=self.ssh_client)
         output = sh.execute(f"cat '{remote_file}'",
                             ssh_client=self.ssh_client).stdout
         self.assertEqual(text, output)

@@ -42,13 +42,16 @@ shell_command = _command.shell_command
 
 LocalShellConnection = _connection.LocalShellConnection
 ShellConnection = _connection.ShellConnection
+ShellConnectionType = _connection.ShellConnectionType
 SSHShellConnection = _connection.SSHShellConnection
 connection_hostname = _connection.connection_hostname
 connection_login = _connection.connection_login
 connection_username = _connection.connection_username
 local_shell_connection = _connection.local_shell_connection
+open_file = _connection.open_file
 register_shell_connection = _connection.register_shell_connection
 shell_connection = _connection.shell_connection
+ssh_shell_connection = _connection.ssh_shell_connection
 is_cirros_connection = _connection.is_cirros_connection
 is_local_connection = _connection.is_local_connection
 put_file = _connection.put_file

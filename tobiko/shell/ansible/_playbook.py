@@ -63,19 +63,18 @@ class AnsiblePlaybook(tobiko.SharedFixture):
     def ssh_client(self) -> ssh.SSHClientType:
         return self._ssh_client
 
-    _sh_connection: typing.Optional[sh.ShellConnection] = None
+    _connection: typing.Optional[sh.ShellConnection] = None
 
     @property
-    def sh_connection(self) -> sh.ShellConnection:
-        if self._sh_connection is None:
-            self._sh_connection = sh.shell_connection(
-                ssh_client=self.ssh_client)
-        return self._sh_connection
+    def connection(self) -> sh.ShellConnection:
+        if self._connection is None:
+            self._connection = sh.shell_connection(self.ssh_client)
+        return self._connection
 
     @property
     def work_dir(self) -> str:
         if self._work_dir is None:
-            self._work_dir = self.sh_connection.make_temp_dir(auto_clean=False)
+            self._work_dir = self.connection.make_temp_dir(auto_clean=False)
             self._work_files = {}
         return self._work_dir
 
@@ -188,8 +187,8 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                 work_filename = os.path.join(
                     self.work_dir, os.path.basename(filename))
             if sub_dir is not None:
-                self.sh_connection.make_dirs(os.path.dirname(work_filename))
-            self.sh_connection.put_file(filename, work_filename)
+                self.connection.make_dirs(os.path.dirname(work_filename))
+            self.connection.put_file(filename, work_filename)
             self._work_files[filename] = work_filename
         return work_filename
 
@@ -209,8 +208,8 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                 work_dir = self.work_dir
             else:
                 work_dir = os.path.join(self.work_dir, sub_dir)
-            self.sh_connection.put_files(*sorted(missing_filenames),
-                                         remote_dir=work_dir)
+            self.connection.put_files(*sorted(missing_filenames),
+                                      remote_dir=work_dir)
             for filename in filenames:
                 work_filename = os.path.join(
                     work_dir, os.path.basename(filename))
@@ -219,10 +218,10 @@ class AnsiblePlaybook(tobiko.SharedFixture):
         return sorted(work_filenames)
 
     def cleanup_fixture(self):
-        self._sh_connection = None
+        self._connection = None
         self._work_files = None
         if self._work_dir is not None:
-            self.sh_connection.remove_files(self._work_dir)
+            self.connection.remove_files(self._work_dir)
             self._work_dir = None
 
     def _get_command(self,
@@ -289,7 +288,7 @@ class AnsiblePlaybook(tobiko.SharedFixture):
             command += ['-p', collections_dirname]
             for work_file in work_files:
                 command += ['-r', work_file]
-            self.sh_connection.execute(command=command)
+            self.connection.execute(command=command)
 
     def _ensure_requirements_files(
             self,
@@ -333,7 +332,7 @@ class AnsiblePlaybook(tobiko.SharedFixture):
                                     roles=roles,
                                     roles_path=roles_path,
                                     verbosity=verbosity)
-        return self.sh_connection.execute(command, current_dir=self.work_dir)
+        return self.connection.execute(command, current_dir=self.work_dir)
 
 
 def local_ansible_playbook() -> 'AnsiblePlaybook':

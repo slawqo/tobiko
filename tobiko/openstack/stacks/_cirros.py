@@ -76,7 +76,7 @@ class CirrosServerStackFixture(_nova.ServerStackFixture):
     @property
     def ssh_client(self) -> ssh.SSHClientFixture:
         ssh_client = super().ssh_client
-        connection = sh.shell_connection(ssh_client=ssh_client)
+        connection = sh.shell_connection(ssh_client)
         if not connection.is_cirros:
             connection = CirrosShellConnection(ssh_client=ssh_client)
             sh.register_shell_connection(connection)

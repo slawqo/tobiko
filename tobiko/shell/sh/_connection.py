@@ -36,79 +36,76 @@ from tobiko.shell import ssh
 
 LOG = log.getLogger(__name__)
 
-
-def connection_hostname(ssh_client: ssh.SSHClientType = None) -> str:
-    return shell_connection(ssh_client=ssh_client).hostname
+ShellConnectionType = typing.Union['ShellConnection', ssh.SSHClientType]
 
 
-def connection_login(ssh_client: ssh.SSHClientType = None) -> str:
-    return shell_connection(ssh_client=ssh_client).login
+def connection_hostname(connection: ShellConnectionType = None) -> str:
+    return shell_connection(connection).hostname
 
 
-def connection_username(ssh_client: ssh.SSHClientType = None) -> str:
-    return shell_connection(ssh_client=ssh_client).username
+def connection_login(connection: ShellConnectionType = None) -> str:
+    return shell_connection(connection).login
 
 
-def is_local_connection(ssh_client: ssh.SSHClientType = None) -> bool:
-    return shell_connection(ssh_client=ssh_client).is_local
+def connection_username(connection: ShellConnectionType = None) -> str:
+    return shell_connection(connection).username
 
 
-def is_cirros_connection(ssh_client: ssh.SSHClientType = None) -> bool:
-    return shell_connection(ssh_client=ssh_client).is_cirros
+def is_local_connection(connection: ShellConnectionType = None) -> bool:
+    return shell_connection(connection).is_local
+
+
+def is_cirros_connection(connection: ShellConnectionType = None) -> bool:
+    return shell_connection(connection).is_cirros
 
 
 def get_file(remote_file: str,
              local_file: str,
-             ssh_client: ssh.SSHClientType = None) -> bool:
-    return shell_connection(
-        ssh_client=ssh_client).get_file(remote_file=remote_file,
-                                        local_file=local_file)
+             connection: ShellConnectionType = None):
+    return shell_connection(connection).get_file(
+        remote_file=remote_file, local_file=local_file)
 
 
 def open_file(filename: typing.Union[str, bytes],
               mode: str,
               buffering: int = None,
-              ssh_client: ssh.SSHClientType = None) \
+              connection: ShellConnectionType = None) \
             -> typing.Union[typing.IO, paramiko.sftp_file.SFTPFile]:
-    return shell_connection(
-        ssh_client=ssh_client).open_file(filename=filename,
-                                         mode=mode,
-                                         buffering=buffering)
+    return shell_connection(connection).open_file(
+        filename=filename, mode=mode, buffering=buffering)
 
 
 def put_file(local_file: str,
              remote_file: str,
-             ssh_client: ssh.SSHClientType = None) -> bool:
-    return shell_connection(
-        ssh_client=ssh_client).put_file(local_file=local_file,
-                                        remote_file=remote_file)
+             connection: ShellConnectionType = None):
+    return shell_connection(connection).put_file(
+        local_file=local_file, remote_file=remote_file)
 
 
 def put_files(*local_files: str,
               remote_dir: str,
-              ssh_client: ssh.SSHClientType = None) -> bool:
-    return shell_connection(
-        ssh_client=ssh_client).put_files(*local_files,
-                                         remote_dir=remote_dir)
+              connection: ShellConnectionType = None):
+    return shell_connection(connection).put_files(*local_files,
+                                                  remote_dir=remote_dir)
 
 
-def make_temp_dir(ssh_client: ssh.SSHClientType = None,
-                  auto_clean=True,
-                  sudo: bool = None) -> str:
-    return shell_connection(ssh_client=ssh_client).make_temp_dir(
+def make_temp_dir(auto_clean=True,
+                  sudo: bool = None,
+                  connection: ShellConnectionType = None) -> str:
+    return shell_connection(connection).make_temp_dir(
         auto_clean=auto_clean, sudo=sudo)
 
 
 def remove_files(filename: str, *filenames: str,
-                 ssh_client: ssh.SSHClientType = None) -> str:
-    return shell_connection(ssh_client=ssh_client).remove_files(
+                 connection: ShellConnectionType = None) -> str:
+    return shell_connection(connection).remove_files(
         filename, *filenames)
 
 
 def make_dirs(name: str,
               exist_ok=True,
-              ssh_client: ssh.SSHClientType = None) -> str:
-    return shell_connection(ssh_client=ssh_client).make_dirs(
+              connection: ShellConnectionType = None) -> str:
+    return shell_connection(connection).make_dirs(
         name=name, exist_ok=exist_ok)
 
 
@@ -116,11 +113,21 @@ def local_shell_connection() -> 'LocalShellConnection':
     return tobiko.get_fixture(LocalShellConnection)
 
 
-def shell_connection(ssh_client: ssh.SSHClientType = None,
-                     manager: 'ShellConnectionManager' = None) -> \
-        'ShellConnection':
-    return shell_connection_manager(manager).get_shell_connection(
-        ssh_client=ssh_client)
+def shell_connection(obj: ShellConnectionType = None,
+                     manager: 'ShellConnectionManager' = None) \
+        -> 'ShellConnection':
+    if isinstance(obj, ShellConnection):
+        return obj
+    else:
+        return shell_connection_manager(manager).get_shell_connection(
+            ssh_client=obj)
+
+
+def ssh_shell_connection(obj: ShellConnectionType = None,
+                         manager: 'ShellConnectionManager' = None) \
+        -> 'SSHShellConnection':
+    connection = shell_connection(obj, manager=manager)
+    return tobiko.check_valid_type(connection, SSHShellConnection)
 
 
 def register_shell_connection(connection: 'ShellConnection',
@@ -148,8 +155,7 @@ class ShellConnectionManager(tobiko.SharedFixture):
         self._host_connections: typing.Dict['ShellConnectionKey',
                                             'ShellConnection'] = {}
 
-    def get_shell_connection(self,
-                             ssh_client: ssh.SSHClientType) -> \
+    def get_shell_connection(self, ssh_client: ssh.SSHClientType) -> \
             'ShellConnection':
         ssh_client = ssh.ssh_client_fixture(ssh_client)
         connection = self._host_connections.get(ssh_client)
