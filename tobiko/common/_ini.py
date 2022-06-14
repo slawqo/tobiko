@@ -15,8 +15,6 @@ from __future__ import absolute_import
 
 import typing
 
-IniFileStreamType = typing.Union[str]
-
 
 def parse_ini_file(text: str, section='DEFAULT') \
         -> typing.Dict[typing.Tuple[str, str], typing.Any]:
