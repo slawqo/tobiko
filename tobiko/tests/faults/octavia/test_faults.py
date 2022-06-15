@@ -20,6 +20,7 @@ from oslo_log import log
 import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack import octavia
+from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.shell import ssh
 from tobiko.shell import sh
@@ -140,6 +141,8 @@ class OctaviaBasicFaultTest(testtools.TestCase):
                 if attempt.is_last:
                     raise
 
+        self._plug_new_amphora_to_existing_fip()
+
     def test_kill_amphora_agent(self):
         """Kill the MASTER amphora agent
 
@@ -229,3 +232,11 @@ class OctaviaBasicFaultTest(testtools.TestCase):
             lb_algorithm=self.listener_stack.lb_algorithm,
             protocol=self.listener_stack.lb_protocol,
             port=self.listener_stack.lb_port)
+
+        self._plug_new_amphora_to_existing_fip()
+
+    def _plug_new_amphora_to_existing_fip(self):
+        old_amphora_fip = self.listener_stack.amphora_floating_ip
+        amphora_mgmt_port = self.listener_stack.amphora_mgmt_port
+        neutron.update_floating_ip(floating_ip=old_amphora_fip['id'],
+                                   port_id=amphora_mgmt_port['id'])

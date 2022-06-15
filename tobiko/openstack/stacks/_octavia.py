@@ -261,6 +261,28 @@ class HttpRoundRobinAmphoraIpv4Listener(heat.HeatStackFixture):
                               username='cloud-user',
                               connection_timeout=10)
 
+    @property
+    def amphora_mgmt_port(self) -> neutron.PortType:
+        """ Get amphora's management network's port
+
+        Attaching a floating ip to the amphora's management port will allow
+        SSHing the amphora.
+        Disabling the amphora's management port will cause a failover.
+        """
+        # Calling self.amphora in a loop would decrease performance
+        amphora = self.amphora
+
+        for port in neutron.list_ports():
+            for fixed_ip in port['fixed_ips']:
+                if fixed_ip['ip_address'] == amphora['lb_network_ip']:
+                    return port
+
+        # This should never happen
+        raise octavia.AmphoraMgmtPortNotFound(
+            reason='Could not find the Network Managment Port of'
+                   ' amphora {amphora}'.
+            format(amphora=amphora['id']))
+
 
 class HttpRoundRobinAmphoraIpv6Listener(HttpRoundRobinAmphoraIpv4Listener):
     ip_version = 6
