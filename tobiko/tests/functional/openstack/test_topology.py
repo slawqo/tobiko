@@ -187,6 +187,7 @@ def node_name_from_hostname(hostname):
     return hostname.split('.', 1)[0].lower()
 
 
+@keystone.skip_unless_has_keystone_credentials()
 class HostsNamespaceTest(testtools.TestCase):
 
     @property
