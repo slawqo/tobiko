@@ -682,18 +682,28 @@ def remove_duplications(items: typing.List) -> typing.List:
 
 
 def _is_version_matched(current, required, higher=False, lower=False):
-    if not higher and not lower:
+    # return True means the condition has been fulfilled and next items do not
+    # need to be compared
+    # return False means the condition has not been fulfilled and next items do
+    # not need to be compared
+    # return None means the condition has been fulfilled so far, but next items
+    # need to be compared too
+    if not higher and not lower:  # this means equal
         if int(current) != int(required):
             return False
-    elif higher and lower:
-        pass
+        else:
+            return None
     elif higher:
         if int(current) < int(required):
             return False
     elif lower:
         if int(current) > int(required):
             return False
-    return True
+    else:
+        raise RuntimeError
+    if int(current) != int(required):
+        return True
+    # else: return None
 
 
 def verify_osp_version(version, higher=False, lower=False):
@@ -708,11 +718,13 @@ def verify_osp_version(version, higher=False, lower=False):
         os_version = current_version.split('.')
         required_version = version.split('.')
         for version_type in range(len(required_version)):
-            if not _is_version_matched(os_version[version_type],
-                                       required_version[version_type],
-                                       higher=higher,
-                                       lower=lower):
-                correct_version = False
+            is_version_match = _is_version_matched(
+                os_version[version_type],
+                required_version[version_type],
+                higher=higher,
+                lower=lower)
+            if is_version_match is not None:
+                correct_version = is_version_match
                 break
     return correct_version
 

@@ -18,6 +18,7 @@ import typing
 import tobiko
 from tobiko import config
 from tobiko.openstack import glance
+from tobiko.openstack import topology
 from tobiko.openstack.stacks import _nova
 from tobiko.openstack.stacks import _vlan
 from tobiko.shell import sh
@@ -217,6 +218,7 @@ class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture,
         return self.image_fixture.vlan_device
 
 
+@topology.skip_unless_osp_version('17.0', lower=True)
 class UbuntuExternalServerStackFixture(UbuntuServerStackFixture,
                                        _nova.ExternalServerStackFixture):
     """Ubuntu server with port on special external network
