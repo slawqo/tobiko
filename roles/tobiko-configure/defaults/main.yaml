@@ -13,6 +13,8 @@ test_default_conf:
   tripleo:
     undercloud_ssh_hostname: "{{ undercloud_ssh_hostname }}"
     overcloud_ssh_username: "{{ overcloud_ssh_username }}"
+  ubuntu:
+    interface_name:  "{{ ubuntu_interface_name }}"
 
 test_log_debug: ''
 
@@ -26,3 +28,5 @@ undercloud_hostname: '{{ groups.get("undercloud", []) | first | default("undercl
 undercloud_ssh_hostname: ''
 
 overcloud_ssh_username: ''
+
+ubuntu_interface_name: ''

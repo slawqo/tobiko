@@ -62,6 +62,8 @@ def get_images_options():
                         help="Default " + name + " username"),
              cfg.StrOpt('password',
                         help="Default " + name + " password"),
+             cfg.StrOpt('interface_name',
+                        help="Default " + name + " interface name"),
              cfg.FloatOpt('connection_timeout',
                           default=None,
                           help=("Default " + name +

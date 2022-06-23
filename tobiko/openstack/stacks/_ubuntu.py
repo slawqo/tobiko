@@ -118,7 +118,7 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
 
     @property
     def ethernet_device(self) -> str:
-        return 'ens3'
+        return CONF.tobiko.ubuntu.interface_name or 'ens3'
 
     @property
     def vlan_id(self) -> int:
