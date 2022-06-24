@@ -71,10 +71,23 @@ def load_undercloud_rcfile() -> typing.Dict[str, str]:
     return fetch_os_env(*CONF.tobiko.tripleo.undercloud_rcfile)
 
 
-class UndercloudKeystoneCredentialsFixture(
+class EnvironUndercloudKeystoneCredentialsFixture(
         keystone.EnvironKeystoneCredentialsFixture):
     def get_environ(self) -> typing.Dict[str, str]:
         return load_undercloud_rcfile()
+
+
+class CloudsFileUndercloudKeystoneCredentialsFixture(
+        keystone.CloudsFileKeystoneCredentialsFixture):
+
+    def __init__(self, credentials=None, cloud_name=None,
+                 clouds_content=None, clouds_file=None, clouds_files=None):
+        cloud_name = cloud_name or load_undercloud_rcfile()['OS_CLOUD']
+
+        super(CloudsFileUndercloudKeystoneCredentialsFixture, self).__init__(
+            credentials=credentials, cloud_name=cloud_name,
+            clouds_content=clouds_content, clouds_file=clouds_file,
+            clouds_files=clouds_files)
 
 
 class HasUndercloudFixture(tobiko.SharedFixture):
@@ -142,11 +155,19 @@ def undercloud_keystone_client():
     return keystone.get_keystone_client(session=session)
 
 
+def _get_keystone_credentials():
+    environ = load_undercloud_rcfile()
+    if 'OS_CLOUD' in environ:
+        credentials = CloudsFileUndercloudKeystoneCredentialsFixture
+    else:
+        credentials = EnvironUndercloudKeystoneCredentialsFixture
+    return credentials
+
+
 def undercloud_keystone_session():
     return keystone.get_keystone_session(
-        credentials=UndercloudKeystoneCredentialsFixture)
+        credentials=_get_keystone_credentials())
 
 
 def undercloud_keystone_credentials():
-    return tobiko.setup_fixture(
-        UndercloudKeystoneCredentialsFixture).credentials
+    return tobiko.setup_fixture(_get_keystone_credentials()).credentials
