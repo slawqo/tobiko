@@ -14,6 +14,9 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
+import json
+import re
 import typing
 
 import pytest
@@ -24,8 +27,8 @@ import tobiko
 from tobiko import config
 from tobiko.shell import ping
 from tobiko.shell import ip
-from tobiko.shell import ssh
 from tobiko.openstack import neutron
+from tobiko.openstack import nova
 from tobiko.openstack import stacks
 from tobiko.openstack import topology
 
@@ -150,73 +153,185 @@ class L3HARouterTest(RouterTest):
                 backup_agent['host'], state="backup")
 
 
-class DistributedRouterStackFixture(stacks.RouterStackFixture):
+class RouterNamespaceTestBase:
+
+    server_stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
+
+    host_groups = ['overcloud', 'compute', 'controller']
+
+    @property
+    def hostnames(self) -> typing.List[str]:
+        return sorted(
+            node.hostname
+            for node in topology.list_openstack_nodes(group=self.host_groups))
+
+    @property
+    def router_stack(self) -> stacks.RouterStackFixture:
+        return self.network_stack.gateway_stack
+
+    @property
+    def network_stack(self) -> stacks.NetworkStackFixture:
+        return self.server_stack.network_stack
+
+    @property
+    def router_id(self) -> str:
+        return self.router_stack.router_id
+
+    @property
+    def router_details(self) -> neutron.RouterType:
+        return self.router_stack.router_details
+
+    @property
+    def router_namespace(self) -> str:
+        return neutron.get_ovs_router_namespace(self.router_id)
+
+
+@neutron.skip_unless_is_ovs()
+class OvsRouterNamespaceTest(RouterNamespaceTestBase, testtools.TestCase):
+
+    def test_router_namespace(self):
+        """Check router namespace is being created on cloud hosts
+
+        When A VM running in a compute node is expected to route
+        packages to a router, a network namespace is expected to exist on
+        compute name that is named after the router ID
+        """
+        ping.assert_reachable_hosts([self.server_stack.floating_ip_address])
+        topology.assert_namespace_in_hosts(self.router_namespace,
+                                           hostnames=self.hostnames)
+
+
+@neutron.skip_if_missing_networking_extensions('dvr')
+class DvrRouterStackFixture(stacks.RouterStackFixture):
     distributed = True
 
 
-@pytest.mark.ovn_migration
-class RouterNamespaceTest(testtools.TestCase):
+class DvrNetworkStackFixture(stacks.NetworkStackFixture):
+    gateway_stack = tobiko.required_fixture(DvrRouterStackFixture,
+                                            setup=False)
 
-    server_stack = tobiko.required_fixture(stacks.CirrosServerStackFixture)
-    distributed_router_stack = (
-        tobiko.required_fixture(DistributedRouterStackFixture))
 
-    @neutron.skip_unless_is_ovn()
-    def test_router_namespace_on_ovn(self):
-        """Check router namespace is being created on compute host
+class DvrServerStackFixture(stacks.CirrosServerStackFixture):
+    network_stack = tobiko.required_fixture(DvrNetworkStackFixture,
+                                            setup=False)
 
-        When A VM running in a compute node is expected to route
-        packages to a router, a network namespace is expected to exist on
-        compute name that is named after the router ID
-        """
-        router = self.server_stack.network_stack.gateway_details
-        self.assert_has_not_router_namespace(router=router)
 
-    @neutron.skip_unless_is_ovs()
-    def test_router_namespace_on_ovs(self):
-        """Check router namespace is being created on compute host
+L3_AGENT_MODE_DVR = re.compile(r'^dvr_')
 
-        When A VM running in a compute node is expected to route
-        packages to a router, a network namespace is expected to exist on
-        compute name that is named after the router ID
-        """
-        router = self.server_stack.network_stack.gateway_details
-        self.assert_has_router_namespace(router=router)
 
-    @neutron.skip_unless_is_ovs()
-    @neutron.skip_if_missing_networking_extensions('dvr')
-    def test_distributed_router_namespace(self):
-        """Test that no router namespace is created for DVR on compute node
+def is_l3_agent_mode_dvr(agent_mode: str) -> bool:
+    return L3_AGENT_MODE_DVR.match(agent_mode) is not None
 
-        When A VM running in a compute node is not expected to route
-        packages to a given router, a network namespace is not expected to
-        exist on compute name that is named after the router ID
-        """
-        router = self.distributed_router_stack.router_details
-        self.assertTrue(router['distributed'])
-        self.assert_has_not_router_namespace(router=router)
 
-    def assert_has_router_namespace(self, router: neutron.RouterType):
-        router_namespace = f"qrouter-{router['id']}"
-        self.assertIn(router_namespace,
-                      self.list_network_namespaces(),
-                      "No such router network namespace on hypervisor host")
+@neutron.skip_if_missing_networking_extensions('dvr')
+class DvrRouterNamespaceTest(RouterNamespaceTestBase, testtools.TestCase):
 
-    def assert_has_not_router_namespace(self, router: neutron.RouterType):
-        router_namespace = f"qrouter-{router['id']}"
-        self.assertNotIn(router_namespace,
-                         self.list_network_namespaces(),
-                         "Router network namespace found on hypervisor host")
+    server_stack = tobiko.required_fixture(DvrServerStackFixture, setup=False)
+
+    def setUp(self):
+        super().setUp()
+        if self.legacy_hostnames:
+            self.skipTest(f'Host(s) {self.legacy_hostnames!r} with legacy '
+                          'L3 agent mode')
+
+    host_groups = ['compute']
 
     @property
-    def hypervisor_ssh_client(self) -> ssh.SSHClientFixture:
-        # Check the VM can reach a working gateway
-        ping.assert_reachable_hosts([self.server_stack.ip_address])
-        # List namespaces on hypervisor node
-        hypervisor = topology.get_openstack_node(
-            hostname=self.server_stack.hypervisor_hostname)
-        return hypervisor.ssh_client
+    def snat_namespace(self) -> str:
+        return f'snat-{self.router_id}'
 
-    def list_network_namespaces(self) -> typing.List[str]:
-        return ip.list_network_namespaces(
-            ssh_client=self.hypervisor_ssh_client)
+    _agent_modes: typing.Optional[typing.Dict[str, typing.List[str]]] = None
+
+    @property
+    def agent_modes(self) \
+            -> typing.Dict[str, typing.List[str]]:
+        if self._agent_modes is None:
+            self._agent_modes = collections.defaultdict(list)
+            for node in topology.list_openstack_nodes(
+                    hostnames=self.hostnames):
+                self._agent_modes[node.l3_agent_mode].append(node.name)
+            agent_modes_dump = json.dumps(self._agent_modes,
+                                          indent=4, sort_keys=True)
+            LOG.info(f"Got L3 agent modes:\n{agent_modes_dump}")
+        return self._agent_modes
+
+    @property
+    def legacy_hostnames(self) -> typing.List[str]:
+        return self.agent_modes['legacy']
+
+    @property
+    def dvr_hostnames(self) -> typing.List[str]:
+        return self.agent_modes['dvr'] + self.agent_modes['dvr_no_external']
+
+    @property
+    def dvr_snat_hostnames(self) -> typing.List[str]:
+        return self.agent_modes['dvr_snat']
+
+    def test_1_dvr_router_without_server(self):
+        if self.dvr_hostnames:
+            self.cleanup_stacks()
+            self.setup_router()
+            topology.assert_namespace_not_in_hosts(
+                self.router_namespace,
+                self.snat_namespace,
+                hostnames=self.dvr_hostnames)
+        else:
+            self.skipTest(f'All hosts {self.hostnames!r} have '
+                          'dvr_snat L3 agent mode')
+
+    def test_2_dvr_snat_router_namespaces(self):
+        if self.dvr_snat_hostnames:
+            self.setup_router()
+            topology.wait_for_namespace_in_hosts(
+                self.router_namespace,
+                self.snat_namespace,
+                hostnames=self.dvr_snat_hostnames)
+        else:
+            self.skipTest(f'Any host {self.hostnames!r} has '
+                          'dvr_snat L3 agent mode')
+
+    def test_3_dvr_router_namespace_with_server(self):
+        self.setup_server()
+        self.wait_for_namespace_in_hypervisor_host()
+
+    def wait_for_namespace_in_hypervisor_host(self):
+        hypervisor_hostname = self.server_stack.hypervisor_hostname
+        agent_mode = topology.get_l3_agent_mode(hypervisor_hostname)
+        LOG.info(f"Hypervisor host '{hypervisor_hostname}' has DVR agent "
+                 f"mode: '{agent_mode}'")
+        topology.wait_for_namespace_in_hosts(self.router_namespace,
+                                             hostnames=[hypervisor_hostname])
+
+    def test_4_server_is_reachable(self):
+        self.setup_server()
+        try:
+            self.server_stack.assert_is_reachable()
+        except ping.PingFailed:
+            server_id = self.server_stack.server_id
+            server_log = nova.get_console_output(server_id=server_id)
+            LOG.exception(f"Unable to reach server {server_id}...\n"
+                          f"{server_log}\n")
+            self.wait_for_namespace_in_hypervisor_host()
+            nova.reboot_server(server=server_id)
+            self.server_stack.assert_is_reachable()
+
+    def cleanup_stacks(self):
+        for stack in [self.server_stack,
+                      self.network_stack,
+                      self.router_stack]:
+            tobiko.cleanup_fixture(stack)
+
+    def setup_router(self):
+        router = tobiko.setup_fixture(self.router_stack).router_details
+        router_dump = json.dumps(router, indent=4, sort_keys=True)
+        LOG.debug(f"Testing DVR router namespace: {router['id']}:\n"
+                  f"{router_dump}\n")
+        self.assertTrue(router['distributed'])
+
+    def setup_network(self):
+        self.setup_router()
+        tobiko.setup_fixture(self.network_stack)
+
+    def setup_server(self):
+        self.setup_network()
+        tobiko.setup_fixture(self.server_stack)

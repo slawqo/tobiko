@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import collections
+import json
 import typing
 
 import tobiko
@@ -36,23 +37,59 @@ def get_hosts_namespaces(hostnames: typing.Iterable[str] = None,
     return namespaces
 
 
-def assert_namespace_in_hosts(namespace: str,
+def wait_for_namespace_in_hosts(*namespaces: str,
+                                hostnames: typing.Iterable[str] = None,
+                                timeout: tobiko.Seconds = None,
+                                count: int = None,
+                                interval: tobiko.Seconds = None,
+                                present=True,
+                                **params):
+    for attempt in tobiko.retry(timeout=timeout,
+                                count=count,
+                                interval=interval,
+                                default_timeout=60.,
+                                default_interval=5.):
+        try:
+            if present:
+                assert_namespace_in_hosts(*namespaces,
+                                          hostnames=hostnames,
+                                          **params)
+            else:
+                assert_namespace_not_in_hosts(*namespaces,
+                                              hostnames=hostnames,
+                                              **params)
+        except tobiko.FailureException:  # type: ignore
+            if attempt.is_last:
+                raise
+        else:
+            break
+
+
+def assert_namespace_in_hosts(*namespaces: str,
                               hostnames: typing.Iterable[str] = None,
                               **params):
-    namespaces = get_hosts_namespaces(hostnames=hostnames, **params)
-    actual_hostnames = set(_hostname
-                           for _hostnames in namespaces.values()
-                           for _hostname in _hostnames)
-    tobiko.get_test_case().assertIn(
-        namespace, set(namespaces),
-        f"Namespace {namespace!r} not in hosts {actual_hostnames!r}")
+    actual_namespaces = get_hosts_namespaces(hostnames=hostnames,
+                                             **params)
+    missing = set(namespaces) - set(actual_namespaces)
+    if missing:
+        actual_hostnames = sorted(set(
+            _hostname
+            for _hostnames in actual_namespaces.values()
+            for _hostname in _hostnames))
+        tobiko.fail(f"Network namespace(s) {sorted(missing)} missing in "
+                    f"host(s) {actual_hostnames!r}")
 
 
-def assert_namespace_not_in_hosts(namespace: str,
+def assert_namespace_not_in_hosts(*namespaces: str,
                                   hostnames: typing.Iterable[str] = None,
                                   **params):
-    namespaces = get_hosts_namespaces(hostnames=hostnames, **params)
-    actual_hostnames = namespaces.get(namespace)
-    tobiko.get_test_case().assertNotIn(
-        namespace, set(namespaces),
-        f"Namespace {namespace!r} in hosts: {actual_hostnames!r}")
+    unexpected_namespaces = collections.defaultdict(list)
+    actual_namespaces = get_hosts_namespaces(hostnames=hostnames, **params)
+    for namespace, hostnames in actual_namespaces.items():
+        if namespace in sorted(set(namespaces)):
+            for hostname in hostnames:
+                unexpected_namespaces[hostname].append(namespace)
+    if unexpected_namespaces:
+        dump = json.dumps(unexpected_namespaces, indent=4, sort_keys=True)
+        tobiko.fail(f"Unexpected network namespace(s) found in "
+                    f"host(s):\n{dump}")

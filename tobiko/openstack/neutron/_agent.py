@@ -85,14 +85,21 @@ def get_l3_agent_mode(
         l3_agent_conf_path: str,
         default='legacy',
         connection: sh.ShellConnectionType = None) -> str:
+    connection = sh.shell_connection(connection)
+    LOG.debug(f"Read L3 agent mode from file '{l3_agent_conf_path}' on host "
+              f" '{connection.hostname}'...")
     with sh.open_file(l3_agent_conf_path, 'rt',
                       connection=connection) as fd:
+        LOG.debug(f"Parse ini file '{l3_agent_conf_path}'...")
         content = tobiko.parse_ini_file(fd)
     try:
-        return content['DEFAULT', 'agent_mode']
+        agent_mode = content['DEFAULT', 'agent_mode']
     except KeyError:
         LOG.error(f"agent_mode not found in file {l3_agent_conf_path}")
-        return default
+        agent_mode = default
+    LOG.debug(f"Got L3 agent mode from file '{l3_agent_conf_path}' "
+              f"on host '{connection.hostname}': '{agent_mode}'")
+    return agent_mode
 
 
 class NetworkingAgentFixture(tobiko.SharedFixture):
