@@ -20,162 +20,26 @@ This document describes how to setup an environment and how to run test cases
 .. include:: _install_venv.rst
 
 
+Configure tobiko with tobiko.conf
+---------------------------------
+
+.. include:: _conf_explanation.rst
+    :start-after: tobiko-conf-label
+
 Configure Logging Options
 -------------------------
 
-Test cases load most of the configuration parameters from an INI configuration file,
-typically found at one of the following locations:
+.. include:: _conf_logging.rst
+    :start-after: configure-tobiko-logging-label
 
-    - ./tobiko.conf (Tobiko source files directory)
-    - ~/.tobiko/tobiko.conf
-    - /etc/tobiko/tobiko.conf
+.. include:: _conf_credentials.rst
 
-Create it in the Tobiko source directory with the following (or as your preferences). Example::
+.. _generating-venv-with-tox:
 
-    [DEFAULT]
-    debug = True
-    log_file = tobiko.log
+Create a virtual environment with tox
+-------------------------------------
 
-The file 'tobiko.log' is the default file where test cases and the Python framework
-are going to write their logging messages. By setting debug as 'true' you
-ensure that messages with the lowest logging level are written there (DEBUG level).
-The log_file location specified above is relative to the tobiko.conf file
-location. In this example it is the Tobiko source files' directory itself.
-
-
-Configure Tobiko Credentials
-----------------------------
-
-In order to run the OpenStack test cases you'll need to set up Keystone
-credentials. You can do it in one of following ways:
-
-- :ref:`credentials-from-clouds-file`
-- :ref:`credentials-from-env`
-- :ref:`credentials-from-config`
-
-
-.. _credentials-from-clouds-file:
-
-
-Set Tobiko Credentials from clouds.yaml file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Make sure that in any one of below locations there is a valid
-`OpenStack clouds file <https://docs.openstack.org/python-openstackclient/pike/configuration/index.html#clouds-yaml>`__
-containing valid Keystone credentials:
-
-  - Tobiko source files directory
-  - ~/.config/openstack
-  - /etc/openstack
-
-
-Finally, you will need to specify which credentials Tobiko should pick up via
-'OS_CLOUD' environment variable or by specifying the cloud_name in tobiko.conf file
-(section 'keystone', option 'cloud_name').
-
-
-Specify 'OS_CLOUD' environment variable
-+++++++++++++++++++++++++++++++++++++++
-
-Ensure *OS_CLOUD* environment variable is defined before executing Tobiko test
-cases::
-
-    export OS_CLOUD=<cloud_name>
-
-
-Please choose a valid cloud_name from your clouds.yaml file.
-
-
-Specify cloud_name in tobiko.conf file
-++++++++++++++++++++++++++++++++++++++
-
-
-Create file `tobiko.conf` in Tobiko sources folder adding a section like below::
-
-    [keystone]
-    cloud_name = <cloud_name>
-
-
-Please choose a valid cloud_name from your clouds.yaml file.
-
-
-.. _credentials-from-env:
-
-
-Set Tobiko Credentials Via Environment Variables
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. sidebar:: See also
-
-    For more details about supported environment variables please read
-    :ref:`authentication-environment-variables` section.
-
-You can use an existing shell RC file that is valid for
-`Python OpenStack client <https://docs.openstack.org/python-openstackclient/latest/cli/man/openstack.html#environment-variables>`__
-::
-
-    source openstackrc
-
-An example of 'openstackrc' file could looks like below::
-
-    export OS_IDENTITY_API_VERSION=3
-    export OS_AUTH_URL=https://my_cloud:13000/v3
-    export OS_USERNAME=admin
-    export OS_PASSWORD=secret
-    export OS_PROJECT_NAME=admin
-    export OS_USER_DOMAIN_NAME=Default
-    export OS_PROJECT_DOMAIN_NAME=Default
-
-
-.. _credentials-from-config:
-
-Set Tobiko Credentials Via :ref:`tobiko-conf` File
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. sidebar:: See also
-
-    For more details about supported configuration options please read
-    :ref:`authentication-configuration` section.
-
-Create a file at `~/.tobiko/tobiko.conf` and add a section as in the
-example below (Or add to your existing file)::
-
-    [keystone]
-    api_version = 3
-    auth_url = http://my_cloud:13000/v3
-    username = admin
-    password = secret
-    project_name = admin
-    user_domain_name = Default
-    project_domain_name = Default
-
-
-Setup Required Resources
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-A public Neutron network is required to be able to execute Tobiko scenario test
-cases by creating a floating IP port on it.
-
-To execute commands from a virtualenv created by Tox you can type as below::
-
-    tox -e venv -- <your-commands>
-
-You need to make sure :ref:`authentication-environment-variables` are properly
-set so you can list available public networks::
-
-    tox -e venv -- openstack network list
-
-If there isn't any valid public network, you need to create one before running
-Tobiko OpenStack test cases. Please refer to the `Neutron documentation <https://docs.openstack.org/neutron/latest/>`__
-for additional information.
-
-If there is a valid public network for creating floating-IP ports on,
-Tobiko tests cases will automatically use it. To explicitly select a network,
-please add a reference to the network in
-:ref:`tobiko-conf` file::
-
-    [neutron]
-    floating_network = public
+.. include:: _conf_venv_with_tox.rst
 
 Running Test Cases
 ------------------
