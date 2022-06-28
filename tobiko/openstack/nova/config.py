@@ -17,10 +17,17 @@ import itertools
 
 from oslo_config import cfg
 
+DEFAULT_KEY_TYPE = 'ecdsa'
+DEFAULT_KEY_FILE = f'~/.ssh/id_{DEFAULT_KEY_TYPE}'
+
 GROUP_NAME = "nova"
 OPTIONS = [
-    cfg.StrOpt('key_file', default='~/.ssh/id_rsa',
+    cfg.StrOpt('key_file',
+               default=DEFAULT_KEY_FILE,
                help="Default SSH key to login to server instances"),
+    cfg.StrOpt('key_type',
+               default=DEFAULT_KEY_TYPE,
+               help="Default SSH key type to login to server instances"),
 ]
 
 
