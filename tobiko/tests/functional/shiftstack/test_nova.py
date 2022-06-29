@@ -13,14 +13,22 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.shiftstack import _clouds_file
-from tobiko.shiftstack import _nova
-from tobiko.shiftstack import _skip
+import testtools
 
-ShiftStackCloudsFileFixture = _clouds_file.ShiftStackCloudsFileFixture
-get_clouds_file_path = _clouds_file.get_clouds_file_path
+import tobiko
+from tobiko import shiftstack
 
-find_shiftstack_node = _nova.find_shiftstack_node
-list_shiftstack_nodes = _nova.list_shiftstack_nodes
 
-skip_unless_has_shiftstack = _skip.skip_unless_has_shiftstack
+@shiftstack.skip_unless_has_shiftstack()
+class ShiftstackNovaTest(testtools.TestCase):
+
+    def test_list_shifstack_nodes(self):
+        nodes = shiftstack.list_shiftstack_nodes()
+        self.assertIsInstance(nodes, tobiko.Selection)
+        self.assertNotEqual([], nodes)
+        return nodes
+
+    def test_find_shifstack_nodes(self):
+        nodes = self.test_list_shifstack_nodes()
+        node = shiftstack.find_shiftstack_node(name=nodes.first.name)
+        self.assertEqual(nodes.first.id, node.id)

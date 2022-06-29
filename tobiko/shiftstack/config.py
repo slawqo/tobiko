@@ -27,6 +27,9 @@ OPTIONS = [
     cfg.StrOpt('remote_clouds_file_path',
                default='~/clouds.yaml',
                help="remote clouds file path on undercloud-0 host"),
+    cfg.StrOpt('cloud_name',
+               default='shiftstack',
+               help="Keystone credentials cloud name"),
 ]
 
 
