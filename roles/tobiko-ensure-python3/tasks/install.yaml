@@ -21,12 +21,22 @@
     - compile_python3 | bool
 
 
+- name: "initialize found_python_version"
+  set_fact:
+    found_python_version: false
+
+
 - name: "get '{{ python_command }}' full path"
   shell: |
     export PATH={{ python_exe_path }}
     which "{{ python_command }}"
   register: get_python_exe
   changed_when: no
+
+
+- name: "update found_python_version"
+  set_fact:
+    found_python_version: true
 
 
 - name: "get '{{ get_python_exe.stdout_lines | first }}' info"
