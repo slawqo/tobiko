@@ -116,6 +116,6 @@ class PortTest(testtools.TestCase):
         port = neutron.find_port(device_id=self.stack.server_id)
         for subnet in neutron.list_subnets(network_id=port['network_id']):
             port_address = neutron.find_port_ip_address(
-                port=port, subnet_id=subnet['id'], unique=True)
+                port=port, subnet=subnet, unique=True)
             cidr = netaddr.IPNetwork(subnet['cidr'])
             self.assertIn(port_address, cidr)

@@ -41,6 +41,7 @@ class NeutronClientManager(_client.OpenstackClientManager):
 CLIENTS = NeutronClientManager()
 
 
+NeutronClient = neutronclient.Client
 NeutronClientType = typing.Union[neutronclient.Client,
                                  NeutronClientFixture]
 

@@ -50,6 +50,7 @@ has_ovs = _agent.has_ovs
 
 NeutronClientFixture = _client.NeutronClientFixture
 ServiceUnavailable = _client.ServiceUnavailable
+NeutronClient = _client.NeutronClient
 NeutronClientException = _client.NeutronClientException
 NeutronClientType = _client.NeutronClientType
 neutron_client = _client.neutron_client
