@@ -14,11 +14,15 @@
 from __future__ import absolute_import
 
 from tobiko.shiftstack import _clouds_file
+from tobiko.shiftstack import _neutron
 from tobiko.shiftstack import _nova
 from tobiko.shiftstack import _skip
 
 ShiftStackCloudsFileFixture = _clouds_file.ShiftStackCloudsFileFixture
 get_clouds_file_path = _clouds_file.get_clouds_file_path
+
+list_shiftstack_node_ip_addresses = _neutron.list_shiftstack_node_ip_addresses
+find_shiftstack_node_ip_address = _neutron.find_shiftstack_node_ip_address
 
 find_shiftstack_node = _nova.find_shiftstack_node
 list_shiftstack_nodes = _nova.list_shiftstack_nodes
