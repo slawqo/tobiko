@@ -129,3 +129,10 @@ class HasServerMixin(_client.HasNovaClientMixin):
     ssh_proxy_client = None
     ssh_username = None
     ssh_password = None
+
+
+def get_server_id(server: _client.ServerType) -> str:
+    if isinstance(server, str):
+        return server
+    else:
+        return server.id

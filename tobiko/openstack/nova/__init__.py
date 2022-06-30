@@ -77,6 +77,7 @@ EnsureNovaQuotaLimitsError = _quota_set.EnsureNovaQuotaLimitsError
 
 find_server_ip_address = _server.find_server_ip_address
 HasServerMixin = _server.HasServerMixin
+get_server_id = _server.get_server_id
 list_server_ip_addresses = _server.list_server_ip_addresses
 
 wait_for_services_up = _service.wait_for_services_up
