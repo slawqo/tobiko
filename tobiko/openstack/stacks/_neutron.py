@@ -167,10 +167,12 @@ class RouterStackFixture(ExternalNetworkStackFixture):
     def ensure_router_interface(self,
                                 subnet: neutron.SubnetIdType = None,
                                 network: neutron.NetworkIdType = None):
-        ensure_router_interface(network=network,
-                                subnet=subnet,
-                                router=self.router_id,
-                                client=self.neutron_client)
+        ensure_router_interface(
+            network=network,
+            subnet=subnet,
+            router=self.router_id,
+            client=self.neutron_client,
+            create_router_interface_func=self.create_router_interface)
 
     @property
     def neutron_client(self) -> neutron.NeutronClientType:
@@ -178,13 +180,46 @@ class RouterStackFixture(ExternalNetworkStackFixture):
             self._neutron_client = neutron.neutron_client()
         return self._neutron_client
 
+    @staticmethod
+    def create_router_interface(
+            router: neutron.RouterIdType = None,
+            subnet: neutron.SubnetIdType = None,
+            network: neutron.NetworkIdType = None,
+            client: neutron.NeutronClientType = None,
+            add_cleanup=False) -> neutron.PortType:
+        return create_router_interface(router=router,
+                                       subnet=subnet,
+                                       network=network,
+                                       client=client,
+                                       add_cleanup=add_cleanup)
+
+
+def create_router_interface(
+        router: neutron.RouterIdType = None,
+        subnet: neutron.SubnetIdType = None,
+        network: neutron.NetworkIdType = None,
+        client: neutron.NeutronClientType = None,
+        add_cleanup=False) \
+        -> neutron.PortType:
+    stack = RouterInterfaceStackFixture(router=router,
+                                        subnet=subnet,
+                                        network=network,
+                                        neutron_client=client)
+    if add_cleanup:
+        tobiko.use_fixture(stack)
+    else:
+        tobiko.setup_fixture(stack)
+    return stack.port_details
+
 
 def ensure_router_interface(
         router: neutron.RouterIdType = None,
         subnet: neutron.SubnetIdType = None,
         network: neutron.NetworkIdType = None,
         client: neutron.NeutronClientType = None,
-        add_cleanup=False) -> neutron.PortType:
+        add_cleanup=False,
+        create_router_interface_func=create_router_interface) \
+        -> neutron.PortType:
     client = neutron.neutron_client(client)
     if router is None:
         router = get_router_id()
@@ -230,16 +265,11 @@ def ensure_router_interface(
             subnet = None
             LOG.info("Add router interface to network "
                      f"{neutron.get_network_id(network)}")
-
-    stack = RouterInterfaceStackFixture(router=router,
+    return create_router_interface_func(router=router,
                                         subnet=subnet,
                                         network=network,
-                                        neutron_client=client)
-    if add_cleanup:
-        tobiko.use_fixture(stack)
-    else:
-        tobiko.setup_fixture(stack)
-    return stack.port_details
+                                        client=client,
+                                        add_cleanup=add_cleanup)
 
 
 @neutron.skip_if_missing_networking_extensions('port-security')
