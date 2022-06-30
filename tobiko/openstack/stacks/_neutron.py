@@ -611,13 +611,15 @@ class FloatingIpStackFixture(heat.HeatStackFixture):
                  port: neutron.PortIdType = None,
                  device_id: str = None,
                  fixed_ip_address: str = None,
+                 heat_client: heat.HeatClientType = None,
                  neutron_client: neutron.NeutronClientType = None):
         self._network = network
         self._port = port
         self._neutron_client = neutron_client
         self._device_id = device_id
         self._fixed_ip_address = fixed_ip_address
-        super(FloatingIpStackFixture, self).__init__(stack_name=stack_name)
+        super(FloatingIpStackFixture, self).__init__(stack_name=stack_name,
+                                                     client=heat_client)
 
     @property
     def network(self) -> str:
