@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+from collections import abc
 import typing
 
 import netaddr
@@ -92,8 +93,18 @@ def delete_port(port: PortIdType,
         raise NoSuchPort(id=port_id) from ex
 
 
-DeviceType = typing.Dict[str, typing.Any]
-DeviceIdType = typing.Union[str, DeviceType]
+DeviceIdType = typing.Union[str, typing.Any]
+
+
+def get_device_id(device: DeviceIdType) -> str:
+    if isinstance(device, str):
+        return device
+    elif isinstance(device, abc.Mapping):
+        return device['id']
+    elif hasattr(device, 'id'):
+        return getattr(device, 'id')
+    else:
+        raise TypeError(f'{device!r} is not a valid device type')
 
 
 def list_ports(client: _client.NeutronClientType = None,
@@ -112,13 +123,6 @@ def list_ports(client: _client.NeutronClientType = None,
     return tobiko.select(ports)
 
 
-def get_device_id(device: DeviceIdType) -> str:
-    if isinstance(device, str):
-        return device
-    else:
-        return device['id']
-
-
 def find_port(client: _client.NeutronClientType = None,
               unique=False,
               default: PortType = None,
@@ -135,16 +139,18 @@ def find_port(client: _client.NeutronClientType = None,
 
 
 def list_port_ip_addresses(port: PortType,
-                           subnet_id: str = None,
+                           subnet: _subnet.SubnetIdType = None,
                            ip_version: int = None,
                            check_connectivity: bool = False,
                            ssh_client: ssh.SSHClientFixture = None) -> \
         tobiko.Selection[netaddr.IPAddress]:
+    if subnet is not None:
+        subnet = _subnet.get_subnet_id(subnet)
     addresses = tobiko.Selection[netaddr.IPAddress](
         netaddr.IPAddress(fixed_ip['ip_address'])
         for fixed_ip in port['fixed_ips']
-        if subnet_id is None or subnet_id == fixed_ip['subnet_id'])
-    if ip_version:
+        if subnet is None or subnet == fixed_ip['subnet_id'])
+    if ip_version is not None:
         addresses = addresses.with_attributes(version=ip_version)
     if addresses and check_connectivity:
         hosts = ping.list_reachable_hosts(addresses, ssh_client=ssh_client)
@@ -153,17 +159,24 @@ def list_port_ip_addresses(port: PortType,
 
 
 def find_port_ip_address(port: PortType,
-                         unique: bool = False,
-                         **kwargs) -> netaddr.IPAddress:
-    addresses = list_port_ip_addresses(port=port, **kwargs)
+                         subnet: _subnet.SubnetIdType = None,
+                         ip_version: int = None,
+                         check_connectivity: bool = False,
+                         ssh_client: ssh.SSHClientFixture = None,
+                         unique: bool = False) -> netaddr.IPAddress:
+    addresses = list_port_ip_addresses(port=port,
+                                       subnet=subnet,
+                                       ip_version=ip_version,
+                                       check_connectivity=check_connectivity,
+                                       ssh_client=ssh_client)
     if unique:
         return addresses.unique
     else:
         return addresses.first
 
 
-def list_device_ip_addresses(device_id: str,
-                             network_id: str = None,
+def list_device_ip_addresses(device: DeviceIdType,
+                             network: _network.NetworkIdType = None,
                              ip_version: int = None,
                              check_connectivity: bool = False,
                              ssh_client: ssh.SSHClientFixture = None,
@@ -171,12 +184,12 @@ def list_device_ip_addresses(device_id: str,
                              client: _client.NeutronClientType = None,
                              **subnet_params) -> \
         tobiko.Selection[netaddr.IPAddress]:
-    ports = list_ports(device_id=device_id,
-                       network_id=network_id,
+    ports = list_ports(device=device,
+                       network=network,
                        client=client)
     if need_dhcp is not None:
         subnet_params['enable_dhcp'] = bool(need_dhcp)
-    subnets = _subnet.list_subnets(network_id=network_id,
+    subnets = _subnet.list_subnets(network=network,
                                    ip_version=ip_version,
                                    client=client,
                                    **subnet_params)
@@ -185,7 +198,7 @@ def list_device_ip_addresses(device_id: str,
         for subnet in subnets
         for port in ports
         for port_ip in list_port_ip_addresses(port=port,
-                                              subnet_id=subnet['id'],
+                                              subnet=subnet,
                                               ip_version=ip_version))
     if addresses and check_connectivity:
         hosts = ping.list_reachable_hosts(addresses, ssh_client=ssh_client)
@@ -193,10 +206,23 @@ def list_device_ip_addresses(device_id: str,
     return addresses
 
 
-def find_device_ip_address(device_id: str,
+def find_device_ip_address(device: DeviceIdType,
+                           network: _network.NetworkIdType,
+                           ip_version: int = None,
+                           check_connectivity: bool = False,
+                           ssh_client: ssh.SSHClientFixture = None,
+                           need_dhcp: bool = None,
+                           client: _client.NeutronClientType = None,
                            unique: bool = False,
-                           **kwargs):
-    addresses = list_device_ip_addresses(device_id=device_id,  **kwargs)
+                           **subnet_params) -> netaddr.IPAddress:
+    addresses = list_device_ip_addresses(device=device,
+                                         network=network,
+                                         ip_version=ip_version,
+                                         check_connectivity=check_connectivity,
+                                         ssh_client=ssh_client,
+                                         need_dhcp=need_dhcp,
+                                         client=client,
+                                         **subnet_params)
     if unique:
         return addresses.unique
     else:

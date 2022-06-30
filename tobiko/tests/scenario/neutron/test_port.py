@@ -48,8 +48,8 @@ class PortTest(testtools.TestCase):
     def test_port_ips(self, ip_version: typing.Optional[int] = None):
         """Checks port IPS has been assigned to server via DHCP protocol"""
         port_ips = set(neutron.list_device_ip_addresses(
-            device_id=self.stack.server_id,
-            network_id=self.stack.network_stack.network_id,
+            device=self.stack.server_id,
+            network=self.stack.network_stack.network_id,
             need_dhcp=self.stack.need_dhcp,
             ip_version=ip_version))
         if port_ips:
@@ -101,8 +101,8 @@ class PortTest(testtools.TestCase):
     def test_ping_port(self, network_id=None, device_id=None, ip_version=None):
         """Checks server can ping its own port"""
         port_ips = neutron.list_device_ip_addresses(
-            device_id=device_id or self.stack.server_id,
-            network_id=network_id or self.stack.network_stack.network_id,
+            device=device_id or self.stack.server_id,
+            network=network_id or self.stack.network_stack.network_id,
             need_dhcp=self.stack.need_dhcp,
             ip_version=ip_version)
         if port_ips:
