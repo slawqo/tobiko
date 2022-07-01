@@ -16,22 +16,11 @@ from __future__ import absolute_import
 from oslo_log import log
 from validations_libs import validation_actions
 
+from tobiko import tripleo
 from tobiko.tripleo import overcloud
-from tobiko.openstack import topology
-from tobiko.shell import sh
 
 
 LOG = log.getLogger(__name__)
-
-
-def prepare_ansible_hosts_inventory():
-    """create a hosts.yaml with ansible connections'
-    specifications for overcloud nodes"""
-    sshcu = topology.list_openstack_nodes(group='undercloud')[0].ssh_client
-    sh.execute('if [ ! -f /home/stack/hosts.yaml ]; then '
-               'source /home/stack/stackrc;tripleo-ansible-inventory '
-               '--ansible_ssh_user heat-admin --static-yaml-inventory '
-               'hosts.yaml;fi', ssh_client=sshcu, stdout=True)
 
 
 def run_post_deployment_validations():
@@ -39,14 +28,15 @@ def run_post_deployment_validations():
     only if we're in a tripleo env"""
 
     if overcloud.has_overcloud():
-        prepare_ansible_hosts_inventory()
+        inventory_file = '/home/stack/hosts.yaml'
+        tripleo.fetch_tripleo_inventary_file(inventory_file=inventory_file)
         failures = []
         validates_object = validation_actions.ValidationActions()
         try:
             validations_result = validates_object.run_validations(
                 group='post-deployment',
                 quiet=False,
-                inventory='/home/stack/hosts.yaml')
+                inventory=inventory_file)
         except Exception:
             LOG.exception('Validation lib unhandled errors')
             return

@@ -24,6 +24,7 @@ get_tripleo_ansible_inventory_file = \
     _ansible.get_tripleo_ansible_inventory_file
 has_tripleo_ansible_inventory = _ansible.has_tripleo_ansible_inventory
 read_tripleo_ansible_inventory = _ansible.read_tripleo_ansible_inventory
+fetch_tripleo_inventary_file = _ansible.fetch_tripleo_inventary_file
 skip_if_missing_tripleo_ansible_inventory = \
     _ansible.skip_if_missing_tripleo_ansible_inventory
 run_playbook_from_undercloud = _ansible.run_playbook_from_undercloud

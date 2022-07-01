@@ -58,16 +58,24 @@ source {undercloud_rcfile} || exit 1
 
 set -x
 
-INVENTORY_FILE=$(mktemp tripleo-hosts-XXXXXXXXXX.yaml)
-tripleo-ansible-inventory --ansible_ssh_user "{overcloud_ssh_username}" \\
-                          --static-yaml-inventory "$INVENTORY_FILE"
-RC=$?
+if [ "$OS_CLOUD" == "" ]; then
+    # on some releases tripleo-ansible-inventory command is supported
+    INVENTORY_FILE=$(mktemp tripleo-hosts-XXXXXXXXXX.yaml)
+    tripleo-ansible-inventory --ansible_ssh_user "{overcloud_ssh_username}" \\
+                              --static-yaml-inventory "$INVENTORY_FILE"
+    RC=$?
 
-if [ $RC == 0 ]; then
-    cat "$INVENTORY_FILE"
+    if [ $RC == 0 ]; then
+        cat "$INVENTORY_FILE"
+    fi
+    rm -fR "$INVENTORY_FILE"
+    exit $RC
 fi
-rm -fR "$INVENTORY_FILE"
-exit $RC
+
+# on latest releases, the updated inventory can always be found into the
+# following path
+TAI_DIR=~/overcloud-deploy/overcloud/config-download/overcloud
+cat $TAI_DIR/tripleo-ansible-inventory.yaml
 """
 
 
