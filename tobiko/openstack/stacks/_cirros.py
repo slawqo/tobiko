@@ -14,6 +14,9 @@
 from __future__ import absolute_import
 
 import io
+import typing
+
+from paramiko import sftp_file
 
 from tobiko import config
 from tobiko.openstack import glance
@@ -98,6 +101,12 @@ class CirrosShellConnection(sh.SSHShellConnection):
         with io.open(local_file, 'rt') as fd:
             content = fd.read()
         self.execute(f"cat >'{remote_file}'", stdin=content)
+
+    def open_file(self,
+                  filename: typing.Union[str, bytes],
+                  mode: str,
+                  buffering: int = None) -> sftp_file.SFTPFile:
+        raise NotImplementedError
 
 
 class CirrosPeerServerStackFixture(CirrosServerStackFixture,

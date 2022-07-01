@@ -28,6 +28,7 @@ from oslo_log import log
 
 import tobiko
 from tobiko.shell.sh import _command
+from tobiko.shell.sh import _exception
 from tobiko.shell.sh import _execute
 from tobiko.shell.sh import _hostname
 from tobiko.shell.sh import _mktemp
@@ -69,10 +70,19 @@ def get_file(remote_file: str,
 def open_file(filename: typing.Union[str, bytes],
               mode: str,
               buffering: int = None,
-              connection: ShellConnectionType = None) \
+              connection: ShellConnectionType = None,
+              sudo=False) \
             -> typing.Union[typing.IO, paramiko.sftp_file.SFTPFile]:
-    return shell_connection(connection).open_file(
-        filename=filename, mode=mode, buffering=buffering)
+    connection = shell_connection(connection)
+    if sudo:
+        if 'r' not in mode:
+            raise ValueError('sudo only supported in reading mode')
+        temp_file = connection.make_temp_file(auto_clean=True)
+        connection.execute(['cp', filename, temp_file], sudo=True)
+        filename = temp_file
+    return connection.open_file(filename=filename,
+                                mode=mode,
+                                buffering=buffering)
 
 
 def put_file(local_file: str,
@@ -87,6 +97,12 @@ def put_files(*local_files: str,
               connection: ShellConnectionType = None):
     return shell_connection(connection).put_files(*local_files,
                                                   remote_dir=remote_dir)
+
+
+def make_temp_file(auto_clean=True,
+                   connection: ShellConnectionType = None) -> str:
+    return shell_connection(connection).make_temp_file(
+        auto_clean=auto_clean)
 
 
 def make_temp_dir(auto_clean=True,
@@ -267,6 +283,18 @@ class ShellConnection(tobiko.SharedFixture):
     def __str__(self) -> str:
         return f"{type(self).__name__}<{self.login}>"
 
+    def exists(self, path: str) -> bool:
+        raise NotImplementedError
+
+    def is_file(self, path: str) -> bool:
+        raise NotImplementedError
+
+    def is_directory(self, path: str) -> bool:
+        raise NotImplementedError
+
+    def make_temp_file(self, auto_clean=True) -> str:
+        raise NotImplementedError
+
     def make_temp_dir(self, auto_clean=True, sudo: bool = None) -> str:
         raise NotImplementedError
 
@@ -318,6 +346,22 @@ class LocalShellConnection(ShellConnection):
             params.update(buffering=buffering)
         return io.open(file=filename, mode=mode, **params)
 
+    def exists(self, path: str) -> bool:
+        return os.path.exists(path)
+
+    def is_file(self, path: str) -> bool:
+        return os.path.isfile(path)
+
+    def is_directory(self, path: str) -> bool:
+        return os.path.isdir(path)
+
+    def make_temp_file(self, auto_clean=True) -> str:
+        fd, temp_file = tempfile.mkstemp()
+        os.close(fd)
+        if auto_clean:
+            tobiko.add_cleanup(self.remove_files, temp_file)
+        return temp_file
+
     def make_temp_dir(self, auto_clean=True, sudo: bool = None) -> str:
         if sudo:
             return _mktemp.make_temp_dir(ssh_client=self.ssh_client,
@@ -334,8 +378,10 @@ class LocalShellConnection(ShellConnection):
         filenames = (filename,) + filenames
         LOG.debug(f"Remove local files as {self.login}: {filenames}")
         for filename in filenames:
-            if os.path.exists(filename):
+            if os.path.isdir(filename):
                 shutil.rmtree(filename)
+            elif os.path.exists(filename):
+                os.remove(filename)
 
     def make_dirs(self, name: str, exist_ok=True):
         os.makedirs(name=name,
@@ -408,6 +454,38 @@ class SSHShellConnection(ShellConnection):
         if remote_file.startswith('~'):
             remote_file = self.execute(f'echo {remote_file}').stdout.strip()
         self.sftp_client.get(remote_file, local_file)
+
+    def exists(self, path: str) -> bool:
+        try:
+            self.execute(['test', '-e', path])
+        except _exception.ShellCommandFailed:
+            return False
+        else:
+            return True
+
+    def is_file(self, path: str) -> bool:
+        try:
+            self.execute(['test', '-f', path])
+        except _exception.ShellCommandFailed:
+            return False
+        else:
+            return True
+
+    def is_directory(self, path: str) -> bool:
+        try:
+            self.execute(['test', '-d', path])
+        except _exception.ShellCommandFailed:
+            return False
+        else:
+            return True
+
+    def make_temp_file(self, auto_clean=True) -> str:
+        temp_file = self.execute('mktemp').stdout.strip()
+        LOG.debug(f"Remote temporary file created as {self.login}: "
+                  f"{temp_file}")
+        if auto_clean:
+            tobiko.add_cleanup(self.remove_files, temp_file)
+        return temp_file
 
     def make_temp_dir(self, auto_clean=True, sudo: bool = None) -> str:
         temp_dir = self.execute('mktemp -d', sudo=sudo).stdout.strip()

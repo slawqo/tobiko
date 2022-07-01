@@ -186,6 +186,26 @@ class LocalShellConnectionTest(testtools.TestCase):
                             ssh_client=self.ssh_client).stdout
         self.assertEqual(text, output)
 
+    def test_open_file(self):
+        temp_file = self.connection.make_temp_file()
+        with self.connection.open_file(temp_file, 'wt') as fd:
+            fd.write('something')
+        with self.connection.open_file(temp_file, 'rt') as fd:
+            self.assertIn(fd.read(), [b'something',
+                                      'something'])
+
+    def test_make_temp_file(self):
+        temp_file = self.connection.make_temp_file()
+        self.assertTrue(self.connection.exists(temp_file))
+        self.assertTrue(self.connection.is_file(temp_file))
+        self.assertFalse(self.connection.is_directory(temp_file))
+
+    def test_make_temp_dir(self):
+        temp_file = self.connection.make_temp_dir()
+        self.assertTrue(self.connection.exists(temp_file))
+        self.assertFalse(self.connection.is_file(temp_file))
+        self.assertTrue(self.connection.is_directory(temp_file))
+
 
 class SSHShellConnectionTest(LocalShellConnectionTest):
     connection_class = sh.SSHShellConnection
@@ -228,3 +248,7 @@ class CirrosShellConnectionTest(SSHShellConnectionTest):
     @property
     def is_cirros(self) -> bool:
         return True
+
+    @tobiko.skip('not implemented')
+    def test_open_file(self):
+        pass
