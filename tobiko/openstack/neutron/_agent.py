@@ -89,7 +89,8 @@ def get_l3_agent_mode(
     LOG.debug(f"Read L3 agent mode from file '{l3_agent_conf_path}' on host "
               f" '{connection.hostname}'...")
     with sh.open_file(l3_agent_conf_path, 'rt',
-                      connection=connection) as fd:
+                      connection=connection,
+                      sudo=True) as fd:
         LOG.debug(f"Parse ini file '{l3_agent_conf_path}'...")
         content = tobiko.parse_ini_file(fd)
     try:
