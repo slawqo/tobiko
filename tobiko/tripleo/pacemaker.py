@@ -84,13 +84,22 @@ class PacemakerResourcesStatus(object):
     """
     def __init__(self):
         self.pcs_df = get_pcs_resources_table()
+        if topology.verify_osp_version('17.0', lower=True):
+            self.ocf_prefix = "ocf::"
+            self.promoted_status_str = "Master"
+            self.unpromoted_status_str = "Slave"
+        else:
+            self.ocf_prefix = "ocf:"
+            self.promoted_status_str = "Promoted"
+            self.unpromoted_status_str = "Unpromoted"
 
     def container_runtime(self):
+
         if not self.pcs_df[(self.pcs_df['resource_type'] ==
-                            "(ocf::heartbeat:docker):")].empty:
+                            f"({self.ocf_prefix}heartbeat:docker):")].empty:
             return 'docker'
         if not self.pcs_df[(self.pcs_df['resource_type'] ==
-                            "(ocf::heartbeat:podman):")].empty:
+                            f"({self.ocf_prefix}heartbeat:podman):")].empty:
             return 'podman'
 
     def resource_count(self, resource_type):
@@ -104,10 +113,12 @@ class PacemakerResourcesStatus(object):
             'resource_state'].count()
 
     def rabbitmq_resource_healthy(self):
-        nodes_num = self.resource_count("(ocf::heartbeat:rabbitmq-cluster):")
+        rabbitmq_resource_str = \
+            f"({self.ocf_prefix}heartbeat:rabbitmq-cluster):"
+        nodes_num = self.resource_count(rabbitmq_resource_str)
         started_num = self.resource_count_in_state(
-            "(ocf::heartbeat:rabbitmq-cluster):", "Started")
-        if nodes_num == started_num:
+            rabbitmq_resource_str, "Started")
+        if nodes_num == started_num and nodes_num > 0:
             LOG.info("pcs status check: resource rabbitmq is in healthy state")
             return True
         else:
@@ -116,10 +127,11 @@ class PacemakerResourcesStatus(object):
             return False
 
     def galera_resource_healthy(self):
-        nodes_num = self.resource_count("(ocf::heartbeat:galera):")
-        master_num = self.resource_count_in_state("(ocf::heartbeat:galera):",
-                                                  "Master")
-        if nodes_num == master_num:
+        galera_resource_str = f"({self.ocf_prefix}heartbeat:galera):"
+        nodes_num = self.resource_count(galera_resource_str)
+        master_num = self.resource_count_in_state(
+            galera_resource_str, self.promoted_status_str)
+        if nodes_num == master_num and nodes_num > 0:
             LOG.info("pcs status check: resource galera is in healthy state")
             return True
         else:
@@ -127,11 +139,17 @@ class PacemakerResourcesStatus(object):
             return False
 
     def redis_resource_healthy(self):
-        nodes_num = self.resource_count("(ocf::heartbeat:redis):")
+        redis_resource_str = f"({self.ocf_prefix}heartbeat:redis):"
+        if not overcloud.is_redis_expected():
+            LOG.info("redis resource not expected on OSP 17 "
+                     "and later releases by default")
+            return self.pcs_df.query(
+                f'resource_type == "{redis_resource_str}"').empty
+        nodes_num = self.resource_count(redis_resource_str)
         master_num = self.resource_count_in_state(
-            "(ocf::heartbeat:redis):", "Master")
+            redis_resource_str, self.promoted_status_str)
         slave_num = self.resource_count_in_state(
-            "(ocf::heartbeat:redis):", "Slave")
+            redis_resource_str, self.unpromoted_status_str)
         if (master_num == 1) and (slave_num == nodes_num - master_num):
             LOG.info("pcs status check: resource redis is in healthy state")
             return True
@@ -140,10 +158,11 @@ class PacemakerResourcesStatus(object):
             return False
 
     def vips_resource_healthy(self):
-        nodes_num = self.resource_count("(ocf::heartbeat:IPaddr2):")
+        vips_resource_str = f"({self.ocf_prefix}heartbeat:IPaddr2):"
+        nodes_num = self.resource_count(vips_resource_str)
         started_num = self.resource_count_in_state(
-            "(ocf::heartbeat:IPaddr2):", "Started")
-        if nodes_num == started_num:
+            vips_resource_str, "Started")
+        if nodes_num == started_num and nodes_num > 0:
             LOG.info("pcs status check: resources vips are in healthy state")
             return True
         else:
@@ -152,12 +171,12 @@ class PacemakerResourcesStatus(object):
             return False
 
     def ha_proxy_cinder_healthy(self):
-
-        nodes_num = self.resource_count("(ocf::heartbeat:{}):".format(
-            self.container_runtime()))
+        ha_proxy_resource_str = (f"({self.ocf_prefix}heartbeat:"
+                                 f"{self.container_runtime()}):")
+        nodes_num = self.resource_count(ha_proxy_resource_str)
         started_num = self.resource_count_in_state(
-            "(ocf::heartbeat:{}):".format(self.container_runtime()), "Started")
-        if nodes_num == started_num:
+            ha_proxy_resource_str, "Started")
+        if nodes_num == started_num and nodes_num > 0:
             LOG.info("pcs status check: resources ha_proxy and"
                      " cinder are in healthy state")
             return True
@@ -168,16 +187,17 @@ class PacemakerResourcesStatus(object):
             return False
 
     def ovn_resource_healthy(self):
+        ovn_resource_str = f"({self.ocf_prefix}ovn:ovndb-servers):"
         if self.pcs_df.query(
-                'resource_type == "(ocf::ovn:ovndb-servers):"').empty:
+                f'resource_type == "{ovn_resource_str}"').empty:
             LOG.info('pcs status check: ovn is not deployed, skipping ovn '
                      'resource check')
             return True
-        nodes_num = self.resource_count("(ocf::ovn:ovndb-servers):")
+        nodes_num = self.resource_count(ovn_resource_str)
         master_num = self.resource_count_in_state(
-            "(ocf::ovn:ovndb-servers):", "Master")
+            ovn_resource_str, self.promoted_status_str)
         slave_num = self.resource_count_in_state(
-            "(ocf::ovn:ovndb-servers):", "Slave")
+            ovn_resource_str, self.unpromoted_status_str)
         if (master_num == 1) and (slave_num == nodes_num - master_num):
             LOG.info(
                 "pcs status check: resource ovn is in healthy state")
