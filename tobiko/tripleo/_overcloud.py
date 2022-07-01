@@ -114,7 +114,7 @@ def overcloud_ssh_client(hostname=None, ip_version=None, network_name=None,
                                             ip_version=ip_version,
                                             network_name=network_name,
                                             server=server)
-    return ssh.ssh_client(host=hostname, host_config=host_config)
+    return ssh.ssh_client(host=hostname, **host_config.connect_parameters)
 
 
 def overcloud_host_config(hostname=None, ip_version=None, network_name=None,
