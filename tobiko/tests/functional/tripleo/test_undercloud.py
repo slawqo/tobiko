@@ -37,13 +37,14 @@ class UndercloudSshConnectionTest(testtools.TestCase):
 
     def test_fetch_undercloud_credentials(self):
         env = tripleo.load_undercloud_rcfile()
-        self.assertTrue(env['OS_AUTH_URL'])
-        self.assertTrue(env.get('OS_USERNAME') or env.get('OS_USER_ID'))
-        self.assertTrue(env['OS_PASSWORD'])
-        self.assertTrue(env.get('OS_TENANT_NAME') or
-                        env.get('OS_PROJECT_NAME') or
-                        env.get('OS_TENANT_ID') or
-                        env.get('OS_PROJECT_ID'))
+        if not env.get('OS_CLOUD'):
+            self.assertTrue(env['OS_AUTH_URL'])
+            self.assertTrue(env.get('OS_USERNAME') or env.get('OS_USER_ID'))
+            self.assertTrue(env['OS_PASSWORD'])
+            self.assertTrue(env.get('OS_TENANT_NAME') or
+                            env.get('OS_PROJECT_NAME') or
+                            env.get('OS_TENANT_ID') or
+                            env.get('OS_PROJECT_ID'))
 
     def test_execute_command(self):
         result = sh.execute('hostname', ssh_client=self.ssh_client)
