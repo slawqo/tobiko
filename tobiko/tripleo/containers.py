@@ -263,10 +263,18 @@ def assert_containers_running(group, expected_containers, full_name=True,
         return True
 
 
+def get_libvirt_container_name():
+    if topology.verify_osp_version('17.0', lower=True):
+        return 'nova_libvirt'
+    else:
+        return 'nova_virtqemud'
+
+
 def assert_all_tripleo_containers_running():
     """check that all common tripleo containers are running
     param: group controller or compute , check containers
     sets in computes or controllers"""
+    nova_libvirt = get_libvirt_container_name()
 
     common_controller_tripleo_containers = ['cinder_api', 'cinder_api_cron',
                                             'cinder_scheduler',
@@ -313,7 +321,7 @@ def assert_all_tripleo_containers_running():
                                                   'nova_vnc_proxy']
 
     common_compute_tripleo_containers = ['iscsid', 'logrotate_crond',
-                                         'nova_compute', 'nova_libvirt',
+                                         'nova_compute', nova_libvirt,
                                          'nova_migration_target',
                                          'nova_virtlogd']
 
@@ -391,9 +399,6 @@ def run_container_config_validations():
                                     {'section': 'ml2',
                                      'param': 'type_drivers',
                                      'expected_value': 'geneve'},
-                                    {'section': 'ovn',
-                                     'param': 'ovn_l3_mode',
-                                     'expected_value': 'True'},
                                     {'section': 'ovn',
                                      'param': 'ovn_metadata_enabled',
                                      'expected_value': 'True'}]}]
