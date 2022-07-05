@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 import io
 import os
+import typing
 
 from oslo_log import log
 
@@ -22,7 +23,7 @@ import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
 from tobiko.openstack import ironic
-from tobiko.openstack import nova
+from tobiko.openstack import metalsmith
 from tobiko.openstack import topology
 from tobiko.shell import sh
 from tobiko.shell import ssh
@@ -58,86 +59,74 @@ class OvercloudKeystoneCredentialsFixture(
 
 def list_overcloud_nodes(**params):
     session = _undercloud.undercloud_keystone_session()
-    client = nova.get_nova_client(session=session)
-    return nova.list_servers(client=client, **params)
+    client = metalsmith.get_metalsmith_client(session=session)
+    return metalsmith.list_instances(client=client, **params)
 
 
 def find_overcloud_node(**params):
     session = _undercloud.undercloud_keystone_session()
-    client = nova.get_nova_client(session=session)
-    return nova.find_server(client=client, **params)
+    client = metalsmith.get_metalsmith_client(session=session)
+    return metalsmith.find_instance(client=client, **params)
 
 
-def power_on_overcloud_node(server: nova.ServerType,
+def power_on_overcloud_node(instance: metalsmith.MetalsmithInstance,
                             timeout: tobiko.Seconds = 120.,
                             sleep_time: tobiko.Seconds = 5.):
     session = _undercloud.undercloud_keystone_session()
-    node = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname',
-                   None)
-    if node is None:
-        client = nova.get_nova_client(session=session)
-        nova.activate_server(client=client,
-                             server=server,
-                             timeout=timeout,
-                             sleep_time=sleep_time)
-    else:
-        client = ironic.get_ironic_client(session=session)
-        ironic.power_on_node(client=client,
-                             node=node,
-                             timeout=timeout,
-                             sleep_time=sleep_time)
+    client = ironic.get_ironic_client(session=session)
+    ironic.power_on_node(client=client,
+                         node=instance.uuid,
+                         timeout=timeout,
+                         sleep_time=sleep_time)
 
 
-def power_off_overcloud_node(server: nova.ServerType,
+def power_off_overcloud_node(instance: metalsmith.MetalsmithInstance,
                              timeout: tobiko.Seconds = None,
                              sleep_time: tobiko.Seconds = None):
     session = _undercloud.undercloud_keystone_session()
-    node = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname',
-                   None)
-    if node is None:
-        client = nova.get_nova_client(session=session)
-        nova.shutoff_server(client=client,
-                            server=server,
-                            timeout=timeout,
-                            sleep_time=sleep_time)
-    else:
-        client = ironic.get_ironic_client(session=session)
-        ironic.power_off_node(client=client,
-                              node=node,
-                              timeout=timeout,
-                              sleep_time=sleep_time)
+    client = ironic.get_ironic_client(session=session)
+    ironic.power_off_node(client=client,
+                          node=instance.uuid,
+                          timeout=timeout,
+                          sleep_time=sleep_time)
 
 
-def overcloud_ssh_client(hostname=None, ip_version=None, network_name=None,
-                         server=None, host_config=None):
+def overcloud_ssh_client(ip_version: int = None,
+                         network_name: str = None,
+                         instance: metalsmith.MetalsmithInstance = None,
+                         host_config=None):
     if host_config is None:
-        host_config = overcloud_host_config(hostname=hostname,
-                                            ip_version=ip_version,
+        host_config = overcloud_host_config(ip_version=ip_version,
                                             network_name=network_name,
-                                            server=server)
-    return ssh.ssh_client(host=hostname, **host_config.connect_parameters)
+                                            instance=instance)
+    tobiko.check_valid_type(host_config.host, str)
+    return ssh.ssh_client(host=host_config.host,
+                          **host_config.connect_parameters)
 
 
-def overcloud_host_config(hostname=None, ip_version=None, network_name=None,
-                          server=None):
-    host_config = OvercloudHostConfig(host=hostname,
-                                      ip_version=ip_version,
+def overcloud_host_config(ip_version: int = None,
+                          network_name: str = None,
+                          instance: metalsmith.MetalsmithInstance = None):
+    host_config = OvercloudHostConfig(ip_version=ip_version,
                                       network_name=network_name,
-                                      server=server)
+                                      instance=instance)
     return tobiko.setup_fixture(host_config)
 
 
-def overcloud_node_ip_address(ip_version=None, network_name=None, server=None,
+def overcloud_node_ip_address(ip_version: int = None,
+                              network_name: str = None,
+                              instance: metalsmith.MetalsmithInstance = None,
                               **params):
-    server = server or find_overcloud_node(**params)
+    if instance is None:
+        instance = find_overcloud_node(**params)
     ip_version = ip_version or CONF.tobiko.tripleo.overcloud_ip_version
     network_name = network_name or CONF.tobiko.tripleo.overcloud_network_name
-    address = nova.find_server_ip_address(server=server,
-                                          ip_version=ip_version,
-                                          network_name=network_name)
+    address = metalsmith.find_instance_ip_address(instance=instance,
+                                                  ip_version=ip_version,
+                                                  network_name=network_name)
     LOG.debug(f"Got Overcloud node address '{address}' from Undercloud "
               f"(ip_version={ip_version}, network_name={network_name}, "
-              f"server={server})")
+              f"instance={instance})")
     return address
 
 
@@ -176,41 +165,46 @@ def _get_undercloud_file(ssh_client, source, destination, mode):
 
 
 class OvercloudHostConfig(tobiko.SharedFixture):
-    host = None
-    hostname = None
-    port = None
-    username = None
-    key_file = tobiko.required_fixture(OvercloudSshKeyFileFixture)
-    ip_version = None
-    network_name = None
-    key_filename = None
-    server = None
 
-    def __init__(self, host=None, ip_version=None, network_name=None,
-                 server=None, **kwargs):
+    key_file = tobiko.required_fixture(OvercloudSshKeyFileFixture)
+
+    def __init__(self,
+                 host: str = None,
+                 hostname: str = None,
+                 ip_version: int = None,
+                 instance: metalsmith.MetalsmithInstance = None,
+                 key_filename: str = None,
+                 network_name: str = None,
+                 port: int = None,
+                 username: str = None,
+                 **kwargs):
         super(OvercloudHostConfig, self).__init__()
-        if host:
-            self.host = host
-        if ip_version:
-            self.ip_version = ip_version
-        if network_name:
-            self.network_name = network_name
-        if server:
-            self.server = server
-            if self.host is None:
-                self.host = server.name
-        tobiko.check_valid_type(self.host, str)
+        self.host = host
+        self.instance = instance
+        self.ip_version = ip_version
+        self.key_filename = key_filename
+        self.host = host
+        self.hostname = hostname
+        self.network_name = network_name
+        self.port = port
+        self.username = username
         self._connect_parameters = ssh.gather_ssh_connect_parameters(**kwargs)
 
     def setup_fixture(self):
-        self.hostname = str(overcloud_node_ip_address(
-            name=self.host, ip_version=self.ip_version,
-            network_name=self.network_name,
-            server=self.server))
-        self.port = self.port or CONF.tobiko.tripleo.overcloud_ssh_port
-        self.username = (self.username or
-                         CONF.tobiko.tripleo.overcloud_ssh_username)
-        self.key_filename = self.key_filename or self.key_file.key_filename
+        if self.hostname is None:
+            self.hostname = str(overcloud_node_ip_address(
+                hostname=self.host,
+                ip_version=self.ip_version,
+                network_name=self.network_name,
+                instance=self.instance))
+        if self.host is None:
+            self.host = self.hostname
+        if self.port is None:
+            self.port = CONF.tobiko.tripleo.overcloud_ssh_port
+        if self.username is None:
+            self.username = CONF.tobiko.tripleo.overcloud_ssh_username
+        if self.key_filename is None:
+            self.key_filename = self.key_file.key_filename
 
     @property
     def connect_parameters(self):
@@ -226,7 +220,9 @@ def setup_overcloud_keystone_crederntials():
         OvercloudKeystoneCredentialsFixture)
 
 
-def get_overcloud_nodes_dataframe(oc_node_df_function):
+def get_overcloud_nodes_dataframe(
+        oc_node_df_function: typing.Callable[[ssh.SSHClientType],
+                                             typing.Any]):
     """
      :param oc_node_df_function : a function that queries a oc node
      using a cli command and returns a datraframe with an added
@@ -238,10 +234,10 @@ def get_overcloud_nodes_dataframe(oc_node_df_function):
     :return: dataframe of all overcloud nodes processes
     """
     import pandas
-    oc_nodes_selection = list_overcloud_nodes()
-    oc_nodes_names = [node.name for node in oc_nodes_selection]
-    oc_nodes_dfs = [oc_node_df_function(node_name) for
-                    node_name in oc_nodes_names]
+    oc_nodes_dfs = list()
+    for instance in list_overcloud_nodes():
+        ssh_client = overcloud_ssh_client(instance=instance)
+        oc_nodes_dfs.append(oc_node_df_function(ssh_client))
     oc_procs_df = pandas.concat(oc_nodes_dfs, ignore_index=True)
     return oc_procs_df
 

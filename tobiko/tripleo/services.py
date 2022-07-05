@@ -8,6 +8,7 @@ import pandas
 import tobiko
 from tobiko.tripleo import overcloud
 from tobiko.shell import sh
+from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
@@ -17,7 +18,7 @@ class OvercloudServiceException(tobiko.TobikoException):
     message = "not all overcloud nodes services are in active state"
 
 
-def get_overcloud_node_services_table(hostname):
+def get_overcloud_node_services_table(ssh_client: ssh.SSHClientType):
     """
     get services table from overcloud node
 
@@ -35,7 +36,6 @@ cloud-init.service|loaded|active|exited|Initialcloud-initjob(metadataservicecr)
 
     :return: dataframe of overcloud node services
     """
-    ssh_client = overcloud.overcloud_ssh_client(hostname)
     units = sh.list_systemd_units(all=True,
                                   ssh_client=ssh_client).without_attributes(
         load='not-found')
@@ -53,7 +53,7 @@ cloud-init.service|loaded|active|exited|Initialcloud-initjob(metadataservicecr)
         data['UNIT_DESCRIPTION'].append(unit.description)
     table = pandas.DataFrame.from_dict(data)
     table.replace(to_replace=' ', value="", regex=True, inplace=True)
-    table['overcloud_node'] = hostname
+    table['overcloud_node'] = sh.get_hostname(ssh_client=ssh_client)
 
     LOG.debug("Got overcloud nodes services status :\n%s", table)
     return table

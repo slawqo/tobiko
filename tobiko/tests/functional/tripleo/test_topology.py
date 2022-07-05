@@ -39,8 +39,8 @@ class TripleoTopologyTest(test_topology.OpenStackTopologyTest):
 
     @tripleo.skip_if_missing_overcloud
     def test_overcloud_group(self):
-        for server in tripleo.list_overcloud_nodes():
-            ssh_client = tripleo.overcloud_ssh_client(server.name)
+        for instance in tripleo.list_overcloud_nodes():
+            ssh_client = tripleo.overcloud_ssh_client(instance=instance)
             name = sh.get_hostname(ssh_client=ssh_client).split('.')[0]
             node = self.topology.get_node(name)
             self.assertIs(node.ssh_client, ssh_client)
@@ -53,6 +53,6 @@ class TripleoTopologyTest(test_topology.OpenStackTopologyTest):
                 nodes = self.topology.get_group(group)
                 self.assertIn(node, nodes)
                 self.assertIn(group, node.groups)
-            host_config = tripleo.overcloud_host_config(name)
+            host_config = tripleo.overcloud_host_config(instance=instance)
             self.assertEqual(host_config.hostname,
                              str(node.public_ip))

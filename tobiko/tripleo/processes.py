@@ -12,6 +12,7 @@ from tobiko.openstack import neutron
 from tobiko.openstack import topology
 from tobiko.tripleo import overcloud
 from tobiko.shell import sh
+from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
@@ -22,7 +23,7 @@ class OvercloudProcessesException(tobiko.TobikoException):
               "{process_error}"
 
 
-def get_overcloud_node_processes_table(hostname):
+def get_overcloud_node_processes_table(ssh_client: ssh.SSHClientType):
     """
     get processes tables from overcloud node
 
@@ -47,7 +48,6 @@ root    |     11|      2| 0.0|     0|00:00:05|migration/0    |[migration/0]
     :return: dataframe of overcloud node processes dataframe
     """
 
-    ssh_client = overcloud.overcloud_ssh_client(hostname)
     output = sh.execute(
         "ps -axw -o \"%U\" -o \"DELIM%p\" -o \"DELIM%P\" -o \"DELIM%C\" -o "
         "\"DELIM%z\" -o \"DELIM%x\" -o \"DELIM%c\" -o \"DELIM%a\" |grep -v "
@@ -60,6 +60,7 @@ root    |     11|      2| 0.0|     0|00:00:05|migration/0    |[migration/0]
     table.columns = ['USER', 'PID', 'PPID', 'CPU', 'VSZ', 'TIME', 'PROCESS',
                      'PROCESS_ARGS']
     # pylint: disable=unsupported-assignment-operation
+    hostname = sh.get_hostname(ssh_client=ssh_client)
     table['overcloud_node'] = hostname
 
     LOG.debug("Successfully got overcloud nodes processes status table")

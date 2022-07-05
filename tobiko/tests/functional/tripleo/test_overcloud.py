@@ -20,7 +20,7 @@ import pandas as pd
 import testtools
 
 from tobiko import config
-from tobiko.openstack import nova
+from tobiko.openstack import metalsmith
 from tobiko import tripleo
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import services
@@ -31,7 +31,7 @@ CONF = config.CONF
 
 
 @tripleo.skip_if_missing_overcloud
-class OvercloudSshConnectionTest(testtools.TestCase):
+class OvercloudKeystoneCredentialsTest(testtools.TestCase):
 
     def test_fetch_overcloud_credentials(self):
         env = tripleo.load_overcloud_rcfile()
@@ -45,20 +45,20 @@ class OvercloudSshConnectionTest(testtools.TestCase):
 
 
 @tripleo.skip_if_missing_overcloud
-class OvercloudNovaApiTest(testtools.TestCase):
+class OvercloudMetalsmithApiTest(testtools.TestCase):
 
     def test_list_overcloud_nodes(self):
         nodes = tripleo.list_overcloud_nodes()
         self.assertTrue(nodes)
         for node in nodes:
-            node_ip = nova.find_server_ip_address(server=node,
-                                                  check_connectivity=True)
+            node_ip = metalsmith.find_instance_ip_address(
+                instance=node, check_connectivity=True)
             self.assertIsInstance(node_ip, netaddr.IPAddress)
 
     def test_find_overcloud_nodes(self):
         node = tripleo.find_overcloud_node()
-        node_ip = nova.find_server_ip_address(server=node,
-                                              check_connectivity=True)
+        node_ip = metalsmith.find_instance_ip_address(instance=node,
+                                                      check_connectivity=True)
         self.assertIsInstance(node_ip, netaddr.IPAddress)
 
     def test_get_overcloud_node_ip_address(self):
@@ -66,10 +66,13 @@ class OvercloudNovaApiTest(testtools.TestCase):
         self.assertIsInstance(overcloud_node_ip, netaddr.IPAddress)
 
     def test_overcloud_host_config(self):
-        hostname = tripleo.find_overcloud_node().name
+        instance = tripleo.find_overcloud_node()
         host_config = tobiko.setup_fixture(
-            tripleo.overcloud_host_config(hostname=hostname))
-        self.assertEqual(hostname, host_config.host)
+            tripleo.overcloud_host_config(instance=instance))
+        instance_ips = set()
+        for ips in instance.ip_addresses().values():
+            instance_ips.update(ips)
+        self.assertIn(host_config.host, instance_ips)
         self.assertIsInstance(host_config.hostname, str)
         netaddr.IPAddress(host_config.hostname)
         self.assertEqual(CONF.tobiko.tripleo.overcloud_ssh_port,
@@ -83,8 +86,8 @@ class OvercloudNovaApiTest(testtools.TestCase):
         self.assertTrue(os.path.isfile(key_filename + '.pub'))
 
     def test_overcloud_ssh_client_connection(self):
-        hostname = tripleo.find_overcloud_node().name
-        ssh_client = tripleo.overcloud_ssh_client(hostname=hostname)
+        instance = tripleo.find_overcloud_node()
+        ssh_client = tripleo.overcloud_ssh_client(instance=instance)
         ssh_client.connect()
 
 

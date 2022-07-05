@@ -14,8 +14,9 @@
 from __future__ import absolute_import
 
 import re
-import typing  # noqa
+import typing
 
+import metalsmith
 from oslo_log import log
 
 from tobiko.openstack import neutron
@@ -89,22 +90,22 @@ class TripleoTopology(topology.OpenStackTopology):
 
     def discover_overcloud_nodes(self):
         if _overcloud.has_overcloud():
-            for server in _overcloud.list_overcloud_nodes():
+            for instance in _overcloud.list_overcloud_nodes():
                 try:
-                    _overcloud.power_on_overcloud_node(server)
+                    _overcloud.power_on_overcloud_node(instance)
                 except Exception:
                     LOG.exception("Error ensuring overcloud node power "
                                   "status is on")
-                host_config = _overcloud.overcloud_host_config(server=server)
+                host_config = _overcloud.overcloud_host_config(
+                    instance=instance)
                 ssh_client = _overcloud.overcloud_ssh_client(
-                    hostname=server.name,
+                    instance=instance,
                     host_config=host_config)
                 node = self.add_node(address=host_config.hostname,
-                                     hostname=server.name,
                                      group='overcloud',
                                      ssh_client=ssh_client)
                 assert isinstance(node, TripleoTopologyNode)
-                node.overcloud_server = server
+                node.overcloud_instance = instance
                 self.discover_overcloud_node_subgroups(node)
 
     def discover_overcloud_node_subgroups(self, node):
@@ -137,68 +138,68 @@ class TripleoTopology(topology.OpenStackTopology):
 
 class TripleoTopologyNode(topology.OpenStackTopologyNode):
 
-    overcloud_server: typing.Optional[nova.NovaServer] = None
+    overcloud_instance: typing.Optional[metalsmith.Instance] = None
 
     l3_agent_conf_path = (
         '/var/lib/config-data/neutron/etc/neutron/l3_agent.ini')
 
-    def reboot_overcloud_node(self, reactivate_servers=True):
+    def reboot_overcloud_node(self,
+                              reactivate_servers=True):
         """Reboot overcloud node
 
-        This method reboots an overcloud node and may start every server which
-        changed its provisioning state to SHUTOFF because of that operation.
+        This method reboots an overcloud node and may start every Nova
+        server which is not in SHUTOFF status before restarting.
 
-        :param start_servers (bool): whether or not to start the servers which
-            are hosted on the node after the reboot
+        :param reactivate_servers: whether or not to re-start the servers which
+            are hosted on the compute node after the reboot
         """
 
+        running_servers: typing.List[nova.NovaServer] = []
         if reactivate_servers:
-            servers_to_restart = self.get_running_servers()
+            running_servers = self.list_running_servers()
+            LOG.debug(f'Servers to restart after reboot: {running_servers}')
 
         self.power_off_overcloud_node()
         self.power_on_overcloud_node()
 
-        if reactivate_servers:
-            for server in servers_to_restart:
+        if running_servers:
+            LOG.info(f'Restart servers after rebooting overcloud compute node '
+                     f'{self.name}...')
+            for server in running_servers:
                 nova.wait_for_server_status(server=server.id,
                                             status='SHUTOFF')
-                LOG.debug(f'Server {server.name} with ID {server.id} '
-                          f'had a SHUTOFF status before being '
-                          f'restarted')
-                nova.activate_server(server)
-                LOG.debug(f'Server {server.name} with ID {server.id} '
-                          f'has a {server.status} status after being '
-                          f'restarted')
+                LOG.debug(f'Re-activate server {server.name} with ID '
+                          f'{server.id}')
+                nova.activate_server(server=server)
+                LOG.debug(f'Server {server.name} with ID {server.id} has '
+                          f'been reactivated')
 
-    def get_running_servers(self):
-        servers_to_reactivate = list()
+    def list_running_servers(self) -> typing.List[nova.NovaServer]:
+        running_servers = list()
         for server in nova.list_servers():
-            server_hyp = getattr(server,
-                                 'OS-EXT-SRV-ATTR:'
-                                 'hypervisor_hostname').split('.', 1)[0]
-            if self.name == server_hyp and server.status != 'SHUTOFF':
-                servers_to_reactivate.append(server)
-        LOG.info(f'Servers to restart after reboot: {servers_to_reactivate}')
-        return servers_to_reactivate
+            if server.status != 'SHUTOFF':
+                hypervisor_name = nova.get_server_hypervisor(server,
+                                                             short=True)
+                if self.name == hypervisor_name:
+                    running_servers.append(server)
+        return running_servers
 
     def power_on_overcloud_node(self):
-        server = self.overcloud_server
-        if server is None:
+        if self.overcloud_instance is None:
             raise TypeError(f"Node {self.name} is not and Overcloud server")
         self.ssh_client.close()
         LOG.debug(f"Ensuring overcloud node {self.name} power is on...")
-        _overcloud.power_on_overcloud_node(server)
+        _overcloud.power_on_overcloud_node(instance=self.overcloud_instance)
         hostname = sh.get_hostname(ssh_client=self.ssh_client)
         LOG.debug(f"Overcloud node {self.name} power is on ("
                   f"hostname={hostname})")
 
     def power_off_overcloud_node(self):
-        server = self.overcloud_server
-        if server is None:
+        if self.overcloud_instance is None:
             raise TypeError(f"Node {self.name} is not and Overcloud server")
         self.ssh_client.close()
         LOG.debug(f"Ensuring overcloud node {self.name} power is off...")
-        _overcloud.power_off_overcloud_node(server)
+        _overcloud.power_off_overcloud_node(instance=self.overcloud_instance)
         LOG.debug(f"Overcloud server node {self.name} power is off.")
 
 
