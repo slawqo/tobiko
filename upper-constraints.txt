@@ -192,7 +192,7 @@ Mako===1.1.6
 marathon===0.13.0
 MarkupSafe===2.0.1
 mbstrdecoder===1.1.0
-metalsmith===1.6.1
+metalsmith===1.6.2
 microversion-parse===1.0.1
 mistral-lib===2.5.0
 mitba===1.1.1

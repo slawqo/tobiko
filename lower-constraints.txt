@@ -5,6 +5,7 @@ docker==4.4.1
 fixtures==3.0.0
 Jinja2==2.11.2
 keystoneauth1==4.3.0
+metalsmith==1.6.2
 mock==3.0.5
 netaddr==0.8.0
 neutron-lib==2.7.0
