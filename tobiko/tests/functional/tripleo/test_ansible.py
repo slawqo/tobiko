@@ -77,6 +77,7 @@ class PlaybookTest(testtools.TestCase):
             playbook='test_undercloud_current_dir.yaml',
             playbook_dirname=PLAYBOOK_DIRNAME)
 
+    @tripleo.skip_unless_undercloud_has_ansible(min_version=2.9)
     def test_overcloud_openstack_auth(self):
         tripleo.run_playbook_from_undercloud(
             playbook='test_overcloud_openstack_auth.yaml',

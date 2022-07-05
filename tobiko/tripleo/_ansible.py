@@ -18,12 +18,17 @@ import io
 import os
 import typing
 
+from oslo_log import log
+
 import tobiko
 from tobiko.shell import ansible
 from tobiko.shell import sh
 from tobiko.shell import ssh
 from tobiko.tripleo import _undercloud
 from tobiko.tripleo import _config
+
+
+LOG = log.getLogger(__name__)
 
 
 def get_tripleo_ansible_inventory():
@@ -51,6 +56,34 @@ def get_tripleo_ansible_inventory_file() -> typing.Optional[str]:
             fetch_tripleo_inventary_file(inventory_file=inventory_file)
             return inventory_file
     return None
+
+
+def skip_unless_undercloud_has_ansible(min_version: float = None):
+    reason = ("Ansible not found on undercloud host "
+              f"(min_version={min_version})")
+    return tobiko.skip_unless(reason=reason,
+                              predicate=has_undercloud_ansible_version,
+                              min_version=min_version)
+
+
+def has_undercloud_ansible_version(min_version: float = None) -> bool:
+    ssh_client = _undercloud.undercloud_ssh_client()
+    try:
+        output = sh.execute('ansible --version',
+                            ssh_client=ssh_client).stdout
+    except sh.ShellCommandFailed:
+        LOG.debug("Error getting ansible version", exc_info=1)
+        return False
+
+    if min_version is not None:
+        first_line = output.splitlines()[0]
+        version_pair = first_line.split()[1].split('.', 2)[:2]
+        version = float('.'.join(version_pair))
+        if version < min_version:
+            LOG.debug(f"Ansible version is < {min_version}:\n"
+                      f"{first_line}\n")
+            return False
+    return True
 
 
 READ_TRIPLEO_ANSIBLE_INVENTORY_SCRIPT = """
