@@ -27,6 +27,8 @@ read_tripleo_ansible_inventory = _ansible.read_tripleo_ansible_inventory
 fetch_tripleo_inventary_file = _ansible.fetch_tripleo_inventary_file
 skip_if_missing_tripleo_ansible_inventory = \
     _ansible.skip_if_missing_tripleo_ansible_inventory
+skip_unless_undercloud_has_ansible = \
+    _ansible.skip_unless_undercloud_has_ansible
 run_playbook_from_undercloud = _ansible.run_playbook_from_undercloud
 
 find_overcloud_node = overcloud.find_overcloud_node
