@@ -65,7 +65,12 @@ def list_servers_hypervisors(servers: typing.Iterable[_client.ServerType],
     return hypervisors
 
 
-def get_server_hypervisor(server, client=None):
+def get_server_hypervisor(server: _client.ServerType,
+                          client: _client.NovaClientType = None,
+                          short=False) -> str:
     if isinstance(server, str):
         server = _client.get_server(server, client=client)
-    return getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname')
+    hypervisor = getattr(server, 'OS-EXT-SRV-ATTR:hypervisor_hostname')
+    if short:
+        hypervisor = hypervisor.split('.', 1)[0]
+    return hypervisor
