@@ -21,3 +21,4 @@ tree <https://opendev.org/x/tobiko/src/branch/master/doc/source>`__.
    contributor/index
    reference/index
    etc/index
+   miscellaneous/index
