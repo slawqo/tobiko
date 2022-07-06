@@ -22,6 +22,7 @@ import weakref
 
 import netaddr
 from oslo_log import log
+from packaging import version
 
 import tobiko
 from tobiko.shell import files
@@ -662,7 +663,7 @@ def get_openstack_version():
     os_to_nova_versions = {'13.0.0': '17',  # Queens
                            '16.0.0': '19',  # Stein
                            '16.1.0': '20',  # Train
-                           '17.0.0': '22'}  # Ussuri
+                           '17.0.0': '23'}  # Wallaby
     for os_version, nova_major_version in os_to_nova_versions.items():
         if nova_version.split('.')[0] == nova_major_version:
             return os_version
@@ -681,58 +682,31 @@ def remove_duplications(items: typing.List) -> typing.List:
     return list(mapping.keys())
 
 
-def _is_version_matched(current, required, higher=False, lower=False):
-    # return True means the condition has been fulfilled and next items do not
-    # need to be compared
-    # return False means the condition has not been fulfilled and next items do
-    # not need to be compared
-    # return None means the condition has been fulfilled so far, but next items
-    # need to be compared too
-    if not higher and not lower:  # this means equal
-        if int(current) != int(required):
-            return False
-        else:
-            return None
-    elif higher:
-        if int(current) < int(required):
-            return False
-    elif lower:
-        if int(current) > int(required):
-            return False
-    else:
-        raise RuntimeError
-    if int(current) != int(required):
-        return True
-    # else: return None
-
-
-def verify_osp_version(version, higher=False, lower=False):
+def verify_osp_version(required_version, higher=False, lower=False):
     try:
         current_version = get_openstack_version()
     except Exception:
         current_version = None
-    if not current_version:
+    if current_version is None:
         return False
-    else:
-        correct_version = True
-        os_version = current_version.split('.')
-        required_version = version.split('.')
-        for version_type in range(len(required_version)):
-            is_version_match = _is_version_matched(
-                os_version[version_type],
-                required_version[version_type],
-                higher=higher,
-                lower=lower)
-            if is_version_match is not None:
-                correct_version = is_version_match
-                break
-    return correct_version
+
+    required_version_parsed = version.parse(required_version)
+    current_version_parsed = version.parse(current_version)
+
+    if higher and lower:
+        raise RuntimeError
+    elif not higher and not lower:  # this means equal
+        return current_version_parsed == required_version_parsed
+    elif higher:
+        return current_version_parsed > required_version_parsed
+    elif lower:
+        return current_version_parsed < required_version_parsed
 
 
-def skip_unless_osp_version(version, higher=False, lower=False):
+def skip_unless_osp_version(required_version, higher=False, lower=False):
     skip_msg = "OSP version doesn't match the requirement"
     return tobiko.skip_unless(skip_msg, verify_osp_version,
-                              version, higher, lower)
+                              required_version, higher, lower)
 
 
 MatchStringType = typing.Union[str, typing.Pattern]
