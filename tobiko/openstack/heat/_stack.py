@@ -65,6 +65,50 @@ def heat_stack_parameters(obj,
     return parameters
 
 
+STACK_CLASSES = stacks.Stack,
+StackType = typing.Union[stacks.Stack]
+StackIdType = typing.Union[str, stacks.Stack, 'HeatStackFixture']
+
+
+def get_stack_id(stack: StackIdType) -> str:
+    if isinstance(stack, str):
+        return stack
+    elif isinstance(stack, HeatStackFixture):
+        return stack.stack_id
+    elif isinstance(stack, STACK_CLASSES):
+        return stack.id
+    else:
+        raise TypeError(f'{stack} is not a valid Heat stack ID')
+
+
+def get_stack(stack: StackIdType,
+              resolve_outputs=False,
+              client: _client.HeatClientType = None) \
+        -> StackType:
+    if isinstance(stack, HeatStackFixture):
+        return stack.get_stack(resolve_outputs=resolve_outputs)
+    else:
+        stack_id = get_stack_id(stack)
+        return _client.heat_client(client).stacks.get(
+            stack_id, resolve_outputs=resolve_outputs)
+
+
+def list_stacks(client: _client.HeatClientType = None,
+                **kwargs) -> tobiko.Selection[StackType]:
+    client = _client.heat_client(client)
+    return tobiko.select(client.stacks.list(**kwargs))
+
+
+def find_stack(client: _client.HeatClientType = None,
+               unique=False,
+               **kwargs) -> StackIdType:
+    _stacks = list_stacks(client=client, **kwargs)
+    if unique:
+        return _stacks.unique
+    else:
+        return _stacks.first
+
+
 @keystone.skip_unless_has_keystone_credentials()
 class HeatStackFixture(tobiko.SharedFixture):
     """Manages Heat stacks."""
@@ -77,7 +121,7 @@ class HeatStackFixture(tobiko.SharedFixture):
     wait_interval: tobiko.Seconds = 5
     wait_timeout: tobiko.Seconds = 600.
     template: _template.HeatTemplateFixture
-    stack: typing.Optional[stacks.Stack] = None
+    stack: typing.Optional[StackType] = None
     stack_name: typing.Optional[str] = None
     parameters: typing.Optional['HeatStackParametersFixture'] = None
     project: typing.Optional[str] = None

@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 from tobiko.openstack.heat import _client
 from tobiko.openstack.heat import _template
+from tobiko.openstack.heat import _resource
 from tobiko.openstack.heat import _stack
 
 heat_client = _client.heat_client
@@ -29,9 +30,17 @@ heat_template_file = _template.heat_template_file
 HeatTemplateFixture = _template.HeatTemplateFixture
 HeatTemplateFileFixture = _template.HeatTemplateFileFixture
 
+RESOURCE_CLASSES = _resource.RESOURCE_CLASSES
+ResourceType = _resource.ResourceType
+find_resource = _resource.find_resource
+list_resources = _resource.list_resources
+
+StackType = _stack.StackType
 HeatStackFixture = _stack.HeatStackFixture
 HeatStackNotFound = _stack.HeatStackNotFound
 heat_stack_parameters = _stack.heat_stack_parameters
+find_stack = _stack.find_stack
+list_stacks = _stack.list_stacks
 InvalidStackError = _stack.InvalidStackError
 INIT_IN_PROGRESS = _stack.INIT_IN_PROGRESS
 INIT_COMPLETE = _stack.INIT_COMPLETE
@@ -41,3 +50,4 @@ CREATE_FAILED = _stack.CREATE_FAILED
 DELETE_IN_PROGRESS = _stack.DELETE_IN_PROGRESS
 DELETE_COMPLETE = _stack.DELETE_COMPLETE
 DELETE_FAILED = _stack.DELETE_FAILED
+STACK_CLASSES = _stack.STACK_CLASSES
