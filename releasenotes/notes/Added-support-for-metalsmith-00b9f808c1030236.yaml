@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Support for the Metalsmith API was added. It is necessary to get data about
+    the overcloud nodes from the undercloud when the ``compute`` service isn't
+    available in the undercloud, like e.g. in OSP-17.
