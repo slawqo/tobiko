@@ -74,12 +74,14 @@ class CurlExecuteTest(testtools.TestCase):
 
 class CurlTest(testtools.TestCase):
 
+    default_url = 'https://bootstrap.pypa.io/get-pip.py'
+
     def test_get_url_header(self,
                             url: str = None,
                             location: bool = None,
                             ssh_client: ssh.SSHClientType = None):
         if url is None:
-            url = tobiko.get_fixture(stacks.CirrosImageFixture).image_url
+            url = self.default_url
         header = curl.get_url_header(url=url,
                                      location=location,
                                      ssh_client=ssh_client)
