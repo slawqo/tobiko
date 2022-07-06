@@ -5,13 +5,11 @@ test_workflow_steps:
     tox_envlist: py3
     tox_step_name: unit
     test_flaky: true
-    test_log_debug: true
 
   - tox_description: 'run functional test cases'
     tox_envlist: functional
     tox_step_name: functional
     test_flaky: true
-    test_log_debug: true
 
   - tox_description: 'create workload resources'
     tox_envlist: scenario
@@ -19,7 +17,6 @@ test_workflow_steps:
     tox_environment:
       TOBIKO_PREVENT_CREATE: no
     test_flaky: true
-    test_log_debug: true
 
   - tox_description: 'run sanity test cases before disruptive test cases'
     tox_envlist: sanity
@@ -27,7 +24,6 @@ test_workflow_steps:
     tox_environment:
       TOBIKO_PREVENT_CREATE: no
     test_flaky: true
-    test_log_debug: true
 
   - tox_description: 'run disruptive test cases'
     tox_envlist: faults
@@ -35,7 +31,6 @@ test_workflow_steps:
     tox_environment:
       TOBIKO_PREVENT_CREATE: no
     test_flaky: true
-    test_log_debug: true
 
   - tox_description: 'run sanity test cases after disruptive test cases'
     tox_envlist: sanity
@@ -43,7 +38,6 @@ test_workflow_steps:
     tox_environment:
       TOBIKO_PREVENT_CREATE: no
     test_flaky: true
-    test_log_debug: true
 
   - tox_description: 'verify workload resources'
     tox_envlist: scenario
@@ -51,4 +45,3 @@ test_workflow_steps:
     tox_environment:
       TOBIKO_PREVENT_CREATE: yes
     test_flaky: true
-    test_log_debug: true
