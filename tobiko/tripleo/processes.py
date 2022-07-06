@@ -127,7 +127,6 @@ class OvercloudProcessesStatus(object):
         Checks that the oc_procs_df dataframe has all of the list procs
         :return: Bool
         """
-
         for attempt_number in range(600):
 
             try:
@@ -138,6 +137,25 @@ class OvercloudProcessesStatus(object):
                             self.oc_procs_df.query('PROCESS=="{}"'.format(
                             process_name)).empty:
                         process_name = 'neutron-server:'
+                    # osp17 mysqld process name is mysqld_safe
+                    if process_name == 'mysqld' and \
+                            self.oc_procs_df.query('PROCESS=="{}"'.format(
+                            process_name)).empty:
+                        process_name = 'mysqld_safe'
+                    # redis not deployed on osp17 by default, only if some
+                    # other services such as designate and octavia are deployed
+                    if (process_name == 'redis-server' and
+                            not overcloud.is_redis_expected()):
+                        redis_message = ("redis-server not expected on OSP 17 "
+                                         "and later releases by default")
+                        if self.oc_procs_df.query(
+                                f'PROCESS=="{process_name}"').empty:
+                            LOG.info(redis_message)
+                            continue
+                        else:
+                            raise OvercloudProcessesException(
+                                process_error=redis_message)
+
                     if not self.oc_procs_df.query('PROCESS=="{}"'.format(
                             process_name)).empty:
                         LOG.info("overcloud processes status checks: "

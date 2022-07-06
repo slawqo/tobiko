@@ -23,6 +23,7 @@ from tobiko import config
 from tobiko.openstack import keystone
 from tobiko.openstack import ironic
 from tobiko.openstack import nova
+from tobiko.openstack import topology
 from tobiko.shell import sh
 from tobiko.shell import ssh
 from tobiko.tripleo import _undercloud
@@ -243,3 +244,14 @@ def get_overcloud_nodes_dataframe(oc_node_df_function):
                     node_name in oc_nodes_names]
     oc_procs_df = pandas.concat(oc_nodes_dfs, ignore_index=True)
     return oc_procs_df
+
+
+def is_redis_expected():
+    if topology.verify_osp_version('17.0', lower=True):
+        return True
+    services_requiring_redis = (
+        'designate', 'octavia', 'ceilometer', 'gnocchi', 'panko')
+    for service in services_requiring_redis:
+        if keystone.has_service(name=service):
+            return True
+    return False
