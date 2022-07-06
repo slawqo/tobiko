@@ -45,12 +45,6 @@
   ignore_errors: yes
 
 
-- name: "show test cases output"
-  debug: var=run_tox.stdout_lines
-  when:
-    - (run_tox.stdout_lines | length) > 0
-
-
 - name: "show test cases errors"
   debug: var=run_tox.stderr_lines
   when:
