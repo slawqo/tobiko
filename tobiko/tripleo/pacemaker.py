@@ -78,20 +78,27 @@ def get_pcs_resources_table(timeout=720, interval=2) -> pandas.DataFrame:
     return table
 
 
+def get_pcs_prefix_and_status_values():
+    if topology.verify_osp_version('17.0', lower=True):
+        ocf_prefix = "ocf::"
+        promoted_status_str = "Master"
+        unpromoted_status_str = "Slave"
+    else:
+        ocf_prefix = "ocf:"
+        promoted_status_str = "Promoted"
+        unpromoted_status_str = "Unpromoted"
+    return ocf_prefix, promoted_status_str, unpromoted_status_str
+
+
 class PacemakerResourcesStatus(object):
     """
     class to handle pcs resources checks
     """
     def __init__(self):
         self.pcs_df = get_pcs_resources_table()
-        if topology.verify_osp_version('17.0', lower=True):
-            self.ocf_prefix = "ocf::"
-            self.promoted_status_str = "Master"
-            self.unpromoted_status_str = "Slave"
-        else:
-            self.ocf_prefix = "ocf:"
-            self.promoted_status_str = "Promoted"
-            self.unpromoted_status_str = "Unpromoted"
+        (self.ocf_prefix,
+         self.promoted_status_str,
+         self.unpromoted_status_str) = get_pcs_prefix_and_status_values()
 
     def container_runtime(self):
 
@@ -280,8 +287,10 @@ def get_resource_master_node(resource_type=None):
 
 
 def get_ovn_db_master_node():
+    ocf_prefix, promoted_status_str, _ = get_pcs_prefix_and_status_values()
     return get_overcloud_nodes_running_pcs_resource(
-        resource_type='(ocf::ovn:ovndb-servers):', resource_state='Master')
+        resource_type=f'({ocf_prefix}ovn:ovndb-servers):',
+        resource_state=promoted_status_str)
 
 
 def get_overcloud_resource(resource_type=None,

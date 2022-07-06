@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 import collections
 from collections import abc
+import functools
 import re
 import typing
 from urllib import parse
@@ -648,6 +649,9 @@ def get_nova_version_from_container():
             pass
 
 
+# During a execution of tobiko, openstack version does not change, so let's
+# cache the output of this function
+@functools.lru_cache()
 def get_openstack_version():
     try:
         return get_rhosp_version()

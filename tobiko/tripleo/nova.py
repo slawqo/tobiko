@@ -199,7 +199,8 @@ def check_vm_running_via_virsh(topology_compute, vm_id):
 def get_vm_uuid_list_running_via_virsh(topology_compute):
     if overcloud.has_overcloud():
         container_runtime = containers.get_container_runtime_name()
-        command = f"sudo {container_runtime} exec nova_libvirt " \
+        nova_libvirt = containers.get_libvirt_container_name()
+        command = f"sudo {container_runtime} exec {nova_libvirt} " \
                   f"sh -c 'for i in `virsh list --name --state-running` " \
                   f";do virsh domuuid $i;done'"
     else:
