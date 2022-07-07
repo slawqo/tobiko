@@ -14,7 +14,6 @@
 from __future__ import absolute_import
 
 import itertools
-import os
 
 from oslo_config import cfg
 from oslo_log import log
@@ -86,9 +85,6 @@ def list_options():
 
 
 def setup_tobiko_config(conf):
-    from tobiko.shell.ssh import _client
-    from tobiko.shell.ssh import _ssh_key_file
-
     paramiko_logger = log.getLogger('paramiko')
     if conf.ssh.debug:
         if not paramiko_logger.isEnabledFor(log.DEBUG):
@@ -98,13 +94,3 @@ def setup_tobiko_config(conf):
         if paramiko_logger.isEnabledFor(log.ERROR):
             # Silence paramiko debugging messages
             paramiko_logger.logger.setLevel(log.FATAL)
-
-    ssh_proxy_client = _client.ssh_proxy_client()
-    if ssh_proxy_client:
-        key_file: str
-        for remote_key_file in conf.ssh.key_file:
-            key_file = _ssh_key_file.get_key_file(ssh_client=ssh_proxy_client,
-                                                  key_file=remote_key_file)
-            if key_file and os.path.isfile(key_file):
-                LOG.info(f"Use SSH proxy server keyfile: {key_file}")
-                conf.ssh.key_file.append(key_file)

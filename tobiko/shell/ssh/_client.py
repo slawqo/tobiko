@@ -558,7 +558,10 @@ class SSHClientManager(object):
             **connect_parameters)
         return new_client
 
-    def get_proxy_client(self, host=None, proxy_jump=None, host_config=None,
+    def get_proxy_client(self,
+                         host=None,
+                         proxy_jump=None,
+                         host_config=None,
                          config_files=None):
         if isinstance(proxy_jump, SSHClientFixture):
             return proxy_jump
@@ -730,7 +733,9 @@ def ssh_proxy_sock(hostname=None, port=None, command=None, client=None,
     return sock
 
 
-def ssh_proxy_client(manager=None, host=None, host_config=None,
+def ssh_proxy_client(manager=None,
+                     host=None,
+                     host_config=None,
                      config_files=None):
     manager = manager or CLIENTS
     return manager.get_proxy_client(host=host,

@@ -151,6 +151,13 @@ class SelectionTest(unit.TobikoUnitTest):
         selection = self.create_selection([a, b, c])
         self.assertEqual([a], selection.unselect(lambda obj: obj.number == 1))
 
+    def test_select_uniques(self):
+        a = Obj(0, 'a')
+        b = Obj(1, 'b')
+        c = Obj(1, 'c')
+        selection = self.create_selection([a, b, c, a, b, c])
+        self.assertEqual([a, b, c], selection.select_uniques())
+
 
 class SelectTest(SelectionTest):
 
