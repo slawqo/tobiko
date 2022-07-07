@@ -32,7 +32,7 @@ OPTIONS = [
                default='stack',
                help="Username with access to stackrc and overcloudrc files"),
     cfg.StrOpt('undercloud_ssh_key_filename',
-               default='~/.ssh/id_rsa',
+               default=None,
                help="SSH key filename used to login to Undercloud node"),
     cfg.ListOpt('undercloud_rcfile',
                 default=['~/stackrc'],

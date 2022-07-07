@@ -165,15 +165,11 @@ class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
         host_config_key_files = self.host_config.get('identityfile')
         if host_config_key_files:
             for filename in host_config_key_files:
-                if filename:
+                if filename and os.path.isfile(filename):
                     key_filename.append(tobiko.tobiko_config_path(filename))
 
-        default_key_files = self.default.key_file
-        if default_key_files:
-            for filename in default_key_files:
-                if filename:
-                    key_filename.append(tobiko.tobiko_config_path(filename))
-
+        from tobiko.shell.ssh import _key_file
+        key_filename.extend(_key_file.list_key_filenames())
         return key_filename
 
     @property
@@ -184,7 +180,7 @@ class SSHHostConfig(collections.namedtuple('SSHHostConfig', ['host',
             return None
 
         proxy_hostname = self.ssh_config.lookup(proxy_jump).hostname
-        if ({proxy_jump, proxy_hostname} & {self.host, self.hostname}):
+        if {proxy_jump, proxy_hostname} & {self.host, self.hostname}:
             # Avoid recursive proxy jump definition
             return None
 

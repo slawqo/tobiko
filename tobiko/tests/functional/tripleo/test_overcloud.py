@@ -30,7 +30,7 @@ import tobiko
 CONF = config.CONF
 
 
-@tripleo.skip_if_missing_overcloud
+@tripleo.skip_if_missing_undercloud
 class OvercloudKeystoneCredentialsTest(testtools.TestCase):
 
     def test_fetch_overcloud_credentials(self):

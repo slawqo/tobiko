@@ -31,6 +31,8 @@ skip_unless_undercloud_has_ansible = \
     _ansible.skip_unless_undercloud_has_ansible
 run_playbook_from_undercloud = _ansible.run_playbook_from_undercloud
 
+OvercloudKeystoneCredentialsFixture = \
+    overcloud.OvercloudKeystoneCredentialsFixture
 find_overcloud_node = overcloud.find_overcloud_node
 list_overcloud_nodes = overcloud.list_overcloud_nodes
 load_overcloud_rcfile = overcloud.load_overcloud_rcfile

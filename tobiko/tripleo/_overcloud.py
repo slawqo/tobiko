@@ -39,7 +39,7 @@ def has_overcloud():
     return _undercloud.has_undercloud()
 
 
-def load_overcloud_rcfile():
+def load_overcloud_rcfile() -> typing.Dict[str, str]:
     return _undercloud.fetch_os_env(*CONF.tobiko.tripleo.overcloud_rcfile)
 
 
@@ -50,10 +50,13 @@ skip_if_missing_overcloud = tobiko.skip_unless(
 class OvercloudKeystoneCredentialsFixture(
         keystone.EnvironKeystoneCredentialsFixture):
 
-    def get_environ(self):
-        if has_overcloud():
+    def get_environ(self) -> typing.Dict[str, str]:
+        LOG.debug('Looking for credentials from TripleO undercloud host...')
+        if _undercloud.has_undercloud():
             return load_overcloud_rcfile()
         else:
+            LOG.debug("TripleO undercloud host not available for fetching "
+                      'credentials files.')
             return {}
 
 

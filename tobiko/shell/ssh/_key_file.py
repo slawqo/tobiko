@@ -15,8 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
-import os.path
-import typing  # noqa
+import os
+import typing
 
 from oslo_log import log
 
@@ -83,3 +83,47 @@ class GetSSHKeyFileFixture(tobiko.SharedFixture):
         with tobiko.open_output_file(key_file + '.pub') as fd:
             fd.write(public_key.decode())
         self.key_file = key_file
+
+
+def list_key_filenames() -> typing.List[str]:
+    return tobiko.setup_fixture(KeyFilenamesFixture).key_filenames
+
+
+def list_proxy_jump_key_filenames() -> typing.List[str]:
+    return tobiko.setup_fixture(ProxyJumpKeyFilenamesFixture).key_filenames
+
+
+class KeyFilenamesFixture(tobiko.SharedFixture):
+
+    def __init__(self):
+        super().__init__()
+        self.key_filenames: typing.List[str] = []
+
+    def setup_fixture(self):
+        conf = tobiko.tobiko_config()
+        for key_file in tobiko.select_uniques(conf.ssh.key_file):
+            if key_file:
+                key_file = tobiko.tobiko_config_path(key_file)
+                if (key_file not in self.key_filenames and
+                        os.path.isfile(key_file)):
+                    LOG.info(f"Use local keyfile: {key_file}")
+                    self.key_filenames.append(key_file)
+
+
+class ProxyJumpKeyFilenamesFixture(KeyFilenamesFixture):
+
+    def setup_fixture(self):
+        ssh_proxy_client = _client.ssh_proxy_client()
+        if ssh_proxy_client is None:
+            return
+
+        conf = tobiko.tobiko_config()
+        remote_key_files = tobiko.select_uniques(conf.ssh.key_file)
+        for remote_key_file in remote_key_files:
+            key_file = get_key_file(ssh_client=ssh_proxy_client,
+                                    key_file=remote_key_file)
+            if (key_file and
+                    key_file not in self.key_filenames and
+                    os.path.isfile(key_file)):
+                LOG.info(f"Use SSH proxy server keyfile: {key_file}")
+                self.key_filenames.append(key_file)
