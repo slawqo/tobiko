@@ -24,8 +24,10 @@ import testtools
 
 import tobiko
 from tobiko.openstack import heat
+from tobiko.openstack import keystone
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
+from tobiko.openstack import stacks
 
 
 TEMPLATE_DIRS = [os.path.dirname(__file__)]
@@ -115,3 +117,45 @@ class EnsureQuotaLimitsTest(testtools.TestCase):
                                         max(0, int(quota['reserved'])))
             else:
                 self.assertEqual(int(quota['limit']), -1)
+
+
+@keystone.skip_unless_has_keystone_credentials()
+class StackTest(testtools.TestCase):
+
+    router_stack = tobiko.required_fixture(stacks.RouterStackFixture)
+
+    def test_find_stack(self):
+        stack = self.router_stack.stack
+        self.assertIsInstance(stack, heat.STACK_CLASSES)
+        result = heat.find_stack(name=stack.stack_name)
+        self.assertEqual(stack.stack_name, result.stack_name)
+
+    def test_list_stacks(self):
+        stack = self.router_stack.stack
+        result = heat.list_stacks()
+        self.assertIsInstance(result, tobiko.Selection)
+        self.assertEqual(stack.id,
+                         result.with_attributes(id=stack.id).unique.id)
+
+
+@keystone.skip_unless_has_keystone_credentials()
+class ResourceTest(testtools.TestCase):
+
+    router_stack = tobiko.required_fixture(stacks.RouterStackFixture)
+
+    def test_find_resource(self):
+        resource = heat.list_resources(stack=self.router_stack).first
+        result = heat.find_resource(
+            stack=self.router_stack,
+            physical_resource_id=resource.physical_resource_id)
+        self.assertIsInstance(resource, heat.RESOURCE_CLASSES)
+        self.assertEqual(resource.physical_resource_id,
+                         result.physical_resource_id)
+
+    def test_list_resource(self):
+        resources = heat.list_resources(stack=self.router_stack)
+        self.assertIsInstance(resources, tobiko.Selection)
+        self.assertNotEqual([], resources)
+        self.assertEqual(resources,
+                         resources.with_attributes(
+                             stack_name=self.router_stack.stack_name))
