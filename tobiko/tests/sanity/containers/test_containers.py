@@ -36,6 +36,10 @@ LOG = log.getLogger(__name__)
 
 @tripleo.skip_if_missing_overcloud
 class ContainersHealthTest(testtools.TestCase):
+    # TODO(eolivare): refactor this class, because it replicates some code from
+    # tobiko/tripleo/containers.py and its tests may be duplicating what
+    # test_0vercloud_health_check already covers when it calls
+    # containers.assert_all_tripleo_containers_running()
 
     @functools.lru_cache()
     def list_node_containers(self, ssh_client):
@@ -173,7 +177,8 @@ class ContainersHealthTest(testtools.TestCase):
         containers.assert_containers_running('compute', ['nova_compute'])
 
     def test_nova_libvirt(self):
-        containers.assert_containers_running('compute', ['nova_libvirt'])
+        nova_libvirt = containers.get_libvirt_container_name()
+        containers.assert_containers_running('compute', [nova_libvirt])
 
     def test_nova_migration_target(self):
         containers.assert_containers_running('compute',
@@ -280,9 +285,6 @@ class ContainersHealthTest(testtools.TestCase):
                                    {'section': 'ml2',
                                     'param': 'type_drivers',
                                     'expected_value': 'geneve'},
-                                   {'section': 'ovn',
-                                    'param': 'ovn_l3_mode',
-                                    'expected_value': 'True'},
                                    {'section': 'ovn',
                                     'param': 'ovn_metadata_enabled',
                                     'expected_value': 'True'}]}
