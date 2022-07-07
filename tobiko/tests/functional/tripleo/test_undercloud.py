@@ -18,7 +18,7 @@ import testtools
 from tobiko import config
 from tobiko.shell import sh
 from tobiko.openstack import keystone
-from tobiko.openstack import nova
+from tobiko.openstack import metalsmith
 from tobiko import tripleo
 
 
@@ -61,8 +61,8 @@ class UndercloudKeystoneClientTest(testtools.TestCase):
 
     def test_undercloud_keystone_session(self):
         session = tripleo.undercloud_keystone_session()
-        client = nova.get_nova_client(session=session)
-        overcloud_nodes = nova.list_servers(client=client)
+        client = metalsmith.get_metalsmith_client(session=session)
+        overcloud_nodes = metalsmith.list_instances(client=client)
         self.assertTrue(overcloud_nodes)
 
     def test_undercloud_keystone_client(self):
