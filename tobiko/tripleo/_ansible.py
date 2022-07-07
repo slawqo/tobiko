@@ -16,9 +16,11 @@ from __future__ import absolute_import
 import functools
 import io
 import os
+import re
 import typing
 
 from oslo_log import log
+from packaging import version
 
 import tobiko
 from tobiko.shell import ansible
@@ -77,9 +79,19 @@ def has_undercloud_ansible_version(min_version: float = None) -> bool:
 
     if min_version is not None:
         first_line = output.splitlines()[0]
-        version_pair = first_line.split()[1].split('.', 2)[:2]
-        version = float('.'.join(version_pair))
-        if version < min_version:
+        # obtain the ansible version with a regex
+        # the expected output can have a format like these
+        # ansible 2.9.27
+        # ansible [core 2.12.2]
+        search_version = re.search(r'(\d+\.)?(\d+\.)?(\*|\d+)', first_line)
+        if not search_version:
+            return False
+        ansible_version_full = search_version.group(0)
+        version_pair = ansible_version_full.split('.', 2)[:2]
+        # compare versions rather than floats - example of a posible mistake:
+        # version 2.12 is higher than version 2.9
+        current_version = version.parse('.'.join(version_pair))
+        if current_version < version.parse(str(min_version)):
             LOG.debug(f"Ansible version is < {min_version}:\n"
                       f"{first_line}\n")
             return False
