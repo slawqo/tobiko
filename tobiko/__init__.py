@@ -115,6 +115,7 @@ RetryTimeLimitError = _retry.RetryTimeLimitError
 
 Selection = _select.Selection
 select = _select.select
+select_uniques = _select.select_uniques
 ObjectNotFound = _select.ObjectNotFound
 MultipleObjectsFound = _select.MultipleObjectsFound
 

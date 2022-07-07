@@ -40,8 +40,11 @@ class Selection(list, typing.Generic[T]):
         return self.select(lambda obj: equal_items(obj, items, inverse=True))
 
     @classmethod
-    def create(cls, objects: typing.Iterable[T]) -> 'Selection[T]':
-        return cls(objects)
+    def create(cls, objects: typing.Iterable[T] = None) -> 'Selection[T]':
+        if objects is None:
+            return cls()
+        else:
+            return cls(objects)
 
     def select(self,
                predicate: typing.Callable[[T], bool],
@@ -50,6 +53,10 @@ class Selection(list, typing.Generic[T]):
         return self.create(obj
                            for obj in self
                            if bool(predicate(obj)) is expect)
+
+    def select_uniques(self):
+        return select_uniques(objects=self,
+                              destination=self.create())
 
     def unselect(self,
                  predicate: typing.Callable[[T], typing.Any]) \
@@ -83,6 +90,16 @@ class Selection(list, typing.Generic[T]):
 
 def select(objects: typing.Iterable[T]) -> Selection[T]:
     return Selection.create(objects)
+
+
+def select_uniques(objects: typing.Iterable[T],
+                   destination: Selection = None) -> Selection[T]:
+    if destination is None:
+        destination = Selection[T]()
+    for obj in objects:
+        if obj not in destination:
+            destination.append(obj)
+    return destination
 
 
 def equal_attributes(obj,
