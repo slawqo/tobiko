@@ -6,6 +6,10 @@ description: |
 
 parameters:
 
+  private_key:
+    type: string
+    description: SSH private key
+
   public_key:
     type: string
     description: SSH public key
@@ -13,22 +17,37 @@ parameters:
 
 resources:
 
-  key_name:
+  _key_name:
     type: OS::Heat::RandomString
     description: Random unique key pair name
     properties:
       length: 32
 
-  key_pair:
+  _key_pair:
     type: OS::Nova::KeyPair
     description: SSH key pair
     properties:
-      name: {get_attr: [key_name, value]}
+      name: {get_attr: [_key_name, value]}
       public_key: {get_param: public_key}
+
+  _private_key:
+    type: OS::Heat::Value
+    description: SSH private key
+    properties:
+      type: string
+      value: {get_param: private_key}
 
 
 outputs:
 
   key_name:
     description: unique Nova key pair name
-    value: {get_attr: [key_name, value]}
+    value: {get_attr: [_key_name, value]}
+
+  private_key_value:
+    description: private key value
+    value: {get_attr: [_private_key, value]}
+
+  public_key_value:
+    description: public key value
+    value: {get_attr: [_key_pair, public_key]}

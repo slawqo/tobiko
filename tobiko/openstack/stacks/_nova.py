@@ -16,7 +16,6 @@
 from __future__ import absolute_import
 
 import abc
-import os
 import typing
 from abc import ABC
 
@@ -43,33 +42,24 @@ LOG = log.getLogger(__name__)
 
 class KeyPairStackFixture(heat.HeatStackFixture):
     template = _hot.heat_template_file('nova/key_pair.yaml')
-    key_file = tobiko.tobiko_config_path(CONF.tobiko.nova.key_file)
-    public_key = None
-    private_key = None
+
+    public_key: str
+    private_key: str
 
     def setup_fixture(self):
-        self.create_key_file()
         self.read_keys()
         super(KeyPairStackFixture, self).setup_fixture()
 
+    @property
+    def key_file(self) -> str:
+        return nova.get_key_file()
+
     def read_keys(self):
+        LOG.info(f'Reading file {self.key_file} for key pairs...')
         with open(self.key_file, 'r') as fd:
             self.private_key = as_str(fd.read())
         with open(self.key_file + '.pub', 'r') as fd:
             self.public_key = as_str(fd.read())
-
-    def create_key_file(self):
-        key_file = self.key_file
-        if not os.path.isfile(key_file):
-            key_dir = os.path.dirname(key_file)
-            tobiko.makedirs(key_dir)
-            try:
-                sh.local_execute(['ssh-keygen', '-f', key_file, '-P', ''])
-            except sh.ShellCommandFailed:
-                if not os.path.isfile(key_file):
-                    raise
-            else:
-                assert os.path.isfile(key_file)
 
 
 class FlavorStackFixture(heat.HeatStackFixture):
@@ -93,6 +83,10 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
 
     #: stack with the key pair for the server instance
     key_pair_stack = tobiko.required_fixture(KeyPairStackFixture)
+
+    @property
+    def key_file(self) -> str:
+        return self.key_pair_stack.key_file
 
     #: stack with the internal where the server port is created
     network_stack = tobiko.required_fixture(_neutron.NetworkStackFixture)
@@ -173,6 +167,7 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         return dict(host=self.ip_address,
                     username=self.username,
                     password=self.password,
+                    key_filename=self.key_file,
                     connection_timeout=self.connection_timeout,
                     disabled_algorithms=self.disabled_algorithms)
 

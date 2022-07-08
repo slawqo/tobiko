@@ -16,9 +16,11 @@ from __future__ import absolute_import
 from tobiko.openstack.nova import _client
 from tobiko.openstack.nova import _cloud_init
 from tobiko.openstack.nova import _hypervisor
+from tobiko.openstack.nova import _key_file
 from tobiko.openstack.nova import _quota_set
 from tobiko.openstack.nova import _server
 from tobiko.openstack.nova import _service
+
 
 CLIENT_CLASSES = _client.CLIENT_CLASSES
 NovaClient = _client.NovaClient
@@ -69,6 +71,9 @@ wait_for_cloud_init_status = _cloud_init.wait_for_cloud_init_status
 skip_if_missing_hypervisors = _hypervisor.skip_if_missing_hypervisors
 get_server_hypervisor = _hypervisor.get_server_hypervisor
 list_servers_hypervisors = _hypervisor.list_servers_hypervisors
+
+KeyFileFixture = _key_file.KeyFileFixture
+get_key_file = _key_file.get_key_file
 
 get_nova_quota_set = _quota_set.get_nova_quota_set
 ensure_nova_quota_limits = _quota_set.ensure_nova_quota_limits
