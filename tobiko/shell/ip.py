@@ -102,8 +102,8 @@ def parse_ip_address(text: str) -> typing.Tuple[netaddr.IPAddress, int]:
     return netaddr.IPAddress(address), prefix_len
 
 
-def list_network_namespaces(**execute_params) -> typing.List[str]:
-    namespaces: typing.List[str] = []
+def list_network_namespaces(**execute_params) -> tobiko.Selection[str]:
+    namespaces = tobiko.Selection[str]()
     output = execute_ip(['-o', 'netns', 'list'], **execute_params)
     if output:
         for line in output.splitlines():
@@ -113,8 +113,8 @@ def list_network_namespaces(**execute_params) -> typing.List[str]:
     return namespaces
 
 
-def list_network_interfaces(**execute_params) -> typing.List[str]:
-    interfaces: typing.List[str] = []
+def list_network_interfaces(**execute_params) -> tobiko.Selection[str]:
+    interfaces = tobiko.Selection[str]()
     output = execute_ip(['--brief', 'address', 'list'], **execute_params)
     if output:
         for line in output.splitlines():

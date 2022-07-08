@@ -15,9 +15,10 @@
 #    under the License.
 from __future__ import absolute_import
 
-import typing  # noqa
+import typing
 
 import netaddr
+import pytest
 import testtools
 
 import tobiko
@@ -145,10 +146,8 @@ class PingTest(testtools.TestCase):
         self.assertEqual('transmitted', ex.message_type)
 
     def test_ping_hosts(self):
-        try:
-            sh.execute('[ -x /sbin/ip ]', ssh_client=self.ssh_client)
-        except sh.ShellCommandFailed:
-            self.skipTest("'/sbin/ip' command not found")
+        sh.find_command('ip', sudo=True, ssh_client=self.ssh_client,
+                        skip=True)
         ips = ip.list_ip_addresses(**self.execute_params)
         reachable_ips, unreachable_ips = ping.ping_hosts(
             ips, **self.execute_params)
@@ -194,10 +193,10 @@ class ProxyPingTest(PingTest):
     ssh_client = None
 
 
+@pytest.mark.flaky(reruns=3, reruns_delay=5)
 class NamespacePingTest(PingTest):
 
-    namespace = tobiko.required_fixture(
-        _fixtures.NetworkNamespaceFixture)
+    namespace = tobiko.required_fixture(_fixtures.NetworkNamespaceFixture)
 
     @property
     def ssh_client(self):

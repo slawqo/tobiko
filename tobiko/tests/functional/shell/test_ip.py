@@ -15,14 +15,14 @@
 #    under the License.
 from __future__ import absolute_import
 
-import os
-
 import netaddr
+import pytest
 import testtools
 
 import tobiko
 from tobiko.openstack import stacks
 from tobiko.shell import ip
+from tobiko.shell import sh
 from tobiko.shell import ssh
 from tobiko.tests.functional.shell import _fixtures
 
@@ -44,11 +44,15 @@ class IpTest(testtools.TestCase):
     namespace = tobiko.required_fixture(
         _fixtures.NetworkNamespaceFixture)
 
-    def test_list_ip_addresses(self, ip_version=None, scope=None,
+    def test_list_ip_addresses(self,
+                               ip_version=None,
+                               scope=None,
+                               ssh_client: ssh.SSHClientType = None,
                                **execute_params):
-        if not os.path.isfile('/bin/ip'):
-            self.skipTest("'bin/ip' command not found")
-        ips = ip.list_ip_addresses(ip_version=ip_version, scope=scope,
+        sh.find_command('ip', sudo=True, ssh_client=ssh_client, skip=True)
+        ips = ip.list_ip_addresses(ip_version=ip_version,
+                                   scope=scope,
+                                   ssh_client=ssh_client,
                                    **execute_params)
         self.assertIsInstance(ips, tobiko.Selection)
         for ip_address in ips:
@@ -112,6 +116,7 @@ class IpTest(testtools.TestCase):
                 self, **execute_params):
         self.test_list_ip_addresses(scope='global', **execute_params)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=5)
     def test_list_ip_addresses_with_namespace(self, **params):
         namespace_ips = ip.list_ip_addresses(
             ssh_client=self.namespace.ssh_client,
@@ -122,9 +127,11 @@ class IpTest(testtools.TestCase):
                                         **params)
         self.assertNotEqual(host_ips, namespace_ips)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=5)
     def test_list_ip_addresses_with_namespace_and_scope(self):
         self.test_list_ip_addresses_with_namespace(scope='global')
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=5)
     def test_list_ip_addresses_with_failing_command(self):
         self.assertRaises(ip.IpError, ip.list_ip_addresses,
                           ip_command=['false'],
@@ -134,35 +141,46 @@ class IpTest(testtools.TestCase):
         self.test_list_ip_addresses(ignore_errors=True, ip_command='false',
                                     **execute_params)
 
-    def test_list_namespaces(self, **execute_params):
-        if not os.path.isfile('/bin/ip'):
-            self.skipTest("'bin/ip' command not found")
-        namespaces = ip.list_network_namespaces(**execute_params)
+    @pytest.mark.flaky(reruns=3, reruns_delay=5)
+    def test_list_namespaces(self,
+                             ignore_errors=False,
+                             ssh_client: ssh.SSHClientType = None,
+                             **execute_params):
+        sh.find_command('ip', sudo=True, ssh_client=ssh_client, skip=True)
+        namespaces = ip.list_network_namespaces(ignore_errors=ignore_errors,
+                                                ssh_client=ssh_client,
+                                                **execute_params)
         self.assertIsInstance(namespaces, list)
         for namespace in namespaces:
             self.assertIsInstance(namespace, str)
             self.test_list_ip_addresses(network_namespace=namespace)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=5)
     def test_list_namespaces_with_centos_server(self):
         self.test_list_namespaces(ssh_client=self.centos_stack.ssh_client)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=5)
     def test_list_namespaces_with_fedora_server(self):
         self.test_list_namespaces(ssh_client=self.fedora_stack.ssh_client)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=5)
     def test_list_namespaces_with_ubuntu_server(self):
         self.test_list_namespaces(ssh_client=self.ubuntu_stack.ssh_client)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=5)
     def test_list_namespaces_with_proxy_ssh_client(self):
         ssh_client = ssh.ssh_proxy_client()
         if ssh_client is None:
             self.skipTest('SSH proxy server not configured')
         self.test_list_namespaces(ssh_client=ssh_client)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=5)
     def test_list_namespaces_with_failing_command(self):
         self.assertRaises(ip.IpError, ip.list_network_namespaces,
                           ip_command=['false'],
                           ssh_client=self.namespace.ssh_client)
 
+    @pytest.mark.flaky(reruns=3, reruns_delay=5)
     def test_list_namespaces_with_ignore_errors(self, **execute_params):
         self.test_list_namespaces(ignore_errors=True, ip_command='false',
                                   **execute_params)
