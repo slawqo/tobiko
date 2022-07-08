@@ -32,6 +32,7 @@ from tobiko.shell.sh import _ssh
 from tobiko.shell.sh import _systemctl
 from tobiko.shell.sh import _uptime
 from tobiko.shell.sh import _wc
+from tobiko.shell.sh import _which
 
 
 get_command_line = _cmdline.get_command_line
@@ -129,3 +130,7 @@ get_uptime = _uptime.get_uptime
 
 assert_file_size = _wc.assert_file_size
 get_file_size = _wc.get_file_size
+
+CommandNotFound = _which.CommandNotFound
+SkipOnCommandNotFound = _which.SkipOnCommandNotFound
+find_command = _which.find_command
