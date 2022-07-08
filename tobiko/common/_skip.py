@@ -16,13 +16,14 @@ from __future__ import absolute_import
 import functools
 import inspect
 import typing
+import unittest
 
 import fixtures
 import testtools
 
+SKIP_CLASSES = unittest.SkipTest, testtools.TestCase.skipException
 
-SkipException: typing.Type[Exception] = (
-    testtools.TestCase.skipException)
+SkipException = unittest.SkipTest
 
 SkipTarget = typing.Union[typing.Callable,
                           typing.Type[testtools.TestCase],
@@ -42,7 +43,7 @@ def skip_test(reason: str,
         reason += f'\nhttps://bugzilla.redhat.com/show_bug.cgi?id={bugzilla}\n'
     if cause is not None:
         reason += f"\n{cause}\n"
-    raise SkipException(reason) from cause
+    raise unittest.SkipTest(reason) from cause
 
 
 def skip(reason: str,

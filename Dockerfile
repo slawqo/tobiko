@@ -86,7 +86,13 @@ ENV TOBIKO_REPORT_NAME=tobiko_results
 ENV TOBIKO_PREVENT_CREATE=false
 ENV TOBIKO_TEST_PATH=${TOBIKO_DIR}/tobiko/tests/unit
 
-RUN ${INSTALL_PACKAGES} iperf3 iputils nmap-ncat findutils procps
+RUN ${INSTALL_PACKAGES} \
+    findutils \
+    iperf3 \
+    iputils \
+    nmap-ncat \
+    procps \
+    which
 
 # Write log files to report directory
 RUN mkdir -p /etc/tobiko
