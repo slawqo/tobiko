@@ -176,7 +176,7 @@ class ShellConnectionManager(tobiko.SharedFixture):
         ssh_client = ssh.ssh_client_fixture(ssh_client)
         connection = self._host_connections.get(ssh_client)
         if connection is None:
-            connection = self._setup_shell_connection(ssh_client=ssh_client)
+            connection = self._get_shell_connection(ssh_client=ssh_client)
             self._host_connections[ssh_client] = connection
         return connection
 
@@ -185,13 +185,12 @@ class ShellConnectionManager(tobiko.SharedFixture):
         self._host_connections[ssh_client] = connection
 
     @staticmethod
-    def _setup_shell_connection(ssh_client: ssh.SSHClientFixture = None) \
+    def _get_shell_connection(ssh_client: ssh.SSHClientFixture = None) \
             -> 'ShellConnection':
         if ssh_client is None:
             return local_shell_connection()
         else:
-            return tobiko.setup_fixture(SSHShellConnection(
-                ssh_client=ssh_client))
+            return SSHShellConnection(ssh_client=ssh_client)
 
 
 class ShellConnection(tobiko.SharedFixture):
