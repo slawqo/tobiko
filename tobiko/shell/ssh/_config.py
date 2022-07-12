@@ -95,6 +95,7 @@ class SSHConfigFixture(tobiko.SharedFixture):
                 except Exception as ex:
                     LOG.exception(f"Error parsing '{config_file}' SSH config "
                                   f"file: {ex}")
+                    raise
                 else:
                     LOG.debug("File %r parsed.", config_file)
 
