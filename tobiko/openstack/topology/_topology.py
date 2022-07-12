@@ -427,19 +427,14 @@ class OpenStackTopology(tobiko.SharedFixture):
         if address:
             # add manually configure addresses first
             addresses.extend(self._list_addresses(address))
-        if hostname:
-            # detect more addresses from the hostname
-            addresses.extend(self._list_addresses(hostname))
         addresses = tobiko.select(remove_duplications(addresses))
 
         try:
             node = self.get_node(name=name, address=addresses)
         except _exception.NoSuchOpenStackTopologyNode:
-            node = None
-
-        node = node or self._add_node(addresses=addresses,
-                                      hostname=hostname,
-                                      ssh_client=ssh_client)
+            node = self._add_node(addresses=addresses,
+                                  hostname=hostname,
+                                  ssh_client=ssh_client)
 
         if group:
             # Add group anyway even if the node hasn't been added
@@ -455,7 +450,8 @@ class OpenStackTopology(tobiko.SharedFixture):
                   hostname: str = None,
                   ssh_client: typing.Optional[ssh.SSHClientFixture] = None):
         if ssh_client is None:
-            ssh_client = self._ssh_connect(addresses=addresses)
+            ssh_client = self._ssh_connect(hostname=hostname,
+                                           addresses=addresses)
         addresses.extend(self._list_addresses_from_host(ssh_client=ssh_client))
         addresses = tobiko.select(remove_duplications(addresses))
         hostname = hostname or sh.get_hostname(ssh_client=ssh_client)
@@ -476,8 +472,8 @@ class OpenStackTopology(tobiko.SharedFixture):
         for address in addresses:
             address_node = self._addresses.setdefault(address, node)
             if address_node is not node:
-                LOG.error(f"Address '{address}' of node '{name}' is already "
-                          f"used by node '{address_node.name}'")
+                LOG.warning(f"Address '{address}' of node '{name}' is already "
+                            f"used by node '{address_node.name}'")
         return node
 
     def get_node(self,
@@ -552,11 +548,21 @@ class OpenStackTopology(tobiko.SharedFixture):
     def groups(self) -> typing.List[str]:
         return list(self._groups)
 
-    def _ssh_connect(self, addresses: typing.List[netaddr.IPAddress],
+    def _ssh_connect(self,
+                     addresses: typing.List[netaddr.IPAddress],
+                     hostname: str = None,
                      **connect_params) -> ssh.SSHClientFixture:
+        if hostname is not None:
+            try:
+                return tobiko.setup_fixture(
+                    ssh.ssh_client(hostname, **connect_params))
+            except Exception:
+                LOG.debug(f'Unable to connect to {hostname} using regular '
+                          'SSH configuration')
 
         try:
-            return _connection.ssh_connect(addresses, **connect_params)
+            return _connection.ssh_connect(addresses,
+                                           **connect_params)
         except _connection.UreachableSSHServer:
             for proxy_node in self.nodes:
                 proxy_client = proxy_node.ssh_client

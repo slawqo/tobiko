@@ -156,6 +156,7 @@ class SSHConnectionManager(tobiko.SharedFixture):
         port = port or self.config.conf.port
         key_filename = key_filename or self.config.conf.key_file
         return ssh.ssh_client(host=str(address),
+                              port=port,
                               username=username,
                               key_filename=key_filename,
                               **ssh_parameters)

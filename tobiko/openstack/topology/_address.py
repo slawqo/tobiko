@@ -22,7 +22,6 @@ import netaddr
 from oslo_log import log
 
 import tobiko
-from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
@@ -87,9 +86,6 @@ def list_host_addresses(host: str,
         addresses.extend(resolv_host_addresses(host=host,
                                                port=port,
                                                ip_version=ip_version))
-        if ssh_config:
-            # get additional socket addresses from SSH configuration
-            hosts.extend(list_ssh_hostconfig_hostnames(host))
 
     if [host] != [str(address) for address in addresses]:
         LOG.debug(f"Host '{host}' addresses resolved as: {addresses}")
@@ -182,17 +178,3 @@ def resolv_host_addresses(host: str,
         LOG.debug(f"Host name '{host}' resolved to any IP address.")
 
     return addresses
-
-
-def list_ssh_hostconfig_hostnames(host: str) -> typing.List[str]:
-    hosts: typing.List[str] = [host]
-    hostnames: typing.List[str] = []
-    while hosts:
-        hostname = ssh.ssh_host_config(hosts.pop()).hostname
-        if (hostname is not None and
-                host != hostname and
-                hostname not in hostnames):
-            LOG.debug(f"Found hostname '{hostname}' for '{host}' in SSH "
-                      "configuration")
-            hostnames.append(hostname)
-    return hostnames
