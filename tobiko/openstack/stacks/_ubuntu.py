@@ -82,6 +82,13 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
       - iperf3 server listening on TCP port 5201
     """
 
+    def __init__(self,
+                 image_url: str = None,
+                 ethernet_devide: str = None,
+                 **kwargs):
+        super().__init__(image_url=image_url, **kwargs)
+        self._ethernet_device = ethernet_devide
+
     @property
     def firstboot_commands(self) -> typing.List[str]:
         return super().firstboot_commands + [
@@ -119,7 +126,23 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
 
     @property
     def ethernet_device(self) -> str:
-        return CONF.tobiko.ubuntu.interface_name or 'ens3'
+        if self._ethernet_device is None:
+            self._ethernet_device = self._get_ethernet_device()
+        return self._ethernet_device
+
+    @staticmethod
+    def _get_ethernet_device() -> str:
+        ethernet_device = CONF.tobiko.ubuntu.interface_name
+        if ethernet_device is None:
+            from tobiko import tripleo
+            if tripleo.has_overcloud(min_version='17.0'):
+                ethernet_device = 'enp3s0'
+            else:
+                ethernet_device = 'ens3'
+        return ethernet_device
+
+    def _get_customized_suffix(self) -> str:
+        return f'{super()._get_customized_suffix()}-{self.ethernet_device}'
 
     @property
     def vlan_id(self) -> int:

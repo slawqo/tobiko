@@ -344,8 +344,10 @@ class URLGlanceImageFixture(FileGlanceImageFixture):
 
     image_url: str
 
-    def __init__(self, image_url: typing.Optional[str] = None, **kwargs):
-        super(URLGlanceImageFixture, self).__init__(**kwargs)
+    def __init__(self,
+                 image_url: str = None,
+                 **kwargs):
+        super().__init__(**kwargs)
         if image_url is None:
             image_url = self.image_url
         else:
@@ -435,8 +437,11 @@ class CustomizedGlanceImageFixture(URLGlanceImageFixture):
     username: str = ''
     password: str = ''
 
+    def _get_customized_suffix(self) -> str:
+        return 'customized'
+
     def customize_image_file(self, base_file: str) -> str:
-        customized_file = base_file + '.1'
+        customized_file = f'{base_file}-{self._get_customized_suffix()}'
         if os.path.isfile(customized_file):
             if (os.stat(base_file).st_mtime_ns <
                     os.stat(customized_file).st_mtime_ns):
