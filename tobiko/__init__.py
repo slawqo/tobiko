@@ -33,6 +33,7 @@ from tobiko.common import _skip
 from tobiko.common import _testcase
 from tobiko.common import _time
 from tobiko.common import _utils
+from tobiko.common import _version
 from tobiko.common import _yaml
 from tobiko.common import _background
 
@@ -148,6 +149,13 @@ to_seconds_float = _time.to_seconds_float
 true_seconds = _time.true_seconds
 
 get_short_hostname = _utils.get_short_hostname
+
+InvalidVersion = _version.InvalidVersion
+VersionType = _version.VersionType
+Version = _version.Version
+match_version = _version.match_version
+parse_version = _version.parse_version
+get_version = _version.get_version
 
 dump_yaml = _yaml.dump_yaml
 load_yaml = _yaml.load_yaml
