@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import functools
 import io
 import os
 import typing
@@ -34,9 +35,25 @@ CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
-def has_overcloud():
-    # rewrite this function
-    return _undercloud.has_undercloud()
+def has_overcloud(min_version: str = None,
+                  max_version: str = None) -> bool:
+    if not _undercloud.has_undercloud():
+        return False
+
+    if min_version or max_version:
+        if not tobiko.match_version(get_overcloud_version(),
+                                    min_version=min_version,
+                                    max_version=max_version):
+            return False
+    return True
+
+
+@functools.lru_cache()
+def get_overcloud_version() -> tobiko.VersionType:
+    ssh_client = topology.find_openstack_node(group='controller').ssh_client
+    release = sh.execute('cat /etc/rhosp-release',
+                         ssh_client=ssh_client).stdout
+    return tobiko.parse_version(release)
 
 
 def load_overcloud_rcfile() -> typing.Dict[str, str]:

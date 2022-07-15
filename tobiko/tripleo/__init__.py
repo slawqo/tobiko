@@ -34,6 +34,7 @@ run_playbook_from_undercloud = _ansible.run_playbook_from_undercloud
 OvercloudKeystoneCredentialsFixture = \
     overcloud.OvercloudKeystoneCredentialsFixture
 find_overcloud_node = overcloud.find_overcloud_node
+has_overcloud = overcloud.has_overcloud
 list_overcloud_nodes = overcloud.list_overcloud_nodes
 load_overcloud_rcfile = overcloud.load_overcloud_rcfile
 overcloud_host_config = overcloud.overcloud_host_config
