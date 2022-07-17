@@ -296,7 +296,7 @@ class DvrRouterNamespaceTest(RouterNamespaceTestBase, testtools.TestCase):
 
     def wait_for_namespace_in_hypervisor_host(self):
         hypervisor_hostname = self.server_stack.hypervisor_hostname
-        agent_mode = topology.get_l3_agent_mode(hypervisor_hostname)
+        agent_mode = topology.get_l3_agent_mode(hostname=hypervisor_hostname)
         LOG.info(f"Hypervisor host '{hypervisor_hostname}' has DVR agent "
                  f"mode: '{agent_mode}'")
         topology.wait_for_namespace_in_hosts(self.router_namespace,
