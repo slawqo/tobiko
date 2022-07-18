@@ -56,7 +56,6 @@ undisrupt_network = """
 """
 ovn_db_pcs_resource_restart = "sudo pcs resource restart ovn-dbs-bundle"
 kill_rabbit = "sudo pkill -9 beam.smp"
-kill_galera = "sudo pkill -9 mysqld"
 remove_grastate = "sudo rm -rf /var/lib/mysql/grastate.dat"
 check_bootstrap = """ps -eo lstart,cmd | grep -v grep|
 grep wsrep-cluster-address=gcomm://"""
@@ -66,6 +65,8 @@ disable_haproxy = "sudo pcs resource disable haproxy-bundle --wait=30"
 enable_haproxy = "sudo pcs resource enable haproxy-bundle --wait=60"
 galera_sst_request = """sudo grep 'wsrep_sst_rsync.*'
 /var/log/containers/mysql/mysqld.log"""
+kill_mysqld = "sudo pkill -9 mysqld"
+kill_mariadbd = "sudo pkill -9 mariadbd"
 
 
 class PcsDisableException(tobiko.TobikoException):
@@ -380,9 +381,14 @@ def kill_all_galera_services():
     else:
         nodes = topology.list_openstack_nodes(group='controller')
     for node in nodes:
-        sh.execute(kill_galera, ssh_client=node.ssh_client)
-        LOG.info('kill galera: {} on server: {}'.format(kill_galera,
-                 node.name))
+        if topology.verify_osp_version('17.0', lower=True):
+            sh.execute(kill_mysqld, ssh_client=node.ssh_client)
+            LOG.info('kill galera: {} on server: {}'.format(kill_mysqld,
+                                                            node.name))
+        else:
+            sh.execute(kill_mariadbd, ssh_client=node.ssh_client)
+            LOG.info('kill galera: {} on server: {}'.format(kill_mariadbd,
+                                                            node.name))
     retry = tobiko.retry(timeout=30, interval=5)
     for _ in retry:
         if not(pacemaker.PacemakerResourcesStatus().
