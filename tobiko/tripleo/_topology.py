@@ -17,16 +17,19 @@ import re
 import typing
 
 import metalsmith
+import netaddr
 from oslo_log import log
 
+import tobiko
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import topology
 from tobiko.shell import files
 from tobiko.shell import sh
+from tobiko.shell import ssh
 from tobiko.tripleo import _overcloud
+from tobiko.tripleo import _rhosp
 from tobiko.tripleo import _undercloud
-
 
 LOG = log.getLogger(__name__)
 
@@ -89,7 +92,7 @@ class TripleoTopology(topology.OpenStackTopology):
                           ssh_client=ssh_client)
 
     def discover_overcloud_nodes(self):
-        if _overcloud.has_overcloud():
+        if _undercloud.has_undercloud():
             for instance in _overcloud.list_overcloud_nodes():
                 try:
                     _overcloud.power_on_overcloud_node(instance)
@@ -103,9 +106,9 @@ class TripleoTopology(topology.OpenStackTopology):
                     host_config=host_config)
                 node = self.add_node(address=host_config.hostname,
                                      group='overcloud',
-                                     ssh_client=ssh_client)
+                                     ssh_client=ssh_client,
+                                     overcloud_instance=instance)
                 assert isinstance(node, TripleoTopologyNode)
-                node.overcloud_instance = instance
                 self.discover_overcloud_node_subgroups(node)
 
     def discover_overcloud_node_subgroups(self, node):
@@ -138,7 +141,32 @@ class TripleoTopology(topology.OpenStackTopology):
 
 class TripleoTopologyNode(topology.OpenStackTopologyNode):
 
-    overcloud_instance: typing.Optional[metalsmith.Instance] = None
+    def __init__(self,
+                 topology: topology.OpenStackTopology,
+                 name: str,
+                 ssh_client: ssh.SSHClientFixture,
+                 addresses: typing.Iterable[netaddr.IPAddress],
+                 hostname: str,
+                 overcloud_instance: metalsmith.Instance = None,
+                 rhosp_version: tobiko.Version = None):
+        # pylint: disable=redefined-outer-name
+        super().__init__(topology=topology,
+                         name=name,
+                         ssh_client=ssh_client,
+                         addresses=addresses,
+                         hostname=hostname)
+        self._overcloud_instance = overcloud_instance
+        self._rhosp_version = rhosp_version
+
+    @property
+    def overcloud_instance(self) -> typing.Optional[metalsmith.Instance]:
+        return self.overcloud_instance
+
+    @property
+    def rhosp_version(self) -> tobiko.Version:
+        if self._rhosp_version is None:
+            self._rhosp_version = self._get_rhosp_version()
+        return self._rhosp_version
 
     l3_agent_conf_path = (
         '/var/lib/config-data/neutron/etc/neutron/l3_agent.ini')
@@ -201,6 +229,9 @@ class TripleoTopologyNode(topology.OpenStackTopologyNode):
         LOG.debug(f"Ensuring overcloud node {self.name} power is off...")
         _overcloud.power_off_overcloud_node(instance=self.overcloud_instance)
         LOG.debug(f"Overcloud server node {self.name} power is off.")
+
+    def _get_rhosp_version(self) -> tobiko.Version:
+        return _rhosp.get_rhosp_version(connection=self.connection)
 
 
 def is_valid_overcloud_group_name(group_name: str, node_name: str = None):

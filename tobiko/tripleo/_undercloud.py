@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import functools
 import json
 import os
 import typing
@@ -24,6 +25,8 @@ from tobiko import config
 from tobiko.openstack import keystone
 from tobiko.shell import ssh
 from tobiko.shell import sh
+from tobiko.tripleo import _rhosp
+
 
 CONF = config.CONF
 
@@ -197,3 +200,9 @@ def undercloud_keystone_session():
 
 def undercloud_keystone_credentials():
     return tobiko.setup_fixture(_get_keystone_credentials()).credentials
+
+
+@functools.lru_cache()
+def undercloud_version() -> tobiko.Version:
+    ssh_client = undercloud_ssh_client()
+    return _rhosp.get_rhosp_version(connection=ssh_client)

@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 from tobiko.tripleo import _ansible
 from tobiko.tripleo import _overcloud as overcloud
+from tobiko.tripleo import _rhosp
 from tobiko.tripleo import _topology as topology
 from tobiko.tripleo import _undercloud as undercloud
 
@@ -40,7 +41,11 @@ load_overcloud_rcfile = overcloud.load_overcloud_rcfile
 overcloud_host_config = overcloud.overcloud_host_config
 overcloud_node_ip_address = overcloud.overcloud_node_ip_address
 overcloud_ssh_client = overcloud.overcloud_ssh_client
+overcloud_version = overcloud.overcloud_version
 skip_if_missing_overcloud = overcloud.skip_if_missing_overcloud
+
+get_rhosp_release = _rhosp.get_rhosp_release
+get_rhosp_version = _rhosp.get_rhosp_version
 
 TripleoTopology = topology.TripleoTopology
 
@@ -52,3 +57,4 @@ undercloud_keystone_client = undercloud.undercloud_keystone_client
 undercloud_keystone_credentials = undercloud.undercloud_keystone_credentials
 undercloud_keystone_session = undercloud.undercloud_keystone_session
 undercloud_ssh_client = undercloud.undercloud_ssh_client
+undercloud_version = undercloud.undercloud_version

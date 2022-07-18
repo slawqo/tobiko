@@ -204,13 +204,17 @@ class UnknowOpenStackContainerNameError(tobiko.TobikoException):
                "topology class '{topology_class}'")
 
 
-class OpenStackTopologyNode(object):
+class OpenStackTopologyNode:
 
     _docker_client = None
     _podman_client = None
 
-    def __init__(self, topology, name: str, ssh_client: ssh.SSHClientFixture,
-                 addresses: typing.Iterable[netaddr.IPAddress], hostname: str):
+    def __init__(self,
+                 topology: 'OpenStackTopology',
+                 name: str,
+                 ssh_client: ssh.SSHClientFixture,
+                 addresses: typing.Iterable[netaddr.IPAddress],
+                 hostname: str):
         self._topology = weakref.ref(topology)
         self.name = name
         self.ssh_client = ssh_client
@@ -411,7 +415,8 @@ class OpenStackTopology(tobiko.SharedFixture):
                  hostname: typing.Optional[str] = None,
                  address: typing.Optional[str] = None,
                  group: typing.Optional[str] = None,
-                 ssh_client: typing.Optional[ssh.SSHClientFixture] = None) \
+                 ssh_client: typing.Optional[ssh.SSHClientFixture] = None,
+                 **create_params) \
             -> OpenStackTopologyNode:
         if ssh_client is not None:
             # detect all global addresses from remote server
@@ -434,7 +439,8 @@ class OpenStackTopology(tobiko.SharedFixture):
         except _exception.NoSuchOpenStackTopologyNode:
             node = self._add_node(addresses=addresses,
                                   hostname=hostname,
-                                  ssh_client=ssh_client)
+                                  ssh_client=ssh_client,
+                                  **create_params)
 
         if group:
             # Add group anyway even if the node hasn't been added
@@ -448,7 +454,8 @@ class OpenStackTopology(tobiko.SharedFixture):
     def _add_node(self,
                   addresses: typing.List[netaddr.IPAddress],
                   hostname: str = None,
-                  ssh_client: typing.Optional[ssh.SSHClientFixture] = None):
+                  ssh_client: ssh.SSHClientFixture = None,
+                  **create_params):
         if ssh_client is None:
             ssh_client = self._ssh_connect(hostname=hostname,
                                            addresses=addresses)
@@ -467,7 +474,8 @@ class OpenStackTopology(tobiko.SharedFixture):
             self._names[name] = node = self.create_node(name=name,
                                                         hostname=hostname,
                                                         ssh_client=ssh_client,
-                                                        addresses=addresses)
+                                                        addresses=addresses,
+                                                        **create_params)
 
         for address in addresses:
             address_node = self._addresses.setdefault(address, node)

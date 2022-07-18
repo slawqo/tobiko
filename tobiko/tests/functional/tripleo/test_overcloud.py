@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 import os
+import unittest
 
 import netaddr
 import pandas as pd
@@ -146,3 +147,11 @@ class OvercloudProcessesTest(testtools.TestCase):
     def test_overcloud_processes(self):
         ops = processes.OvercloudProcessesStatus()
         self.assertTrue(ops.basic_overcloud_processes_running)
+
+
+class OvercloudVersionTest(unittest.TestCase):
+
+    @tripleo.skip_if_missing_undercloud
+    def test_overcloud_version(self):
+        version = tripleo.overcloud_version()
+        self.assertTrue(tobiko.match_version(version, min_version='13.0.0'))

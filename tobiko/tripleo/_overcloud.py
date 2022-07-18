@@ -13,7 +13,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import functools
 import io
 import os
 import typing
@@ -41,19 +40,18 @@ def has_overcloud(min_version: str = None,
         return False
 
     if min_version or max_version:
-        if not tobiko.match_version(get_overcloud_version(),
+        if not tobiko.match_version(overcloud_version(),
                                     min_version=min_version,
                                     max_version=max_version):
             return False
     return True
 
 
-@functools.lru_cache()
-def get_overcloud_version() -> tobiko.VersionType:
-    ssh_client = topology.find_openstack_node(group='controller').ssh_client
-    release = sh.execute('cat /etc/rhosp-release',
-                         ssh_client=ssh_client).stdout
-    return tobiko.parse_version(release)
+def overcloud_version() -> tobiko.Version:
+    from tobiko.tripleo import _topology
+    node = topology.find_openstack_node(group='overcloud')
+    assert isinstance(node, _topology.TripleoTopologyNode)
+    return node.rhosp_version
 
 
 def load_overcloud_rcfile() -> typing.Dict[str, str]:

@@ -13,8 +13,11 @@
 #    under the License.
 from __future__ import absolute_import
 
+import unittest
+
 import testtools
 
+import tobiko
 from tobiko import config
 from tobiko.shell import sh
 from tobiko.openstack import keystone
@@ -69,3 +72,11 @@ class UndercloudKeystoneClientTest(testtools.TestCase):
         client = tripleo.undercloud_keystone_client()
         services = keystone.list_services(client=client)
         self.assertTrue(services)
+
+
+class UndercloudVersionTest(unittest.TestCase):
+
+    @tripleo.skip_if_missing_undercloud
+    def test_undercloud_version(self):
+        version = tripleo.undercloud_version()
+        self.assertTrue(tobiko.match_version(version, min_version='13.0.0'))
