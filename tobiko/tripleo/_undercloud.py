@@ -103,39 +103,32 @@ class CloudsFileUndercloudKeystoneCredentialsFixture(
             clouds_files=clouds_files)
 
 
-class HasUndercloudFixture(tobiko.SharedFixture):
-
-    has_undercloud: typing.Optional[bool] = None
-
-    def setup_fixture(self):
-        self.has_undercloud = check_undercloud()
-
-
-def check_undercloud() -> bool:
+@functools.lru_cache()
+def has_undercloud(min_version: tobiko.VersionType = None,
+                   max_version: tobiko.VersionType = None) -> bool:
     try:
-        ssh_client = undercloud_ssh_client()
-    except NoSuchUndercloudHostname:
-        LOG.debug('TripleO undercloud hostname not found')
+        check_undercloud(min_version=min_version,
+                         max_version=max_version)
+    except (UndercloudNotFound, UndercloudVersionMismatch) as ex:
+        LOG.debug(f'TripleO undercloud host not found: {ex.cause}')
         return False
-    try:
-        ssh_client.connect(retry_count=1,
-                           connection_attempts=1,
-                           timeout=15.)
-    except Exception as ex:
-        LOG.debug(f'Unable to connect to TripleO undercloud host: {ex}',
-                  exc_info=1)
-        return False
-
-    LOG.debug('TripleO undercloud host found')
-    return True
-
-
-def has_undercloud() -> bool:
-    return tobiko.setup_fixture(HasUndercloudFixture).has_undercloud
+    else:
+        LOG.debug('TripleO undercloud host found')
+        return True
 
 
 skip_if_missing_undercloud = tobiko.skip_unless(
     'TripleO undercloud hostname not configured', has_undercloud)
+
+
+def skip_unlsess_has_undercloud(min_version: tobiko.VersionType = None,
+                                max_version: tobiko.VersionType = None):
+    return tobiko.skip_on_error(
+        reason='TripleO undercloud not found',
+        predicate=check_undercloud,
+        min_version=min_version,
+        max_version=max_version,
+        error_type=(UndercloudNotFound, UndercloudVersionMismatch))
 
 
 class UndecloudHostConfig(tobiko.SharedFixture):
@@ -206,3 +199,35 @@ def undercloud_keystone_credentials():
 def undercloud_version() -> tobiko.Version:
     ssh_client = undercloud_ssh_client()
     return _rhosp.get_rhosp_version(connection=ssh_client)
+
+
+@functools.lru_cache()
+def check_undercloud(min_version: tobiko.Version = None,
+                     max_version: tobiko.Version = None):
+    try:
+        ssh_client = undercloud_ssh_client()
+    except NoSuchUndercloudHostname as ex:
+        raise UndercloudNotFound(
+            cause='TripleO undercloud hostname not found') from ex
+    try:
+        ssh_client.connect(retry_count=1,
+                           connection_attempts=1,
+                           timeout=15.)
+    except Exception as ex:
+        raise UndercloudNotFound(
+            cause=f'unable to connect to TripleO undercloud host: {ex}'
+        ) from ex
+
+    if min_version or max_version:
+        tobiko.check_version(undercloud_version(),
+                             min_version=min_version,
+                             max_version=max_version,
+                             mismatch_error=UndercloudVersionMismatch)
+
+
+class UndercloudNotFound(tobiko.ObjectNotFound):
+    message = 'undercloud not found: {cause}'
+
+
+class UndercloudVersionMismatch(tobiko.VersionMismatch):
+    message = 'undercloud version mismatch: {version} {cause}'

@@ -151,11 +151,13 @@ true_seconds = _time.true_seconds
 get_short_hostname = _utils.get_short_hostname
 
 InvalidVersion = _version.InvalidVersion
+VersionMismatch = _version.VersionMismatch
 VersionType = _version.VersionType
 Version = _version.Version
+check_version = _version.check_version
+get_version = _version.get_version
 match_version = _version.match_version
 parse_version = _version.parse_version
-get_version = _version.get_version
 
 dump_yaml = _yaml.dump_yaml
 load_yaml = _yaml.load_yaml

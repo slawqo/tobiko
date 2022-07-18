@@ -23,6 +23,10 @@ import tobiko
 class TestVersion(unittest.TestCase):
 
     def test_parse_version(self):
+        self.assertEqual(version.parse('1.0.0'),
+                         tobiko.parse_version('1'))
+        self.assertEqual(version.parse('1.2.0'),
+                         tobiko.parse_version('1.2'))
         self.assertEqual(version.parse('1.2.3'),
                          tobiko.parse_version('1.2.3'))
         self.assertEqual(version.parse('3.2.1'),
@@ -30,7 +34,7 @@ class TestVersion(unittest.TestCase):
 
     def test_parse_version_with_invalid(self):
         with self.assertRaises(tobiko.InvalidVersion):
-            tobiko.parse_version('1.2')
+            tobiko.parse_version('abc')
 
     def test_get_version_with_srt(self):
         self.assertEqual(version.parse('3.2.1'),
@@ -51,6 +55,10 @@ class TestVersion(unittest.TestCase):
     def test_match_version_min_version(self):
         self.assertTrue(tobiko.match_version('1.0.0',
                                              min_version='0.9.9'))
+        self.assertTrue(tobiko.match_version('1.0.0',
+                                             min_version='1'))
+        self.assertTrue(tobiko.match_version('1.0.0',
+                                             min_version='1.0'))
         self.assertTrue(tobiko.match_version('1.0.0',
                                              min_version='1.0.0'))
         self.assertFalse(tobiko.match_version('1.0.0',

@@ -149,9 +149,105 @@ class OvercloudProcessesTest(testtools.TestCase):
         self.assertTrue(ops.basic_overcloud_processes_running)
 
 
+@tripleo.skip_if_missing_undercloud
 class OvercloudVersionTest(unittest.TestCase):
 
-    @tripleo.skip_if_missing_undercloud
+    @property
+    def lower_version(self) -> str:
+        v = tripleo.overcloud_version()
+        return f"{v.major}.{v.minor}.{v.micro - 1}"
+
+    @property
+    def same_version(self) -> str:
+        v = tripleo.overcloud_version()
+        return f"{v.major}.{v.minor}.{v.micro}"
+
+    @property
+    def higher_version(self) -> str:
+        v = tripleo.overcloud_version()
+        return f"{v.major}.{v.minor}.{v.micro + 1}"
+
     def test_overcloud_version(self):
         version = tripleo.overcloud_version()
-        self.assertTrue(tobiko.match_version(version, min_version='13.0.0'))
+        self.assertTrue(tobiko.match_version(version, min_version='13'))
+
+    def test_has_overcloud(self):
+        self.assertTrue(tripleo.has_overcloud())
+
+    def test_has_overcloud_with_min_version(self):
+        self.assertTrue(
+            tripleo.has_overcloud(min_version=self.same_version))
+
+    def test_has_overcloud_with_min_version_lower(self):
+        self.assertTrue(
+            tripleo.has_overcloud(min_version=self.lower_version))
+
+    def test_has_overcloud_with_min_version_higher(self):
+        self.assertFalse(
+            tripleo.has_overcloud(min_version=self.higher_version))
+
+    def test_has_overcloud_with_max_version(self):
+        self.assertFalse(
+            tripleo.has_overcloud(max_version=self.same_version))
+
+    def test_has_overcloud_with_max_version_lower(self):
+        self.assertFalse(
+            tripleo.has_overcloud(max_version=self.lower_version))
+
+    def test_has_overcloud_with_max_version_higher(self):
+        self.assertTrue(
+            tripleo.has_overcloud(max_version=self.higher_version))
+
+    def test_skip_unless_has_overcloud(self):
+        self._assert_test_skip_unless_has_overcloud_dont_skip()
+
+    def test_skip_unless_has_overcloud_with_min_version(self):
+        self._assert_test_skip_unless_has_overcloud_dont_skip(
+            min_version=self.same_version)
+
+    def test_skip_unless_has_overcloud_with_min_version_lower(self):
+        self._assert_test_skip_unless_has_overcloud_dont_skip(
+            min_version=self.lower_version)
+
+    def test_skip_unless_has_overcloud_with_min_version_higher(self):
+        self._assert_test_skip_unless_has_overcloud_skip(
+            min_version=self.higher_version)
+
+    def test_skip_unless_has_overcloud_with_max_version(self):
+        self._assert_test_skip_unless_has_overcloud_skip(
+            max_version=self.same_version)
+
+    def test_skip_unless_has_overcloud_with_max_version_lower(self):
+        self._assert_test_skip_unless_has_overcloud_skip(
+            max_version=self.lower_version)
+
+    def test_skip_unless_has_overcloud_with_max_version_higher(self):
+        self._assert_test_skip_unless_has_overcloud_dont_skip(
+            max_version=self.higher_version)
+
+    def _assert_test_skip_unless_has_overcloud_dont_skip(
+            self,
+            min_version: tobiko.VersionType = None,
+            max_version: tobiko.VersionType = None):
+        executed = []
+
+        @tripleo.skip_unless_has_overcloud(min_version=min_version,
+                                           max_version=max_version)
+        def decorated_function():
+            executed.append(True)
+
+        self.assertFalse(executed)
+        decorated_function()
+        self.assertTrue(executed)
+
+    def _assert_test_skip_unless_has_overcloud_skip(
+            self,
+            min_version: tobiko.VersionType = None,
+            max_version: tobiko.VersionType = None):
+        @tripleo.skip_unless_has_overcloud(min_version=min_version,
+                                           max_version=max_version)
+        def decorated_function():
+            raise self.fail('Not skipped')
+
+        with self.assertRaises(unittest.SkipTest):
+            decorated_function()

@@ -43,6 +43,7 @@ overcloud_node_ip_address = overcloud.overcloud_node_ip_address
 overcloud_ssh_client = overcloud.overcloud_ssh_client
 overcloud_version = overcloud.overcloud_version
 skip_if_missing_overcloud = overcloud.skip_if_missing_overcloud
+skip_unless_has_overcloud = overcloud.skip_unless_has_overcloud
 
 get_rhosp_release = _rhosp.get_rhosp_release
 get_rhosp_version = _rhosp.get_rhosp_version
@@ -51,6 +52,7 @@ TripleoTopology = topology.TripleoTopology
 
 load_undercloud_rcfile = undercloud.load_undercloud_rcfile
 has_undercloud = undercloud.has_undercloud
+skip_unless_has_undercloud = undercloud.skip_unlsess_has_undercloud
 skip_if_missing_undercloud = undercloud.skip_if_missing_undercloud
 undercloud_host_config = undercloud.undercloud_host_config
 undercloud_keystone_client = undercloud.undercloud_keystone_client

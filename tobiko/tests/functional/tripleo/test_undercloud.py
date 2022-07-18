@@ -74,9 +74,106 @@ class UndercloudKeystoneClientTest(testtools.TestCase):
         self.assertTrue(services)
 
 
+@tripleo.skip_if_missing_undercloud
 class UndercloudVersionTest(unittest.TestCase):
+
+    @property
+    def lower_version(self) -> str:
+        v = tripleo.undercloud_version()
+        return f"{v.major}.{v.minor}.{v.micro - 1}"
+
+    @property
+    def same_version(self) -> str:
+        v = tripleo.undercloud_version()
+        return f"{v.major}.{v.minor}.{v.micro}"
+
+    @property
+    def higher_version(self) -> str:
+        v = tripleo.undercloud_version()
+        return f"{v.major}.{v.minor}.{v.micro + 1}"
 
     @tripleo.skip_if_missing_undercloud
     def test_undercloud_version(self):
         version = tripleo.undercloud_version()
-        self.assertTrue(tobiko.match_version(version, min_version='13.0.0'))
+        self.assertTrue(tobiko.match_version(version, min_version='13'))
+
+    def test_has_undercloud(self):
+        self.assertTrue(tripleo.has_undercloud())
+
+    def test_has_undercloud_with_min_version(self):
+        self.assertTrue(
+            tripleo.has_undercloud(min_version=self.same_version))
+
+    def test_has_undercloud_with_min_version_lower(self):
+        self.assertTrue(
+            tripleo.has_undercloud(min_version=self.lower_version))
+
+    def test_has_undercloud_with_min_version_higher(self):
+        self.assertFalse(
+            tripleo.has_undercloud(min_version=self.higher_version))
+
+    def test_has_undercloud_with_max_version(self):
+        self.assertFalse(
+            tripleo.has_undercloud(max_version=self.same_version))
+
+    def test_has_undercloud_with_max_version_lower(self):
+        self.assertFalse(
+            tripleo.has_undercloud(max_version=self.lower_version))
+
+    def test_has_undercloud_with_max_version_higher(self):
+        self.assertTrue(
+            tripleo.has_undercloud(max_version=self.higher_version))
+
+    def test_skip_unless_has_undercloud(self):
+        self._assert_test_skip_unless_has_undercloud_dont_skip()
+
+    def test_skip_unless_has_undercloud_with_min_version(self):
+        self._assert_test_skip_unless_has_undercloud_dont_skip(
+            min_version=self.same_version)
+
+    def test_skip_unless_has_undercloud_with_min_version_lower(self):
+        self._assert_test_skip_unless_has_undercloud_dont_skip(
+            min_version=self.lower_version)
+
+    def test_skip_unless_has_undercloud_with_min_version_higher(self):
+        self._assert_test_skip_unless_has_undercloud_skip(
+            min_version=self.higher_version)
+
+    def test_skip_unless_has_undercloud_with_max_version(self):
+        self._assert_test_skip_unless_has_undercloud_skip(
+            max_version=self.same_version)
+
+    def test_skip_unless_has_undercloud_with_max_version_lower(self):
+        self._assert_test_skip_unless_has_undercloud_skip(
+            max_version=self.lower_version)
+
+    def test_skip_unless_has_undercloud_with_max_version_higher(self):
+        self._assert_test_skip_unless_has_undercloud_dont_skip(
+            max_version=self.higher_version)
+
+    def _assert_test_skip_unless_has_undercloud_dont_skip(
+            self,
+            min_version: tobiko.VersionType = None,
+            max_version: tobiko.VersionType = None):
+        executed = []
+
+        @tripleo.skip_unless_has_undercloud(min_version=min_version,
+                                            max_version=max_version)
+        def decorated_function():
+            executed.append(True)
+
+        self.assertFalse(executed)
+        decorated_function()
+        self.assertTrue(executed)
+
+    def _assert_test_skip_unless_has_undercloud_skip(
+            self,
+            min_version: tobiko.VersionType = None,
+            max_version: tobiko.VersionType = None):
+        @tripleo.skip_unless_has_undercloud(min_version=min_version,
+                                            max_version=max_version)
+        def decorated_function():
+            raise self.fail('Not skipped')
+
+        with self.assertRaises(unittest.SkipTest):
+            decorated_function()

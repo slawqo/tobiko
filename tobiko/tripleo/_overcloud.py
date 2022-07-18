@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import functools
 import io
 import os
 import typing
@@ -34,32 +35,36 @@ CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
-def has_overcloud(min_version: str = None,
-                  max_version: str = None) -> bool:
-    if not _undercloud.has_undercloud():
-        return False
-
-    if min_version or max_version:
-        if not tobiko.match_version(overcloud_version(),
-                                    min_version=min_version,
-                                    max_version=max_version):
-            return False
-    return True
-
-
-def overcloud_version() -> tobiko.Version:
-    from tobiko.tripleo import _topology
-    node = topology.find_openstack_node(group='overcloud')
-    assert isinstance(node, _topology.TripleoTopologyNode)
-    return node.rhosp_version
-
-
 def load_overcloud_rcfile() -> typing.Dict[str, str]:
     return _undercloud.fetch_os_env(*CONF.tobiko.tripleo.overcloud_rcfile)
 
 
+@functools.lru_cache()
+def has_overcloud(min_version: str = None,
+                  max_version: str = None) -> bool:
+    try:
+        check_overcloud(min_version=min_version,
+                        max_version=max_version)
+    except (OvercloudNotFound, OvercloudVersionMismatch) as ex:
+        LOG.debug(f'Overcloud not found: {ex}')
+        return False
+    else:
+        LOG.debug('Overcloud found')
+        return True
+
+
 skip_if_missing_overcloud = tobiko.skip_unless(
     'TripleO overcloud not configured', has_overcloud)
+
+
+def skip_unless_has_overcloud(min_version: tobiko.VersionType = None,
+                              max_version: tobiko.VersionType = None):
+    return tobiko.skip_on_error(
+        'TripleO overcloud not configured',
+        check_overcloud,
+        min_version=min_version,
+        max_version=max_version,
+        error_type=(OvercloudNotFound, OvercloudVersionMismatch))
 
 
 class OvercloudKeystoneCredentialsFixture(
@@ -269,3 +274,33 @@ def is_redis_expected():
         if keystone.has_service(name=service):
             return True
     return False
+
+
+def overcloud_version() -> tobiko.Version:
+    from tobiko.tripleo import _topology
+    node = topology.find_openstack_node(group='overcloud')
+    assert isinstance(node, _topology.TripleoTopologyNode)
+    return node.rhosp_version
+
+
+@functools.lru_cache()
+def check_overcloud(min_version: str = None,
+                    max_version: str = None):
+    try:
+        _undercloud.check_undercloud()
+    except _undercloud.UndercloudNotFound as ex:
+        raise OvercloudNotFound(cause=f'undercloud not found: {ex}') from ex
+
+    if min_version or max_version:
+        tobiko.check_version(overcloud_version(),
+                             min_version=min_version,
+                             max_version=max_version,
+                             mismatch_error=OvercloudVersionMismatch)
+
+
+class OvercloudNotFound(tobiko.ObjectNotFound):
+    message = 'overcloud not found: {cause}'
+
+
+class OvercloudVersionMismatch(tobiko.VersionMismatch):
+    message = 'overcloud version mismatch: {version} {cause}'

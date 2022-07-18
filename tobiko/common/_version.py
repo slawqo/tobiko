@@ -28,9 +28,13 @@ class InvalidVersion(_exception.TobikoException):
     message = "invalid version: {text}"
 
 
+class VersionMismatch(_exception.TobikoException):
+    message = "version mismatch {version} {cause}"
+    cause = ''
+
+
 VERSION_CLASSES = _version.LegacyVersion, _version.Version
-Version = typing.Union[_version.LegacyVersion,
-                       _version.Version]
+Version = typing.Union[_version.Version]
 VersionType = typing.Union[Version, str]
 
 
@@ -45,21 +49,43 @@ def get_version(obj: VersionType):
 
 def parse_version(text: str) -> VersionType:
     match = VERSION_PATTERN.search(text.strip())
-    if match is None:
-        raise InvalidVersion(text=text)
-    return _version.parse(match.group())
+    if match is not None:
+        text = match.group()
+    try:
+        return _version.Version(text)
+    except _version.InvalidVersion as ex:
+        raise InvalidVersion(text=text) from ex
 
 
 def match_version(actual: VersionType,
                   min_version: VersionType = None,
                   max_version: VersionType = None) -> bool:
+    try:
+        check_version(actual=actual,
+                      min_version=min_version,
+                      max_version=max_version)
+    except VersionMismatch:
+        return False
+    else:
+        return True
+
+
+def check_version(actual: VersionType,
+                  min_version: VersionType = None,
+                  max_version: VersionType = None,
+                  mismatch_error=VersionMismatch):
     actual = get_version(actual)
     if min_version is not None:
         min_version = get_version(min_version)
         if actual < min_version:
-            return False
+            raise mismatch_error(
+                version=actual,
+                cause=f">= {max_version}")
+
     if max_version is not None:
         max_version = get_version(max_version)
         if actual >= max_version:
-            return False
+            raise mismatch_error(
+                version=actual,
+                cause=f">= {max_version}")
     return True
