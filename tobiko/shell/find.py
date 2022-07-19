@@ -35,31 +35,51 @@ PathType = typing.Union[str, typing.Iterable[str]]
 def find_files(path: sh.ShellCommandType,
                name: NameType = None,
                command: sh.ShellCommandType = 'find',
-               ssh_client: ssh.SSHClientFixture = None,
+               max_depth: int = None,
                modified_since: tobiko.Seconds = None,
+               ssh_client: ssh.SSHClientType = None,
+               type: str = None,
                **execute_params) -> typing.List[str]:
+    # pylint: disable=redefined-builtin
     if not path:
         raise ValueError("Path can't be empty")
+
     command_line = sh.shell_command(command) + path
+
+    if max_depth is not None:
+        command_line += f"-maxdepth '{max_depth}'"
+
+    if type is not None:
+        command_line += f"-type '{type}'"
+
     if name is not None:
-        command_line += f"-name '{name}'"
+        if isinstance(name, str):
+            names = [name]
+        else:
+            names = list(name)
+        if names:
+            command_line += ' -o '.join(f"-name '{name}'" for name in names)
+
     if modified_since is not None:
         # round seconds to the next minute
         minutes = math.ceil(modified_since / 60.)
         command_line += f"-mmin {minutes}"
+
     result = sh.execute(command_line,
                         ssh_client=ssh_client,
                         expect_exit_status=None,
                         **execute_params)
-    if result.exit_status == 0:
-        output_lines: typing.List[str] = [
-            line.strip()
-            for line in result.stdout.splitlines()
-            if line.strip()]
-        if output_lines:
-            return output_lines
-    raise FilesNotFound(path=path,
-                        name=name,
-                        login=ssh_client and ssh_client.login or None,
-                        exit_status=result.exit_status,
-                        stderr=result.stderr.strip())
+    file_names: typing.List[str] = [line.strip()
+                                    for line in result.stdout.splitlines()
+                                    if line.strip()]
+    if not file_names:
+        ssh_client = ssh.ssh_client_fixture(ssh_client)
+        login: typing.Optional[str] = None
+        if ssh_client is not None:
+            login = ssh_client.login
+        raise FilesNotFound(path=path,
+                            name=name,
+                            login=login,
+                            exit_status=result.exit_status,
+                            stderr=result.stderr.strip())
+    return file_names
