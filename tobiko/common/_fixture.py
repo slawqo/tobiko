@@ -104,8 +104,9 @@ def get_fixture_name(obj) -> str:
         if not is_fixture(obj):
             raise TypeError('Object {obj!r} is not a fixture.'.format(obj=obj))
         name = get_object_name(obj)
-        obj.__tobiko_fixture__ = True
-        obj.__tobiko_fixture_name__ = name
+        if not inspect.isclass(obj):
+            obj.__tobiko_fixture__ = True
+            obj.__tobiko_fixture_name__ = name
     return name
 
 
