@@ -174,6 +174,7 @@ def init_tobiko_config(default_config_dirs=None, default_config_files=None,
 
     # Initialize Tobiko configuration object
     conf(args=[],
+         project='tobiko',
          validate_default_values=True,
          default_config_dirs=default_config_dirs,
          default_config_files=default_config_files)
