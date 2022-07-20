@@ -25,7 +25,7 @@ from tobiko.shiftstack import stacks
 class ShiftstackStacksTest(testtools.TestCase):
 
     def test_ensure_shiftstack_node_floating_ip(self):
-        nodes = shiftstack.list_shiftstack_nodes()
+        nodes = shiftstack.list_shiftstack_nodes(status='ACTIVE')
         floating_ips = []
         for node in nodes:
             floating_ip = stacks.ensure_shiftstack_node_floating_ip(

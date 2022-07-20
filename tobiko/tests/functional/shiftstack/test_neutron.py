@@ -24,14 +24,14 @@ from tobiko import shiftstack
 class ShiftstackNeutronTest(testtools.TestCase):
 
     def test_list_shiftstack_node_ip_addresses(self):
-        server = shiftstack.find_shiftstack_node()
+        server = shiftstack.find_shiftstack_node(status='ACTIVE')
         addresses = shiftstack.list_shiftstack_node_ip_addresses(server=server)
         self.assertIsInstance(addresses, tobiko.Selection)
         self.assertNotEqual([], addresses)
         return addresses
 
     def test_find_shiftstack_node_ip_address(self):
-        server = shiftstack.find_shiftstack_node()
+        server = shiftstack.find_shiftstack_node(status='ACTIVE')
         address = shiftstack.find_shiftstack_node_ip_address(server=server)
         self.assertIsInstance(address, netaddr.IPAddress)
         self.assertEqual(
