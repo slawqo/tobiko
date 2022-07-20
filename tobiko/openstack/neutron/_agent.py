@@ -84,13 +84,16 @@ def list_dhcp_agent_hosting_network(network, client=None, **params):
 def get_l3_agent_mode(
         l3_agent_conf_path: str,
         default='legacy',
-        connection: sh.ShellConnectionType = None) -> str:
+        connection: sh.ShellConnectionType = None,
+        sudo: bool = None) -> str:
     connection = sh.shell_connection(connection)
     LOG.debug(f"Read L3 agent mode from file '{l3_agent_conf_path}' on host "
               f" '{connection.hostname}'...")
+    if sudo is None:
+        sudo = not connection.is_local
     with sh.open_file(l3_agent_conf_path, 'rt',
                       connection=connection,
-                      sudo=True) as fd:
+                      sudo=sudo) as fd:
         LOG.debug(f"Parse ini file '{l3_agent_conf_path}'...")
         content = tobiko.parse_ini_file(fd)
     try:
