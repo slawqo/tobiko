@@ -49,7 +49,7 @@ class IpTest(testtools.TestCase):
                                scope=None,
                                ssh_client: ssh.SSHClientType = None,
                                **execute_params):
-        sh.find_command('ip', sudo=True, ssh_client=ssh_client, skip=True)
+        sh.find_command('ip', ssh_client=ssh_client, skip=True)
         ips = ip.list_ip_addresses(ip_version=ip_version,
                                    scope=scope,
                                    ssh_client=ssh_client,
@@ -146,7 +146,7 @@ class IpTest(testtools.TestCase):
                              ignore_errors=False,
                              ssh_client: ssh.SSHClientType = None,
                              **execute_params):
-        sh.find_command('ip', sudo=True, ssh_client=ssh_client, skip=True)
+        sh.find_command('ip', ssh_client=ssh_client, skip=True)
         namespaces = ip.list_network_namespaces(ignore_errors=ignore_errors,
                                                 ssh_client=ssh_client,
                                                 **execute_params)

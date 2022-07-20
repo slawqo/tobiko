@@ -146,8 +146,7 @@ class PingTest(testtools.TestCase):
         self.assertEqual('transmitted', ex.message_type)
 
     def test_ping_hosts(self):
-        sh.find_command('ip', sudo=True, ssh_client=self.ssh_client,
-                        skip=True)
+        sh.find_command('ip', ssh_client=self.ssh_client, skip=True)
         ips = ip.list_ip_addresses(**self.execute_params)
         reachable_ips, unreachable_ips = ping.ping_hosts(
             ips, **self.execute_params)
