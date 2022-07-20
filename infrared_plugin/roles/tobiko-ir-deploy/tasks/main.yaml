@@ -67,3 +67,7 @@
 
     - name: "show last change details"
       debug: var=get_git_log.stdout_lines
+
+  rescue:
+    - name: "unable to show last change details"
+      debug: var=get_git_log.stderr_lines

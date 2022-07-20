@@ -25,9 +25,9 @@ UPPER_CONSTRAINTS_FILE = ENV.fetch(
 
 # list of VMs
 NODES = {
-  'primary' => {'ip' => '172.18.161.6',
+  'primary' => {'ip' => '192.168.56.10',
                 'hostname' => 'primary'},
-  'secundary' => {'ip' => '172.18.161.7',
+  'secundary' => {'ip' => '192.168.56.11',
                   'hostname' => 'secundary'},
 }
 
