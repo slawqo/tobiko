@@ -443,7 +443,7 @@ class SSHShellConnection(ShellConnection):
 
     @property
     def username(self) -> str:
-        return self.ssh_client.username
+        return self.ssh_client.setup_connect_parameters()['username']
 
     _hostname: typing.Optional[str] = None
 
@@ -462,8 +462,9 @@ class SSHShellConnection(ShellConnection):
         return self._sftp
 
     def get_environ(self) -> typing.Dict[str, str]:
+        lines = self.execute('source /etc/profile; env').stdout.splitlines()
         return dict(_parse_env_line(line)
-                    for line in self.execute('env').stdout().splitlines()
+                    for line in lines
                     if line.strip())
 
     def put_file(self, local_file: str, remote_file: str):

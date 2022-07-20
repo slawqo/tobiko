@@ -234,7 +234,7 @@ class SSHShellConnectionTest(LocalShellConnectionTest):
 
     @property
     def username(self) -> str:
-        return self.ssh_client.username
+        return self.ssh_client.setup_connect_parameters()['username']
 
 
 class CirrosShellConnectionTest(SSHShellConnectionTest):
