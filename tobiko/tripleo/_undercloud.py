@@ -49,7 +49,8 @@ class InvalidRCFile(tobiko.TobikoException):
     message = "Invalid RC file: {rcfile}"
 
 
-def fetch_os_env(rcfile, *rcfiles) -> typing.Dict[str, str]:
+@functools.lru_cache()
+def fetch_os_env(rcfile: str, *rcfiles: str) -> typing.Dict[str, str]:
     rcfiles = (rcfile,) + rcfiles
     LOG.debug('Fetching OS environment variables from TripleO undercloud '
               f'host files: {",".join(rcfiles)}')
@@ -81,26 +82,38 @@ def fetch_os_env(rcfile, *rcfiles) -> typing.Dict[str, str]:
 
 
 def load_undercloud_rcfile() -> typing.Dict[str, str]:
-    return fetch_os_env(*CONF.tobiko.tripleo.undercloud_rcfile)
+    conf = tobiko.tobiko_config().tripleo
+    return fetch_os_env(*conf.undercloud_rcfile)
 
 
-class EnvironUndercloudKeystoneCredentialsFixture(
-        keystone.EnvironKeystoneCredentialsFixture):
-    def get_environ(self) -> typing.Dict[str, str]:
+class UndercloudKeystoneCredentialsFixtureBase(
+        keystone.KeystoneCredentialsFixture):
+
+    def _get_credentials(self) -> keystone.KeystoneCredentials:
+        if not has_undercloud():
+            raise keystone.NoSuchKeystoneCredentials()
+        return super()._get_credentials()
+
+    def _get_connection(self) -> sh.ShellConnectionType:
+        return undercloud_ssh_client()
+
+    def _get_environ(self) -> typing.Dict[str, str]:
         return load_undercloud_rcfile()
 
 
-class CloudsFileUndercloudKeystoneCredentialsFixture(
+class UndercloudCloudsFileKeystoneCredentialsFixture(
+        UndercloudKeystoneCredentialsFixtureBase,
         keystone.CloudsFileKeystoneCredentialsFixture):
 
-    def __init__(self, credentials=None, cloud_name=None,
-                 clouds_content=None, clouds_file=None, clouds_files=None):
-        cloud_name = cloud_name or load_undercloud_rcfile()['OS_CLOUD']
+    @staticmethod
+    def _get_default_cloud_name() -> typing.Optional[str]:
+        return tobiko.tobiko_config().tripleo.undercloud_cloud_name
 
-        super(CloudsFileUndercloudKeystoneCredentialsFixture, self).__init__(
-            credentials=credentials, cloud_name=cloud_name,
-            clouds_content=clouds_content, clouds_file=clouds_file,
-            clouds_files=clouds_files)
+
+class UndercloudEnvironKeystoneCredentialsFixture(
+        UndercloudKeystoneCredentialsFixtureBase,
+        keystone.EnvironKeystoneCredentialsFixture):
+    pass
 
 
 @functools.lru_cache()
@@ -110,7 +123,11 @@ def has_undercloud(min_version: tobiko.VersionType = None,
         check_undercloud(min_version=min_version,
                          max_version=max_version)
     except (UndercloudNotFound, UndercloudVersionMismatch) as ex:
-        LOG.debug(f'TripleO undercloud host not found: {ex.cause}')
+        LOG.debug(f'TripleO undercloud host not found:\n'
+                  f'{ex}')
+        return False
+    except Exception:
+        LOG.exception('Error looking for undercloud host')
         return False
     else:
         LOG.debug('TripleO undercloud host found')
@@ -177,22 +194,26 @@ def undercloud_keystone_client():
     return keystone.get_keystone_client(session=session)
 
 
-def _get_keystone_credentials():
-    environ = load_undercloud_rcfile()
-    if 'OS_CLOUD' in environ:
-        credentials = CloudsFileUndercloudKeystoneCredentialsFixture
-    else:
-        credentials = EnvironUndercloudKeystoneCredentialsFixture
-    return credentials
+class UndercloudKeystoneCredentialsFixture(
+        UndercloudKeystoneCredentialsFixtureBase,
+        keystone.DelegateKeystoneCredentialsFixture):
+
+    @staticmethod
+    def _get_delegates() -> typing.List[keystone.KeystoneCredentialsFixture]:
+        return [
+            tobiko.get_fixture(
+                UndercloudCloudsFileKeystoneCredentialsFixture),
+            tobiko.get_fixture(
+                UndercloudEnvironKeystoneCredentialsFixture)]
 
 
-def undercloud_keystone_session():
-    return keystone.get_keystone_session(
-        credentials=_get_keystone_credentials())
+def undercloud_keystone_session() -> keystone.KeystoneSession:
+    credentials = undercloud_keystone_credentials()
+    return keystone.get_keystone_session(credentials=credentials)
 
 
-def undercloud_keystone_credentials():
-    return tobiko.setup_fixture(_get_keystone_credentials()).credentials
+def undercloud_keystone_credentials() -> keystone.KeystoneCredentialsFixture:
+    return tobiko.get_fixture(UndercloudKeystoneCredentialsFixture)
 
 
 @functools.lru_cache()
@@ -201,7 +222,6 @@ def undercloud_version() -> tobiko.Version:
     return _rhosp.get_rhosp_version(connection=ssh_client)
 
 
-@functools.lru_cache()
 def check_undercloud(min_version: tobiko.Version = None,
                      max_version: tobiko.Version = None):
     try:

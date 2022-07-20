@@ -13,37 +13,46 @@
 #    under the License.
 from __future__ import absolute_import
 
+import functools
+
 from oslo_log import log
 
 import tobiko
+from tobiko.openstack import keystone
 from tobiko.shiftstack import _keystone
-
+from tobiko import tripleo
 
 LOG = log.getLogger(__name__)
 
 
-class HasShiftstackFixture(tobiko.SharedFixture):
+def check_shiftstack():
+    try:
+        tripleo.check_overcloud()
+    except tripleo.OvercloudNotFound as ex:
+        raise ShiftstackNotFound(
+            reason=f'Overcloud not found ({ex})') from ex
 
-    def __init__(self,
-                 has_shiftstack: bool = None):
-        # pylint: disable=redefined-outer-name
-        super(HasShiftstackFixture, self).__init__()
-        self.has_shiftstack = has_shiftstack
-
-    def setup_fixture(self):
-        if self.has_shiftstack is None:
-            try:
-                _keystone.shiftstack_keystone_session()
-            except Exception:
-                LOG.debug('Shifstack credentials not found', exc_info=1)
-                self.has_shiftstack = False
-            else:
-                LOG.debug('Shifstack credentials was found')
-                self.has_shiftstack = True
+    try:
+        _keystone.shiftstack_keystone_session()
+    except keystone.NoSuchKeystoneCredentials as ex:
+        raise ShiftstackNotFound(
+            reason=f'Keystone credentials not found ({ex})') from ex
 
 
+class ShiftstackNotFound(tobiko.ObjectNotFound):
+    message = 'shiftstack not found: {reason}'
+
+
+@functools.lru_cache()
 def has_shiftstack() -> bool:
-    return tobiko.setup_fixture(HasShiftstackFixture).has_shiftstack
+    try:
+        check_shiftstack()
+    except ShiftstackNotFound as ex:
+        LOG.debug(f'Shiftstack not found: {ex}')
+        return False
+    else:
+        LOG.debug('Shiftstack found')
+        return True
 
 
 def skip_unless_has_shiftstack():

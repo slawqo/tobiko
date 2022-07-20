@@ -54,6 +54,9 @@ OPTIONS = [
                default=None,
                help=("Cloud name used pick authentication parameters from "
                      "clouds.*")),
+    cfg.ListOpt('clouds_file_hosts',
+                default=['localhost'],
+                help="Host login from where to search for clouds file"),
     cfg.ListOpt('clouds_file_dirs',
                 default=['.', '~/.config/openstack', '/etc/openstack'],
                 help="Directories where to look for clouds files"),

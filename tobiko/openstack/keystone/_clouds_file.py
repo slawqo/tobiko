@@ -13,13 +13,17 @@
 #    under the License.
 from __future__ import absolute_import
 
+import functools
 import json
 import os
+import typing
 
 from oslo_log import log
 
 import tobiko
 from tobiko.openstack.keystone import _credentials
+from tobiko.shell import find
+from tobiko.shell import sh
 
 
 LOG = log.getLogger(__name__)
@@ -33,182 +37,195 @@ class CloudsFileNotFoundError(tobiko.TobikoException):
     message = "No such clouds file(s): {clouds_files!s}"
 
 
-class DefaultCloudsFileConfig(tobiko.SharedFixture):
-
-    cloud_name = None
-    clouds_file_dirs = None
-    clouds_file_names = None
-    clouds_files = None
-
-    def setup_fixture(self):
-        keystone_conf = tobiko.tobiko_config().keystone
-        self.cloud_name = keystone_conf.cloud_name
-        self.clouds_file_dirs = keystone_conf.clouds_file_dirs
-        self.clouds_file_names = keystone_conf.clouds_file_names
-        self.clouds_files = self.list_cloud_files()
-
-    def list_cloud_files(self):
-        cloud_files = []
-        for directory in self.clouds_file_dirs:
-            directory = tobiko.tobiko_config_path(directory)
-            if os.path.isdir(directory):
-                for file_name in self.clouds_file_names:
-                    file_name = os.path.join(directory, file_name)
-                    if os.path.isfile(file_name):
-                        cloud_files.append(file_name)
-        return cloud_files
+CloudsFileContentType = typing.Mapping[str, typing.Any]
 
 
 class CloudsFileKeystoneCredentialsFixture(
         _credentials.KeystoneCredentialsFixture):
 
-    cloud_name = None
-    clouds_content = None
-    clouds_file = None
+    def __init__(self,
+                 credentials: _credentials.KeystoneCredentials = None,
+                 connection: sh.ShellConnectionType = None,
+                 environ: typing.Dict[str, str] = None,
+                 cloud_name: str = None,
+                 directories: typing.Iterable[str] = None,
+                 filenames: typing.Iterable[str] = None):
+        super().__init__(credentials=credentials,
+                         connection=connection,
+                         environ=environ)
+        self._cloud_name = cloud_name
+        if directories is not None:
+            directories = list(directories)
+        self._directories = directories
+        if filenames is not None:
+            filenames = list(filenames)
+        self._filenames = filenames
 
-    config = tobiko.required_fixture(DefaultCloudsFileConfig)
+    default_cloud_name: typing.Optional[str] = None
 
-    def __init__(self, credentials=None, cloud_name=None,
-                 clouds_content=None, clouds_file=None, clouds_files=None):
-        super(CloudsFileKeystoneCredentialsFixture, self).__init__(
-            credentials=credentials)
+    @property
+    def cloud_name(self) -> typing.Optional[str]:
+        if self._cloud_name is None:
+            self._cloud_name = self._get_cloud_name()
+        return self._cloud_name
 
-        config = self.config
-        if cloud_name is None:
-            cloud_name = config.cloud_name
-        self.cloud_name = cloud_name
+    @property
+    def directories(self) -> typing.List[str]:
+        if self._directories is None:
+            directories = [self.connection.get_config_path(directory)
+                           for directory in self._get_directories()]
+            self._directories = directories
+        return self._directories
 
-        if clouds_content is not None:
-            self.clouds_content = dict(clouds_content)
+    @property
+    def filenames(self) -> typing.List[str]:
+        if self._filenames is None:
+            self._filenames = self._get_filenames()
+        return self._filenames
 
-        if clouds_file is not None:
-            self.clouds_file = clouds_file
+    def _get_credentials(self) -> _credentials.KeystoneCredentials:
+        try:
+            filenames = find.find_files(path=self.directories,
+                                        name=self.filenames,
+                                        max_depth=1,
+                                        type='f',
+                                        ssh_client=self.connection.ssh_client)
+        except find.FilesNotFound as ex:
+            raise _credentials.NoSuchKeystoneCredentials(
+                reason=('Cloud files not found:\n'
+                        f"  login: {self.login}\n"
+                        f"  directories: {self.directories}\n"
+                        f"  filenames: {self.filenames}\n"
+                        f"  error: {ex}\n")) from ex
 
-        if clouds_files is None:
-            clouds_files = config.clouds_files
-        self.clouds_files = list(clouds_files)
+        if self.cloud_name is None:
+            raise _credentials.NoSuchKeystoneCredentials(
+                reason=(f"[{self.fixture_name}] Clouds name not found at"
+                        f" {self.login!r}"))
 
-    def get_credentials(self):
-        cloud_name = self._get_cloud_name()
-        if cloud_name is None:
-            return None
+        for filename in filenames:
+            file_spec = f"{self.login}:{filename}"
+            content = load_clouds_file_content(
+                connection=self.connection,
+                filename=filename)
+            try:
+                return parse_credentials(
+                    file_spec=file_spec,
+                    content=content,
+                    cloud_name=self.cloud_name)
+            except _credentials.NoSuchKeystoneCredentials:
+                LOG.debug(f'Cloud with name {self.cloud_name} not found '
+                          f'in {file_spec}')
+        raise _credentials.NoSuchKeystoneCredentials(
+            reason=(f"[{self.fixture_name}] Keystone credentials not found "
+                    f"for cloud name {self.cloud_name!r} in files "
+                    f"{filenames!r} (login={self.login})"))
 
-        clouds_content = self._get_clouds_content()
-        clouds_section = clouds_content.get("clouds")
-        if clouds_section is None:
-            message = ("'clouds' section not found in clouds file "
-                       "{!r}").format(self.clouds_file)
-            raise ValueError(message)
-
-        clouds_config = clouds_section.get(cloud_name)
-        if clouds_config is None:
-            message = ("No such cloud with name {!r} in file "
-                       "{!r}").format(cloud_name, self.clouds_file)
-            raise ValueError(message)
-
-        auth = clouds_config.get("auth")
-        if auth is None:
-            message = ("No such 'auth' section in cloud file {!r} for cloud "
-                       "name {!r}").format(self.clouds_file, self.cloud_name)
-            raise ValueError(message)
-
-        auth_url = auth.get("auth_url")
-        if not auth_url:
-            message = ("No such 'auth_url' in file {!r} for cloud name "
-                       "{!r}").format(self.clouds_file, self.cloud_name)
-            raise ValueError(message)
-
-        username = auth.get('username') or auth.get('user_id')
-        password = auth.get('password')
-        cacert = clouds_config.get('cacert')
-        project_name = (auth.get('project_name') or
-                        auth.get('tenant_namer') or
-                        auth.get('project_id') or
-                        auth.get_env('tenant_id'))
-
-        api_version = (int(clouds_config.get("identity_api_version", 0)) or
-                       _credentials.api_version_from_url(auth_url))
-        if api_version == 2:
-            return _credentials.keystone_credentials(
-                api_version=api_version,
-                auth_url=auth_url,
-                username=username,
-                password=password,
-                project_name=project_name)
-
-        else:
-            domain_name = (auth.get("domain_name") or
-                           auth.get("domain_id"))
-            user_domain_name = (auth.get("user_domain_name") or
-                                auth.get("user_domain_id"))
-            project_domain_name = auth.get("project_domain_name")
-            project_domain_id = auth.get("project_domain_id")
-            trust_id = auth.get("trust_id")
-            return _credentials.keystone_credentials(
-                api_version=api_version,
-                auth_url=auth_url,
-                username=username,
-                password=password,
-                project_name=project_name,
-                domain_name=domain_name,
-                user_domain_name=user_domain_name,
-                project_domain_name=project_domain_name,
-                project_domain_id=project_domain_id,
-                cacert=cacert,
-                trust_id=trust_id)
-
-    def _get_cloud_name(self):
-        cloud_name = self.cloud_name
-        if cloud_name is None:
-            cloud_name = os.environ.get("OS_CLOUD")
+    def _get_cloud_name(self) -> typing.Optional[str]:
+        for var_name in ['OS_CLOUD', 'OS_CLOUDNAME']:
+            cloud_name = self.environ.get(var_name)
             if cloud_name:
-                LOG.debug("Got cloud name from 'OS_CLOUD' environment "
-                          "variable: %r", cloud_name)
-                self.cloud_name = cloud_name
-            else:
-                LOG.debug("Undefined environment variable: 'OS_CLOUD'")
-        return cloud_name or None
+                LOG.debug(f"Got cloud name from '{var_name}' environment "
+                          f"variable: {cloud_name}", )
+                return cloud_name
+        return self._get_default_cloud_name()
 
-    def _get_clouds_content(self):
-        clouds_content = self.clouds_content
-        if clouds_content is None:
-            clouds_file = self._get_clouds_file()
-            with open(clouds_file, 'r') as f:
-                _, suffix = os.path.splitext(clouds_file)
-                if suffix in JSON_SUFFIXES:
-                    LOG.debug('Load JSON clouds file: %r', clouds_file)
-                    clouds_content = json.load(f)
-                else:
-                    LOG.debug('Load YAML clouds file: %r', clouds_file)
-                    clouds_content = tobiko.load_yaml(f)
-            LOG.debug('Clouds file content loaded from %r:\n%s',
-                      clouds_file, json.dumps(clouds_content,
-                                              indent=4,
-                                              sort_keys=True))
-            self.clouds_content = clouds_content
+    @staticmethod
+    def _get_default_cloud_name() -> typing.Optional[str]:
+        return tobiko.tobiko_config().keystone.cloud_name
 
-        if not clouds_content:
-            message = "Invalid clouds file content: {!r}".format(
-                clouds_content)
-            raise ValueError(message)
-        return clouds_content
+    @staticmethod
+    def _get_directories() -> typing.List[str]:
+        return tobiko.tobiko_config().keystone.clouds_file_dirs
 
-    def _get_clouds_file(self):
-        clouds_file = self.clouds_file
-        if clouds_file:
-            clouds_files = [self.clouds_file]
+    @staticmethod
+    def _get_filenames() -> typing.List[str]:
+        return tobiko.tobiko_config().keystone.clouds_file_names
+
+
+def parse_credentials(file_spec: str,
+                      cloud_name: str,
+                      content: CloudsFileContentType):
+    clouds_section = content.get("clouds")
+    if clouds_section is None:
+        raise _credentials.NoSuchKeystoneCredentials(
+            reason=f"'clouds' section not found in {file_spec!r}")
+
+    clouds_config = clouds_section.get(cloud_name)
+    if clouds_config is None:
+        raise _credentials.NoSuchKeystoneCredentials(
+            reason=f"cloud name {cloud_name!r} not found in {file_spec!r}")
+
+    auth = clouds_config.get("auth")
+    if auth is None:
+        raise _credentials.NoSuchKeystoneCredentials(
+            reason=f"'auth' section not found for cloud name "
+                   f"{cloud_name!r} in {file_spec!r}")
+
+    auth_url = auth.get("auth_url")
+    if not auth_url:
+        raise _credentials.NoSuchKeystoneCredentials(
+            reason=f"'auth_url' is {auth_url!r} for cloud name "
+                   f"{cloud_name!r} in {file_spec!r}")
+
+    username = auth.get('username') or auth.get('user_id')
+    if not username:
+        raise _credentials.NoSuchKeystoneCredentials(
+            reason=f"'username' is {username!r} for cloud name "
+                   f"{cloud_name!r} in {file_spec!r}")
+
+    password = auth.get('password')
+    if not password:
+        raise _credentials.NoSuchKeystoneCredentials(
+            reason=f"'password' is {password!r} for cloud name "
+                   f"{cloud_name!r} in {file_spec!r}")
+
+    cacert = clouds_config.get('cacert')
+    project_name = (auth.get('project_name') or
+                    auth.get('tenant_namer') or
+                    auth.get('project_id') or
+                    auth.get_env('tenant_id'))
+
+    api_version = (int(clouds_config.get("identity_api_version", 0)) or
+                   _credentials.api_version_from_url(auth_url))
+    if api_version == 2:
+        return _credentials.keystone_credentials(
+            api_version=api_version,
+            auth_url=auth_url,
+            username=username,
+            password=password,
+            project_name=project_name)
+    else:
+        domain_name = (auth.get("domain_name") or
+                       auth.get("domain_id"))
+        user_domain_name = (auth.get("user_domain_name") or
+                            auth.get("user_domain_id"))
+        project_domain_name = auth.get("project_domain_name")
+        project_domain_id = auth.get("project_domain_id")
+        trust_id = auth.get("trust_id")
+        return _credentials.keystone_credentials(
+            api_version=api_version,
+            auth_url=auth_url,
+            username=username,
+            password=password,
+            project_name=project_name,
+            domain_name=domain_name,
+            user_domain_name=user_domain_name,
+            project_domain_name=project_domain_name,
+            project_domain_id=project_domain_id,
+            cacert=cacert,
+            trust_id=trust_id)
+
+
+@functools.lru_cache()
+def load_clouds_file_content(connection: sh.ShellConnection,
+                             filename: str) \
+        -> CloudsFileContentType:
+    with connection.open_file(filename, 'r') as f:
+        _, suffix = os.path.splitext(filename)
+        if suffix in JSON_SUFFIXES:
+            LOG.debug(f'Load JSON clouds file: {filename!r}')
+            return json.load(f)
         else:
-            clouds_files = list(self.clouds_files)
-
-        for filename in clouds_files:
-            if os.path.exists(filename):
-                LOG.debug('Found clouds file at %r', filename)
-                self.clouds_file = clouds_file = filename
-                break
-        else:
-            raise CloudsFileNotFoundError(clouds_files=', '.join(clouds_files))
-        return clouds_file
-
-
-_credentials.DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES.insert(
-    0, CloudsFileKeystoneCredentialsFixture)
+            LOG.debug(f'Load YAML clouds file: {filename!r}')
+            return tobiko.load_yaml(f)

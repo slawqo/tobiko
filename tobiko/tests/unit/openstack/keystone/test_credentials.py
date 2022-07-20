@@ -21,7 +21,6 @@ import testtools
 import tobiko
 from tobiko import config
 from tobiko.openstack import keystone
-from tobiko.openstack.keystone import _credentials
 from tobiko.tests.unit import openstack
 
 
@@ -127,45 +126,46 @@ class KeystoneCredentialsTest(openstack.OpenstackTest):
 class EnvironKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
 
     def test_init(self):
-        fixture = _credentials.EnvironKeystoneCredentialsFixture()
+        fixture = keystone.EnvironKeystoneCredentialsFixture()
         self.assertIsNone(fixture.credentials)
 
     def test_setup_with_no_credentials(self):
-        fixture = _credentials.EnvironKeystoneCredentialsFixture()
-        fixture.setUp()
-        self.assertIsNone(fixture.credentials)
+        fixture = keystone.EnvironKeystoneCredentialsFixture()
+        self.assertRaises(keystone.NoSuchKeystoneCredentials,
+                          tobiko.setup_fixture,
+                          fixture)
 
     def test_setup_v2(self):
         self.patch(os, 'environ', V2_ENVIRON)
-        fixture = _credentials.EnvironKeystoneCredentialsFixture()
+        fixture = keystone.EnvironKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_v2_with_tenant_name(self):
         self.patch(os, 'environ', V2_ENVIRON_WITH_TENANT_NAME)
-        fixture = _credentials.EnvironKeystoneCredentialsFixture()
+        fixture = keystone.EnvironKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_v2_with_api_version(self):
         self.patch(os, 'environ', V2_ENVIRON_WITH_VERSION)
-        fixture = _credentials.EnvironKeystoneCredentialsFixture()
+        fixture = keystone.EnvironKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_v3(self):
         self.patch(os, 'environ', V3_ENVIRON)
-        fixture = _credentials.EnvironKeystoneCredentialsFixture()
+        fixture = keystone.EnvironKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V3_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_v3_without_api_version(self):
         self.patch(os, 'environ', V3_ENVIRON_WITH_VERSION)
-        fixture = _credentials.EnvironKeystoneCredentialsFixture()
+        fixture = keystone.EnvironKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V3_PARAMS, fixture.credentials.to_dict())
@@ -178,73 +178,76 @@ class ConfigKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
         return self.patch(config.CONF.tobiko, 'keystone', credentials)
 
     def test_init(self):
-        fixture = _credentials.ConfigKeystoneCredentialsFixture()
+        fixture = keystone.ConfigKeystoneCredentialsFixture()
         self.assertIsNone(fixture.credentials)
 
     def test_setup_v2(self):
         self.patch_config(V2_PARAMS, api_version=None)
-        fixture = _credentials.ConfigKeystoneCredentialsFixture()
+        fixture = keystone.ConfigKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_v2_with_api_version(self):
         self.patch_config(V2_PARAMS, api_version=2)
-        fixture = _credentials.ConfigKeystoneCredentialsFixture()
+        fixture = keystone.ConfigKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_v3(self):
         self.patch_config(V3_PARAMS, api_version=None)
-        fixture = _credentials.ConfigKeystoneCredentialsFixture()
+        fixture = keystone.ConfigKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V3_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_v3_with_api_version(self):
         self.patch_config(V3_PARAMS, api_version=3)
-        fixture = _credentials.ConfigKeystoneCredentialsFixture()
+        fixture = keystone.ConfigKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V3_PARAMS, fixture.credentials.to_dict())
 
 
-class DefaultKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
+class DelegateKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
 
     def setUp(self):
-        super(DefaultKeystoneCredentialsFixtureTest, self).setUp()
+        super().setUp()
         self.patch_config({})
         self.patch(os, 'environ', {})
-        tobiko.remove_fixture(_credentials.ConfigKeystoneCredentialsFixture)
-        tobiko.remove_fixture(_credentials.EnvironKeystoneCredentialsFixture)
+        tobiko.remove_fixture(keystone.ConfigKeystoneCredentialsFixture)
+        tobiko.remove_fixture(keystone.EnvironKeystoneCredentialsFixture)
 
     def patch_config(self, params, **kwargs):
         credentials = make_credentials(params, **kwargs)
-        return self.patch(config.CONF.tobiko, 'keystone', credentials)
+        keystone_conf = tobiko.tobiko_config().keystone
+        for name, value in credentials.to_dict().items():
+            self.patch(keystone_conf, name, value)
+        tobiko.tobiko_config().ssh.proxy_jump = None
 
     def test_init(self):
-        fixture = keystone.DefaultKeystoneCredentialsFixture()
+        fixture = keystone.DelegateKeystoneCredentialsFixture()
         self.assertIsNone(fixture.credentials)
-
-    def test_setup_from_environ(self):
-        self.patch(os, 'environ', V2_ENVIRON)
-        fixture = keystone.DefaultKeystoneCredentialsFixture()
-        fixture.setUp()
-        fixture.credentials.validate()
-        self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
     def test_setup_from_config(self):
         self.patch_config(V2_PARAMS)
-        fixture = keystone.DefaultKeystoneCredentialsFixture()
+        fixture = keystone.DelegateKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
 
-    def test_setup_from_environ_and_confif(self):
+    def test_setup_from_environ(self):
+        self.patch(os, 'environ', V2_ENVIRON)
+        fixture = keystone.DelegateKeystoneCredentialsFixture()
+        fixture.setUp()
+        fixture.credentials.validate()
+        self.assertEqual(V2_PARAMS, fixture.credentials.to_dict())
+
+    def test_setup_from_environ_and_config(self):
         self.patch(os, 'environ', V3_ENVIRON)
         self.patch_config(V2_PARAMS)
-        fixture = keystone.DefaultKeystoneCredentialsFixture()
+        fixture = keystone.DelegateKeystoneCredentialsFixture()
         fixture.setUp()
         fixture.credentials.validate()
         self.assertEqual(V3_PARAMS, fixture.credentials.to_dict())
@@ -252,41 +255,15 @@ class DefaultKeystoneCredentialsFixtureTest(openstack.OpenstackTest):
 
 class SkipUnlessHasKeystoneCredentialsTest(openstack.OpenstackTest):
 
-    def setUp(self):
-        super(SkipUnlessHasKeystoneCredentialsTest, self).setUp()
-        self.default_credentials = tobiko.setup_fixture(
-            keystone.DefaultKeystoneCredentialsFixture)
+    def patch_has_keystone_credentials(self, return_value: bool):
+        # pylint: disable=protected-access
+        from tobiko.openstack.keystone import _credentials
+        return self.patch(_credentials,
+                          'has_keystone_credentials',
+                          return_value=return_value)
 
-    def test_skip_method_unless_has_keystone_credentials_without_creds(self):
-        self.patch(self.default_credentials, 'credentials', None)
-
-        @keystone.skip_unless_has_keystone_credentials()
-        def decorated_func():
-            self.fail('Not skipped')
-
-        self.assertFalse(keystone.has_keystone_credentials())
-        self.assertRaises(self.skipException, decorated_func)
-
-    def test_skip_class_unless_has_keystone_credentials_without_creds(self):
-        self.patch(self.default_credentials, 'credentials', None)
-
-        @keystone.skip_unless_has_keystone_credentials()
-        class SkipTest(testtools.TestCase):
-
-            def test_skip(self):
-                super(SkipTest, self).setUp()
-                self.fail('Not skipped')
-
-        self.assertFalse(keystone.has_keystone_credentials())
-
-        test_case = SkipTest('test_skip')
-        test_result = tobiko.run_test(test_case)
-        tobiko.assert_test_case_was_skipped(
-            test_case, test_result, skip_reason='Missing Keystone credentials')
-
-    def test_skip_method_unless_has_keystone_credentials_with_creds(self):
-        credentials = make_credentials({})
-        self.patch(self.default_credentials, 'credentials', credentials)
+    def test_skip_method_unless_has_keystone_credentials(self):
+        has_keystone_credentials = self.patch_has_keystone_credentials(True)
 
         call_args = []
 
@@ -294,13 +271,16 @@ class SkipUnlessHasKeystoneCredentialsTest(openstack.OpenstackTest):
         def decorated_func(*args, **kwargs):
             call_args.append([args, kwargs])
 
-        self.assertEqual(credentials, keystone.get_keystone_credentials())
+        has_keystone_credentials.assert_not_called()
+
         decorated_func(1, 2, a=1, b=2)
+
+        # pylint: disable=no-member
+        has_keystone_credentials.assert_called_once()
         self.assertEqual(call_args, [[(1, 2), {'a': 1, 'b': 2}]])
 
-    def test_skip_class_unless_has_keystone_credentials_with_creds(self):
-        credentials = make_credentials({})
-        self.patch(self.default_credentials, 'credentials', credentials)
+    def test_skip_class_unless_has_keystone_credentials(self):
+        has_keystone_credentials = self.patch_has_keystone_credentials(True)
 
         calls = []
 
@@ -310,6 +290,41 @@ class SkipUnlessHasKeystoneCredentialsTest(openstack.OpenstackTest):
             def test_skip(self):
                 calls.append(True)
 
-        self.assertEqual(credentials, keystone.get_keystone_credentials())
+        has_keystone_credentials.assert_not_called()
+
         tobiko.run_test(SkipTest('test_skip'))
+
+        has_keystone_credentials.assert_called_once()
         self.assertEqual(calls, [True])
+
+    def test_skip_method_unless_has_keystone_credentials_without_creds(self):
+        has_keystone_credentials = self.patch_has_keystone_credentials(False)
+
+        @keystone.skip_unless_has_keystone_credentials()
+        def decorated_func():
+            self.fail('Not skipped')
+
+        has_keystone_credentials.assert_not_called()
+
+        self.assertRaises(self.skipException, decorated_func)
+        has_keystone_credentials.assert_called_once()
+
+    def test_skip_class_unless_has_keystone_credentials_without_creds(self):
+        has_keystone_credentials = self.patch_has_keystone_credentials(False)
+
+        @keystone.skip_unless_has_keystone_credentials()
+        class SkipTest(testtools.TestCase):
+
+            def test_skip(self):
+                super(SkipTest, self).setUp()
+                self.fail('Not skipped')
+
+        test_case = SkipTest('test_skip')
+        has_keystone_credentials.assert_not_called()
+
+        test_result = tobiko.run_test(test_case)
+
+        tobiko.assert_test_case_was_skipped(
+            test_case, test_result,
+            skip_reason='Missing Keystone credentials')
+        has_keystone_credentials.assert_called_once()

@@ -20,6 +20,8 @@ from tobiko.openstack.keystone import _resource
 from tobiko.openstack.keystone import _services
 from tobiko.openstack.keystone import _session
 
+KeystoneClient = _client.KeystoneClient
+KeystoneClientFixture = _client.KeystoneClientFixture
 keystone_client = _client.keystone_client
 get_keystone_client = _client.get_keystone_client
 find_service = _client.find_service
@@ -27,26 +29,28 @@ find_endpoint = _client.find_endpoint
 find_service_endpoint = _client.find_service_endpoint
 list_endpoints = _client.list_endpoints
 list_services = _client.list_services
-KeystoneClientFixture = _client.KeystoneClientFixture
 
 CloudsFileKeystoneCredentialsFixture = (
     _clouds_file.CloudsFileKeystoneCredentialsFixture)
 
 default_keystone_credentials = _credentials.default_keystone_credentials
-get_keystone_credentials = _credentials.get_keystone_credentials
 has_keystone_credentials = _credentials.has_keystone_credentials
 keystone_credentials = _credentials.keystone_credentials
+register_default_keystone_credentials = (
+    _credentials.register_default_keystone_credentials)
 skip_unless_has_keystone_credentials = (
     _credentials.skip_unless_has_keystone_credentials)
-DefaultKeystoneCredentialsFixture = (
-    _credentials.DefaultKeystoneCredentialsFixture)
+ConfigKeystoneCredentialsFixture = (
+    _credentials.ConfigKeystoneCredentialsFixture)
+DelegateKeystoneCredentialsFixture = (
+    _credentials.DelegateKeystoneCredentialsFixture)
 KeystoneCredentials = _credentials.KeystoneCredentials
 KeystoneCredentialsFixture = _credentials.KeystoneCredentialsFixture
+KeystoneCredentialsType = _credentials.KeystoneCredentialsType
+NoSuchKeystoneCredentials = _credentials.NoSuchKeystoneCredentials
 EnvironKeystoneCredentialsFixture = \
     _credentials.EnvironKeystoneCredentialsFixture
 InvalidKeystoneCredentials = _credentials.InvalidKeystoneCredentials
-DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES = \
-    _credentials.DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES
 
 get_keystone_resource_id = _resource.get_keystone_resource_id
 get_project_id = _resource.get_project_id
@@ -60,6 +64,7 @@ is_service_missing = _services.is_service_missing
 skip_if_missing_service = _services.skip_if_missing_service
 
 keystone_session = _session.keystone_session
+KeystoneSession = _session.KeystoneSession
 KeystoneSessionType = _session.KeystoneSessionType
 KeystoneSessionFixture = _session.KeystoneSessionFixture
 KeystoneSessionManager = _session.KeystoneSessionManager

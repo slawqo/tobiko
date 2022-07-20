@@ -37,6 +37,11 @@ OPTIONS = [
     cfg.ListOpt('undercloud_rcfile',
                 default=['~/stackrc'],
                 help="Undercloud RC filename"),
+    cfg.StrOpt('undercloud_cloud_name',
+               default='undercloud',
+               help='undercloud cloud name to be used for loading credentials '
+                    'from the undercloud clouds files'),
+
 
     # Overcloud options
     cfg.IntOpt('overcloud_ssh_port',
@@ -51,6 +56,10 @@ OPTIONS = [
     cfg.ListOpt('overcloud_rcfile',
                 default=['~/overcloudrc', '~/qe-Cloud-0rc'],
                 help="Overcloud RC filenames"),
+    cfg.StrOpt('overcloud_cloud_name',
+               default='overcloud',
+               help='overcloud cloud name to be used for loading credentials '
+                    'from the overcloud clouds files'),
     cfg.IntOpt('overcloud_ip_version',
                help=("Default IP address version to be used to connect to "
                      "overcloud nodes ")),
@@ -61,7 +70,6 @@ OPTIONS = [
     cfg.StrOpt('inventory_file',
                default='.ansible/inventory/tripleo.yaml',
                help="path to where to export tripleo inventory file"),
-
 ]
 
 
@@ -80,5 +88,5 @@ def setup_tobiko_config(conf):
     from tobiko.tripleo import topology
 
     _ansible.setup_undercloud_ansible_playbook()
-    overcloud.setup_overcloud_keystone_crederntials()
+    overcloud.setup_overcloud_keystone_credentials()
     topology.setup_tripleo_topology()

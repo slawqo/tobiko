@@ -54,7 +54,7 @@ def execute(cmd, *args, **kwargs):
 
 def _param_list(*args, **kwargs):
     if not any(param in kwargs for param in ['os-token', 'os-username']):
-        credentials = keystone.get_keystone_credentials()
+        credentials = keystone.keystone_credentials()
         tmp_auth = {}
         tmp_auth['os-auth-url'] = credentials.auth_url
         tmp_auth['os-password'] = credentials.password

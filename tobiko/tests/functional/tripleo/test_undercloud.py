@@ -58,8 +58,10 @@ class UndercloudSshConnectionTest(testtools.TestCase):
 class UndercloudKeystoneClientTest(testtools.TestCase):
 
     def test_undercloud_keystone_credentials(self):
-        credentials = tripleo.undercloud_keystone_credentials()
-        self.assertIsInstance(credentials, keystone.KeystoneCredentials)
+        fixture = tripleo.undercloud_keystone_credentials()
+        self.assertIsInstance(fixture,
+                              keystone.KeystoneCredentialsFixture)
+        credentials = keystone.keystone_credentials(fixture)
         credentials.validate()
 
     def test_undercloud_keystone_session(self):

@@ -34,11 +34,17 @@ run_playbook_from_undercloud = _ansible.run_playbook_from_undercloud
 
 OvercloudKeystoneCredentialsFixture = \
     overcloud.OvercloudKeystoneCredentialsFixture
+OvercloudNotFound = overcloud.OvercloudNotFound
+OvercloudVersionMismatch = overcloud.OvercloudVersionMismatch
+check_overcloud = overcloud.check_overcloud
 find_overcloud_node = overcloud.find_overcloud_node
 has_overcloud = overcloud.has_overcloud
 list_overcloud_nodes = overcloud.list_overcloud_nodes
 load_overcloud_rcfile = overcloud.load_overcloud_rcfile
 overcloud_host_config = overcloud.overcloud_host_config
+overcloud_keystone_client = overcloud.overcloud_keystone_client
+overcloud_keystone_credentials = overcloud.overcloud_keystone_credentials
+overcloud_keystone_session = overcloud.overcloud_keystone_session
 overcloud_node_ip_address = overcloud.overcloud_node_ip_address
 overcloud_ssh_client = overcloud.overcloud_ssh_client
 overcloud_version = overcloud.overcloud_version
@@ -50,6 +56,11 @@ get_rhosp_version = _rhosp.get_rhosp_version
 
 TripleoTopology = topology.TripleoTopology
 
+UndercloudKeystoneCredentialsFixture = \
+    undercloud.UndercloudKeystoneCredentialsFixture
+UndercloudCloudsFileKeystoneCredentialsFixture = \
+    undercloud.UndercloudCloudsFileKeystoneCredentialsFixture
+fetch_os_env = undercloud.fetch_os_env
 load_undercloud_rcfile = undercloud.load_undercloud_rcfile
 has_undercloud = undercloud.has_undercloud
 skip_unless_has_undercloud = undercloud.skip_unlsess_has_undercloud

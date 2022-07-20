@@ -21,6 +21,7 @@ import pandas as pd
 import testtools
 
 from tobiko import config
+from tobiko.openstack import keystone
 from tobiko.openstack import metalsmith
 from tobiko import tripleo
 from tobiko.tripleo import pacemaker
@@ -43,6 +44,24 @@ class OvercloudKeystoneCredentialsTest(testtools.TestCase):
                         env.get('OS_PROJECT_NAME') or
                         env.get('OS_TENANT_ID') or
                         env.get('OS_PROJECT_ID'))
+
+    def test_overcloud_keystone_credentials(self):
+        fixture = tripleo.overcloud_keystone_credentials()
+        self.assertIsInstance(fixture,
+                              keystone.KeystoneCredentialsFixture)
+        credentials = keystone.keystone_credentials(fixture)
+        credentials.validate()
+
+    def test_overcloud_keystone_session(self):
+        session = tripleo.overcloud_keystone_session()
+        client = keystone.get_keystone_client(session=session)
+        endpoints = keystone.list_endpoints(client=client)
+        self.assertNotEqual([], endpoints)
+
+    def test_overcloud_keystone_client(self):
+        client = tripleo.overcloud_keystone_client()
+        _services = keystone.list_services(client=client)
+        self.assertTrue(_services)
 
 
 @tripleo.skip_if_missing_overcloud

@@ -13,37 +13,33 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 import tobiko
 from tobiko.openstack import keystone
-from tobiko.shiftstack import _clouds_file
+from tobiko import tripleo
+
+
+def load_shiftstack_rcfile() -> typing.Dict[str, str]:
+    conf = tobiko.tobiko_config().shiftstack
+    return tripleo.fetch_os_env(*conf.rcfile)
 
 
 class ShiftstackKeystoneCredentialsFixture(
-        keystone.CloudsFileKeystoneCredentialsFixture):
+        tripleo.UndercloudCloudsFileKeystoneCredentialsFixture):
 
-    clouds_file_fixture = tobiko.required_fixture(
-        _clouds_file.ShiftStackCloudsFileFixture, setup=False)
+    @staticmethod
+    def _get_default_cloud_name() -> typing.Optional[str]:
+        return tobiko.tobiko_config().shiftstack.cloud_name
 
-    def __init__(self,
-                 cloud_name: str = None,
-                 clouds_file: str = None):
-        if clouds_file is None:
-            clouds_file = self.clouds_file_fixture.local_clouds_file_path
-        if cloud_name is None:
-            cloud_name = tobiko.tobiko_config().shiftstack.cloud_name
-        super().__init__(clouds_file=clouds_file,
-                         cloud_name=cloud_name)
-
-    def setup_fixture(self):
-        tobiko.setup_fixture(self.clouds_file_fixture)
-        super().setup_fixture()
+    def _get_environ(self) -> typing.Dict[str, str]:
+        return load_shiftstack_rcfile()
 
 
-def shiftstack_keystone_session():
-    return keystone.get_keystone_session(
-        credentials=ShiftstackKeystoneCredentialsFixture)
+def shiftstack_keystone_session() -> keystone.KeystoneSession:
+    credentials = shiftstack_keystone_credentials()
+    return keystone.get_keystone_session(credentials=credentials)
 
 
-def shiftstack_keystone_credentials():
-    return tobiko.setup_fixture(
-        ShiftstackKeystoneCredentialsFixture).credentials
+def shiftstack_keystone_credentials() -> keystone.KeystoneCredentialsFixture:
+    return tobiko.get_fixture(ShiftstackKeystoneCredentialsFixture)

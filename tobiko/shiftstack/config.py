@@ -30,6 +30,10 @@ OPTIONS = [
     cfg.StrOpt('cloud_name',
                default='shiftstack',
                help="Keystone credentials cloud name"),
+    cfg.ListOpt('rcfile',
+                default=['./shiftstackrc'],
+                help="Path to the RC file used to populate OS_* environment "
+                     "variables")
 ]
 
 

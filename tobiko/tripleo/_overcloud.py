@@ -36,7 +36,8 @@ LOG = log.getLogger(__name__)
 
 
 def load_overcloud_rcfile() -> typing.Dict[str, str]:
-    return _undercloud.fetch_os_env(*CONF.tobiko.tripleo.overcloud_rcfile)
+    conf = tobiko.tobiko_config().tripleo
+    return _undercloud.fetch_os_env(*conf.overcloud_rcfile)
 
 
 @functools.lru_cache()
@@ -67,17 +68,24 @@ def skip_unless_has_overcloud(min_version: tobiko.VersionType = None,
         error_type=(OvercloudNotFound, OvercloudVersionMismatch))
 
 
-class OvercloudKeystoneCredentialsFixture(
-        keystone.EnvironKeystoneCredentialsFixture):
+class OvercloudKeystoneCredentialsFixtureBase(
+        _undercloud.UndercloudKeystoneCredentialsFixtureBase):
 
-    def get_environ(self) -> typing.Dict[str, str]:
-        LOG.debug('Looking for credentials from TripleO undercloud host...')
-        if _undercloud.has_undercloud():
-            return load_overcloud_rcfile()
-        else:
-            LOG.debug("TripleO undercloud host not available for fetching "
-                      'credentials files.')
-            return {}
+    def _get_environ(self) -> typing.Dict[str, str]:
+        return load_overcloud_rcfile()
+
+
+class OvercloudKeystoneCredentialsFixture(
+        OvercloudKeystoneCredentialsFixtureBase,
+        keystone.DelegateKeystoneCredentialsFixture):
+
+    @staticmethod
+    def _get_delegates() -> typing.List[keystone.KeystoneCredentialsFixture]:
+        return [
+            tobiko.get_fixture(
+                OvercloudCloudsFileKeystoneCredentialsFixture),
+            tobiko.get_fixture(
+                OvercloudEnvironKeystoneCredentialsFixture)]
 
 
 def list_overcloud_nodes(**params):
@@ -238,11 +246,6 @@ class OvercloudHostConfig(tobiko.SharedFixture):
         return parameters
 
 
-def setup_overcloud_keystone_crederntials():
-    keystone.DEFAULT_KEYSTONE_CREDENTIALS_FIXTURES.append(
-        OvercloudKeystoneCredentialsFixture)
-
-
 def get_overcloud_nodes_dataframe(
         oc_node_df_function: typing.Callable[[ssh.SSHClientType],
                                              typing.Any]):
@@ -304,3 +307,39 @@ class OvercloudNotFound(tobiko.ObjectNotFound):
 
 class OvercloudVersionMismatch(tobiko.VersionMismatch):
     message = 'overcloud version mismatch: {version} {cause}'
+
+
+class OvercloudCloudsFileKeystoneCredentialsFixture(
+        OvercloudKeystoneCredentialsFixtureBase,
+        keystone.CloudsFileKeystoneCredentialsFixture):
+
+    @staticmethod
+    def _get_default_cloud_name() -> typing.Optional[str]:
+        return tobiko.tobiko_config().tripleo.overcloud_cloud_name
+
+
+class OvercloudEnvironKeystoneCredentialsFixture(
+        OvercloudKeystoneCredentialsFixtureBase,
+        keystone.EnvironKeystoneCredentialsFixture):
+    pass
+
+
+def overcloud_keystone_session() -> keystone.KeystoneSession:
+    credentials = overcloud_keystone_credentials()
+    return keystone.get_keystone_session(credentials=credentials)
+
+
+def overcloud_keystone_credentials() -> keystone.KeystoneCredentialsFixture:
+    return tobiko.get_fixture(OvercloudKeystoneCredentialsFixture)
+
+
+def overcloud_keystone_client() -> keystone.KeystoneClient:
+    session = overcloud_keystone_session()
+    return keystone.get_keystone_client(session=session)
+
+
+def setup_overcloud_keystone_credentials():
+    if has_overcloud():
+        keystone.register_default_keystone_credentials(
+            credentials=overcloud_keystone_credentials(),
+            position=0)
