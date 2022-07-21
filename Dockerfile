@@ -16,11 +16,6 @@ ENV INSTALL_PACKAGES_GROUP="dnf groupinstall -y"
 ENV PYTHON_VERSION=3.10
 
 
-FROM py39 as lower-constraints
-
-ENV CONSTRAINS_FILE=lower-constraints.txt
-
-
 FROM ${base_image} as base
 
 ENV TOBIKO_DIR=/tobiko

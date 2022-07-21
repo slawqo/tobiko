@@ -21,7 +21,6 @@ repos:
           - extra-requirements.txt
           - infrared_plugin/requirements.txt
           - linters-requirements.txt
-          - lower-constraints.txt
           - requirements.txt
           - test-requirements.txt
           - upper-constraints.txt

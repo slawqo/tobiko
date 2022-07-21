@@ -15,15 +15,6 @@ services:
       - .:/tobiko
       - ~/.ssh:/root/.ssh
 
-  lower-constraints:
-    extends:
-      service: py3
-    build:
-      args:
-        base_image: lower-constraints
-    environment:
-      TOBIKO_REPORT_NAME: tobiko_results_lower_constraints
-
   py39:
     extends:
       service: py3

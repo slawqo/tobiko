@@ -9,13 +9,11 @@
         - tobiko-docker-functional
         - tobiko-docker-infrared
         - tobiko-docker-linters
-        - tobiko-docker-lower-constraints
         - tobiko-docker-py39
         - tobiko-docker-py310
     check-arm64:
       jobs:
         - tobiko-docker-functional-arm64
-        - tobiko-docker-lower-constraints-arm64
         - tobiko-docker-py3-arm64
         - tobiko-docker-py310-arm64
     gate:
@@ -48,17 +46,6 @@
       - ^tobiko/tests/functional/
       - ^tobiko/tests/sanity/
       - ^tobiko/tests/scenario/
-
-
-- job:
-    name: tobiko-docker-lower-constraints
-    description: |
-      Run functional tests for an OpenStack Python project inside a Docker container
-      with lower-constraints.txt Pip constraints file.
-    voting: true
-    parent: tobiko-docker-py3
-    vars:
-        docker_compose_service: lower-constraints
 
 
 - job:
@@ -134,16 +121,6 @@
       of arm64 architecture
     voting: true
     parent: tobiko-docker-py310
-    nodeset: ubuntu-focal-arm64
-
-
-- job:
-    name: tobiko-docker-lower-constraints-arm64
-    description: |
-      Run unit tests for an OpenStack Python project inside a Docker container on top
-      of arm64 architecture
-    voting: true
-    parent: tobiko-docker-lower-constraints
     nodeset: ubuntu-focal-arm64
 
 
