@@ -8,8 +8,8 @@
       jobs:
         - tobiko-infrared-centos-7
         - tobiko-infrared-centos-8
-        - tobiko-infrared-fedora-35
-        - tobiko-infrared-ubuntu
+        - tobiko-infrared-centos-9
+        - tobiko-infrared-fedora
     gate:
       jobs:
         - tobiko-infrared
@@ -18,14 +18,14 @@
         - tobiko-infrared-centos-7
         - tobiko-infrared-centos-8
         - tobiko-infrared-centos-9
-        - tobiko-infrared-fedora-35
+        - tobiko-infrared-fedora
         - tobiko-infrared-ubuntu
 
 
 - job:
     name: tobiko-infrared
     parent: tox
-    nodeset: tobiko-infrared-fedora-35
+    nodeset: tobiko-infrared-fedora
     timeout: 3600
     description: |
       Run test cases using tobiko infrared plugin
@@ -112,15 +112,15 @@
 
 
 - job:
-    name: tobiko-infrared-fedora-35
+    name: tobiko-infrared-fedora
     parent: tobiko-infrared
-    nodeset: tobiko-infrared-fedora-35
+    nodeset: tobiko-infrared-fedora
     voting: true
     description: |
       Run test cases using tobiko infrared plugin on Fedora
 
 - nodeset:
-    name: tobiko-infrared-fedora-35
+    name: tobiko-infrared-fedora
     nodes:
       - name: primary
         label: fedora-35
