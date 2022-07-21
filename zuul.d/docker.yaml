@@ -7,7 +7,6 @@
     check: &CHECK
       jobs:
         - tobiko-docker-functional
-        - tobiko-docker-infrared
         - tobiko-docker-linters
         - tobiko-docker-py39
         - tobiko-docker-py310
