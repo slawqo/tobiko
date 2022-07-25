@@ -34,22 +34,21 @@ def run_tests(test_path: typing.Union[str, typing.Iterable[str]],
               test_filename: str = None,
               python_path: typing.Iterable[str] = None,
               config: _config.RunConfigFixture = None,
-              result: unittest.TestResult = None):
+              result: unittest.TestResult = None,
+              check=True) -> unittest.TestResult:
     test_ids = _discover.find_test_ids(test_path=test_path,
                                        test_filename=test_filename,
                                        python_path=python_path,
                                        config=config)
-    return run_test_ids(test_ids=test_ids, result=result)
+    return run_test_ids(test_ids=test_ids, result=result, check=check)
 
 
 def run_test_ids(test_ids: typing.List[str],
-                 result: unittest.TestResult = None) \
-        -> int:
+                 result: unittest.TestResult = None,
+                 check=True) \
+        -> unittest.TestResult:
     test_classes: typing.Dict[str, typing.List[str]] = \
         collections.defaultdict(list)
-    # run the test suite
-    if result is None:
-        result = unittest.TestResult()
 
     # regroup test ids my test class keeping test names order
     test_ids = list(test_ids)
@@ -66,13 +65,10 @@ def run_test_ids(test_ids: typing.List[str],
             suite.addTest(test)
 
     LOG.info(f'Run {len(test_ids)} test(s)')
-    suite.run(result)
+    result = tobiko.run_test(case=suite, result=result, check=check)
+
     LOG.info(f'{result.testsRun} test(s) run')
-    if result.testsRun and (result.errors or result.failures):
-        raise RunTestCasesFailed(
-            errors='\n'.join(str(e) for e in result.errors),
-            failures='\n'.join(str(e) for e in result.failures))
-    return result.testsRun
+    return result
 
 
 class RunTestCasesFailed(tobiko.TobikoException):
@@ -86,12 +82,27 @@ def main(test_path: typing.Iterable[str] = None,
          python_path: typing.Iterable[str] = None):
     if test_path is None:
         test_path = sys.argv[1:]
-    try:
-        run_tests(test_path=test_path,
-                  test_filename=test_filename,
-                  python_path=python_path)
-    except Exception:
-        LOG.exception("Error running test cases")
+
+    result = run_tests(test_path=test_path,
+                       test_filename=test_filename,
+                       python_path=python_path)
+
+    for case, exc_info in result.errors:
+        LOG.exception(f"Test case error: {case.id()}",
+                      exc_info=exc_info)
+
+    for case, exc_info in result.errors:
+        LOG.exception(f"Test case failure: {case.id()}",
+                      exc_info=exc_info)
+
+    for case, reason in result.skipped:
+        LOG.info(f"Test case skipped: {case.id()} ({reason})")
+
+    LOG.info(f"{result.testsRun} test case(s) executed:\n"
+             f"  errors:   {len(result.errors)}"
+             f"  failures: {len(result.failures)}"
+             f"  skipped:  {len(result.skipped)}")
+    if result.errors or result.failures:
         sys.exit(1)
     else:
         sys.exit(0)

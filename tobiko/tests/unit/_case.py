@@ -16,8 +16,8 @@ from __future__ import absolute_import
 import asyncio
 import functools
 import inspect
-import shutil
 import os
+import shutil
 import tempfile
 
 from oslo_log import log
@@ -90,10 +90,10 @@ class TobikoUnitTest(_patch.PatchMixin, testtools.TestCase):
 
         # Make sure each unit test uses it's own fixture manager
         self.fixture_manager = manager = FixtureManagerPatch()
-        self.useFixture(manager)
-        self.useFixture(PatchEnvironFixture(**self.patch_environ))
+        tobiko.use_fixture(manager)
+        tobiko.use_fixture(PatchEnvironFixture(**self.patch_environ))
 
     def create_tempdir(self, *args, **kwargs):
         dir_path = tempfile.mkdtemp(*args, **kwargs)
-        self.addCleanup(shutil.rmtree(dir_path, ignore_errors=True))
+        self.addCleanup(shutil.rmtree, dir_path, ignore_errors=True)
         return dir_path

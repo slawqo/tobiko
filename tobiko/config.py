@@ -28,7 +28,8 @@ import tobiko
 LOG = log.getLogger(__name__)
 
 
-CONFIG_MODULES = ['tobiko.openstack.glance.config',
+CONFIG_MODULES = ['tobiko.common._case',
+                  'tobiko.openstack.glance.config',
                   'tobiko.openstack.keystone.config',
                   'tobiko.openstack.neutron.config',
                   'tobiko.openstack.nova.config',

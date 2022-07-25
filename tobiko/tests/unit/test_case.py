@@ -13,6 +13,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
 import unittest
 from unittest import mock
 
@@ -20,7 +21,7 @@ import tobiko
 from tobiko.tests import unit
 
 
-class TestCaseTest(unit.TobikoUnitTest):
+class TestCaseTest(unittest.TestCase):
 
     def setUp(self):
         super(TestCaseTest, self).setUp()
@@ -37,11 +38,11 @@ class TestCaseTest(unit.TobikoUnitTest):
         self.assertIs(self, result)
 
     def test_get_test_case_out_of_context(self):
-        manager = tobiko.TestCasesManager()
-        result = tobiko.get_test_case(manager=manager)
-        self.assertIsInstance(result, unittest.TestCase)
-        self.assertEqual('tobiko.common._testcase.DummyTestCase.runTest',
-                         result.id())
+        manager = tobiko.TestCaseManager()
+        case = tobiko.get_test_case(manager=manager)
+        self.assertIsInstance(case, unittest.TestCase)
+        self.assertEqual('tobiko.common._case.DummyTestCase.runTest',
+                         case.id())
 
     def test_push_test_case(self):
 
@@ -86,9 +87,10 @@ class TestCaseTest(unit.TobikoUnitTest):
                     self.fail(failure)
 
         inner_case = InnerTest()
-
         mock_func.assert_not_called()
-        result = tobiko.run_test(inner_case)
+        check = (error is None and failure is None)
+        result = tobiko.run_test(case=inner_case,
+                                 check=check)
         self.assertEqual(1, result.testsRun)
         mock_func.assert_called_once_with(*args, **kwargs)
 
@@ -128,3 +130,88 @@ class TestFail(unit.TobikoUnitTest):
 
     def test_fail_with_cause(self):
         self.test_fail(cause=RuntimeError())
+
+
+class SubtestTest(unittest.TestCase):
+
+    def test_sub_test(self):
+        self.assertIs(self, tobiko.get_test_case())
+        for item in range(10):
+            with self.subTest(f"case-{item}"):
+                self.assertIs(self, tobiko.get_test_case())
+                self.assertTrue(tobiko.get_sub_test_id().startswith(self.id()))
+                self.assertIn(f"case-{item}", tobiko.get_sub_test_id())
+
+
+class NestedTest(unittest.TestCase):
+
+    executed_id: typing.Optional[str] = None
+
+    def setUp(self) -> None:
+        if tobiko.get_parent_test_case() is None:
+            self.skipTest('not running as nested test case')
+
+    def test_run_test(self):
+        parent = tobiko.get_parent_test_case()
+        self.assertIsInstance(parent, unittest.TestCase)
+        self.executed_id = self.id()
+
+    def test_run_test_error(self):
+        self.executed_id = self.id()
+        raise RuntimeError('Planned error')
+
+    def test_run_test_fail(self):
+        self.executed_id = self.id()
+        self.fail('Planned failure')
+
+
+class RunTestTest(unittest.TestCase):
+
+    def test_run_test(self):
+        nested = NestedTest(methodName='test_run_test')
+        result = tobiko.run_test(case=nested)
+        self.assertIsInstance(result, unittest.TestResult)
+        self.assertEqual(1, result.testsRun)
+        self.assertEqual(nested.id(), nested.executed_id)
+        self.assertEqual([], result.errors)
+        self.assertEqual([], result.failures)
+
+    def test_run_test_error(self):
+        nested = NestedTest(methodName='test_run_test_error')
+
+        class ParentTest(unittest.TestCase):
+            # pylint: disable=attribute-defined-outside-init
+            def runTest(self):
+                self.result = tobiko.run_test(case=nested)
+
+        parent = ParentTest()
+        result = tobiko.run_test(case=parent, check=False)
+        self.assertIsInstance(result, unittest.TestResult)
+        self.assertIsInstance(parent.result, unittest.TestResult)
+        self.assertEqual(2, result.testsRun)
+        self.assertEqual(1, parent.result.testsRun)
+        self.assertEqual(nested.id(), nested.executed_id)
+        self.assertEqual(nested, parent.result.errors[0][0])
+        self.assertEqual(nested, result.errors[0][0])
+        self.assertEqual([], result.failures)
+        self.assertEqual([], parent.result.failures)
+
+    def test_run_test_fail(self):
+        nested = NestedTest(methodName='test_run_test_fail')
+
+        class ParentTest(unittest.TestCase):
+            # pylint: disable=attribute-defined-outside-init
+            def runTest(self):
+                self.result = tobiko.run_test(case=nested)
+
+        parent = ParentTest()
+        result = tobiko.run_test(case=parent, check=False)
+        self.assertIsInstance(result, unittest.TestResult)
+        self.assertIsInstance(parent.result, unittest.TestResult)
+        self.assertEqual(2, result.testsRun)
+        self.assertEqual(1, parent.result.testsRun)
+        self.assertEqual(nested.id(), nested.executed_id)
+        self.assertEqual([], result.errors)
+        self.assertEqual([], parent.result.errors)
+        self.assertEqual(nested, parent.result.failures[0][0])
+        self.assertEqual(nested, result.failures[0][0])

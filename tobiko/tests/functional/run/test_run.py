@@ -47,4 +47,10 @@ class RunTestsTest(unittest.TestCase):
     @nested_test_case
     def test_run_tests(self):
         result = run.run_tests(__file__)
-        self.assertGreater(result, 0)
+        self.assertGreater(result.testsRun, 0)
+
+    @nested_test_case
+    def test_run_tests_with_dir(self):
+        test_dir = os.path.dirname(__file__)
+        result = run.run_tests(test_path=test_dir)
+        self.assertGreater(result.testsRun, 0)

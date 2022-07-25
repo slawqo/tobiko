@@ -319,12 +319,12 @@ class SkipUnlessHasKeystoneCredentialsTest(openstack.OpenstackTest):
                 super(SkipTest, self).setUp()
                 self.fail('Not skipped')
 
-        test_case = SkipTest('test_skip')
+        case = SkipTest('test_skip')
         has_keystone_credentials.assert_not_called()
 
-        test_result = tobiko.run_test(test_case)
-
+        result = tobiko.run_test(case=case)
         tobiko.assert_test_case_was_skipped(
-            test_case, test_result,
+            case,
+            result=result,
             skip_reason='Missing Keystone credentials')
         has_keystone_credentials.assert_called_once()

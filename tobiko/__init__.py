@@ -17,6 +17,7 @@ import os
 import sys
 
 from tobiko.common import _cached
+from tobiko.common import _case
 from tobiko.common import _config
 from tobiko.common import _deprecation
 from tobiko.common import _detail
@@ -30,7 +31,6 @@ from tobiko.common import _os
 from tobiko.common import _retry
 from tobiko.common import _select
 from tobiko.common import _skip
-from tobiko.common import _testcase
 from tobiko.common import _time
 from tobiko.common import _utils
 from tobiko.common import _version
@@ -50,6 +50,21 @@ BackgroundProcessFixture = _background.BackgroundProcessFixture
 
 cached = _cached.cached
 CachedProperty = _cached.CachedProperty
+
+TestCase = _case.TestCase
+TestCaseManager = _case.TestCaseManager
+add_cleanup = _case.add_cleanup
+assert_test_case_was_skipped = _case.assert_test_case_was_skipped
+fail = _case.fail
+FailureException = _case.FailureException
+get_parent_test_case = _case.get_parent_test_case
+get_sub_test_id = _case.get_sub_test_id
+get_test_case = _case.get_test_case
+pop_test_case = _case.pop_test_case
+push_test_case = _case.push_test_case
+retry_test_case = _case.retry_test_case
+run_test = _case.run_test
+sub_test = _case.sub_test
 
 deprecated = _deprecation.deprecated
 
@@ -107,7 +122,6 @@ operation_config = _operation.operation_config
 retry = _retry.retry
 retry_attempt = _retry.retry_attempt
 retry_on_exception = _retry.retry_on_exception
-retry_test_case = _retry.retry_test_case
 Retry = _retry.Retry
 RetryAttempt = _retry.RetryAttempt
 RetryCountLimitError = _retry.RetryCountLimitError
@@ -126,17 +140,6 @@ skip_on_error = _skip.skip_on_error
 skip_test = _skip.skip_test
 skip_unless = _skip.skip_unless
 skip = _skip.skip
-
-add_cleanup = _testcase.add_cleanup
-assert_test_case_was_skipped = _testcase.assert_test_case_was_skipped
-fail = _testcase.fail
-FailureException = _testcase.FailureException
-get_test_case = _testcase.get_test_case
-pop_test_case = _testcase.pop_test_case
-push_test_case = _testcase.push_test_case
-run_test = _testcase.run_test
-TestCase = _testcase.TestCase
-TestCasesManager = _testcase.TestCasesManager
 
 min_seconds = _time.min_seconds
 max_seconds = _time.max_seconds

@@ -23,10 +23,11 @@ import fixtures
 from oslo_log import log
 import testtools
 
+from tobiko.common import _case
 from tobiko.common import _detail
 from tobiko.common import _exception
-from tobiko.common import _testcase
 from tobiko.common import _loader
+
 
 LOG = log.getLogger(__name__)
 
@@ -277,7 +278,7 @@ def use_fixture(obj: FixtureType,
     with on the fixture
     """
     fixture = setup_fixture(obj, fixture_id=fixture_id, manager=manager)
-    _testcase.add_cleanup(cleanup_fixture, fixture)
+    _case.add_cleanup(cleanup_fixture, fixture)
     return fixture
 
 

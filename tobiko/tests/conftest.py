@@ -228,10 +228,6 @@ def pytest_html_report_title(report):
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_call(item):
-    # pylint: disable=protected-access
+    # pylint: disable=unused-argument
     check_test_runner_timeout()
-    tobiko.push_test_case(item._testcase)
-    try:
-        yield
-    finally:
-        tobiko.pop_test_case()
+    yield

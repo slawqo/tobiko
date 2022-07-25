@@ -15,14 +15,11 @@ from __future__ import absolute_import
 
 import functools
 import itertools
-import sys
 import typing
 
 from oslo_log import log
-import testtools
 
 from tobiko.common import _exception
-from tobiko.common import _testcase
 from tobiko.common import _time
 
 
@@ -279,7 +276,7 @@ def retry_on_exception(
 
     def decorator(func):
         if typing.TYPE_CHECKING:
-            # Don't neet to wrap the function when going to check argument
+            # Don't need to wrap the function when going to check argument
             # types
             return func
 
@@ -296,32 +293,3 @@ def retry_on_exception(
         return wrapper
 
     return decorator
-
-
-def retry_test_case(*exceptions: Exception,
-                    count: typing.Optional[int] = None,
-                    timeout: _time.Seconds = None,
-                    sleep_time: _time.Seconds = None,
-                    interval: _time.Seconds = None) -> \
-                    typing.Callable[[typing.Callable], typing.Callable]:
-    """Re-run test case method in case it fails
-    """
-    exceptions = exceptions or _testcase.FailureException
-    return retry_on_exception(*exceptions,
-                              count=count,
-                              timeout=timeout,
-                              sleep_time=sleep_time,
-                              interval=interval,
-                              default_count=3,
-                              on_exception=on_test_case_retry_exception)
-
-
-def on_test_case_retry_exception(attempt: RetryAttempt,
-                                 test_case: testtools.TestCase,
-                                 *_args, **_kwargs):
-    # pylint: disable=protected-access
-    _exception.check_valid_type(test_case, testtools.TestCase)
-    test_case._report_traceback(sys.exc_info(),
-                                f"traceback[attempt={attempt.number}]")
-    LOG.exception("Re-run test after failed attempt. "
-                  f"(attempt={attempt.number}, test='{test_case.id()}')")

@@ -95,7 +95,7 @@
     name: tobiko-docker-linters
     description: |
       Run static analisys verifications
-    voting: true
+    voting: false
     parent: tobiko-docker-py3
     vars:
         docker_compose_service: linters
