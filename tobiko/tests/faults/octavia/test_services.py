@@ -121,7 +121,7 @@ class OctaviaServicesFaultTest(testtools.TestCase):
             self._stop_octavia_main_services(services_to_stop)
 
         finally:
-            self._start_octavia_main_services()
+            self._start_octavia_main_services(services_to_stop)
 
     def _get_services_to_stop(self) -> dict:
         """Return the running octavia services on controller & networker nodes.
@@ -226,7 +226,7 @@ class OctaviaServicesFaultTest(testtools.TestCase):
                 if attempt.is_last:
                     raise
 
-    def _start_octavia_main_services(self):
+    def _start_octavia_main_services(self, services_to_stop: dict):
 
         """Start the octavia services.
 
@@ -236,10 +236,13 @@ class OctaviaServicesFaultTest(testtools.TestCase):
         It then sends traffic to validate the Octavia's functionality
         """
 
-        for ssh_client in self.ssh_clients:
-            sh.start_systemd_units(*octavia.OCTAVIA_SERVICES,
-                                   ssh_client=ssh_client,
-                                   sudo=True)
+        for service, ssh_clients in services_to_stop.items():
+            for ssh_client in ssh_clients:
+                sh.start_systemd_units(service,
+                                       ssh_client=ssh_client,
+                                       sudo=True)
+
+                LOG.debug(f'We started {service} on {ssh_client.host}')
 
         octavia.check_members_balanced(
             pool_id=self.listener_stack.pool_id,
