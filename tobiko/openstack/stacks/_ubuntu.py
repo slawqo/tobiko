@@ -132,14 +132,14 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
 
     @staticmethod
     def _get_ethernet_device() -> str:
-        ethernet_device = CONF.tobiko.ubuntu.interface_name
-        if ethernet_device is None:
-            from tobiko import tripleo
-            if tripleo.has_overcloud(min_version='17.0'):
-                ethernet_device = 'enp3s0'
-            else:
-                ethernet_device = 'ens3'
-        return ethernet_device
+        """From OSP17 and above, Ubuntu stack should use a different interface name.
+        This method returns the interface name, depending on the OSP version.
+        """
+        from tobiko import tripleo
+        if tripleo.has_overcloud(min_version='17.0'):
+            return 'enp3s0'
+        else:
+            return 'ens3'
 
     def _get_customized_suffix(self) -> str:
         return f'{super()._get_customized_suffix()}-{self.ethernet_device}'
