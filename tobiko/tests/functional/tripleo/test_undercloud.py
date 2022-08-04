@@ -78,11 +78,21 @@ class UndercloudKeystoneClientTest(testtools.TestCase):
 
 @tripleo.skip_if_missing_undercloud
 class UndercloudVersionTest(unittest.TestCase):
+    # TODO(eolivare): move the properties to a common class, since they are
+    # duplicate in OvercloudVersionTest and UndercloudVersionTest
 
     @property
     def lower_version(self) -> str:
         v = tripleo.undercloud_version()
-        return f"{v.major}.{v.minor}.{v.micro - 1}"
+        if v.micro > 0:
+            lower_v = f"{v.major}.{v.minor}.{v.micro - 1}"
+        elif v.minor > 0:
+            lower_v = f"{v.major}.{v.minor -1}.{v.micro}"
+        elif v.major > 0:
+            lower_v = f"{v.major -1}.{v.minor}.{v.micro}"
+        else:
+            raise ValueError(f"wrong version: {v}")
+        return lower_v
 
     @property
     def same_version(self) -> str:
