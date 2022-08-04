@@ -25,8 +25,8 @@ CONF = config.CONF
 
 
 FEDORA_IMAGE_URL = (
-    'https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/'
-    'x86_64/images/Fedora-Cloud-Base-35-1.2.x86_64.qcow2')
+    'https://download.fedoraproject.org/pub/fedora/linux/releases/34/Cloud/'
+    'x86_64/images/Fedora-Cloud-Base-34-1.2.x86_64.qcow2')
 
 
 class FedoraBaseImageFixture(glance.URLGlanceImageFixture):
