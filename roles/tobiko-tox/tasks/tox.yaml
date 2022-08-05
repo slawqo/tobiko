@@ -13,11 +13,14 @@
     tox_command_line: '{{ tox_command_line.split() | join(" ") }}'
 
 
+- name: initialize tox_env to empty dict for each test suite execution
+  set_fact:
+    tox_env: {}
+
 - name: combine and normalize environment variable values
   set_fact:
     tox_env: >
       {{ tox_env |
-         default({}) |
          combine({ item.key: (item.value | string).strip() }) }}
   loop: >
     {{ ((tox_environment | from_yaml | dict2items) +
@@ -44,6 +47,15 @@
   failed_when: run_tox.rc != tox_succeeded_rc
   ignore_errors: yes
 
+
+- name: reset values used to generate tox_constrain_env after executing a test suite
+  set_fact:
+    pytest_addopts: ''
+    test_flaky: false
+    pytest_markers: "{% if not test_flaky%}not flaky{% endif %}"
+    pytest_maxfail: ''
+    tox_constraints: ''
+    tox_run_tests_timeout: 18000
 
 - name: "show test cases errors"
   debug: var=run_tox.stderr_lines
