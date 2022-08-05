@@ -33,4 +33,5 @@ Project Contributor Guide
    :maxdepth: 2
 
    contributor
+   reviewer
    setup_tobiko_workstation
