@@ -25,6 +25,7 @@ from tobiko import config
 from tobiko.openstack import keystone
 from tobiko.openstack import ironic
 from tobiko.openstack import metalsmith
+from tobiko.openstack import neutron
 from tobiko.openstack import topology
 from tobiko.shell import sh
 from tobiko.shell import ssh
@@ -277,6 +278,24 @@ def is_redis_expected():
         if keystone.has_service(name=service):
             return True
     return False
+
+
+@functools.lru_cache()
+def is_ovn_using_raft():
+    if not neutron.has_ovn():
+        LOG.info("Networking OVN not configured")
+        return False
+
+    controller0 = topology.list_openstack_nodes(group='controller')[0]
+    try:
+        sh.execute('ovs-appctl -t /var/lib/openvswitch/ovn/ovnnb_db.ctl '
+                   'cluster/status OVN_Northbound',
+                   ssh_client=controller0.ssh_client, sudo=True)
+    except sh.ShellCommandFailed:
+        LOG.info('Command failed - RAFT is not configured')
+        return False
+    LOG.info('Command succeeded - RAFT is configured')
+    return True
 
 
 def overcloud_version() -> tobiko.Version:

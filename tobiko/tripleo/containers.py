@@ -360,25 +360,31 @@ def osp13_container_name_short_format(container_name_long_format):
 
 
 def assert_ovn_containers_running():
-    # specific OVN verifications
-    if neutron.has_ovn():
-        container_runtime_name = get_container_runtime_name()
-        ovn_controller_containers = ['ovn_controller',
-                                     'ovn-dbs-bundle-{}-'.
-                                     format(container_runtime_name)]
-        ovn_compute_containers = ['ovn_metadata_agent',
-                                  'ovn_controller']
-        group_containers_list = [('controller', ovn_controller_containers),
-                                 ('compute', ovn_compute_containers)]
-        if 'networker' in topology.list_openstack_node_groups():
-            ovn_networker_containers = ['ovn_controller']
-            group_containers_list.append(('networker',
-                                          ovn_networker_containers))
-        for group, group_containers in group_containers_list:
-            assert_containers_running(group, group_containers, full_name=False)
-        LOG.info("Networking OVN containers verified in running state")
-    else:
+    if not neutron.has_ovn():
         LOG.info("Networking OVN not configured")
+        return
+
+    # specific OVN verifications
+    ovn_controller_containers = ['ovn_controller']
+    if overcloud.is_ovn_using_raft():
+        ovn_controller_containers += ['ovn_cluster_northd',
+                                      'ovn_cluster_north_db_server',
+                                      'ovn_cluster_south_db_server']
+    else:
+        container_runtime_name = get_container_runtime_name()
+        ovn_controller_containers += [
+            f'ovn-dbs-bundle-{container_runtime_name}-']
+    ovn_compute_containers = ['ovn_metadata_agent',
+                              'ovn_controller']
+    group_containers_list = [('controller', ovn_controller_containers),
+                             ('compute', ovn_compute_containers)]
+    if 'networker' in topology.list_openstack_node_groups():
+        ovn_networker_containers = ['ovn_controller']
+        group_containers_list.append(('networker',
+                                      ovn_networker_containers))
+    for group, group_containers in group_containers_list:
+        assert_containers_running(group, group_containers, full_name=False)
+    LOG.info("Networking OVN containers verified in running state")
 
 
 def run_container_config_validations():
