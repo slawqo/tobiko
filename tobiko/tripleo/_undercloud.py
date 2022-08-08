@@ -63,7 +63,7 @@ def fetch_os_env(rcfile: str, *rcfiles: str) -> typing.Dict[str, str]:
         except sh.ShellCommandFailed as ex:
             LOG.debug(f"Unable to get overcloud RC file '{rcfile}' content "
                       f"({ex})")
-            errors.append(tobiko.exc_info)
+            errors.append(ex)
         else:
             LOG.debug(f'Parsing environment variables from: {rcfile}...')
             env = {}
@@ -75,9 +75,10 @@ def fetch_os_env(rcfile: str, *rcfiles: str) -> typing.Dict[str, str]:
                 LOG.debug(f'Environment variables read from: {rcfile}:\n'
                           f'{env_dump}')
                 return env
-    for error in errors:
-        LOG.exception(f"Unable to get overcloud RC file '{rcfile}' "
-                      "content", exc_info=error)
+    if errors and all("No such file or directory" in error.stderr
+                      for error in errors):
+        LOG.warning('None of the credentials files were found')
+        raise keystone.NoSuchKeystoneCredentials()
     raise InvalidRCFile(rcfile=", ".join(rcfiles))
 
 
