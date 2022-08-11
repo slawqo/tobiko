@@ -168,6 +168,13 @@ def ovn_dbs_vip_bindings(test_case):
     ovn_conn_str['sb'] = sh.execute(get_ovn_sb_conn_cmd,
                                     ssh_client=controllers[0].ssh_client,
                                     sudo=True).stdout.splitlines()[0]
+
+    # TODO(eolivare): add support to verify ssl connections
+    if 'ssl' in ovn_conn_str['nb'] or 'ssl' in ovn_conn_str['sb']:
+        LOG.debug('tobiko does not support to verify ovn-db connections when '
+                  'they are based on ssl')
+        return
+
     ovn_conn = {}
     for db in ('nb', 'sb'):
         ovn_conn[db] = {}
