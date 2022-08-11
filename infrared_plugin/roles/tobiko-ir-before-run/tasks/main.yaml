@@ -5,3 +5,15 @@
     source {{ stackrc_file }}
     openstack quota set --{{ item.key }} {{ item.value }} $OS_PROJECT_NAME
   with_dict: "{{ quota | default({}) }}"
+
+- name: ensure auto ssh key exchange in test host
+  block:
+      - name: Retrieve public key from private key
+        command: "ssh-keygen -y -f ~/.ssh/id_rsa"
+        register: test_host_pubkey_result
+
+      - name: insert the public key to the known test host
+        authorized_key:
+            user: "{{ ansible_ssh_user }}"
+            key: "{{ test_host_pubkey_result.stdout }}"
+  ignore_errors: yes
