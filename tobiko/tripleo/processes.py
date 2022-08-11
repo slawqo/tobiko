@@ -29,7 +29,7 @@ def get_overcloud_node_processes_table(ssh_client: ssh.SSHClientType):
 
        returns :
 [root@controller-0 ~]# ps -axw -o "%U" -o "|%p" -o "|%P" -o "|%C" -o "|%z" -o
-"|%x" -o "|%c" -o "|%a" |grep -v ps|head
+"|%x" -o "|%c" -o "|%a" |grep -v 'ps -aux'|head
 USER    |    PID|   PPID|%CPU|   VSZ|    TIME|COMMAND        |COMMAND
 |overcloud_node
 root    |      1|      0| 1.3|246892|01:08:57|systemd        |/usr/lib/systemd
@@ -51,7 +51,7 @@ root    |     11|      2| 0.0|     0|00:00:05|migration/0    |[migration/0]
     output = sh.execute(
         "ps -axw -o \"%U\" -o \"DELIM%p\" -o \"DELIM%P\" -o \"DELIM%C\" -o "
         "\"DELIM%z\" -o \"DELIM%x\" -o \"DELIM%c\" -o \"DELIM%a\" |grep -v "
-        "ps|sed 's/\"/''/g'",
+        "'ps -axw' |sed 's/\"/''/g'",
         ssh_client=ssh_client).stdout
     stream = io.StringIO(output)
     table: pandas.DataFrame = pandas.read_csv(
@@ -109,6 +109,7 @@ class OvercloudProcessesStatus(object):
                                    'nova-scheduler', 'neutron-server',
                                    'nova-compute', 'glance-api']
 
+        num_northd_proc = 'all' if overcloud.is_ovn_using_raft() else 1
         self.ovn_processes_to_check_per_node = [{'name': 'ovn-controller',
                                                  'node_group': 'controller',
                                                  'number': 'all'},
@@ -117,7 +118,7 @@ class OvercloudProcessesStatus(object):
                                                  'number': 'all'},
                                                 {'name': 'ovn-northd',
                                                  'node_group': 'controller',
-                                                 'number': 1}]
+                                                 'number': num_northd_proc}]
 
         self.oc_procs_df = overcloud.get_overcloud_nodes_dataframe(
                                             get_overcloud_node_processes_table)
