@@ -267,6 +267,7 @@ class DvrRouterNamespaceTest(RouterNamespaceTestBase, testtools.TestCase):
     def dvr_snat_hostnames(self) -> typing.List[str]:
         return self.agent_modes['dvr_snat']
 
+    @config.skip_if_prevent_create()
     def test_1_dvr_router_without_server(self):
         if self.dvr_hostnames:
             self.cleanup_stacks()
