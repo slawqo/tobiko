@@ -160,7 +160,7 @@ class TripleoTopologyNode(topology.OpenStackTopologyNode):
 
     @property
     def overcloud_instance(self) -> typing.Optional[metalsmith.Instance]:
-        return self.overcloud_instance
+        return self._overcloud_instance
 
     @property
     def rhosp_version(self) -> tobiko.Version:
