@@ -39,14 +39,6 @@
            json_query("[?stat.exists].stat.path") }}
 
 
-- name: "[workaround] remove test entries with no 'name' from the xml report files"
-  script:
-    cmd: "remove_tests_withoutname_fromxmlreport.py --xmlfile {{ item }}"
-    executable: python3
-  when: item is regex('.*\.xml')
-  loop: '{{ report_files }}'
-
-
 - name: "collect report files to local directory '{{ collect_dir }}'"
   synchronize:
     dest: '{{ collect_dir }}/{{ item | basename }}'
