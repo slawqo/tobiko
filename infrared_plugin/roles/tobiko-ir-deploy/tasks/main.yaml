@@ -25,6 +25,9 @@
         remote: '{{ deploy_git_remote or omit }}'
         force: yes
       register: checkout_files
+      until: checkout_files is not failed
+      retries: 5
+      delay: 5
 
 
 - when:
