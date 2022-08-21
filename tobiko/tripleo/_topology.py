@@ -58,6 +58,11 @@ class TripleoTopology(topology.OpenStackTopology):
 
     has_containers = True
 
+    config_file_mappings = {
+        'ml2_conf.ini': '/var/lib/config-data/puppet-generated/neutron'
+                        '/etc/neutron/plugins/ml2/ml2_conf.ini'
+    }
+
     # TODO: add more known subgrups here
     known_subgroups: typing.List[str] = ['controller', 'compute']
 

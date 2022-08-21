@@ -204,6 +204,10 @@ class UnknowOpenStackContainerNameError(tobiko.TobikoException):
                "topology class '{topology_class}'")
 
 
+class UnknownOpenStackConfigurationFile(tobiko.TobikoException):
+    message = ("Unknown configuration file '{file_name}'")
+
+
 class OpenStackTopologyNode:
 
     _docker_client = None
@@ -303,6 +307,10 @@ class OpenStackTopology(tobiko.SharedFixture):
 
     has_containers = False
 
+    config_file_mappings = {
+        'ml2_conf.ini': '/etc/neutron/plugins/ml2/ml2_conf.ini'
+    }
+
     _connections = tobiko.required_fixture(
         _connection.SSHConnectionManager)
 
@@ -354,6 +362,12 @@ class OpenStackTopology(tobiko.SharedFixture):
             pass
         raise UnknowOpenStackContainerNameError(agent_name=agent_name,
                                                 topology_class=cls)
+
+    def get_config_file_path(self, file_name: str) -> str:
+        try:
+            return self.config_file_mappings[file_name]
+        except KeyError as e:
+            raise UnknownOpenStackConfigurationFile(file_name=file_name) from e
 
     def get_log_file_digger(self,
                             service_name: str,
@@ -640,6 +654,11 @@ def get_log_file_digger(
                                         groups=groups,
                                         sudo=sudo,
                                         **execute_params)
+
+
+def get_config_file_path(file_name: str) -> str:
+    topology = get_openstack_topology()
+    return topology.get_config_file_path(file_name)
 
 
 def get_rhosp_version():

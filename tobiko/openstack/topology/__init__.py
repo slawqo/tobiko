@@ -41,8 +41,10 @@ list_nodes_processes = _sh.list_nodes_processes
 
 UnknowOpenStackContainerNameError = _topology.UnknowOpenStackContainerNameError
 UnknowOpenStackServiceNameError = _topology.UnknowOpenStackServiceNameError
+UnknownOpenStackConfigurationFile = _topology.UnknownOpenStackConfigurationFile
 get_agent_service_name = _topology.get_agent_service_name
 get_agent_container_name = _topology.get_agent_container_name
+get_config_file_path = _topology.get_config_file_path
 get_l3_agent_mode = _topology.get_l3_agent_mode
 get_log_file_digger = _topology.get_log_file_digger
 get_openstack_topology = _topology.get_openstack_topology
