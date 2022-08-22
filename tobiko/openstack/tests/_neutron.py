@@ -25,6 +25,7 @@ RAFT = 'RAFT'
 HA = 'HA'
 # Supported OVN databases
 OVNDBS = ('nb', 'sb')
+DBNAMES = {'nb': 'OVN_Northbound', 'sb': 'OVN_Southbound'}
 
 
 def build_ovn_db_show_dict(ovn_db_show_str):
@@ -363,6 +364,98 @@ def test_ovn_dbs_validations():
 
     ovn_dbs_are_synchronized(test_case)
     ovn_dbs_vip_bindings(test_case)
+
+
+class RAFTStatusError(tobiko.TobikoException):
+    pass
+
+
+def get_raft_cluster_details(hostname, database):
+    """Return RAFT cluster details from specific node as dictionary"""
+    if database not in OVNDBS:
+        raise ValueError('{} database is not in the list {}'.format(
+            database, OVNDBS))
+    ctl_files = find_ovn_db_ctl_files()
+    cmd = 'ovs-appctl -t {} cluster/status {}'.format(ctl_files[database],
+                                                      DBNAMES[database])
+    node_ssh = topology.get_openstack_node(hostname=hostname).ssh_client
+    output = sh.execute(cmd, ssh_client=node_ssh, sudo=True).stdout
+    cluster_status = {}
+    for line in output.splitlines():
+        if not re.match(r'^\s+', line):
+            line_data = line.strip().split(':', 1)
+            if len(line_data) == 1:
+                continue
+            section, data = line_data
+            if not data.strip():
+                cluster_status[section] = []
+                continue
+            cluster_status[section] = data.strip()
+        else:
+            cluster_status[section].append(line.strip())
+    return cluster_status
+
+
+def collect_raft_cluster_details(database):
+    """Collect RAFT cluster details from all controllers
+
+    Data collection should be restarted if one of the nodes has `candidate`
+    role as it means that there is leader election in progress
+    """
+    for _ in tobiko.retry(timeout=30, interval=1):
+        restart_collection = False
+        cluster_details = []
+        for node in topology.list_openstack_nodes(group='controller'):
+            details = get_raft_cluster_details(node.hostname, database)
+            if details['Role'].lower() == 'candidate':
+                LOG.warning('Cluster not stable. Leader election in progress')
+                LOG.debug('Cluster details from {} node:\n{}'.format(
+                    node.hostname, details))
+                restart_collection = True
+                break
+            cluster_details.append(details)
+        if not restart_collection:
+            break
+    return cluster_details
+
+
+def check_raft_timers(node_details):
+    election_timer = int(node_details['Election timer'])
+    leader_id = node_details['Leader']
+    for srv_str in node_details['Servers']:
+        if 'self' in srv_str:
+            continue
+        if node_details['Role'] == 'follower' and \
+                not srv_str.startswith(leader_id):
+            # There is no active connection between followers
+            continue
+        timer = re.findall(r'last msg [0-9]+ ms ago', srv_str)
+        if len(timer) != 1:
+            msg = 'Failed to parse connection timer from "{}"'.format(srv_str)
+            LOG.error(msg)
+            LOG.debug(node_details)
+            raise RAFTStatusError(message=msg)
+        if election_timer < int(timer[0].split()[2]):
+            msg = 'Cluster communication time {} is higher then election'\
+                  ' timer {}'.format(int(timer.split()[2]), election_timer)
+            LOG.error(msg)
+            LOG.debug(node_details)
+            raise RAFTStatusError(message=msg)
+
+
+def test_raft_cluster():
+    if get_ovn_db_service_model() != RAFT:
+        return
+    test_case = tobiko.get_test_case()
+    for db in OVNDBS:
+        cluster_details = collect_raft_cluster_details(db)
+        leader_found = False
+        for node_details in cluster_details:
+            check_raft_timers(node_details)
+            if node_details['Role'] == 'leader':
+                test_case.assertFalse(leader_found)
+                leader_found = True
+        test_case.assertTrue(leader_found)
 
 
 def test_ovs_bridges_mac_table_size():
