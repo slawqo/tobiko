@@ -29,7 +29,6 @@ from tobiko.tripleo import pacemaker
 from tobiko.tripleo import processes
 from tobiko.tripleo import containers
 from tobiko.tripleo import nova
-from tobiko.tripleo import overcloud
 from tobiko.tripleo import undercloud
 from tobiko.tripleo import validations
 
@@ -53,10 +52,7 @@ def overcloud_health_checks(passive_checks_only=False,
     containers.assert_all_tripleo_containers_running()
     containers.assert_equal_containers_state()
     containers.run_container_config_validations()
-    if not overcloud.is_ovn_using_raft():
-        # TODO(eolivare): test_ovn_dbs_validations() needs to be adapted to
-        # RAFT setups - until then, this validation is skipped for RAFT
-        tests.test_ovn_dbs_validations()
+    tests.test_ovn_dbs_validations()
     # skip_mac_table_size_test has to be removed when BZ1695122 is resolved
     # we need it for the moment because this validation should not be performed
     # after any overcloud node is rebooted
