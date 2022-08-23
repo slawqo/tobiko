@@ -2,12 +2,12 @@ from __future__ import absolute_import
 
 import collections
 import functools
-import ipaddress
 import json
 import re
 import typing
 
 from keystoneauth1 import exceptions
+import netaddr
 from oslo_log import log
 
 import tobiko
@@ -96,7 +96,7 @@ def ovn_dbs_vip_bindings(test_case):
         found_centralized = False
         addrs, port = parse_ips_from_db_connections(ovn_conn_str[db])
         if db_service_model == RAFT:
-            addrs.append(ipaddress.ip_address('0.0.0.0'))
+            addrs.append(netaddr.IPAddress('0.0.0.0'))
         for node in topology.list_openstack_nodes(group='controller'):
             socs = get_ovn_db_socket_info(node.hostname, port)
             if sockets_centrallized and not socs:
@@ -179,7 +179,7 @@ def parse_ips_from_db_connections(con_str):
             LOG.error(msg)
             raise InvalidDBConnString(message=msg)
         try:
-            addr = ipaddress.ip_address(tmp_addr.strip(']['))
+            addr = netaddr.IPAddress(tmp_addr.strip(']['))
         except ValueError as ex:
             msg = 'Invalid IP address "{}" in "{}"'.format(addr, con_str)
             LOG.error(msg)
@@ -203,7 +203,7 @@ def get_ovn_db_socket_info(hostname, port):
     for soc_details in output.splitlines():
         try:
             _, _, _, con_tuple, _, process_info = soc_details.split()
-            addr = ipaddress.ip_address(con_tuple.split(':')[0])
+            addr = netaddr.IPAddress(con_tuple.split(':')[0])
             proc = process_info.split('"')[1]
         except (ValueError, AttributeError, IndexError) as ex:
             msg = 'Fail getting socket infornation from "{}"'.format(
@@ -443,10 +443,21 @@ def check_raft_timers(node_details):
             raise RAFTStatusError(message=msg)
 
 
+def get_raft_ports():
+    node = topology.list_openstack_nodes(group='controller')[0]
+    ports = {}
+    for db in OVNDBS:
+        cluster_details = get_raft_cluster_details(node.hostname, db)
+        _, port = parse_ips_from_db_connections(cluster_details['Address'])
+        ports[db] = port
+    return ports
+
+
 def test_raft_cluster():
     if get_ovn_db_service_model() != RAFT:
         return
     test_case = tobiko.get_test_case()
+    cluster_ports = get_raft_ports()
     for db in OVNDBS:
         cluster_details = collect_raft_cluster_details(db)
         leader_found = False
@@ -456,6 +467,12 @@ def test_raft_cluster():
                 test_case.assertFalse(leader_found)
                 leader_found = True
         test_case.assertTrue(leader_found)
+        for node in topology.list_openstack_nodes(group='controller'):
+            node_ips = ip.list_ip_addresses(ssh_client=node.ssh_client)
+            socs = get_ovn_db_socket_info(node.hostname, cluster_ports[db])
+            test_case.assertEqual(1, len(socs))
+            test_case.assertIn(socs[0]['addr'], node_ips)
+            test_case.assertEqual(socs[0]['process'], 'ovsdb-server')
 
 
 def test_ovs_bridges_mac_table_size():
