@@ -15,7 +15,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import netaddr
 import testtools
 
 import tobiko
@@ -43,23 +42,6 @@ class NetworkTest(testtools.TestCase):
         networks = neutron.list_networks()
         network_ids = {n['id'] for n in networks}
         self.assertIn(self.stack.network_id, network_ids)
-
-    def test_list_subnets(self):
-        subnets = neutron.list_subnets()
-        subnets_ids = {s['id'] for s in subnets}
-        if self.stack.has_ipv4:
-            self.assertIn(self.stack.ipv4_subnet_id, subnets_ids)
-        if self.stack.has_ipv6:
-            self.assertIn(self.stack.ipv6_subnet_id, subnets_ids)
-
-    def test_list_subnet_cidrs(self):
-        subnets_cidrs = neutron.list_subnet_cidrs()
-        if self.stack.has_ipv4:
-            cidr = netaddr.IPNetwork(self.stack.ipv4_subnet_details['cidr'])
-            self.assertIn(cidr, subnets_cidrs)
-        if self.stack.has_ipv6:
-            cidr = netaddr.IPNetwork(self.stack.ipv6_subnet_details['cidr'])
-            self.assertIn(cidr, subnets_cidrs)
 
     def test_get_network_with_id(self):
         return self._test_get_network(network=self.stack.network_id)
