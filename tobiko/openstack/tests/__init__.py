@@ -22,11 +22,13 @@ from tobiko.openstack.tests import _nova
 InvalidDBServiceModel = _neutron.InvalidDBServiceModel
 InvalidDBConnString = _neutron.InvalidDBConnString
 ParsingError = _neutron.ParsingError
+RAFTStatusError = _neutron.RAFTStatusError
 test_neutron_agents_are_alive = _neutron.test_neutron_agents_are_alive
 test_ovn_dbs_validations = _neutron.test_ovn_dbs_validations
 test_ovs_bridges_mac_table_size = _neutron.test_ovs_bridges_mac_table_size
 test_ovs_namespaces_are_absent = _neutron.test_ovs_namespaces_are_absent
 test_ovs_interfaces_are_absent = _neutron.test_ovs_interfaces_are_absent
+test_raft_cluster = _neutron.test_raft_cluster
 
 test_evacuable_server_creation = _nova.test_evacuable_server_creation
 test_server_creation = _nova.test_server_creation
