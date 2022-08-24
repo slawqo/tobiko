@@ -16,6 +16,7 @@ from __future__ import absolute_import
 
 import os
 import psutil
+import resource
 import signal
 import sys
 import subprocess
@@ -106,6 +107,7 @@ def main():
 
 
 def run_tests():
+    setup_ulimits()
     setup_timeout()
     cleanup_report_dir()
     log_environ()
@@ -120,6 +122,16 @@ def run_tests():
         succeeded = False
 
     return succeeded
+
+
+def setup_ulimits():
+    try:
+        hard_nofile_limit = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
+        resource.setrlimit(
+            resource.RLIMIT_NOFILE,
+            (hard_nofile_limit, hard_nofile_limit))
+    except ValueError:
+        pass
 
 
 def setup_timeout():
