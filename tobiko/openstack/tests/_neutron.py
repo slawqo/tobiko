@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import collections
 import functools
+import ipaddress
 import json
 import re
 import typing
@@ -85,73 +86,133 @@ def test_neutron_agents_are_alive(timeout=300., interval=5.) \
 
 
 def ovn_dbs_vip_bindings(test_case):
-    # commands to obtain OVN SB and NB connection strings
-    get_ovn_nb_conn_cmd = (
-        'crudini --get /var/lib/config-data/puppet-generated/neutron/etc/'
-        'neutron/plugins/ml2/ml2_conf.ini ovn ovn_nb_connection')
-    get_ovn_sb_conn_cmd = get_ovn_nb_conn_cmd.replace('ovn_nb_connection',
-                                                      'ovn_sb_connection')
-
-    controllers = topology.list_openstack_nodes(group='controller')
-    ovn_conn_str = {}
-    ovn_conn_str['nb'] = sh.execute(get_ovn_nb_conn_cmd,
-                                    ssh_client=controllers[0].ssh_client,
-                                    sudo=True).stdout.splitlines()[0]
-    ovn_conn_str['sb'] = sh.execute(get_ovn_sb_conn_cmd,
-                                    ssh_client=controllers[0].ssh_client,
-                                    sudo=True).stdout.splitlines()[0]
-
-    # TODO(eolivare): add support to verify ssl connections
-    if 'ssl' in ovn_conn_str['nb'] or 'ssl' in ovn_conn_str['sb']:
-        LOG.debug('tobiko does not support to verify ovn-db connections when '
-                  'they are based on ssl')
-        return
-
-    ovn_conn = {}
-    for db in ('nb', 'sb'):
-        ovn_conn[db] = {}
-        ipv6 = re.findall(r'\[.*\]', ovn_conn_str[db])
-        if len(ipv6) == 1:
-            ovn_conn[db]['ip'] = ipv6[0]
-        elif len(ipv6) == 0:
-            ovn_conn[db]['ip'] = ovn_conn_str[db].split(':')[1]
-        else:
-            raise RuntimeError('Error parsing ovn db connection string from '
-                               'configuration file')
-        ovn_conn[db]['port'] = ovn_conn_str[db].split(':')[-1]
-
+    ovn_conn_str = get_ovn_db_connections()
+    db_service_model = get_ovn_db_service_model()
     # ovn db sockets might be centrillized or distributed
     # that depends on the openstack version under test
-    ovn_db_sockets_centrallized = topology.verify_osp_version(
-        '14.0', lower=True)
+    sockets_centrallized = topology.verify_osp_version('14.0', lower=True)
+    for db in OVNDBS:
+        found_centralized = False
+        addrs, port = parse_ips_from_db_connections(ovn_conn_str[db])
+        if db_service_model == RAFT:
+            addrs.append(ipaddress.ip_address('0.0.0.0'))
+        for node in topology.list_openstack_nodes(group='controller'):
+            socs = get_ovn_db_socket_info(node.hostname, port)
+            if sockets_centrallized and not socs:
+                continue
+            test_case.assertEqual(1, len(socs))
+            test_case.assertIn(socs[0]['addr'], addrs)
+            test_case.assertEqual(socs[0]['process'], 'ovsdb-server')
+            if sockets_centrallized:
+                test_case.assertFalse(found_centralized)
+                found_centralized = True
+        if sockets_centrallized:
+            test_case.assertTrue(found_centralized)
 
-    # command to obtain sockets listening on OVN SB and DB DBs
-    get_ovn_db_sockets_listening_cmd = \
-        "ss -p state listening 'sport = {srcport} and src {srcip}'"
 
-    num_db_sockets = 0
-    for controller in controllers:
-        for db in ('nb', 'sb'):
-            ovn_db_sockets_listening = sh.execute(
-                get_ovn_db_sockets_listening_cmd.format(
-                    srcport=ovn_conn[db]['port'],
-                    srcip=ovn_conn[db]['ip']),
-                ssh_client=controller.ssh_client,
-                sudo=True).stdout.splitlines()
-            if ovn_db_sockets_centrallized:
-                if 2 == len(ovn_db_sockets_listening):
-                    num_db_sockets += 1
-                    test_case.assertIn('ovsdb-server',
-                                       ovn_db_sockets_listening[1])
-            else:
-                num_db_sockets += 1
-                test_case.assertEqual(2, len(ovn_db_sockets_listening))
-                test_case.assertIn('ovsdb-server', ovn_db_sockets_listening[1])
+def get_ovn_db_connections():
+    """Fetches OVN DB connection strings from ml2_conf.ini file
 
-    if ovn_db_sockets_centrallized:
-        test_case.assertEqual(2, num_db_sockets)
-    else:
-        test_case.assertEqual(2 * len(controllers), num_db_sockets)
+    In HA environments there is a single IP address in the connection
+    string <PROTO>:<ADDR>:<PORT>. There is always cluster virtual IP
+    address.
+        tcp:172.17.1.95:6641
+        ssl:172.17.1.95:6641
+        tcp:[fd00:fd00:fd00:2000::356]:6641
+
+    In RAFT environments there are separate IP address for each cluster
+    member divided by comma. Protocols and ports should be similar in such
+    a configuration.
+        tcp:172.17.1.24:6641,tcp:172.17.1.90:6641,tcp:172.17.1.115:6641
+    """
+    ml2_conf = topology.get_config_file_path('ml2_conf.ini')
+    ctl_ssh = topology.list_openstack_nodes(group='controller')[0].ssh_client
+    con_strs = {}
+    for db in OVNDBS:
+        cmd = 'crudini --get {} ovn ovn_{}_connection'.format(ml2_conf, db)
+        output = sh.execute(cmd, ssh_client=ctl_ssh, sudo=True).stdout
+        con_strs[db] = output.splitlines()[0]
+    LOG.debug('OVN DB connection string fetched from {} file: {}'.format(
+        ml2_conf, con_strs))
+    return con_strs
+
+
+class InvalidDBConnString(tobiko.TobikoException):
+    pass
+
+
+def parse_ips_from_db_connections(con_str):
+    """Parse OVN DB connection string to get IP addresses
+
+    In HA environments there is a single IP address in the connection
+    string <PROTO>:<ADDR>:<PORT>. There is always cluster virtual IP
+    address.
+        tcp:172.17.1.95:6641
+        ssl:172.17.1.95:6641
+        tcp:[fd00:fd00:fd00:2000::356]:6641
+
+    In RAFT environments there are separate IP address for each cluster
+    member divided by comma. Protocols and ports should be similar in such
+    a configuration.
+        tcp:172.17.1.24:6641,tcp:172.17.1.90:6641,tcp:172.17.1.115:6641
+    """
+    addrs = []
+    ref_port = ''
+    ref_protocol = ''
+    for substr in con_str.split(','):
+        try:
+            protocol, con = substr.split(':', 1)
+            tmp_addr, port = con.rsplit(':', 1)
+        except (ValueError, AttributeError) as ex:
+            msg = 'Fail to parse "{}" substring of "{}" OVN DB connection '\
+                    'string'.format(substr, con_str)
+            LOG.error(msg)
+            raise InvalidDBConnString(message=msg) from ex
+        if not ref_port:
+            ref_port = port
+        if not ref_protocol:
+            ref_protocol = protocol
+        if protocol != ref_protocol or port != ref_port:
+            msg = 'Ports or protocols are not identical for OVN DB'\
+                    'connections: {}'.format(con_str)
+            LOG.error(msg)
+            raise InvalidDBConnString(message=msg)
+        try:
+            addr = ipaddress.ip_address(tmp_addr.strip(']['))
+        except ValueError as ex:
+            msg = 'Invalid IP address "{}" in "{}"'.format(addr, con_str)
+            LOG.error(msg)
+            raise InvalidDBConnString(message=msg) from ex
+        addrs.append(addr)
+    LOG.debug('Addresses are parsed from OVN DB connection string: {}'.format(
+        addrs))
+    return addrs, ref_port
+
+
+class ParsingError(tobiko.TobikoException):
+    pass
+
+
+def get_ovn_db_socket_info(hostname, port):
+    """Parse SS output for details about open port"""
+    socs = []
+    cmd = 'ss -Hp state listening sport = {}'.format(port)
+    node_ssh = topology.get_openstack_node(hostname=hostname).ssh_client
+    output = sh.execute(cmd, ssh_client=node_ssh, sudo=True).stdout
+    for soc_details in output.splitlines():
+        try:
+            _, _, _, con_tuple, _, process_info = soc_details.split()
+            addr = ipaddress.ip_address(con_tuple.split(':')[0])
+            proc = process_info.split('"')[1]
+        except (ValueError, AttributeError, IndexError) as ex:
+            msg = 'Fail getting socket infornation from "{}"'.format(
+                    soc_details)
+            LOG.error(msg)
+            raise ParsingError(message=msg) from ex
+        LOG.debug('Parsed "{}" ip address and "{}" process name from "{}"'.
+                  format(addr, proc, soc_details))
+        socs.append({'addr': addr, 'process': proc})
+    return socs
 
 
 def ovn_dbs_are_synchronized(test_case):
@@ -300,11 +361,8 @@ def test_ovn_dbs_validations():
 
     test_case = tobiko.get_test_case()
 
-    db_service_model = get_ovn_db_service_model()
-    LOG.debug('OVN DBs are configured in {} mode'.format(db_service_model))
     ovn_dbs_are_synchronized(test_case)
-    if db_service_model == HA:
-        ovn_dbs_vip_bindings(test_case)
+    ovn_dbs_vip_bindings(test_case)
 
 
 def test_ovs_bridges_mac_table_size():
