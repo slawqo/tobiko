@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import collections
+import functools
 import json
 import re
 import typing
@@ -18,6 +19,13 @@ from tobiko.tripleo import pacemaker
 LOG = log.getLogger(__name__)
 
 
+# Supported OVN DB service models
+RAFT = 'RAFT'
+HA = 'HA'
+# Supported OVN databases
+OVNDBS = ('nb', 'sb')
+
+
 def build_ovn_db_show_dict(ovn_db_show_str):
     # returns a dictionary with OVN NB or OVN SB DB information
     # each dict key is a section from the OVN DB command output
@@ -32,6 +40,8 @@ def build_ovn_db_show_dict(ovn_db_show_str):
         else:
             ovn_master_db_dict[current_ovn_section].append(line.strip())
 
+    for section in ovn_master_db_dict:
+        ovn_master_db_dict[section].sort()
     return ovn_master_db_dict
 
 
@@ -72,84 +82,6 @@ def test_neutron_agents_are_alive(timeout=300., interval=5.) \
         raise RuntimeError("Retry loop broken")
 
     return agents
-
-
-def ovn_dbs_are_synchronized(test_case):
-    from tobiko.tripleo import containers
-    # declare commands
-    runtime_name = containers.get_container_runtime_name()
-    search_container_cmd = (
-        "%s ps --format '{{.Names}}' -f name=ovn-dbs-bundle" %
-        runtime_name)
-    container_cmd_prefix = ('%s exec -uroot {container}' %
-                            runtime_name)
-    ovndb_sync_cmd = ('ovs-appctl -t /var/run/openvswitch/{ovndb_ctl_file} '
-                      'ovsdb-server/sync-status')
-    ovndb_show_cmd = '{ovndb} show'
-    ovndb_ctl_file_dict = {'nb': 'ovnnb_db.ctl', 'sb': 'ovnsb_db.ctl'}
-    ovndb_dict = {'nb': 'ovn-nbctl', 'sb': 'ovn-sbctl'}
-    expected_state_active_str = 'state: active'
-    expected_state_backup_str = 'state: backup'
-
-    # use ovn master db as a reference
-    ovn_master_node_name = pacemaker.get_ovn_db_master_node()
-    test_case.assertEqual(1, len(ovn_master_node_name))
-    ovn_master_node = topology.get_openstack_node(ovn_master_node_name[0])
-    ovn_master_dbs_show_dict = {}
-    # obtained the container name
-    container_name = sh.execute(
-        search_container_cmd,
-        ssh_client=ovn_master_node.ssh_client,
-        sudo=True).stdout.splitlines()[0]
-    for db in ('nb', 'sb'):
-        # check its synchronization is active
-        sync_cmd = (' '.join((container_cmd_prefix, ovndb_sync_cmd)).
-                    format(container=container_name,
-                           ovndb_ctl_file=ovndb_ctl_file_dict[db]))
-        sync_status = sh.execute(sync_cmd,
-                                 ssh_client=ovn_master_node.ssh_client,
-                                 sudo=True).stdout
-        test_case.assertIn(expected_state_active_str, sync_status)
-        # obtain nb and sb show output
-        show_cmd = (' '.join((container_cmd_prefix, ovndb_show_cmd)).
-                    format(container=container_name, ovndb=ovndb_dict[db]))
-        ovn_db_show = sh.execute(
-            show_cmd, ssh_client=ovn_master_node.ssh_client, sudo=True).stdout
-        ovn_master_dbs_show_dict[db] = build_ovn_db_show_dict(ovn_db_show)
-
-    # ovn dbs are located on the controller nodes
-    for node in topology.list_openstack_nodes(group='controller'):
-        if node.name == ovn_master_node.name:
-            # master node is the reference and do not need to be checked again
-            continue
-        container_name = sh.execute(
-            search_container_cmd,
-            ssh_client=node.ssh_client, sudo=True).stdout.splitlines()[0]
-        # verify ovn nb and sb dbs are synchronized
-        ovn_dbs_show_dict = {}
-        for db in ('nb', 'sb'):
-            # check its synchronization is active
-            sync_cmd = (' '.join((container_cmd_prefix, ovndb_sync_cmd)).
-                        format(container=container_name,
-                               ovndb_ctl_file=ovndb_ctl_file_dict[db]))
-            sync_status = sh.execute(sync_cmd,
-                                     ssh_client=node.ssh_client,
-                                     sudo=True).stdout
-            test_case.assertIn(expected_state_backup_str, sync_status)
-            # obtain nb and sb show output
-            show_cmd = (' '.join((container_cmd_prefix, ovndb_show_cmd)).
-                        format(container=container_name, ovndb=ovndb_dict[db]))
-            ovn_db_show = sh.execute(
-                show_cmd, ssh_client=node.ssh_client, sudo=True).stdout
-            ovn_dbs_show_dict[db] = build_ovn_db_show_dict(ovn_db_show)
-            test_case.assertEqual(len(ovn_dbs_show_dict[db]),
-                                  len(ovn_master_dbs_show_dict[db]))
-            for key in ovn_dbs_show_dict[db]:
-                test_case.assertEqual(
-                    sorted(ovn_dbs_show_dict[db][key]),
-                    sorted(ovn_master_dbs_show_dict[db][key]))
-
-    LOG.info("All OVN DBs are synchronized")
 
 
 def ovn_dbs_vip_bindings(test_case):
@@ -222,6 +154,145 @@ def ovn_dbs_vip_bindings(test_case):
         test_case.assertEqual(2 * len(controllers), num_db_sockets)
 
 
+def ovn_dbs_are_synchronized(test_case):
+    """Check that OVN DBs are syncronized across all controller nodes"""
+    db_model = get_ovn_db_service_model()
+    db_sync_status = get_ovn_db_sync_status()
+    if db_model == HA:
+        # In Active-Backup service model we expect the same controller to be
+        # active for both databases. This controller node should be configured
+        # for virtual IP in pacemaker. Other controllers should be in backup
+        # state
+        ovn_master_node_name = pacemaker.get_ovn_db_master_node()
+        test_case.assertEqual(1, len(ovn_master_node_name))
+        ovn_master_node = topology.get_openstack_node(ovn_master_node_name[0])
+        LOG.debug("OVN DB master node hostname is: {}".format(
+            ovn_master_node.hostname))
+        for db in OVNDBS:
+            for controller, state in db_sync_status[db]:
+                if controller == ovn_master_node.hostname:
+                    test_case.assertEqual('active', state)
+                else:
+                    test_case.assertEqual('backup', state)
+    elif db_model == RAFT:
+        # In clustered database service model we expect all databases to be
+        # active
+        for db in OVNDBS:
+            for _, state in db_sync_status[db]:
+                test_case.assertEqual('active', state)
+    dumps = dump_ovn_databases()
+    for db in OVNDBS:
+        if len(dumps[db]) <= 1:
+            # Database from a single node is available
+            # so there is nothing to compare it with
+            continue
+        for i in range(1, len(dumps[db])):
+            test_case.assertEqual(dumps[db][0][1], dumps[db][i][1])
+            LOG.debug('OVN {} databases are equal on {} and {}'.format(
+                db, dumps[db][0][0], dumps[db][i][0]))
+
+
+def find_ovn_db_sockets():
+    """Search for OVN DB sockets
+
+    Unix sockets are useful in case there is a need to check the local
+    database.
+    """
+    node_ssh = topology.list_openstack_nodes(group='controller')[0].ssh_client
+    socs = sh.execute('ss -ax state listening', ssh_client=node_ssh, sudo=True)
+    sockets = {}
+    for db in OVNDBS:
+        pattern = '[^ ]*ovn{}_db.sock'.format(db)
+        sockets[db] = re.search(pattern, socs.stdout, re.MULTILINE).group()
+    LOG.debug('OVN DB socket files found: {}'.format(sockets))
+    return sockets
+
+
+def dump_ovn_databases():
+    """Dump NB and SB on each controller node"""
+    from tobiko.tripleo import containers
+    runtime_name = containers.get_container_runtime_name()
+    sockets = find_ovn_db_sockets()
+    db_mode = get_ovn_db_service_model()
+    # To be able to connect to local database in RAFT environment
+    # --no-leader-only parameter should be specified
+    no_leader = (' --no-leader-only' if db_mode == 'RAFT' else '')
+    dumps = {}
+    for node in topology.list_openstack_nodes(group='controller'):
+        for db in OVNDBS:
+            connection = '--db=unix:{}{}'.format(sockets[db], no_leader)
+            cmd = '{} exec -uroot ovn_controller ovn-{}ctl {} show'.format(
+                    runtime_name, db, connection)
+            LOG.debug('Dump {} database on {} with following command: {}'.
+                      format(db, node.hostname, cmd))
+            output = sh.execute(cmd, ssh_client=node.ssh_client, sudo=True)
+            dumps.setdefault(db, [])
+            dumps[db].append(
+                    [node.hostname, build_ovn_db_show_dict(output.stdout)])
+    return dumps
+
+
+def find_ovn_db_ctl_files():
+    """Search for ovnsb_db.ctl and ovnnb_db.ctl files"""
+    node = topology.list_openstack_nodes(group='controller')[0]
+    ctl_files = {}
+    for db in OVNDBS:
+        cmd = 'find /var/ -name ovn{}_db.ctl'.format(db)
+        found = sh.execute(cmd, ssh_client=node.ssh_client, sudo=True).stdout
+        ctl_files[db] = found.strip()
+    LOG.debug('OVN DB ctl files found: {}'.format(ctl_files))
+    return ctl_files
+
+
+def get_ovn_db_sync_status():
+    """Query sync status for NB and SB for each controller node"""
+    db_sync_status = {}
+    ctl_files = find_ovn_db_ctl_files()
+    for node in topology.list_openstack_nodes(group='controller'):
+        for db in OVNDBS:
+            ctl_file = ctl_files[db]
+            cmd = 'ovs-appctl -t {} ovsdb-server/sync-status'.format(ctl_file)
+            output = sh.execute(cmd, ssh_client=node.ssh_client, sudo=True)
+            db_status = output.stdout
+            if 'state: active' in db_status:
+                status = 'active'
+            elif 'state: backup' in db_status:
+                status = 'backup'
+            else:
+                status = 'unknown'
+            db_sync_status.setdefault(db, [])
+            db_sync_status[db].append([node.hostname, status])
+    LOG.debug('OVN DB status for all controllers: {}'.format(db_sync_status))
+    return db_sync_status
+
+
+class InvalidDBServiceModel(tobiko.TobikoException):
+    message = "Database service model is not supported:\n{db_string}"
+
+
+@functools.lru_cache()
+def get_ovn_db_service_model():
+    """Show in which mode OVN databases are configured
+
+    There are two modes currently supported:
+     - RAFT aka clustered service model (default starting OSP17.0)
+     - HA aka Active-Backup service model (default for pre-OSP17.0 versions)
+
+    For more information:
+    https://docs.openvswitch.org/en/latest/ref/ovsdb.7/#service-models
+    """
+    controller0 = topology.list_openstack_nodes(group='controller')[0]
+    db_info = sh.execute('find / -name ovnnb_db.db | xargs sudo head -n 1',
+                         ssh_client=controller0.ssh_client, sudo=True)
+    if 'CLUSTER' in db_info.stdout:
+        return RAFT
+    elif 'JSON' in db_info.stdout:
+        return HA
+    else:
+        LOG.error('Only RAFT and HA database service models are supported')
+        raise InvalidDBServiceModel(db_string=db_info.stdout)
+
+
 def test_ovn_dbs_validations():
     if not neutron.has_ovn():
         LOG.debug('OVN not configured. OVN DB sync validations skipped')
@@ -229,9 +300,11 @@ def test_ovn_dbs_validations():
 
     test_case = tobiko.get_test_case()
 
-    # run validations
+    db_service_model = get_ovn_db_service_model()
+    LOG.debug('OVN DBs are configured in {} mode'.format(db_service_model))
     ovn_dbs_are_synchronized(test_case)
-    ovn_dbs_vip_bindings(test_case)
+    if db_service_model == HA:
+        ovn_dbs_vip_bindings(test_case)
 
 
 def test_ovs_bridges_mac_table_size():
