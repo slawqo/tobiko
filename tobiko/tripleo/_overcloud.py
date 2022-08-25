@@ -34,6 +34,8 @@ from tobiko.tripleo import _undercloud
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)
+OVN_RAFT = 'RAFT'
+OVN_HA = 'HA'
 
 
 def load_overcloud_rcfile() -> typing.Dict[str, str]:
@@ -280,22 +282,55 @@ def is_redis_expected():
     return False
 
 
+class InvalidDBServiceModel(tobiko.TobikoException):
+    pass
+
+
+@functools.lru_cache()
+def get_ovn_db_service_model():
+    """Show in which mode OVN databases are configured
+
+    There are two modes currently supported:
+     - RAFT aka clustered service model (default starting OSP17.0)
+     - HA aka Active-Backup service model (default for pre-OSP17.0 versions)
+
+    For more information:
+    https://docs.openvswitch.org/en/latest/ref/ovsdb.7/#service-models
+    """
+    if not neutron.has_ovn():
+        raise InvalidDBServiceModel('OVN is not enabled')
+    controller0 = topology.list_openstack_nodes(group='controller')[0]
+    db_info = sh.execute('find / -name ovnnb_db.db | xargs sudo head -n 1',
+                         ssh_client=controller0.ssh_client, sudo=True)
+    if 'CLUSTER' in db_info.stdout:
+        return OVN_RAFT
+    elif 'JSON' in db_info.stdout:
+        return OVN_HA
+    else:
+        msg = 'Unable to fetch OVN DB service model from {} string. Only RAFT'\
+              ' and HA models are supported'.format(db_info.stdout)
+        LOG.error(msg)
+        raise InvalidDBServiceModel(message=msg)
+
+
 @functools.lru_cache()
 def is_ovn_using_raft():
-    if not neutron.has_ovn():
-        LOG.info("Networking OVN not configured")
-        return False
-
-    controller0 = topology.list_openstack_nodes(group='controller')[0]
     try:
-        sh.execute('ovs-appctl -t /var/lib/openvswitch/ovn/ovnnb_db.ctl '
-                   'cluster/status OVN_Northbound',
-                   ssh_client=controller0.ssh_client, sudo=True)
-    except sh.ShellCommandFailed:
-        LOG.info('Command failed - RAFT is not configured')
-        return False
-    LOG.info('Command succeeded - RAFT is configured')
-    return True
+        if get_ovn_db_service_model() == OVN_RAFT:
+            return True
+    except InvalidDBServiceModel:
+        pass
+    return False
+
+
+@functools.lru_cache()
+def is_ovn_using_ha():
+    try:
+        if get_ovn_db_service_model() == OVN_HA:
+            return True
+    except InvalidDBServiceModel:
+        pass
+    return False
 
 
 def overcloud_version() -> tobiko.Version:

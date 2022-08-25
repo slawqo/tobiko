@@ -19,7 +19,6 @@ from __future__ import absolute_import
 from tobiko.openstack.tests import _neutron
 from tobiko.openstack.tests import _nova
 
-InvalidDBServiceModel = _neutron.InvalidDBServiceModel
 InvalidDBConnString = _neutron.InvalidDBConnString
 ParsingError = _neutron.ParsingError
 RAFTStatusError = _neutron.RAFTStatusError

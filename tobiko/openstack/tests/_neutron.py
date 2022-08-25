@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import collections
-import functools
 import json
 import re
 import typing
@@ -15,14 +14,13 @@ from tobiko.openstack import neutron
 from tobiko.openstack import topology
 from tobiko.shell import ip
 from tobiko.shell import sh
+from tobiko.tripleo import _overcloud
 from tobiko.tripleo import pacemaker
 
 LOG = log.getLogger(__name__)
 
 
 # Supported OVN DB service models
-RAFT = 'RAFT'
-HA = 'HA'
 # Supported OVN databases
 OVNDBS = ('nb', 'sb')
 DBNAMES = {'nb': 'OVN_Northbound', 'sb': 'OVN_Southbound'}
@@ -88,14 +86,13 @@ def test_neutron_agents_are_alive(timeout=300., interval=5.) \
 
 def ovn_dbs_vip_bindings(test_case):
     ovn_conn_str = get_ovn_db_connections()
-    db_service_model = get_ovn_db_service_model()
     # ovn db sockets might be centrillized or distributed
     # that depends on the openstack version under test
     sockets_centrallized = topology.verify_osp_version('14.0', lower=True)
     for db in OVNDBS:
         found_centralized = False
         addrs, port = parse_ips_from_db_connections(ovn_conn_str[db])
-        if db_service_model == RAFT:
+        if _overcloud.is_ovn_using_raft():
             addrs.append(netaddr.IPAddress('0.0.0.0'))
         for node in topology.list_openstack_nodes(group='controller'):
             socs = get_ovn_db_socket_info(node.hostname, port)
@@ -218,9 +215,8 @@ def get_ovn_db_socket_info(hostname, port):
 
 def ovn_dbs_are_synchronized(test_case):
     """Check that OVN DBs are syncronized across all controller nodes"""
-    db_model = get_ovn_db_service_model()
     db_sync_status = get_ovn_db_sync_status()
-    if db_model == HA:
+    if _overcloud.is_ovn_using_ha():
         # In Active-Backup service model we expect the same controller to be
         # active for both databases. This controller node should be configured
         # for virtual IP in pacemaker. Other controllers should be in backup
@@ -236,7 +232,7 @@ def ovn_dbs_are_synchronized(test_case):
                     test_case.assertEqual('active', state)
                 else:
                     test_case.assertEqual('backup', state)
-    elif db_model == RAFT:
+    elif _overcloud.is_ovn_using_raft():
         # In clustered database service model we expect all databases to be
         # active
         for db in OVNDBS:
@@ -275,10 +271,9 @@ def dump_ovn_databases():
     from tobiko.tripleo import containers
     runtime_name = containers.get_container_runtime_name()
     sockets = find_ovn_db_sockets()
-    db_mode = get_ovn_db_service_model()
     # To be able to connect to local database in RAFT environment
     # --no-leader-only parameter should be specified
-    no_leader = (' --no-leader-only' if db_mode == 'RAFT' else '')
+    no_leader = (' --no-leader-only' if _overcloud.is_ovn_using_raft() else '')
     dumps = {}
     for node in topology.list_openstack_nodes(group='controller'):
         for db in OVNDBS:
@@ -326,33 +321,6 @@ def get_ovn_db_sync_status():
             db_sync_status[db].append([node.hostname, status])
     LOG.debug('OVN DB status for all controllers: {}'.format(db_sync_status))
     return db_sync_status
-
-
-class InvalidDBServiceModel(tobiko.TobikoException):
-    message = "Database service model is not supported:\n{db_string}"
-
-
-@functools.lru_cache()
-def get_ovn_db_service_model():
-    """Show in which mode OVN databases are configured
-
-    There are two modes currently supported:
-     - RAFT aka clustered service model (default starting OSP17.0)
-     - HA aka Active-Backup service model (default for pre-OSP17.0 versions)
-
-    For more information:
-    https://docs.openvswitch.org/en/latest/ref/ovsdb.7/#service-models
-    """
-    controller0 = topology.list_openstack_nodes(group='controller')[0]
-    db_info = sh.execute('find / -name ovnnb_db.db | xargs sudo head -n 1',
-                         ssh_client=controller0.ssh_client, sudo=True)
-    if 'CLUSTER' in db_info.stdout:
-        return RAFT
-    elif 'JSON' in db_info.stdout:
-        return HA
-    else:
-        LOG.error('Only RAFT and HA database service models are supported')
-        raise InvalidDBServiceModel(db_string=db_info.stdout)
 
 
 def test_ovn_dbs_validations():
@@ -454,7 +422,7 @@ def get_raft_ports():
 
 
 def test_raft_cluster():
-    if get_ovn_db_service_model() != RAFT:
+    if not _overcloud.is_ovn_using_raft():
         return
     test_case = tobiko.get_test_case()
     cluster_ports = get_raft_ports()
