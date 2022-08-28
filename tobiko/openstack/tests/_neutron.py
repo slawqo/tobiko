@@ -14,6 +14,7 @@ from tobiko.openstack import neutron
 from tobiko.openstack import topology
 from tobiko.shell import ip
 from tobiko.shell import sh
+from tobiko.shell import ss
 from tobiko.tripleo import _overcloud
 from tobiko.tripleo import pacemaker
 
@@ -94,13 +95,14 @@ def ovn_dbs_vip_bindings(test_case):
         addrs, port = parse_ips_from_db_connections(ovn_conn_str[db])
         if _overcloud.is_ovn_using_raft():
             addrs.append(netaddr.IPAddress('0.0.0.0'))
+            addrs.append(netaddr.IPAddress('::'))
         for node in topology.list_openstack_nodes(group='controller'):
-            socs = get_ovn_db_socket_info(node.hostname, port)
+            socs = ss.tcp_listening(port=port, ssh_client=node.ssh_client)
             if sockets_centrallized and not socs:
                 continue
             test_case.assertEqual(1, len(socs))
-            test_case.assertIn(socs[0]['addr'], addrs)
-            test_case.assertEqual(socs[0]['process'], 'ovsdb-server')
+            test_case.assertIn(socs[0]['local_ip'], addrs)
+            test_case.assertEqual(socs[0]['process'][0], 'ovsdb-server')
             if sockets_centrallized:
                 test_case.assertFalse(found_centralized)
                 found_centralized = True
@@ -185,32 +187,6 @@ def parse_ips_from_db_connections(con_str):
     LOG.debug('Addresses are parsed from OVN DB connection string: {}'.format(
         addrs))
     return addrs, ref_port
-
-
-class ParsingError(tobiko.TobikoException):
-    pass
-
-
-def get_ovn_db_socket_info(hostname, port):
-    """Parse SS output for details about open port"""
-    socs = []
-    cmd = 'ss -Hp state listening sport = {}'.format(port)
-    node_ssh = topology.get_openstack_node(hostname=hostname).ssh_client
-    output = sh.execute(cmd, ssh_client=node_ssh, sudo=True).stdout
-    for soc_details in output.splitlines():
-        try:
-            _, _, _, con_tuple, _, process_info = soc_details.split()
-            addr = netaddr.IPAddress(con_tuple.split(':')[0])
-            proc = process_info.split('"')[1]
-        except (ValueError, AttributeError, IndexError) as ex:
-            msg = 'Fail getting socket infornation from "{}"'.format(
-                    soc_details)
-            LOG.error(msg)
-            raise ParsingError(message=msg) from ex
-        LOG.debug('Parsed "{}" ip address and "{}" process name from "{}"'.
-                  format(addr, proc, soc_details))
-        socs.append({'addr': addr, 'process': proc})
-    return socs
 
 
 def ovn_dbs_are_synchronized(test_case):
@@ -437,10 +413,11 @@ def test_raft_cluster():
         test_case.assertTrue(leader_found)
         for node in topology.list_openstack_nodes(group='controller'):
             node_ips = ip.list_ip_addresses(ssh_client=node.ssh_client)
-            socs = get_ovn_db_socket_info(node.hostname, cluster_ports[db])
+            socs = ss.tcp_listening(port=cluster_ports[db],
+                                    ssh_client=node.ssh_client)
             test_case.assertEqual(1, len(socs))
-            test_case.assertIn(socs[0]['addr'], node_ips)
-            test_case.assertEqual(socs[0]['process'], 'ovsdb-server')
+            test_case.assertIn(socs[0]['local_ip'], node_ips)
+            test_case.assertEqual(socs[0]['process'][0], 'ovsdb-server')
 
 
 def test_ovs_bridges_mac_table_size():

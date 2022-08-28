@@ -20,7 +20,6 @@ from tobiko.openstack.tests import _neutron
 from tobiko.openstack.tests import _nova
 
 InvalidDBConnString = _neutron.InvalidDBConnString
-ParsingError = _neutron.ParsingError
 RAFTStatusError = _neutron.RAFTStatusError
 test_neutron_agents_are_alive = _neutron.test_neutron_agents_are_alive
 test_ovn_dbs_validations = _neutron.test_ovn_dbs_validations
