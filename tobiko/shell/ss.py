@@ -51,6 +51,24 @@ class SockHeader():
         if 'Process' in self.header_str:
             self.header.append('process')
 
+    def extend_ports(self):
+        """Add ports as separate header columns
+
+        It might be useful while collecting information about unix sockets
+        as unlke regular network sockets there are no ':' symbol between
+        address and port. But the ' ' (space) symbol is used instead.
+        """
+        try:
+            idx = self.header.index('local_addr')
+            self.header.insert(idx+1, 'local_port')
+        except ValueError:
+            pass
+        try:
+            idx = self.header.index('remote_addr')
+            self.header.insert(idx+1, 'remote_port')
+        except ValueError:
+            pass
+
     def __len__(self):
         return len(self.header)
 
@@ -60,11 +78,29 @@ class SockHeader():
 
 
 class SockLine(str):
-    pass
+    """Single line from the output of ss command line tool
+
+    It should match with the corresponding table header that is presented by
+    object of SockHeader class
+    """
 
 
 class SockData(dict):
-    pass
+    """A single socket information parsed from output of ss command line tool
+
+    Output of ss command line tool should be parsed and stored in the dict
+    with keys are items of the SockHeader object. In most of the cases it
+    should contain the following keys:
+      - protocol (optional)
+      - state (optional)
+      - recv_q
+      - send_q
+      - local_addr (IP or filename)
+      - local_port
+      - remote_addr (IP or filename)
+      - remote_port
+      - process (list of processes names)
+    """
 
 
 LOG = log.getLogger(__name__)
@@ -147,7 +183,7 @@ def parse_tcp_socket(headers: SockHeader,
             ip, port = sock_data[idx].strip().rsplit(':', 1)
             if ip == '*':
                 ip = '0'
-            socket_details['{}_ip'.format(header)] = netaddr.IPAddress(
+            socket_details['{}_addr'.format(header)] = netaddr.IPAddress(
                     ip.strip(']['))
             socket_details['{}_port'.format(header)] = port
         elif header == 'process':
@@ -162,12 +198,71 @@ def parse_tcp_socket(headers: SockHeader,
     return socket_details
 
 
+def parse_unix_socket(headers: SockHeader,
+                      sock_info: SockLine) -> SockData:
+    socket_details = SockData()
+    sock_data = sock_info.split()
+    headers.extend_ports()
+    if len(headers) != len(sock_data):
+        msg = 'Unable to parse line: "{}"'.format(sock_info)
+        raise ValueError(msg)
+    for idx, header in enumerate(headers):
+        if not header:
+            continue
+        if header == 'process':
+            try:
+                socket_details[header] = get_processes(sock_data[idx])
+            except IndexError as ex:
+                msg = 'Unable to parse processes part of the line: {}'.format(
+                        sock_info)
+                raise ValueError(msg) from ex
+        else:
+            socket_details[header] = sock_data[idx]
+    return socket_details
+
+
 def tcp_listening(address: str = '',
                   port: str = '',
                   **exec_params) -> typing.List[SockData]:
+    """List of tcp sockets in listening state
+
+    Information can be filtered by local address and port and will be returned
+    as a list of SockData object where the following keys should exist:
+      - protocol (optional)
+      - state (optional)
+      - recv_q
+      - send_q
+      - local_addr (netaddr.IPAddress object)
+      - local_port
+      - remote_addr (netaddr.IPAddress object)
+      - remote_port
+      - process (list of processes names)
+    """
     params = '-t state listening'
     if port:
         params += ' sport {}'.format(port)
     if address:
         params += ' src {}'.format(address)
     return _ss(params=params, parser=parse_tcp_socket, **exec_params)
+
+
+def unix_listening(file_name: str = '',
+                   **exec_params) -> typing.List[SockData]:
+    """List of unix sockets in listening state
+
+    Information can be filtered by file name and will be returned as a list of
+    SockData object where the following keys should exist:
+      - protocol (optional)
+      - state (optional)
+      - recv_q
+      - send_q
+      - local_addr (filename string)
+      - local_port (should be *)
+      - remote_addr (filename string - should be *)
+      - remote_port (should be *)
+      - process (list of processes names)
+    """
+    params = '-x state listening'
+    if file_name:
+        params += ' src {}'.format(file_name)
+    return _ss(params=params, parser=parse_unix_socket, **exec_params)
