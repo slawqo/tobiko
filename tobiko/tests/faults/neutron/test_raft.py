@@ -34,3 +34,4 @@ class TestRAFTDisruption(testtools.TestCase):
 
     def test_raft_status(self):
         tests.test_raft_cluster()
+        tests.test_raft_clients_connected()

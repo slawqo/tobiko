@@ -27,6 +27,7 @@ test_ovs_bridges_mac_table_size = _neutron.test_ovs_bridges_mac_table_size
 test_ovs_namespaces_are_absent = _neutron.test_ovs_namespaces_are_absent
 test_ovs_interfaces_are_absent = _neutron.test_ovs_interfaces_are_absent
 test_raft_cluster = _neutron.test_raft_cluster
+test_raft_clients_connected = _neutron.test_raft_clients_connected
 
 test_evacuable_server_creation = _nova.test_evacuable_server_creation
 test_server_creation = _nova.test_server_creation

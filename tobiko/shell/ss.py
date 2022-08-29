@@ -246,6 +246,23 @@ def tcp_listening(address: str = '',
     return _ss(params=params, parser=parse_tcp_socket, **exec_params)
 
 
+def tcp_connected(src_address: str = '',
+                  src_port: str = '',
+                  dst_address: str = '',
+                  dst_port: str = '',
+                  **exec_params) -> typing.List[SockData]:
+    params = '-t state connected'
+    if src_port:
+        params += ' sport {}'.format(src_port)
+    if src_address:
+        params += ' src {}'.format(src_address)
+    if dst_port:
+        params += ' dport {}'.format(dst_port)
+    if dst_address:
+        params += ' dst {}'.format(dst_address)
+    return _ss(params=params, parser=parse_tcp_socket, **exec_params)
+
+
 def unix_listening(file_name: str = '',
                    **exec_params) -> typing.List[SockData]:
     """List of unix sockets in listening state
