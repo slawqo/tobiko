@@ -23,6 +23,7 @@ import testtools
 
 import tobiko
 from tobiko.openstack import neutron
+from tobiko.openstack import topology
 from tobiko.openstack import tests
 from tobiko.tests.faults.ha import cloud_disruptions
 from tobiko.tripleo import pacemaker
@@ -37,7 +38,7 @@ LOG = log.getLogger(__name__)
 
 
 def overcloud_health_checks(passive_checks_only=False,
-                            skip_mac_table_size_test=True):
+                            skip_mac_table_size_test=False):
     # this method will be changed in future commit
     check_pacemaker_resources_health()
     check_overcloud_processes_health()
@@ -93,7 +94,10 @@ class OvercloudHealthCheck(tobiko.SharedFixture):
     def run(cls, after: bool, **params):
         fixture = tobiko.get_fixture(cls)
         params.setdefault('passive_checks_only', False)
-        params.setdefault('skip_mac_table_size_test', True)
+        # In version OSP17.0 and highier,
+        # 'test_ovs_bridges_mac_table_size()' test can run.
+        if topology.verify_osp_version('17.0', lower=True):
+            params.setdefault('skip_mac_table_size_test', True)
         skips = frozenset(k for k, v in params.items() if v)
         if after or skips < fixture.skips:
             # Force re-check
