@@ -20,7 +20,6 @@ from oslo_log import log
 import tobiko
 from tobiko.openstack import keystone
 from tobiko.openstack import octavia
-from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.shell import ssh
 from tobiko.shell import sh
@@ -141,9 +140,6 @@ class OctaviaBasicFaultTest(testtools.TestCase):
                 if attempt.is_last:
                     raise
 
-        self._plug_new_amphora_to_existing_fip()
-
-    @tobiko.skip(reason='Bugzilla', bugzilla=2126055)
     def test_kill_amphora_agent(self):
         """Kill the MASTER amphora agent
 
@@ -156,21 +152,22 @@ class OctaviaBasicFaultTest(testtools.TestCase):
         self._skip_if_not_active_standby()
 
         # Finding the amphora agent pid and kill it
-
         amp_agent_pid_command = (
             "ps -ef | awk '/amphora/{print $2}' | head -n 1")
+        amp_agent_pid = octavia.run_command_on_amphora(
+            command=amp_agent_pid_command,
+            lb_id=self.loadbalancer_stack.loadbalancer_id,
+            lb_fip=self.loadbalancer_stack.floating_ip_address)
+        LOG.info(f'The amp_agent_pid is {amp_agent_pid}')
 
-        amp_agent_pid = sh.execute(
-            amp_agent_pid_command, ssh_client=self.amphora_ssh_client,
-            sudo=True).stdout.strip()
-
-        sh.execute(f'kill -9 {amp_agent_pid}',
-                   ssh_client=self.amphora_ssh_client,
-                   sudo=True)
+        octavia.run_command_on_amphora(
+            command=f'kill -9 {amp_agent_pid}',
+            lb_id=self.loadbalancer_stack.loadbalancer_id,
+            lb_fip=self.loadbalancer_stack.floating_ip_address,
+            sudo=True)
 
         self._wait_for_failover_and_test_functionality()
 
-    @tobiko.skip(reason='Bugzilla', bugzilla=2126055)
     def test_stop_keepalived(self):
         """Stop keepalived on MASTER amphora
 
@@ -182,13 +179,16 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         self._skip_if_not_active_standby()
 
-        sh.stop_systemd_units('octavia-keepalived',
-                              ssh_client=self.amphora_ssh_client,
-                              sudo=True)
+        stop_keepalived_cmd = 'systemctl stop octavia-keepalived'
+
+        octavia.run_command_on_amphora(
+            command=stop_keepalived_cmd,
+            lb_id=self.loadbalancer_stack.loadbalancer_id,
+            lb_fip=self.loadbalancer_stack.floating_ip_address,
+            sudo=True)
 
         self._wait_for_failover_and_test_functionality()
 
-    @tobiko.skip(reason='Bugzilla', bugzilla=2126055)
     def test_stop_haproxy(self):
         """Stop haproxy on MASTER amphora
 
@@ -200,9 +200,20 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         self._skip_if_not_active_standby()
 
-        sh.stop_systemd_units('haproxy-*',
-                              ssh_client=self.amphora_ssh_client,
-                              sudo=True)
+        # Finding the amphora haproxy unit name and stop it
+        amp_haproxy_unit_command = (
+            "systemctl list-units | awk '/haproxy-/{print $1}'")
+        amp_haproxy_unit = octavia.run_command_on_amphora(
+            command=amp_haproxy_unit_command,
+            lb_id=self.loadbalancer_stack.loadbalancer_id,
+            lb_fip=self.loadbalancer_stack.floating_ip_address)
+        LOG.info(f'The amp_haproxy_unit is {amp_haproxy_unit}')
+
+        octavia.run_command_on_amphora(
+            command=f'systemctl stop {amp_haproxy_unit}',
+            lb_id=self.loadbalancer_stack.loadbalancer_id,
+            lb_fip=self.loadbalancer_stack.floating_ip_address,
+            sudo=True)
 
         self._wait_for_failover_and_test_functionality()
 
@@ -228,18 +239,21 @@ class OctaviaBasicFaultTest(testtools.TestCase):
         # Wait for Octavia objects' provisioning status to be ACTIVE
         self.listener_stack.wait_for_active_members()
 
-        # Verify Octavia functionality
-        octavia.check_members_balanced(
-            pool_id=self.listener_stack.pool_id,
-            ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.listener_stack.lb_algorithm,
-            protocol=self.listener_stack.lb_protocol,
-            port=self.listener_stack.lb_port)
-
-        self._plug_new_amphora_to_existing_fip()
-
-    def _plug_new_amphora_to_existing_fip(self):
-        old_amphora_fip = self.listener_stack.amphora_floating_ip
-        amphora_mgmt_port = self.listener_stack.amphora_mgmt_port
-        neutron.update_floating_ip(floating_ip=old_amphora_fip['id'],
-                                   port_id=amphora_mgmt_port['id'])
+        # For 5 minutes we ignore specific exceptions as we know
+        # that Octavia resources are being reprovisioned (amphora during a
+        # failover)
+        for attempt in tobiko.retry(timeout=300.):
+            try:
+                octavia.check_members_balanced(
+                    pool_id=self.listener_stack.pool_id,
+                    ip_address=self.loadbalancer_stack.floating_ip_address,
+                    lb_algorithm=self.listener_stack.lb_algorithm,
+                    protocol=self.listener_stack.lb_protocol,
+                    port=self.listener_stack.lb_port)
+                break
+            except octavia.RoundRobinException:
+                LOG.exception(f"Traffic didn't reach all members after "
+                              f"#{attempt.number} attempts and "
+                              f"{attempt.elapsed_time} seconds")
+                if attempt.is_last:
+                    raise

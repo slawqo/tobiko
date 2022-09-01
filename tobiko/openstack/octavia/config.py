@@ -25,6 +25,9 @@ OPTIONS = [
     cfg.IntOpt('check_timeout',
                default=360,
                help='Timeout, in seconds, to wait for a status change.'),
+    cfg.StrOpt('amphora_user',
+               default='cloud-user',
+               help='The user we should use when we SSH the amphora.'),
 ]
 
 

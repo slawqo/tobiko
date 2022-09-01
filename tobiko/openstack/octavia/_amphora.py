@@ -15,13 +15,20 @@ from __future__ import absolute_import
 
 import typing
 
+from oslo_log import log
+
 import tobiko
+from tobiko import tripleo
+from tobiko import config
 from tobiko.openstack.octavia import _client
 from tobiko.openstack.octavia import _load_balancer
 from tobiko.openstack import nova
 from tobiko.openstack.octavia import _validators
 from tobiko.openstack import topology
+from tobiko.shell import sh
 
+LOG = log.getLogger(__name__)
+CONF = config.CONF
 
 AmphoraType = typing.Dict[str, typing.Any]
 AmphoraIdType = typing.Union[str, AmphoraType]
@@ -83,6 +90,16 @@ def get_amphora_compute_node(load_balancer: _load_balancer.LoadBalancerIdType,
     return topology.get_openstack_node(hostname=hostname)
 
 
+def get_amphora_stats(amphora_id, client=None):
+    """
+    :param amphora_id: the amphora id
+    :param client: The Octavia client
+    :return (dict): The amphora stats dict.
+    """
+
+    return _client.octavia_client(client).amphora_stats_show(amphora_id)
+
+
 def get_master_amphora(amphorae: typing.Iterable[AmphoraType],
                        port: int,
                        protocol: str,
@@ -117,10 +134,100 @@ def get_master_amphora(amphorae: typing.Iterable[AmphoraType],
     # The amphora which has total_connections > 0 is the master.
     # Backup amphora will always have total_connections == 0.
     for amphora in amphorae:
-        amphora_stats = _client.octavia_client(client).amphora_stats_show(
-            amphora['id'])
+        amphora_stats = get_amphora_stats(amphora_id=amphora['id'],
+                                          client=client)
         for listener in list(amphora_stats.values())[0]:
             if listener['total_connections'] > 0:
+                LOG.debug(f"Chosen amphora is {amphora['id']} with the "
+                          f"following stats: {amphora_stats}")
                 return amphora
 
     raise ValueError("Master Amphora wasn't found!")
+
+
+def run_command_on_amphora(command: str,
+                           lb_id: _load_balancer.LoadBalancerIdType = None,
+                           lb_fip: str = None,
+                           amp_id: str = None,
+                           sudo: bool = False) -> str:
+    """
+    Run a given command on the master/single amphora
+
+    :param command: The command to run on the amphora
+    :param lb_id: The load balancer id whose amphora should run the command
+    :param lb_fip: The loadbalancer floating ip
+    :param amp_id: The single/master amphora id
+    :param sudo: (bool) Whether to run the command with sudo permissions
+           on the amphora
+    :return: The command output (str)
+    """
+
+    # Get the master/single amphora lb_network_ip
+    if amp_id:
+        amp_lb_network_ip = get_amphora(amphora=amp_id)['lb_network_ip']
+    elif lb_id and lb_fip:
+        amphorae = list_amphorae(load_balancer_id=lb_id)
+        amphora = get_master_amphora(amphorae=amphorae,
+                                     port=80,
+                                     protocol='HTTP',
+                                     ip_address=lb_fip)
+        amp_lb_network_ip = amphora['lb_network_ip']
+    else:
+        raise ValueError('Either amphora id or both the loadbalancer id '
+                         'and the loadbalancer floating ip need to be '
+                         'provided.')
+
+    # Find the undercloud ssh client and (any) controller ip
+    def _get_overcloud_node_ssh_client(group):
+        return topology.list_openstack_nodes(group=group)[0].ssh_client
+
+    controller_ip = _get_overcloud_node_ssh_client('controller').host
+    undercloud_client = _get_overcloud_node_ssh_client('undercloud')
+
+    if not controller_ip or not undercloud_client:
+        raise RuntimeError(f'Either controller ip {controller_ip} or '
+                           f'undercloud ssh client {undercloud_client} was'
+                           ' not found.')
+
+    # Preparing ssh command
+    osp_major_version = tripleo.overcloud_version().major
+    if osp_major_version == 16:
+        ssh_add_command = 'ssh-add'
+    elif osp_major_version == 17:
+        ssh_add_command = 'sudo -E ssh-add /etc/octavia/ssh/octavia_id_rsa'
+    else:
+        raise NotImplementedError('The ssh_add_command is not implemented '
+                                  f'for OSP version {osp_major_version}.')
+
+    ssh_agent_output = sh.execute(
+        'ssh-agent -s',
+        ssh_client=undercloud_client).stdout.strip()
+    # Example: eval {ssh_agent_output} ssh-add
+    start_agent_cmd = f'eval {ssh_agent_output} {ssh_add_command}; '
+
+    # Example: ssh -A -t heat-admin@192.168.24.13
+    controller_user = CONF.tobiko.tripleo.overcloud_ssh_username
+    controller_ssh_command = f'ssh -A -t {controller_user}@{controller_ip}'
+
+    amphora_user = CONF.tobiko.octavia.amphora_user
+    # Example: ssh -o StrictHostKeyChecking=no cloud-user@172.24.0.214
+    amphora_ssh_command = 'ssh -o StrictHostKeyChecking=no ' \
+                          f'{amphora_user}@{amp_lb_network_ip}'
+    full_amp_ssh_cmd = f'{controller_ssh_command} {amphora_ssh_command}'
+    if sudo:
+        command = f'sudo {command}'
+
+    # Example:
+    # $(ssh-agent -s) > ssh_agent_output
+    #
+    # eval {ssh_agent_output}; ssh-add; ssh -A -t heat-admin@192.168.24.13\
+    # ssh -o StrictHostKeyChecking=no cloud-user@172.24.0.214 <command>
+    command = f'{start_agent_cmd} {full_amp_ssh_cmd} {command}'
+    out = sh.execute(command,
+                     ssh_client=undercloud_client,
+                     sudo=False).stdout.strip()
+
+    # Removing the ssh-agent output
+    # 'Agent pid 642546\n<output-we-want>' -> '<output-we-want>'
+    formatted_out = '\n'.join(out.split('\n')[1:])
+    return formatted_out
