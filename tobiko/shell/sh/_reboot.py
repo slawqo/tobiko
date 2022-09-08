@@ -19,6 +19,7 @@ import typing  # noqa
 from oslo_log import log
 
 import tobiko
+from tobiko.shell import ping
 from tobiko.shell.sh import _command
 from tobiko.shell.sh import _uptime
 from tobiko.shell import ssh
@@ -54,6 +55,8 @@ def reboot_host(ssh_client: ssh.SSHClientFixture,
                                  method=method)
     tobiko.setup_fixture(reboot)
     if wait:
+        # when pings are not replied, we consider the reboot operation started
+        ping.wait_for_ping_hosts([ssh_client.host], check_unreachable=True)
         reboot.wait_for_operation()
     return reboot
 
