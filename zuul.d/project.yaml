@@ -30,3 +30,12 @@
       jobs:
         - requirements-check:
             voting: true
+    post:
+      jobs:
+        - tobiko-upload-git-mirror
+    release:
+      jobs:
+        - tobiko-upload-git-mirror
+    pre-release:
+      jobs:
+        - tobiko-upload-git-mirror
