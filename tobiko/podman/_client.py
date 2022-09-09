@@ -97,12 +97,13 @@ class PodmanClientFixture(tobiko.SharedFixture):
             podman_service = 'io.podman.socket'
             podman_socket_file = '/run/podman/io.podman'
 
+        username = self.ssh_client.get_connect_parameters()['username']
         podman_client_setup_cmds = \
             f"""sudo test -f /var/podman_client_access_setup ||  \
             (sudo groupadd -f podman &&  \
-            sudo usermod -a -G podman heat-admin && \
+            sudo usermod -a -G podman {username} && \
             sudo chmod -R o=wxr /etc/tmpfiles.d && \
-            sudo echo 'd /run/podman 0770 root heat-admin' >  \
+            sudo echo 'd /run/podman 0770 root {username}' >  \
             /etc/tmpfiles.d/podman.conf && \
             sudo cp /lib/systemd/system/{podman_service} \
             /etc/systemd/system/{podman_service} && \

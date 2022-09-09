@@ -42,7 +42,7 @@ from tobiko.tripleo import topology as tripleo_topology
 LOG = log.getLogger(__name__)
 
 network_disruption = """
- sudo iptables-save > /home/heat-admin/working.iptables.rules &&
+ sudo iptables-save > ~/working.iptables.rules &&
  sudo iptables -I INPUT 1 -m state --state RELATED,ESTABLISHED -j ACCEPT &&
  sudo iptables -I INPUT 2 -p tcp -m state --state NEW -m tcp --dport 22 -j \
  ACCEPT &&
@@ -52,7 +52,7 @@ network_disruption = """
 """
 
 undisrupt_network = """
- sudo iptables-restore /home/heat-admin/working.iptables.rules
+ sudo iptables-restore ~/working.iptables.rules
 """
 ovn_db_pcs_resource_restart = "sudo pcs resource restart ovn-dbs-bundle"
 kill_rabbit = "sudo pkill -9 beam.smp"
