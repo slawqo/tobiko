@@ -410,9 +410,14 @@ def remove_all_grastate_galera():
         raise PcsDisableException()
     for node in nodes:
         sh.execute(remove_grastate, ssh_client=node.ssh_client)
+
     LOG.info('enable back galera: {} on all servers: {}'.
              format(enable_galera, nodes))
-    if "resource 'galera' is master on node" not in\
+    if topology.verify_osp_version('17.0', lower=True):
+        promoted = "master"
+    else:
+        promoted = "promoted"
+    if f"resource 'galera' is {promoted} on node" not in\
             sh.execute(enable_galera, ssh_client=nodes[0].ssh_client).stdout:
         raise PcsEnableException()
 
@@ -438,9 +443,14 @@ def remove_one_grastate_galera():
     LOG.info('remove grastate: {} on server: {}'.format(remove_grastate,
                                                         node.name))
     sh.execute(remove_grastate, ssh_client=node.ssh_client)
+
     LOG.info('enable back galera: {} on all servers: {}'.
              format(enable_galera, nodes))
-    if "resource 'galera' is master on node" not in\
+    if topology.verify_osp_version('17.0', lower=True):
+        promoted = "master"
+    else:
+        promoted = "promoted"
+    if f"resource 'galera' is {promoted} on node" not in\
             sh.execute(enable_galera, ssh_client=node.ssh_client).stdout:
         raise PcsEnableException()
     LOG.info('enable haproxy-bundle')
