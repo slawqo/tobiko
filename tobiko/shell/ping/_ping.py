@@ -481,19 +481,26 @@ def check_ping_statistics(failure_limit=10):
         with io.open(filename, 'rt') as fd:
             LOG.info(f'checking ping log file: {filename}, '
                      f'failure_limit is :{failure_limit}')
-            failure_counter = 0
+            ping_failures_list = []
             for ping_line in fd.readlines():
                 ping_line = json.loads(ping_line.rstrip())
                 if ping_line['transmitted'] != ping_line['received']:
-                    failure_counter += 1
-                    LOG.info(f'found ping failure: {ping_line}')
-                    if failure_counter >= failure_limit:
-                        rename_ping_staistics_file_to_checked(filename)
-                        tobiko.fail(f'{failure_counter} pings failure found '
-                                    f'to vm fip destination: '
-                                    f'{ping_line["destination"]}')
-            LOG.info(f'no failures in ping log file: {filename}')
+                    ping_failures_list.append(ping_line)
+
+            ping_failures_len = len(ping_failures_list)
+            if ping_failures_len > 0:
+                ping_failures_str = '\n'.join(
+                    [str(ping_failure) for ping_failure in ping_failures_list])
+                LOG.warning(f'found ping failures:\n{ping_failures_str}')
+            else:
+                LOG.info(f'no failures in ping log file: {filename}')
+
             rename_ping_staistics_file_to_checked(filename)
+
+            if ping_failures_len >= failure_limit:
+                tobiko.fail(f'{ping_failures_len} pings failure found '
+                            f'to vm fip destination: '
+                            f'{ping_failures_list[-1]["destination"]}')
 
 
 def skip_check_ping_statistics():
