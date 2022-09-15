@@ -424,6 +424,48 @@ def test_raft_cluster():
             test_case.assertEqual(socs[0]['process'][0], 'ovsdb-server')
 
 
+def test_raft_clients_connected():
+    """Verifies that all SBDB readers are connected to active nodes
+
+    Unlike HA environment all operations are allowed to be performed to any
+    available node. To have the better performance all heavy write operations
+    are done to leader node, but readers are spreaded across all cluster
+    controllers
+    """
+    test_case = tobiko.get_test_case()
+    test_case.assertTrue(_overcloud.is_ovn_using_raft())
+    db_con_str = get_ovn_db_connections()['sb']
+    addrs, port = parse_ips_from_db_connections(db_con_str)
+    for node_details in collect_raft_cluster_details('sb'):
+        if node_details['Role'] == 'leader':
+            leader_ips, _ = parse_ips_from_db_connections(
+                    node_details['Address'])
+            break
+    test_case.assertIsNotNone(locals().get('leader_ips'))
+    leader_ip = leader_ips[0]
+
+    for node in topology.list_openstack_nodes(group='compute'):
+        socs = ss.tcp_connected(dst_port=port, ssh_client=node.ssh_client)
+        ovn_controller_found = False
+        for soc in socs:
+            if soc['process'][0] == 'ovn-controller':
+                ovn_controller_found = True
+            test_case.assertIn(soc['remote_addr'], addrs)
+        test_case.assertTrue(ovn_controller_found)
+
+    for node in topology.list_openstack_nodes(group='controller'):
+        socs = ss.tcp_connected(dst_port=port, ssh_client=node.ssh_client)
+        ref_processes = {'ovn-controller', 'neutron-server:', 'ovn-northd'}
+        processes = set()
+        for soc in socs:
+            processes.add(soc['process'][0])
+            if soc['process'][0] == 'ovn-northd':
+                test_case.assertEqual(soc['remote_addr'], leader_ip)
+            else:
+                test_case.assertIn(soc['remote_addr'], addrs)
+        test_case.assertEqual(processes, ref_processes)
+
+
 def test_ovs_bridges_mac_table_size():
     test_case = tobiko.get_test_case()
     expected_mac_table_size = '50000'
