@@ -101,7 +101,7 @@ def ovn_dbs_vip_bindings(test_case):
             if sockets_centrallized and not socs:
                 continue
             test_case.assertEqual(1, len(socs))
-            test_case.assertIn(socs[0]['local_ip'], addrs)
+            test_case.assertIn(socs[0]['local_addr'], addrs)
             test_case.assertEqual(socs[0]['process'][0], 'ovsdb-server')
             if sockets_centrallized:
                 test_case.assertFalse(found_centralized)
@@ -233,11 +233,15 @@ def find_ovn_db_sockets():
     database.
     """
     node_ssh = topology.list_openstack_nodes(group='controller')[0].ssh_client
-    socs = sh.execute('ss -ax state listening', ssh_client=node_ssh, sudo=True)
     sockets = {}
     for db in OVNDBS:
-        pattern = '[^ ]*ovn{}_db.sock'.format(db)
-        sockets[db] = re.search(pattern, socs.stdout, re.MULTILINE).group()
+        db_socket = ss.unix_listening(file_name='*ovn{}_db.sock'.format(db),
+                                      ssh_client=node_ssh)
+        if len(db_socket) < 1 or not db_socket[0].get('local_addr'):
+            msg = 'Failed to find active unix socket for {}'.format(db)
+            LOG.error(msg)
+            raise ss.SocketLookupError(message=msg)
+        sockets[db] = db_socket[0]['local_addr']
     LOG.debug('OVN DB socket files found: {}'.format(sockets))
     return sockets
 
@@ -416,7 +420,7 @@ def test_raft_cluster():
             socs = ss.tcp_listening(port=cluster_ports[db],
                                     ssh_client=node.ssh_client)
             test_case.assertEqual(1, len(socs))
-            test_case.assertIn(socs[0]['local_ip'], node_ips)
+            test_case.assertIn(socs[0]['local_addr'], node_ips)
             test_case.assertEqual(socs[0]['process'][0], 'ovsdb-server')
 
 
