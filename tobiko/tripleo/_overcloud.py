@@ -333,6 +333,14 @@ def is_ovn_using_ha():
     return False
 
 
+skip_unless_ovn_using_raft = tobiko.skip_unless(
+    'OVN does not use RAFT DB model', is_ovn_using_raft)
+
+
+skip_unless_ovn_using_ha = tobiko.skip_unless(
+    'OVN does not use HA DB model', is_ovn_using_ha)
+
+
 def overcloud_version() -> tobiko.Version:
     from tobiko.tripleo import _topology
     node = topology.find_openstack_node(group='overcloud')

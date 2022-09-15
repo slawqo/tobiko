@@ -30,6 +30,7 @@ from tobiko.tripleo import pacemaker
 from tobiko.tripleo import processes
 from tobiko.tripleo import containers
 from tobiko.tripleo import nova
+from tobiko.tripleo import overcloud
 from tobiko.tripleo import undercloud
 from tobiko.tripleo import validations
 
@@ -192,18 +193,21 @@ class DisruptTripleoNodesTest(testtools.TestCase):
     #     cloud_disruptions.network_undisrupt_controllers_non_main_vip()
 
     @neutron.skip_unless_is_ovn()
+    @overcloud.skip_unless_ovn_using_ha
     def test_reset_ovndb_pcs_master_resource(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_ovndb_pcs_master_resource()
         OvercloudHealthCheck.run_after()
 
     @neutron.skip_unless_is_ovn()
+    @overcloud.skip_unless_ovn_using_ha
     def test_reset_ovndb_pcs_resource(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_ovndb_pcs_resource()
         OvercloudHealthCheck.run_after()
 
     @neutron.skip_unless_is_ovn()
+    @overcloud.skip_unless_ovn_using_ha
     def test_reset_ovndb_master_container(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_ovndb_master_container()

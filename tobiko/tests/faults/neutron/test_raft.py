@@ -25,12 +25,8 @@ from tobiko.tripleo import undercloud
 
 @neutron.skip_unless_is_ovn()
 @undercloud.skip_if_missing_undercloud
+@overcloud.skip_unless_ovn_using_raft
 class TestRAFTDisruption(testtools.TestCase):
-
-    def setUp(self):
-        super(TestRAFTDisruption, self).setUp()
-        if not overcloud.is_ovn_using_raft():
-            self.skipTest('RAFT is not enabled')
 
     def test_raft_status(self):
         tests.test_raft_cluster()
