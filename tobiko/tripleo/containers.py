@@ -197,6 +197,10 @@ def save_containers_state_to_file(expected_containers_list,):
     return expected_containers_file
 
 
+class ContainerMismatchException(tobiko.TobikoException):
+    pass
+
+
 def assert_containers_running(group, expected_containers, full_name=True,
                               bool_check=False):
 
@@ -253,7 +257,9 @@ def assert_containers_running(group, expected_containers, full_name=True,
                             len(container_running_attrs)))
 
     if not bool_check and failures:
-        tobiko.fail('container states mismatched:\n{!s}', '\n'.join(failures))
+        tobiko.fail(
+            'container states mismatched:\n{}'.format('\n'.join(failures)),
+            ContainerMismatchException)
 
     elif bool_check and failures:
         return False
