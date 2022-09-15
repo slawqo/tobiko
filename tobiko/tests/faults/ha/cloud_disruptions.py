@@ -221,8 +221,10 @@ def get_main_vip():
 def get_main_vip_controller(main_vip):
     """return the controller hostname ,
     which is holding the main_vip pacemaker resource"""
+    # when the main_vip is ipv6, the pacemaker command output replaces : by .
+    # we need to adapt the value accordingly
     main_vim_controller = pacemaker.get_overcloud_nodes_running_pcs_resource(
-        resource=f"ip-{main_vip}")[0]
+        resource=f"ip-{main_vip.replace(':', '.')}")[0]
     return main_vim_controller
 
 
