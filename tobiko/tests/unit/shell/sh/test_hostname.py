@@ -44,6 +44,8 @@ class HostnameTest(unit.TobikoUnitTest):
         client_mock = mock.MagicMock(spec=ssh.SSHClientFixture)
         client_mock.connect().get_transport().open_session.return_value = \
             channel_mock
+        client_mock.connect_parameters = {'retry_count': 200,
+                                          'connection_timeout': 1000}
         return client_mock
 
     def test_get_hostname_with_no_ssh_client(self):

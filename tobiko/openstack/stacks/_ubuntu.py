@@ -44,7 +44,7 @@ class UbuntuMinimalImageFixture(glance.URLGlanceImageFixture):
     container_format = CONF.tobiko.ubuntu.container_format or "bare"
     username = CONF.tobiko.ubuntu.username or 'ubuntu'
     password = CONF.tobiko.ubuntu.password or 'ununtu'
-    connection_timeout = CONF.tobiko.ubuntu.connection_timeout or 600.
+    connection_timeout = CONF.tobiko.ubuntu.connection_timeout or 1500.
     disabled_algorithms = CONF.tobiko.ubuntu.disabled_algorithms
 
 

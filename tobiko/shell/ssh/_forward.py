@@ -156,7 +156,8 @@ class SSHUnixForwardHandler(sshtunnel._ForwardHandler):
         assert isinstance(remote_address, str)
         command = 'sudo nc -U "{}"'.format(remote_address)
 
-        chan = self.transport.open_session()
+        # reusing the same timeout value that is used by the parent class
+        chan = self.transport.open_session(timeout=sshtunnel.TUNNEL_TIMEOUT)
         chan.exec_command(command)
 
         self.logger.log(sshtunnel.TRACE_LEVEL,

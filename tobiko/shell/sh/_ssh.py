@@ -73,6 +73,7 @@ def ssh_process(command, environment=None, current_dir=None,
 class SSHShellProcessParameters(_process.ShellProcessParameters):
 
     ssh_client = None
+    open_session_timeout = 30.0
 
 
 class SSHShellProcessFixture(_process.ShellProcessFixture):
@@ -91,9 +92,36 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
         environment = parameters.environment
         current_dir = parameters.current_dir
 
+        if (hasattr(ssh_client, 'connect_parameters') and
+                ssh_client.connect_parameters is not None):
+            ssh_client_timeout = ssh_client.connect_parameters.get(
+                'connection_timeout')
+            ssh_client_attempts = ssh_client.connect_parameters.get(
+                'connection_attempts')
+        else:
+            ssh_client_timeout = None
+            ssh_client_attempts = None
+
+        # use ssh_client timeout and attempts values if they are higher than
+        # self (SSHShellProcessFixture) values because the values from the
+        # outer retry loop should be equal or greater than those from the inner
+        # retry loop
+        process_retry_timeout = (
+            ssh_client_timeout if (
+                ssh_client_timeout and (
+                    self.parameters.timeout is None or
+                    ssh_client_timeout > self.parameters.timeout))
+            else self.parameters.timeout)
+        process_retry_attempts = (
+            ssh_client_attempts if (
+                ssh_client_attempts and (
+                    self.parameters.retry_count is None or
+                    ssh_client_attempts > self.parameters.retry_count))
+            else self.parameters.retry_count)
+
         for attempt in tobiko.retry(
-                timeout=self.parameters.timeout,
-                default_count=self.parameters.retry_count,
+                timeout=process_retry_timeout,
+                default_count=process_retry_attempts,
                 default_interval=self.parameters.retry_interval,
                 default_timeout=self.parameters.retry_timeout):
 
@@ -107,7 +135,8 @@ class SSHShellProcessFixture(_process.ShellProcessFixture):
             LOG.debug(f"Create remote process... ({details})")
             try:
                 client = ssh_client.connect()
-                process = client.get_transport().open_session()
+                process = client.get_transport().open_session(
+                    timeout=self.open_session_timeout)
                 if environment:
                     variables = " ".join(
                         f"{name}={shlex.quote(value)}"
