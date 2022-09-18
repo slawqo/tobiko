@@ -59,12 +59,16 @@ class SockHeader():
         address and port. But the ' ' (space) symbol is used instead.
         """
         try:
-            idx = self.header.index('local_addr')
+            idx = self.header.index('local')
+            self.header.pop(idx)
+            self.header.insert(idx, 'local_addr')
             self.header.insert(idx+1, 'local_port')
         except ValueError:
             pass
         try:
-            idx = self.header.index('remote_addr')
+            idx = self.header.index('remote')
+            self.header.pop(idx)
+            self.header.insert(idx, 'remote_addr')
             self.header.insert(idx+1, 'remote_port')
         except ValueError:
             pass
@@ -108,11 +112,21 @@ LOG = log.getLogger(__name__)
 
 def _ss(params: str = '',
         ssh_client: ssh.SSHClientFixture = None,
+        table_header: SockHeader = None,
         parser: typing.Callable[[SockHeader, SockLine], SockData] = None,
         **execute_params) -> typing.List[SockData]:
     execute_params.update({'sudo': True})
     sockets = []
-    command_line = "ss -np {}".format(params)
+    if table_header:
+        # Predefined header might be necessary if the command is expected to
+        # be executed in any kind of environments. Old versrions of `ss`
+        # command line tool do not have 'Processes' column in header
+        parsed_header = True
+        headers = table_header
+        command_line = "ss -Hnp {}".format(params)
+    else:
+        parsed_header = False
+        command_line = "ss -np {}".format(params)
     try:
         stdout = sh.execute(command_line,
                             ssh_client=ssh_client,
@@ -122,7 +136,6 @@ def _ss(params: str = '',
             raise SocketLookupError(cmd=command_line, err=ex.stderr) from ex
         if ex.exit_status > 0:
             raise
-    parsed_header = False
     for line in stdout.splitlines():
         if not parsed_header:
             headers = SockHeader(line)
@@ -202,7 +215,6 @@ def parse_unix_socket(headers: SockHeader,
                       sock_info: SockLine) -> SockData:
     socket_details = SockData()
     sock_data = sock_info.split()
-    headers.extend_ports()
     if len(headers) != len(sock_data):
         msg = 'Unable to parse line: "{}"'.format(sock_info)
         raise ValueError(msg)
@@ -239,11 +251,16 @@ def tcp_listening(address: str = '',
       - process (list of processes names)
     """
     params = '-t state listening'
+    ss_fields = SockHeader('Recv-Q Send-Q Local Address:Port'
+                           'Peer Address:Port Process')
     if port:
         params += ' sport {}'.format(port)
     if address:
         params += ' src {}'.format(address)
-    return _ss(params=params, parser=parse_tcp_socket, **exec_params)
+    return _ss(params=params,
+               table_header=ss_fields,
+               parser=parse_tcp_socket,
+               **exec_params)
 
 
 def tcp_connected(src_address: str = '',
@@ -252,6 +269,8 @@ def tcp_connected(src_address: str = '',
                   dst_port: str = '',
                   **exec_params) -> typing.List[SockData]:
     params = '-t state connected'
+    ss_fields = SockHeader('State Recv-Q Send-Q Local Address:Port'
+                           'Peer Address:Port Process')
     if src_port:
         params += ' sport {}'.format(src_port)
     if src_address:
@@ -260,7 +279,10 @@ def tcp_connected(src_address: str = '',
         params += ' dport {}'.format(dst_port)
     if dst_address:
         params += ' dst {}'.format(dst_address)
-    return _ss(params=params, parser=parse_tcp_socket, **exec_params)
+    return _ss(params=params,
+               table_header=ss_fields,
+               parser=parse_tcp_socket,
+               **exec_params)
 
 
 def unix_listening(file_name: str = '',
@@ -280,6 +302,12 @@ def unix_listening(file_name: str = '',
       - process (list of processes names)
     """
     params = '-x state listening'
+    ss_fields = SockHeader('Netid Recv-Q Send-Q Local Address:Port'
+                           'Peer Address:Port Process')
+    ss_fields.extend_ports()
     if file_name:
         params += ' src {}'.format(file_name)
-    return _ss(params=params, parser=parse_unix_socket, **exec_params)
+    return _ss(params=params,
+               table_header=ss_fields,
+               parser=parse_unix_socket,
+               **exec_params)
