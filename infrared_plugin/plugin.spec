@@ -153,10 +153,6 @@ subparsers:
             type: Value
             help: user name to be used to connect to TripleO Overcloud hosts
             ansible_variable: overcloud_ssh_username
-          ubuntu-interface-name:
-            type: Value
-            help: primary interface name obtained from the ubuntu instances
-            ansible_variable: ubuntu_interface_name
 
       - title: Run stage
         options:
