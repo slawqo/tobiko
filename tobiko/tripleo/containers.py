@@ -513,11 +513,11 @@ def get_overcloud_container(container_name=None, container_host=None,
             'container_name == "{container_name}"'
             ' and container_host == "{container_host}"'.
             format(container_host=container_host,
-                   container_name=container_name))['container_object']
+                   container_name=container_name)).container_object
     else:
         contaniner_obj = con_obj_df.query(
             'container_name == "{container_name}"'.
-            format(container_name=container_name))['container_object']
+            format(container_name=container_name)).container_object
     if not contaniner_obj.empty:
         return contaniner_obj.values[0]
     else:

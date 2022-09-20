@@ -215,7 +215,8 @@ def check_computes_vms_running_via_virsh():
     for compute in topology.list_openstack_nodes(group='compute'):
         hostname = get_fqdn_from_topology_node(compute)
         retry = tobiko.retry(timeout=120, interval=5)
-        for vm_id in get_compute_vms_df(hostname)['vm_id'].to_list():
+        vms_df = get_compute_vms_df(hostname)
+        for vm_id in vms_df.vm_id.to_list():
             for _ in retry:
                 if check_vm_running_via_virsh(compute, vm_id):
                     LOG.info(f"{vm_id} is running ok on "
