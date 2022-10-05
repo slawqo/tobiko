@@ -173,6 +173,7 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.crash_controller_main_vip()
         OvercloudHealthCheck.run_after()
 
+    @overcloud.skip_unless_kexec_tools_installed
     def test_z99_crash_controller_non_main_vip(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.crash_controllers_non_main_vip()

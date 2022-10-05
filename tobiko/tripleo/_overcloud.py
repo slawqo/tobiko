@@ -341,6 +341,21 @@ skip_unless_ovn_using_ha = tobiko.skip_unless(
     'OVN does not use HA DB model', is_ovn_using_ha)
 
 
+@functools.lru_cache()
+def are_kexec_tools_installed():
+    for controller in topology.list_openstack_nodes(group='controller'):
+        try:
+            sh.execute('rpm -q kexec-tools', ssh_client=controller.ssh_client)
+        except sh.ShellCommandFailed:
+            return False
+    return True
+
+
+skip_unless_kexec_tools_installed = tobiko.skip_unless(
+    'kexec-tools package not installed on controller nodes',
+    are_kexec_tools_installed)
+
+
 def overcloud_version() -> tobiko.Version:
     from tobiko.tripleo import _topology
     node = topology.find_openstack_node(group='overcloud')
