@@ -14,6 +14,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+import collections
 import re
 import sys
 import typing
@@ -229,21 +230,30 @@ class BaseAgentTest(testtools.TestCase):
         self.assertGreater(max_pids_per_host, 0)
         self.assertGreaterEqual(max_pids_per_host, min_pids_per_host)
         pids_count_range = range(min_pids_per_host, max_pids_per_host + 1)
-        pids_per_host = {}
+        pids_per_host: collections.defaultdict = collections.defaultdict(set)
+        checked_pids_per_host: collections.defaultdict = (
+            collections.defaultdict(list))
         for host in hosts:
             LOG.debug(f'Search for {process_name} process on {host}')
             for attempt in tobiko.retry(timeout=timeout, interval=interval):
-                pids = self.list_pids(host, command_filter, process_name)
-                if len(pids) in pids_count_range or attempt.is_last:
-                    pids_per_host[host] = frozenset(pids)
+                pids, checked_pids = self.list_pids(
+                    host, command_filter, process_name,
+                    checked_pids_per_host[host])
+                checked_pids_per_host[host] += checked_pids
+                pids_per_host[host] |= set(pids)
+                if (len(pids_per_host[host]) in pids_count_range
+                        or attempt.is_last):
                     LOG.debug(f"Process '{process_name}' is running "
-                              f"on host '{host}' (PIDs={pids!r})")
+                              f"on host '{host}' "
+                              f"(PIDs={pids_per_host[host]!r})")
                     break
+                LOG.debug(f"PIDs for {process_name} on {host} not found.")
             else:
                 raise RuntimeError("Broken retry loop")
+        LOG.debug(f"Found PIDs: {pids_per_host}")
         return pids_per_host
 
-    def list_pids(self, host, command_filter, process_name):
+    def list_pids(self, host, command_filter, process_name, known_pids=None):
         '''Search for PIDs matched with filter and process name
 
         :param host: Hostname of the node to search processes on
@@ -252,21 +262,28 @@ class BaseAgentTest(testtools.TestCase):
         :type command_filter: string
         :param process_name: Name of the executable in process list
         :type process_name: string
+        :param known_pids: List of the pids which were already checked on host
+        :type: known_pids: list
         '''
         ssh_client = topology.get_openstack_node(hostname=host).ssh_client
         processes = sh.list_processes(command=process_name,
                                       ssh_client=ssh_client)
+        known_pids = known_pids or []
         pids = []
+        checked_pids = []
         for process in processes:
+            if process.pid in known_pids:
+                continue
             try:
                 command = sh.execute(f'cat /proc/{process.pid}/cmdline',
                                      ssh_client=ssh_client)
+                checked_pids.append(process.pid)
                 if re.search(command_filter, command.stdout):
                     pids.append(process.pid)
             except sh.ShellCommandFailed:
                 LOG.debug(f'Process {process.pid} has been terminated right '
                           f'after the process list has been collected')
-        return pids
+        return pids, checked_pids
 
     def kill_pids(self, host, pids):
         '''Kill processes with specific PIDs on the host
