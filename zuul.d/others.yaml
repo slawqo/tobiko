@@ -7,16 +7,17 @@
       host: github.com
       host_key: github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
       ssh_key: !encrypted/pkcs1-oaep
-        - gvheV766pUz5q1TIJX6JXahapNJ2Seuh1ICqprb++2Khm4pVgyyy9J6LwmDMe0UW/LTuA
-          NjyVmOeVlD6DWwgoBKWM7hNWyMMRZ3DuXeQQorpnQZFmyb2vJPVpOZUOwbYUZpShfPNZe
-          nnvNGbRB/C8+unRy7sC25xVw34La6brVZzvk4tCKT8BjNA7JCl0XLyH+Dvn6qceJ09MOJ
-          OAK8Eo4ye2HYjiQCh2PpYT5pJ14obKqfPUL9y4/r9Isa835NabON4x0uGChnUHg/u1if5
-          ZfZof0k662c5t4+5/yGLp4NN8+x+lkIjbdUGeT6zGB01aa2bU5waxpwPWQCasJDMpGYWD
-          jA3DVBVVumSQCU5+pbuSmQhi15vdUPpWrg0r1fAemRegXlIoU0NUdZSROzoiT8lxhsouG
-          EfmQ8KErtQf4hVx8e0GxE4mPE49WDhHSYdNpkUrhLKpgQzT8ENyqFmxr2CoRo7IqtD2/G
-          RoXjZNonAuormFN5b8PJ7Zmv8pG6H7E/mNeYiwmjbaWKFLO9py2i0pbFAFMc8VIyK2qDT
-          1YI4q45lk2PWg/d8n+QdFRmDNCn/2AKkIaOGPhsxZre5JgZc4bjrL26fkMJIcTiK3LnAn
-          7sQtlaXANbSyzkb7a6gdN2WCtoNE1RFEFEPavqrgWE38iJPw3SfKCC90qfouNc=
+        - KVpaJkAEwg5nE1uk1okGMDBvRHc1K6tlwxTri5IX6nNx1Ph9/iKw14AVNNW3/7+Zz5DLP
+          KTPxfCGVKEb4lduYctCamS0h7rKEx1/2mSb0CCZLYH9X7vuLL8bHU8ARfzChCzPLb4je2
+          iLws6DDEhInbS1EHsq0rHm/iVHBLbeEwD0Oj6qScsOasVfrL6hf/A9RAHaLnOYHw1b3HJ
+          MQ6dDMCiX02pZMJrdeKQO+UxloGHnqcIYhPlqodueLCBOPrhztGGXLpjoWYfeMTzzzx1w
+          f7JXItdkR1uqtR5xc0oS1y/fB70kweHsB16qqHcxOb7DN037Q7+9bEi3aRHxSTuU+3zOD
+          1T8HHvTXBjZQscjVFo70a98QUkPjsox1+akQAnbiblnG0NFDyJ/1YWr8VCphAgGbdjYyv
+          nFtrW7OT+3GfVtdbUSb43SQs4UDYBmZlbyn/+zYa3kQJ6FG4zzI+zUX5AcKpYzBEjNie9
+          v2RXxASyurZ431LB4vdoR8M2ORVBnmer/YMRgfXW0PI6/3AusYrOnQH0/U+oNnciS8xn0
+          wGGYaVK/2TYRa1GQOkvxm1m3AByKDws0Pkvx/l/9h/WPVHMPlOg6DVKIiiABhGRh2rVsc
+          xIWnEa+QZNgBcj2o5rxknJ/OLn9hwyL+zBRCBrd1c7376xnjehLtscNaEKS+TE=
+
 
 - job:
     name: tobiko-upload-git-mirror
