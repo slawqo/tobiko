@@ -143,6 +143,7 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         self._plug_new_amphora_to_existing_fip()
 
+    @tobiko.skip(reason='Bugzilla', bugzilla=2126055)
     def test_kill_amphora_agent(self):
         """Kill the MASTER amphora agent
 
@@ -169,6 +170,7 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         self._wait_for_failover_and_test_functionality()
 
+    @tobiko.skip(reason='Bugzilla', bugzilla=2126055)
     def test_stop_keepalived(self):
         """Stop keepalived on MASTER amphora
 
@@ -186,6 +188,7 @@ class OctaviaBasicFaultTest(testtools.TestCase):
 
         self._wait_for_failover_and_test_functionality()
 
+    @tobiko.skip(reason='Bugzilla', bugzilla=2126055)
     def test_stop_haproxy(self):
         """Stop haproxy on MASTER amphora
 
