@@ -504,6 +504,7 @@ class L3AgentTest(BaseAgentTest):
     def test_metadata_haproxy_during_stop_L3_agent(self):
         self.agents = neutron.list_l3_agent_hosting_routers(self.router_id)
         pids = self.get_cmd_pids("haproxy", self.router_id)
+        self.assertNotEqual(len(pids), 0)
         self.stop_agent()
 
         # Now check if haproxy processes are still run and have got same pids
