@@ -1,0 +1,14 @@
+---
+
+test_workflow_steps:
+  - tox_description: 'run sanity test cases before creating resources'
+    tox_envlist: sanity
+    tox_step_name: before
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: no
+
+  - tox_description: 'create workload resources'
+    tox_envlist: scenario
+    tox_step_name: create_resources
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: no
