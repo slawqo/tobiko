@@ -19,9 +19,11 @@ from datetime import datetime
 import math
 import random
 import re
+import socket
 import time
 import urllib.parse
 
+import netaddr
 from oslo_log import log
 
 import tobiko
@@ -215,7 +217,19 @@ def get_main_vip():
     Retreive an ip address (ipv4/ipv6) from the auth_url."""
     auth_url = keystone.default_keystone_credentials().auth_url
     auth_url_parsed = urllib.parse.urlsplit(auth_url)
-    return auth_url_parsed.hostname
+    main_vip = auth_url_parsed.hostname
+
+    if not (netaddr.valid_ipv4(main_vip) or netaddr.valid_ipv6(main_vip)):
+        try:
+            # socket.gethostbyname translates hostname to IPv4 - it fails when
+            # no IPv4 address is available
+            main_vip = socket.gethostbyname(main_vip)
+        except socket.gaierror:
+            # the following method obtains an IPv6 from a hostname
+            main_vip = socket.getaddrinfo(
+                main_vip, None, socket.AF_INET6)[0][4][0]
+
+    return main_vip
 
 
 def get_main_vip_controller(main_vip):
