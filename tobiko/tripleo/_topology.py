@@ -21,6 +21,7 @@ import netaddr
 from oslo_log import log
 
 import tobiko
+from tobiko import config
 from tobiko.openstack import neutron
 from tobiko.openstack import nova
 from tobiko.openstack import topology
@@ -31,6 +32,7 @@ from tobiko.tripleo import _overcloud
 from tobiko.tripleo import _rhosp
 from tobiko.tripleo import _undercloud
 
+CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
@@ -90,9 +92,9 @@ class TripleoTopology(topology.OpenStackTopology):
 
     def discover_undercloud_nodes(self):
         if _undercloud.has_undercloud():
-            config = _undercloud.undercloud_host_config()
+            uc_config = _undercloud.undercloud_host_config()
             ssh_client = _undercloud.undercloud_ssh_client()
-            self.add_node(address=config.hostname,
+            self.add_node(address=uc_config.hostname,
                           group='undercloud',
                           ssh_client=ssh_client)
 
@@ -120,8 +122,9 @@ class TripleoTopology(topology.OpenStackTopology):
         # set of subgroups extracted from node name
         subgroups: typing.Set[str] = set()
 
+        oc_groups_dict = CONF.tobiko.tripleo.overcloud_groups_dict
         # extract subgroups names from node name
-        subgroups.update(subgroup
+        subgroups.update(oc_groups_dict.get(subgroup) or subgroup
                          for subgroup in node.name.split('-')
                          if is_valid_overcloud_group_name(group_name=subgroup,
                                                           node_name=node.name))
