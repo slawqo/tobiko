@@ -1,6 +1,6 @@
 ---
 
-- name: "pick undercloud SSH shotname from inventory"
+- name: "pick undercloud SSH hostname from inventory"
   set_fact:
     undercloud_ssh_hostname: >-
       {{ hostvars[undercloud_hostname].ansible_fqdn |
