@@ -196,7 +196,7 @@ class ContainersHealthTest(testtools.TestCase):
         """compare all overcloud container states with using two lists:
         one is current , the other some past list
         first time this method runs it creates a file holding overcloud
-        containers' states: /home/stack/expected_containers_list_df.csv'
+        containers' states: ~/expected_containers_list_df.csv'
         second time it creates a current containers states list and
         compares them, they must be identical"""
         # if we have a file or an explicit variable use that ,
