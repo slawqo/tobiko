@@ -135,6 +135,9 @@ class PodmanClientFixture(tobiko.SharedFixture):
                 podman_remote_socket = self.discover_podman_socket()
                 username = self.ssh_client.connect_parameters['username']
                 host = self.ssh_client.connect_parameters["hostname"]
+                key_files = self.ssh_client.connect_parameters.get(
+                    'key_filename', [])
+                key_file = key_files[0] if len(key_files) > 0 else None
                 socket = podman_remote_socket
                 podman_remote_socket_uri = f'unix:/tmp/podman.sock_{host}'
 
@@ -148,10 +151,13 @@ class PodmanClientFixture(tobiko.SharedFixture):
                             subprocess.call(
                                 ['rm', '-f', f'/tmp/podman.sock_{host}'])
                         # start a background  ssh tunnel with the remote host
-                        subprocess.call(['ssh', '-L',
-                                         f'/tmp/podman.sock_{host}:'
-                                         f'/run/podman/podman.sock',
-                                         host, '-N', '-f'])
+                        command = [
+                            'ssh', '-o', 'strictHostKeyChecking=no', '-L',
+                            f'/tmp/podman.sock_{host}:/run/podman/podman.sock',
+                            '-l', username, host, '-N', '-f']
+                        if key_file:
+                            command += ['-i', key_file]
+                        subprocess.call(command)
                         for _ in tobiko.retry(timeout=60., interval=1.):
                             if os.path.exists(f'/tmp/podman.sock_{host}'):
                                 break
