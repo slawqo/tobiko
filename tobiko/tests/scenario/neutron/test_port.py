@@ -164,7 +164,6 @@ class ExtraDhcpOptsPortLoggingTest(testtools.TestCase):
 
     stack = tobiko.required_fixture(stacks.NetworkStackFixture)
 
-    @pytest.mark.flaky(reruns=2, reruns_delay=60)
     def test_extra_dhcp_opts_logs_unsupported_options(self):
         # initialize logs that match the pattern
         topology.assert_ovn_unsupported_dhcp_option_messages()

@@ -17,7 +17,6 @@ from __future__ import absolute_import
 import time
 
 from oslo_log import log
-import pytest
 import testtools
 
 import tobiko
@@ -46,7 +45,11 @@ class QoSNetworkTest(testtools.TestCase):
     policy = tobiko.required_fixture(stacks.QosPolicyStackFixture)
     server = tobiko.required_fixture(stacks.QosServerStackFixture)
 
-    @pytest.mark.flaky(reruns=3, reruns_delay=120)
+    def setUp(self):
+        super(QoSNetworkTest, self).setUp()
+        # this is executed simply to wait until the server boot is completed
+        sh.get_hostname(self.server.ssh_client)
+
     def test_ping_dscp(self):
         capture_file = sh.execute('mktemp', sudo=True).stdout.strip()
         interface = ip.get_network_main_route_device(
@@ -85,7 +88,6 @@ class QoSNetworkTest(testtools.TestCase):
         """Verify server policy ID"""
         self.assertIsNone(self.server.port_details['qos_policy_id'])
 
-    @pytest.mark.flaky(reruns=3, reruns_delay=120)
     def test_qos_bw_limit(self):
         """Verify BW limit using the iperf3 tool"""
         self.server.wait_for_iperf3_server()
