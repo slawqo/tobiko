@@ -13,12 +13,6 @@ test_workflow_steps:
     tox_environment:
       TOBIKO_PREVENT_CREATE: no
 
-  - tox_description: 'run sanity test cases before disruptive tests'
-    tox_envlist: neutron_sanity
-    tox_step_name: between
-    tox_environment:
-      TOBIKO_PREVENT_CREATE: no
-
   - tox_description: 'run disruptive test cases (neutron)'
     tox_envlist: neutron_faults
     tox_step_name: neutron_faults
