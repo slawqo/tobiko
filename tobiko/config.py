@@ -69,7 +69,6 @@ HTTP_OPTIONS = [
     cfg.StrOpt('no_proxy',
                help="Don't use proxy server to connect to listed hosts")]
 
-
 TESTCASE_CONF_GROUP_NAME = "testcase"
 
 TESTCASE_OPTIONS = [
@@ -81,6 +80,14 @@ TESTCASE_OPTIONS = [
                  default=None,
                  help=("Timeout (in seconds) used for interrupting test "
                        "runner execution"))]
+
+COMMON_GROUP_NAME = 'common'
+
+COMMON_OPTIONS = [
+    cfg.StrOpt('shelves_dir',
+               default='~/.tobiko/cache/shelves',
+               help=("Default directory where to look for shelves.")),
+]
 
 
 def workspace_config_files(project=None, prog=None):
@@ -217,6 +224,9 @@ def register_tobiko_options(conf):
     conf.register_opts(
         group=cfg.OptGroup(TESTCASE_CONF_GROUP_NAME), opts=TESTCASE_OPTIONS)
 
+    conf.register_opts(
+        group=cfg.OptGroup(COMMON_GROUP_NAME), opts=COMMON_OPTIONS)
+
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)
         if hasattr(module, 'register_tobiko_options'):
@@ -235,9 +245,16 @@ def list_testcase_options():
     ]
 
 
+def list_common_options():
+    return [
+        (COMMON_GROUP_NAME, itertools.chain(COMMON_OPTIONS))
+    ]
+
+
 def list_tobiko_options():
     all_options = (list_http_options() +
-                   list_testcase_options())
+                   list_testcase_options() +
+                   list_common_options())
 
     for module_name in CONFIG_MODULES:
         module = importlib.import_module(module_name)

@@ -59,6 +59,7 @@ class TestResult(unittest.TextTestResult):
         super().stopTestRun()
         actual_test = tobiko.pop_test_case()
         assert actual_test == test
+        tobiko.remove_test_from_all_shared_resources(test.id())
 
 
 class TextIOWrapper(io.TextIOWrapper):
