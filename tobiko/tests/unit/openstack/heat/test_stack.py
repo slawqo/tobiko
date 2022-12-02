@@ -261,9 +261,12 @@ class HeatStackFixtureTest(openstack.OpenstackTest):
     def test_cleanup(self):
         client = MockClient()
         client.stacks.get.return_value = None
-        stack = MyStack(client=client)
+        stack = MyStackWithStackName(client=client)
+        stack_name = stack.stack_name
+        tobiko.addme_to_shared_resource(
+            'tobiko.openstack.heat._stack', stack_name)
         stack.cleanUp()
-        client.stacks.delete.assert_called_once_with(stack.stack_name)
+        client.stacks.delete.assert_called_once_with(stack_name)
 
     def test_outputs(self):
         stack = mock_stack(status='CREATE_COMPLETE',

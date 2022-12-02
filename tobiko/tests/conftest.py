@@ -231,3 +231,8 @@ def pytest_runtest_call(item):
     # pylint: disable=unused-argument
     check_test_runner_timeout()
     yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_shelves():
+    tobiko.initialize_shelves()

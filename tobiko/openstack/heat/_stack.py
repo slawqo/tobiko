@@ -188,7 +188,9 @@ class HeatStackFixture(tobiko.SharedFixture):
             self.user = keystone.get_user_id(session=self.session)
 
     def setup_stack(self) -> stacks.Stack:
-        return self.create_stack()
+        stack = self.create_stack()
+        tobiko.addme_to_shared_resource(__name__, stack.stack_name)
+        return stack
 
     def get_stack_parameters(self):
         return tobiko.reset_fixture(self.parameters).values
@@ -210,6 +212,8 @@ class HeatStackFixture(tobiko.SharedFixture):
                     if attempt.is_last:
                         raise
 
+                    # the stack shelf counter does not need to be decreased
+                    # here, because it was not increased yet
                     self.delete_stack()
 
                     # It uses a random time sleep to make conflicting
@@ -252,6 +256,8 @@ class HeatStackFixture(tobiko.SharedFixture):
                 LOG.error(f"Stack '{self.stack_name}' (id='{stack.id}') "
                           f"found in '{stack_status}' status (reason="
                           f"'{stack.stack_status_reason}'). Deleting it...")
+                # the stack shelf counter does not need to be decreased here,
+                # because it was not increased yet
                 self.delete_stack(stack_id=stack.id)
 
             self.wait_until_stack_deleted()
@@ -286,12 +292,16 @@ class HeatStackFixture(tobiko.SharedFixture):
         except InvalidStackError as ex:
             LOG.debug(f'Deleting invalid stack (name={self.stack_name}, "'
                       f'"id={stack_id}): {ex}')
+            # the stack shelf counter does not need to be decreased here,
+            # because it was not increased yet
             self.delete_stack(stack_id=stack_id)
             raise
 
         if stack_id != stack.id:
             LOG.debug(f'Deleting duplicate stack (name={self.stack_name}, "'
                       f'"id={stack_id})')
+            # the stack shelf counter does not need to be decreased here,
+            # because it was not increased yet
             self.delete_stack(stack_id=stack_id)
             del stack_id
 
@@ -312,8 +322,14 @@ class HeatStackFixture(tobiko.SharedFixture):
         return resources
 
     def cleanup_fixture(self):
-        self.setup_client()
-        self.cleanup_stack()
+        n_tests_using_stack = len(tobiko.removeme_from_shared_resource(
+            __name__, self.stack_name))
+        if n_tests_using_stack == 0:
+            self.setup_client()
+            self.cleanup_stack()
+        else:
+            LOG.info('Stack %r not deleted because %d tests are using it',
+                     self.stack_name, n_tests_using_stack)
 
     def cleanup_stack(self):
         self.delete_stack()

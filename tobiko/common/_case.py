@@ -150,6 +150,7 @@ def enter_test_case(case: TestCase,
             yield
     finally:
         assert case is manager.pop_test_case()
+        tobiko.remove_test_from_all_shared_resources(case.id())
 
 
 def test_case(case: TestCase = None,

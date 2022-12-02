@@ -30,6 +30,7 @@ from tobiko.common import _operation
 from tobiko.common import _os
 from tobiko.common import _retry
 from tobiko.common import _select
+from tobiko.common import _shelves
 from tobiko.common import _skip
 from tobiko.common import _time
 from tobiko.common import _utils
@@ -133,6 +134,12 @@ select = _select.select
 select_uniques = _select.select_uniques
 ObjectNotFound = _select.ObjectNotFound
 MultipleObjectsFound = _select.MultipleObjectsFound
+
+addme_to_shared_resource = _shelves.addme_to_shared_resource
+removeme_from_shared_resource = _shelves.removeme_from_shared_resource
+remove_test_from_all_shared_resources = (
+    _shelves.remove_test_from_all_shared_resources)
+initialize_shelves = _shelves.initialize_shelves
 
 SkipException = _skip.SkipException
 skip_if = _skip.skip_if
