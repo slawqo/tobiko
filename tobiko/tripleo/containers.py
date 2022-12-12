@@ -185,7 +185,8 @@ def list_containers(group=None):
     return containers_list
 
 
-expected_containers_file = '/home/stack/expected_containers_list_df.csv'
+expected_containers_file = os.path.expanduser(
+    '~/expected_containers_list_df.csv')
 
 
 def save_containers_state_to_file(expected_containers_list,):
@@ -617,7 +618,7 @@ def assert_equal_containers_state(expected_containers_list=None,
     """compare all overcloud container states with using two lists:
     one is current , the other some past list
     first time this method runs it creates a file holding overcloud
-    containers' states: /home/stack/expected_containers_list_df.csv'
+    containers' states: ~/expected_containers_list_df.csv'
     second time it creates a current containers states list and
     compares them, they must be identical"""
 
