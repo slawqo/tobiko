@@ -149,6 +149,10 @@ subparsers:
             type: Value
             help: hostname or IP address to be used to connect to undercloud host
             ansible_variable: undercloud_ssh_hostname
+          undercloud_ssh_key_filename:
+            type: Value
+            help: SSH key filename to connect to undercloud host
+            ansible_variable: undercloud_ssh_key_filename
           overcloud-ssh-username:
             type: Value
             help: user name to be used to connect to TripleO Overcloud hosts

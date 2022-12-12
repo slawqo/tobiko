@@ -13,6 +13,7 @@ test_default_conf:
   tripleo:
     undercloud_ssh_hostname: "{{ undercloud_ssh_hostname }}"
     overcloud_ssh_username: "{{ overcloud_ssh_username }}"
+    undercloud_ssh_key_filename: "{{ undercloud_ssh_key_filename }}"
 
 test_log_debug: ''
 
@@ -24,5 +25,6 @@ stackrc_file: '{{ ansible_user_dir }}/overcloudrc'
 
 undercloud_hostname: '{{ groups.get("undercloud", []) | first | default("undercloud-0") }}'
 undercloud_ssh_hostname: ''
+undercloud_ssh_key_filename: ''
 
 overcloud_ssh_username: ''
