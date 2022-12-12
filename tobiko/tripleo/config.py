@@ -65,6 +65,10 @@ OPTIONS = [
                      "overcloud nodes ")),
     cfg.StrOpt('overcloud_network_name',
                help="Name of network used to connect to overcloud nodes"),
+    cfg.DictOpt('overcloud_groups_dict',
+                help='Dictionary with the node groups corresponding to '
+                     'different hostname prefixes',
+                default={'ctrl': 'controller', 'cmp': 'compute'}),
 
     # Other options
     cfg.StrOpt('inventory_file',
