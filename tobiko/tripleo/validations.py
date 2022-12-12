@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
+
 from oslo_log import log
 from validations_libs import validation_actions
 
@@ -28,7 +30,7 @@ def run_post_deployment_validations():
     only if we're in a tripleo env"""
 
     if overcloud.has_overcloud():
-        inventory_file = '/home/stack/hosts.yaml'
+        inventory_file = os.path.expanduser('~/hosts.yaml')
         tripleo.fetch_tripleo_inventary_file(inventory_file=inventory_file)
         failures = []
         validates_object = validation_actions.ValidationActions()
