@@ -154,6 +154,9 @@ def reset_all_controller_nodes_sequentially(
 
 def disrupt_all_controller_nodes(disrupt_method=sh.hard_reset_method,
                                  sequentially=False, exclude_list=None):
+    # TODO(eolivare): join disrupt_all_controller_nodes and
+    # reboot_all_controller_nodes methods because they are very similar
+
     # reboot all controllers and wait for ssh Up on them
     # method : method of disruptino to use : reset | network_disruption
     # hard reset is simultaneous while soft is sequential
@@ -181,7 +184,7 @@ def disrupt_all_controller_nodes(disrupt_method=sh.hard_reset_method,
             if sequentially:
                 check_overcloud_node_responsive(controller)
     if not sequentially:
-        for controller in topology.list_openstack_nodes(group='controller'):
+        for controller in nodes:
             check_overcloud_node_responsive(controller)
 
 
@@ -208,7 +211,7 @@ def reboot_all_controller_nodes(reboot_method=sh.hard_reset_method,
                                                         controller.name))
         tobiko.cleanup_fixture(controller.ssh_client)
     if not sequentially:
-        for controller in topology.list_openstack_nodes(group='controller'):
+        for controller in nodes:
             check_overcloud_node_responsive(controller)
 
 
