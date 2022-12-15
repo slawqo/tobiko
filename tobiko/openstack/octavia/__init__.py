@@ -28,6 +28,8 @@ get_amphora = _amphora.get_amphora
 get_amphora_compute_node = _amphora.get_amphora_compute_node
 get_master_amphora = _amphora.get_master_amphora
 list_amphorae = _amphora.list_amphorae
+get_amphora_stats = _amphora.get_amphora_stats
+run_command_on_amphora = _amphora.run_command_on_amphora
 
 OCTAVIA_CLIENT_CLASSSES = _client.OCTAVIA_CLIENT_CLASSSES
 get_octavia_client = _client.get_octavia_client
