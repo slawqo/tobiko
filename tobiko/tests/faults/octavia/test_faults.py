@@ -221,7 +221,7 @@ class OctaviaBasicFaultTest(testtools.TestCase):
         """Skip the test if Octavia doesn't use Active/standby topology
         """
         if len(octavia.list_amphorae(
-                self.loadbalancer_stack.loadbalancer_id)) > 2:
+                self.loadbalancer_stack.loadbalancer_id)) < 2:
             skipping_stmt = 'Skipping the test as it requires ' \
                             'Active/standby topology.'
             LOG.info(skipping_stmt)
