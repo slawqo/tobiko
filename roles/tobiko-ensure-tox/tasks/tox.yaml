@@ -2,7 +2,7 @@
 
 - name: "ensure Tox is installed"
   command: >
-    {{ python_executable }} -m pip install --user 'tox>={{ tox_min_version }}'
+    {{ python_executable }} -m pip install --user 'tox>={{ tox_min_version }},<{{tox_max_version}}'
   register: install_tox
   changed_when: "'Successfully installed' in install_tox.stdout"
 
