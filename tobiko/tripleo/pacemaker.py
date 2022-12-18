@@ -8,11 +8,13 @@ from oslo_log import log
 import pandas
 
 import tobiko
+from tobiko import config
 from tobiko.tripleo import overcloud
 from tobiko.shell import sh
 from tobiko.openstack import topology
 
 
+CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
@@ -165,33 +167,45 @@ class PacemakerResourcesStatus(object):
             return False
 
     def vips_resource_healthy(self):
-        vips_resource_str = f"({self.ocf_prefix}heartbeat:IPaddr2):"
-        nodes_num = self.resource_count(vips_resource_str)
-        started_num = self.resource_count_in_state(
-            vips_resource_str, "Started")
-        if nodes_num == started_num and nodes_num > 0:
-            LOG.info("pcs status check: resources vips are in healthy state")
+        if CONF.tobiko.tripleo.has_external_load_balancer:
+            LOG.info("external load balancer used - "
+                     "we can skip vips_resource sanity")
             return True
         else:
-            LOG.info(
-                "pcs status check: resources vips are not in healthy state")
-            return False
+            vips_resource_str = f"({self.ocf_prefix}heartbeat:IPaddr2):"
+            nodes_num = self.resource_count(vips_resource_str)
+            started_num = self.resource_count_in_state(
+                vips_resource_str, "Started")
+            if nodes_num == started_num and nodes_num > 0:
+                LOG.info("pcs status check: resources vips are "
+                         "in healthy state")
+                return True
+            else:
+                LOG.info(
+                    "pcs status check: resources"
+                    " vips are not in healthy state")
+                return False
 
     def ha_proxy_cinder_healthy(self):
-        ha_proxy_resource_str = (f"({self.ocf_prefix}heartbeat:"
-                                 f"{self.container_runtime()}):")
-        nodes_num = self.resource_count(ha_proxy_resource_str)
-        started_num = self.resource_count_in_state(
-            ha_proxy_resource_str, "Started")
-        if nodes_num == started_num and nodes_num > 0:
-            LOG.info("pcs status check: resources ha_proxy and"
-                     " cinder are in healthy state")
+        if CONF.tobiko.tripleo.has_external_load_balancer:
+            LOG.info("external load balancer used "
+                     "- we can skip ha_proxy_resource sanity")
             return True
         else:
-            LOG.info(
-                "pcs status check: resources ha_proxy and cinder are not in "
-                "healthy state")
-            return False
+            ha_proxy_resource_str = (f"({self.ocf_prefix}heartbeat:"
+                                     f"{self.container_runtime()}):")
+            nodes_num = self.resource_count(ha_proxy_resource_str)
+            started_num = self.resource_count_in_state(
+                ha_proxy_resource_str, "Started")
+            if nodes_num == started_num and nodes_num > 0:
+                LOG.info("pcs status check: resources ha_proxy and"
+                         " cinder are in healthy state")
+                return True
+            else:
+                LOG.info(
+                    "pcs status check: resources ha_proxy and cinder "
+                    "are not in healthy state")
+                return False
 
     def ovn_resource_healthy(self):
         ovn_resource_str = f"({self.ocf_prefix}ovn:ovndb-servers):"

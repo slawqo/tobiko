@@ -14,6 +14,7 @@ test_default_conf:
     undercloud_ssh_hostname: "{{ undercloud_ssh_hostname }}"
     overcloud_ssh_username: "{{ overcloud_ssh_username }}"
     undercloud_ssh_key_filename: "{{ undercloud_ssh_key_filename }}"
+    has_external_load_balancer: "{{ has_external_load_balancer }}"
 
 test_log_debug: ''
 
@@ -26,5 +27,6 @@ stackrc_file: '{{ ansible_user_dir }}/overcloudrc'
 undercloud_hostname: '{{ groups.get("undercloud", []) | first | default("undercloud-0") }}'
 undercloud_ssh_hostname: ''
 undercloud_ssh_key_filename: ''
+has_external_load_balancer: ''
 
 overcloud_ssh_username: ''
