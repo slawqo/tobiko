@@ -52,7 +52,7 @@ class RebootTrunkTest(testtools.TestCase):
         """Check Nova server VLAN port IP addresses"""
         self.stack.ensure_server_status('ACTIVE')
         expected = set(self.stack.list_vlan_fixed_ips())
-        for attempt in tobiko.retry():
+        for attempt in tobiko.retry(timeout=300, interval=10):
             actual = set(ip.list_ip_addresses(device=self.stack.vlan_device,
                                               ssh_client=self.stack.ssh_client,
                                               scope='global'))
