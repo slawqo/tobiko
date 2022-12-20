@@ -16,6 +16,13 @@
         state: directory
       register: create_dest_dir
 
+    - name: install git
+      ignore_errors: yes
+      become: true
+      package:
+        name: git
+        state: present
+
     - name: "checkout files from '{{ deploy_git_repo }}[{{ deploy_git_refspec }}]' to '{{ deploy_dir }}'"
       git:
         dest: '{{ deploy_dir }}'
