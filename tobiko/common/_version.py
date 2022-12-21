@@ -33,7 +33,11 @@ class VersionMismatch(_exception.TobikoException):
     cause = ''
 
 
-VERSION_CLASSES = _version.LegacyVersion, _version.Version
+try:
+    VERSION_CLASSES = _version.LegacyVersion, _version.Version
+except AttributeError:
+    VERSION_CLASSES = _version.Version
+
 Version = typing.Union[_version.Version]
 VersionType = typing.Union[Version, str]
 
