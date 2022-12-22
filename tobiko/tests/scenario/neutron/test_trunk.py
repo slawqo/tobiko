@@ -75,15 +75,11 @@ class RebootTrunkTest(testtools.TestCase):
             raise RuntimeError("Broken retry loop")
         self.assertEqual(set(expected), set(actual))
 
-    # Bug: https://bugzilla.redhat.com/show_bug.cgi?id=2030618
-    @pytest.mark.flaky(reruns=2, reruns_delay=60)
     def test_1_ping_vlan_port(self):
         """Check Nova server VLAN port is reachable"""
         self.stack.ensure_server_status('ACTIVE')
         self.stack.assert_vlan_is_reachable()
 
-    # Bug: https://bugzilla.redhat.com/show_bug.cgi?id=2030618
-    @pytest.mark.flaky(reruns=2, reruns_delay=60)
     @pytest.mark.ovn_migration
     def test_2_ping_vlan_port_after_restart(self):
         """Check Nova server VLAN port is reachable after hard restart"""
