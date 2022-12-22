@@ -11,6 +11,7 @@ from oslo_log import log
 import pandas
 
 import tobiko
+from tobiko import config
 from tobiko import podman
 from tobiko import docker
 from tobiko.openstack import neutron
@@ -21,6 +22,7 @@ from tobiko.tripleo import overcloud
 from tobiko.tripleo import topology as tripleo_topology
 
 
+CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
@@ -332,7 +334,7 @@ def assert_all_tripleo_containers_running():
                                          'nova_migration_target',
                                          'nova_virtlogd']
 
-    if assert_ceph_rgw_container_running():
+    if ceph_rgw_expected():
         tripleo_containers_to_check = \
             shiftonstack_controller_tripleo_containers
     else:
@@ -355,6 +357,17 @@ def assert_ceph_rgw_container_running():
     swift containers precence"""
     return assert_containers_running('controller', ['ceph-rgw'],
                                      full_name=False, bool_check=True)
+
+
+def ceph_rgw_expected():
+    """Returns True if 'ceph_rgw' parameter in the config file is set to 'true'
+    or ceph rgw containers were detected running by Tobiko.
+    """
+    return CONF.tobiko.tripleo.ceph_rgw or assert_ceph_rgw_container_running()
+
+
+def skip_if_ceph_rgw():
+    return tobiko.skip_if('Ceph rgw deployed', ceph_rgw_expected)
 
 
 def osp13_container_name_short_format(container_name_long_format):

@@ -74,9 +74,14 @@ OPTIONS = [
     cfg.StrOpt('inventory_file',
                default='.ansible/inventory/tripleo.yaml',
                help="path to where to export tripleo inventory file"),
+
     cfg.BoolOpt('has_external_load_balancer',
                 default=False,
                 help="OSP env was done with an external load balancer"),
+
+    cfg.BoolOpt('ceph_rgw',
+                default=False,
+                help="whether Ceph RGW is deployed"),
 ]
 
 

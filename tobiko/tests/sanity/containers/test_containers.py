@@ -51,60 +51,75 @@ class ContainersHealthTest(testtools.TestCase):
         """check that all common tripleo containers are running"""
         containers.assert_containers_running('controller', ['cinder_api'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_rsync(self):
         containers.assert_containers_running('controller', ['swift_rsync'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_proxy(self):
         containers.assert_containers_running('controller', ['swift_proxy'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_object_updater(self):
         containers.assert_containers_running('controller',
                                              ['swift_object_updater'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_object_server(self):
         containers.assert_containers_running('controller',
                                              ['swift_object_server'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_object_replicator(self):
         containers.assert_containers_running('controller',
                                              ['swift_object_replicator'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_object_expirer(self):
         containers.assert_containers_running('controller',
                                              ['swift_object_expirer'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_object_auditor(self):
         containers.assert_containers_running('controller',
                                              ['swift_object_auditor'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_container_updater(self):
         containers.assert_containers_running('controller',
                                              ['swift_container_updater'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_container_server(self):
         containers.assert_containers_running('controller',
                                              ['swift_container_server'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_container_replicator(self):
         containers.assert_containers_running('controller',
                                              ['swift_container_replicator'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_container_auditor(self):
         containers.assert_containers_running('controller',
                                              ['swift_container_auditor'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_account_server(self):
         containers.assert_containers_running('controller',
                                              ['swift_account_server'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_account_replicator(self):
         containers.assert_containers_running('controller',
                                              ['swift_account_replicator'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_account_reaper(self):
         containers.assert_containers_running('controller',
                                              ['swift_account_reaper'])
 
+    @tripleo.skip_if_ceph_rgw()
     def test_swift_account_auditor(self):
         containers.assert_containers_running('controller',
                                              ['swift_account_auditor'])

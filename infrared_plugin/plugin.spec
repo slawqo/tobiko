@@ -245,6 +245,11 @@ subparsers:
                     --quota routers=30
                     --quota secgroups=50
                 Check "openstack quota set --help" for more information
+          ceph-rgw:
+            type: Bool
+            help: Skip Swift containers healthchecks when CephAdm is deployed
+            ansible_variable: ceph_rgw
+            default: False
 
       - title: Cleanup stage
         options:

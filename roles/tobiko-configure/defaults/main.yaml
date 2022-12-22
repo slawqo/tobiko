@@ -15,6 +15,7 @@ test_default_conf:
     overcloud_ssh_username: "{{ overcloud_ssh_username }}"
     undercloud_ssh_key_filename: "{{ undercloud_ssh_key_filename }}"
     has_external_load_balancer: "{{ has_external_load_balancer }}"
+    ceph_rgw: "{{ ceph_rgw }}"
 
 test_log_debug: ''
 
@@ -30,3 +31,5 @@ undercloud_ssh_key_filename: ''
 has_external_load_balancer: ''
 
 overcloud_ssh_username: ''
+
+ceph_rgw: ''
