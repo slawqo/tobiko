@@ -46,4 +46,5 @@
   ignore_errors: yes
   when:
     - groups.get("undercloud")
+    - test_host is defined
     - test_host not in groups.undercloud
