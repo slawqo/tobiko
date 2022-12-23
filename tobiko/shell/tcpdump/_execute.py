@@ -45,9 +45,9 @@ def start_capture(capture_file: str,
 
     command = _interface.get_tcpdump_command(parameters)
 
+    LOG.debug("Capturing traffic with the following command in background: %s",
+              command)
     # when ssh_client is None, an ssh session is created on localhost
-
-    # using a process we run a fire and forget tcpdump command
     process = sh.process(command=command,
                          ssh_client=ssh_client,
                          sudo=True)

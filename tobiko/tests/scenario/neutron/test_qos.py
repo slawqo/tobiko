@@ -14,8 +14,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import time
-
 from oslo_log import log
 import testtools
 
@@ -71,9 +69,8 @@ class QoSNetworkTest(testtools.TestCase):
             interface=interface,
             capture_filter=capture_filter,
             capture_timeout=60)
-        time.sleep(1)
         # send a ping to the server
-        ping.assert_reachable_hosts([self.server.floating_ip_address],)
+        ping.assert_reachable_hosts([self.server.floating_ip_address], count=5)
         # stop tcpdump and get the pcap capture
         pcap = tcpdump.get_pcap(process, capture_file=capture_file)
         # check the capture is not empty
