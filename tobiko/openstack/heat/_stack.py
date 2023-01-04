@@ -126,6 +126,7 @@ class HeatStackFixture(tobiko.SharedFixture):
     parameters: typing.Optional['HeatStackParametersFixture'] = None
     project: typing.Optional[str] = None
     user: typing.Optional[str] = None
+    output_needs_stack_complete: bool = True
 
     def __init__(
             self,
@@ -670,8 +671,8 @@ class HeatStackOutputsFixture(HeatStackNamespaceFixture):
         return frozenset(template.outputs or [])
 
     def get_values(self):
-        # Can't get output values before stack creation is complete
-        self.stack.wait_for_create_complete()
+        if self.stack.output_needs_stack_complete:
+            self.stack.wait_for_create_complete()
         outputs = self.stack.get_stack(resolve_outputs=True).outputs
         return {o['output_key']: o['output_value']
                 for o in outputs}
@@ -739,7 +740,13 @@ class HeatStackResourceFixture(HeatStackNamespaceFixture):
         return frozenset(template.resources or [])
 
     def get_values(self):
-        self.stack.wait_for_create_complete()
+        # Setting output_needs_stack_complete to False may be necessary
+        # in some case, such as the faults tests
+        # that covers RHBZ#2124877
+        # Some VMs may be in ERROR state for this testcase
+        # but that is ok, that is not the aim of this test
+        if self.stack.output_needs_stack_complete:
+            self.stack.wait_for_create_complete()
         client = self.stack.client
         resources = client.resources.list(self.stack.stack_id)
         return {r.resource_name: r for r in resources}

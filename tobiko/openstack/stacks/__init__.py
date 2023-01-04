@@ -49,6 +49,8 @@ EvacuableCirrosImageFixture = _cirros.EvacuableCirrosImageFixture
 EvacuableServerStackFixture = _cirros.EvacuableServerStackFixture
 ExtraDhcpOptsCirrosServerStackFixture = (
     _cirros.ExtraDhcpOptsCirrosServerStackFixture)
+MultiIPCirrosServerStackFixture = (
+    _cirros.MultiIPCirrosServerStackFixture)
 
 DesignateZoneStackFixture = _designate.DesignateZoneStackFixture
 

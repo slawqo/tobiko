@@ -23,6 +23,7 @@ import testtools
 
 import tobiko
 from tobiko.openstack import neutron
+from tobiko.openstack import nova as nova_osp
 from tobiko.openstack import topology
 from tobiko.openstack import tests
 from tobiko.tests.faults.ha import cloud_disruptions
@@ -126,6 +127,7 @@ class DisruptTripleoNodesTest(testtools.TestCase):
     """ HA Tests: run health check -> disruptive action -> health check
     disruptive_action: a function that runs some
     disruptive scenario on a overcloud"""
+    vms_detailed_info = None
 
     def test_0vercloud_health_check(self):
         OvercloudHealthCheck.run_before(skip_mac_table_size_test=False)
@@ -157,6 +159,30 @@ class DisruptTripleoNodesTest(testtools.TestCase):
     #     # otherwise sidecar containers will not run after computes reboot
     #     nova.start_all_instances()
     #     OvercloudHealthCheck.run_after(passive_checks_only=True)
+
+    def tearDown(self):
+        super(DisruptTripleoNodesTest, self).tearDown()
+        for vm in self.vms_detailed_info or []:
+            if vm is None or vm.get('id') is None:
+                continue
+            vm_id = vm['id']
+            try:
+                nova_osp.delete_server(vm_id)
+            except nova_osp.ServerNotFoundError:
+                LOG.debug(f"Server {vm_id} not found")
+
+    def test_z99_reboot_controller_galera_main_vip(self):
+        # This test case may fail at times if RHBZ#2124877 is not resolved
+        # but that bug is due to a race condition,
+        # so it is not reproducible 100% times
+        OvercloudHealthCheck.run_before(passive_checks_only=True)
+        multi_ip_test_fixture, ports_before_stack_creation = \
+            cloud_disruptions.reboot_controller_galera_main_vip()
+        OvercloudHealthCheck.run_after(passive_checks_only=True)
+        self.vms_detailed_info = cloud_disruptions.get_vms_detailed_info(
+            multi_ip_test_fixture)
+        cloud_disruptions.check_no_duplicate_ips(
+            self.vms_detailed_info, ports_before_stack_creation)
 
     def test_z99_reboot_controller_main_vip(self):
         OvercloudHealthCheck.run_before()

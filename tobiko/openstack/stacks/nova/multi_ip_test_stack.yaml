@@ -1,0 +1,47 @@
+heat_template_version: newton
+
+description: |
+  Create a group of servers connected to the same tenant network.
+
+parameters:
+  key_name:
+    type: string
+    description: Name of keypair to assign to server
+    constraints:
+    - custom_constraint: nova.keypair
+  flavor:
+    type: string
+    description: Flavor to use for server
+    constraints:
+    - custom_constraint: nova.flavor
+  image:
+    type: string
+    description: Name of image to use for server
+  network:
+    type: string
+    description: ID of network to which server get connected
+    constraints:
+    - custom_constraint: neutron.network
+
+resources:
+  group_of_vms:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: 10
+      resource_def:
+        type: OS::Nova::Server
+        properties:
+           name: group_of_vms_%index%
+           key_name: {get_param: key_name}
+           image: {get_param: image}
+           flavor: {get_param: flavor}
+           networks:
+             - network: {get_param: network}
+
+outputs:
+  list_of_server_ids:
+    description: list of server IDs from this group
+    value: {get_attr: [group_of_vms, refs]}
+  vms_detailed_info:
+    description: detailed info from the group of VMs
+    value: {get_attr: [group_of_vms, show]}

@@ -29,6 +29,7 @@ from oslo_log import log
 import tobiko
 from tobiko.openstack import glance
 from tobiko.openstack import keystone
+from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.openstack import tests
 from tobiko.openstack import topology
@@ -39,7 +40,7 @@ from tobiko.tripleo import containers
 from tobiko.tripleo import nova
 from tobiko.tripleo import pacemaker
 from tobiko.tripleo import topology as tripleo_topology
-
+from tobiko import tripleo
 
 LOG = log.getLogger(__name__)
 
@@ -279,6 +280,95 @@ def disrupt_controller_main_vip(disrupt_method=sh.hard_reset_method,
         else:
             # get that node's ssh_client and reset it
             disrupt_node(main_vip_controller, disrupt_method=disrupt_method)
+
+
+def disrupt_controller_galera_main_vip(disrupt_method=sh.soft_reset_method):
+    # This case reboots controller while VM creation is in progress
+    # Please refer to RHBZ#2124877 for more info
+    # Find the Galera VIP (port name : internal_api_virtual_ip)
+    try:
+        session = tripleo.undercloud_keystone_session()
+        uc_neutron_client = neutron.get_neutron_client(session=session)
+        new_port = neutron.find_port(client=uc_neutron_client, unique=False,
+                                     name='internal_api_virtual_ip')
+        galera_vip_address = new_port['fixed_ips'][0]['ip_address']
+        LOG.info("The Galera VIP address is: %r", galera_vip_address)
+    except sh.ShellCommandFailed as no_internal_api:
+        raise tobiko.SkipException(
+            'This OSP environment doesnt have an internal_api \
+              network, so this test cannot be executed') from no_internal_api
+
+    # Find the controller hosting VIP resource
+    galera_vip_resource = "ip-"+galera_vip_address
+    galera_vip_controller = pacemaker.get_overcloud_nodes_running_pcs_resource(
+                               resource=galera_vip_resource)[0]
+
+    ports_before_stack_creation = neutron.list_ports(
+        device_owner="compute:nova")
+    multi_ip_test_fixture = tobiko.get_fixture(
+        stacks.MultiIPCirrosServerStackFixture)
+    tobiko.use_fixture(multi_ip_test_fixture)
+    time.sleep(10)  # wait until some of the VMs have been created
+
+    # Reboot that controller
+    reboot_node(galera_vip_controller, wait=True,
+                reboot_method=disrupt_method)
+
+    return multi_ip_test_fixture, ports_before_stack_creation
+
+
+def get_vms_detailed_info(multi_ip_test_fixture):
+    for attempt in tobiko.retry(timeout=240, interval=10):
+        # dynamically obtain the status of the VMs
+        vms_detailed_info = multi_ip_test_fixture.vms_detailed_info
+
+        vm_status_list = [
+            vm.get('status') for vm in vms_detailed_info if vm is not None]
+        if 'BUILD' not in vm_status_list:
+            LOG.debug("All VMs reached a final status")
+            break
+        if attempt.is_last:
+            LOG.warn("Still some VMs in status BUILD - the test continues...")
+            break
+
+    return vms_detailed_info
+
+
+def check_no_duplicate_ips(vms_detailed_info, ports_before_stack_creation):
+    test_case = tobiko.get_test_case()
+    ports_after_reboot = neutron.list_ports(device_owner="compute:nova")
+    # check VM IP addresses are different
+    ip4_list = []
+    ip6_list = []
+    for vm in vms_detailed_info:
+        addresses = vm.get('addresses', {}) if vm is not None else {}
+        for addresses_per_network in addresses.values():
+            test_case.assertEqual(len(addresses_per_network), 2)
+            for subnet_addr in addresses_per_network:
+                subnet_ip = subnet_addr['addr']
+                if netaddr.valid_ipv4(subnet_ip):
+                    ip4_list.append(subnet_ip)
+                elif netaddr.valid_ipv6(subnet_ip):
+                    ip6_list.append(subnet_ip)
+
+    ip4_set = set(ip4_list)  # this removes duplicate values
+    LOG.debug("list of IPv4s from the MultiIPVM group: %r", ip4_list)
+    test_case.assertEqual(len(ip4_list), len(ip4_set))
+
+    ip6_set = set(ip6_list)  # this removes duplicate values
+    LOG.debug("list of IPv6s from the MultiIPVM group: %r", ip6_list)
+    test_case.assertEqual(len(ip6_list), len(ip6_set))
+
+    LOG.debug("list of IPv4 and list of IPv6 addresses "
+              "should have the same length")
+    test_case.assertEqual(len(ip6_list), len(ip4_list))
+    test_case.assertEqual(len(ip6_list), len(ports_after_reboot) - len(
+        ports_before_stack_creation))
+
+
+def reboot_controller_galera_main_vip():
+    return disrupt_controller_galera_main_vip(
+        disrupt_method=sh.soft_reset_method)
 
 
 def reset_controller_main_vip():

@@ -21,11 +21,12 @@ from paramiko import sftp_file
 from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack import neutron
+from tobiko.openstack import heat
 from tobiko.openstack.stacks import _nova
 from tobiko.shell import sh
 from tobiko.shell import ssh
 import tobiko.tripleo
-
+from tobiko.openstack.stacks import _hot
 
 CONF = config.CONF
 
@@ -155,3 +156,13 @@ class EvacuableServerStackFixture(CirrosServerStackFixture):
 
 class ExtraDhcpOptsCirrosServerStackFixture(CirrosServerStackFixture):
     use_extra_dhcp_opts = True
+
+
+class MultiIPCirrosServerStackFixture(CirrosServerStackFixture):
+    template = _hot.heat_template_file('nova/multi_ip_test_stack.yaml')
+    expected_creted_status = {heat.CREATE_IN_PROGRESS, heat.CREATE_COMPLETE}
+    output_needs_stack_complete = False
+
+    def cleanup_stack(self):
+        self.delete_stack()
+        # this is skipped for this stack: self.wait_until_stack_deleted()
