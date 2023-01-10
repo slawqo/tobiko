@@ -18,6 +18,7 @@ import collections
 import re
 import sys
 import typing
+import time
 
 from oslo_log import log
 import pytest
@@ -443,6 +444,12 @@ class L3AgentTest(BaseAgentTest):
                 continue
 
         return active_agent
+
+    # FIXME- Sleep(30 sec) temporarly to make sure the L3 agent had time
+    # fully provision all the resources - rhbz#2133743
+    def start_agent(self, hosts: typing.Optional[typing.List[str]] = None):
+        super(L3AgentTest, self).start_agent(hosts)
+        time.sleep(30)
 
     @neutron.skip_if_missing_networking_extensions('l3-ha')
     @neutron.skip_if_missing_networking_extensions('l3_agent_scheduler')
