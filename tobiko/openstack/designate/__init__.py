@@ -14,12 +14,23 @@
 from __future__ import absolute_import
 
 from tobiko.openstack.designate import _client
-from tobiko.openstack.designate import _zone
+from tobiko.openstack.designate import _constants
 
 DesignateClientFixture = _client.DesignateClientFixture
 designate_client = _client.designate_client
 get_designate_client = _client.get_designate_client
 DESIGNATE_CLIENT_CLASSES = _client.DESIGNATE_CLIENT_CLASSES
 
-designate_zone_id = _zone.designate_zone_id
-get_designate_zone = _zone.get_designate_zone
+designate_zone_id = _client.designate_zone_id
+get_designate_zone = _client.get_designate_zone
+list_recordsets = _client.list_recordsets
+create_recordsets = _client.create_recordsets
+get_recordset = _client.get_recordset
+
+# Waiters
+wait_for_status = _client.wait_for_status
+
+# Constants
+STATUS = _constants.STATUS
+ACTIVE = _constants.ACTIVE
+ERROR = _constants.ERROR
