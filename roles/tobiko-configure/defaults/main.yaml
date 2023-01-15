@@ -17,6 +17,10 @@ test_default_conf:
     has_external_load_balancer: "{{ has_external_load_balancer }}"
     ceph_rgw: "{{ ceph_rgw }}"
 
+  nova:
+    ubuntu_connection_timeout: "{{ ubuntu_connection_timeout }}"
+    ubuntu_is_reachable_timeout: "{{ ubuntu_is_reachable_timeout }}"
+
 test_log_debug: ''
 
 test_case_timeout: 1800.
@@ -33,3 +37,6 @@ has_external_load_balancer: ''
 overcloud_ssh_username: ''
 
 ceph_rgw: ''
+
+ubuntu_connection_timeout: ''
+ubuntu_is_reachable_timeout: ''
