@@ -51,6 +51,7 @@ class OctaviaClientManager(_client.OpenstackClientManager):
 CLIENTS = OctaviaClientManager()
 
 
+@keystone.skip_if_missing_service(name='octavia')
 def octavia_client(obj: OctaviaClientType = None) -> octavia.OctaviaAPI:
     if obj is None:
         return get_octavia_client()
