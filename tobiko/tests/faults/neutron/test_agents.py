@@ -21,7 +21,6 @@ import typing
 import time
 
 from oslo_log import log
-import pytest
 import testtools
 
 import tobiko
@@ -758,7 +757,6 @@ class MetadataAgentTest(BaseAgentTest):
                     "Metadata server reached from Nova server:\n"
                     f"{curl_output}")
 
-    @pytest.mark.flaky(reruns=5, reruns_delay=120)
     def test_metadata_service_restart(self):
         # Ensure service is up
         self.start_agent()
