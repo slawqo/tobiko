@@ -22,6 +22,7 @@ from tobiko.openstack.neutron import _port
 from tobiko.openstack.neutron import _quota_set
 from tobiko.openstack.neutron import _network
 from tobiko.openstack.neutron import _router
+from tobiko.openstack.neutron import _security_group
 from tobiko.openstack.neutron import _subnet
 
 
@@ -33,6 +34,10 @@ OPENVSWITCH_AGENT = _agent.OPENVSWITCH_AGENT
 OVN_CONTROLLER = _agent.OVN_CONTROLLER
 OVN_METADATA_AGENT = _agent.OVN_METADATA_AGENT
 NEUTRON_OVN_METADATA_AGENT = _agent.NEUTRON_OVN_METADATA_AGENT
+DEFAULT_SG_NAME = _security_group.DEFAULT_SG_NAME
+STATEFUL_OVN_ACTION = _security_group.STATEFUL_OVN_ACTION
+STATELESS_OVN_ACTION = _security_group.STATELESS_OVN_ACTION
+
 AgentNotFoundOnHost = _agent.AgentNotFoundOnHost
 NeutronAgentType = _agent.NeutronAgentType
 get_l3_agent_mode = _agent.get_l3_agent_mode
@@ -130,3 +135,8 @@ list_subnets = _subnet.list_subnets
 SubnetType = _subnet.SubnetType
 SubnetIdType = _subnet.SubnetIdType
 NoSuchSubnet = _subnet.NoSuchSubnet
+
+list_security_groups = _security_group.list_security_groups
+get_default_security_group = _security_group.get_default_security_group
+create_security_group = _security_group.create_security_group
+create_security_group_rule = _security_group.create_security_group_rule

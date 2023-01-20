@@ -20,6 +20,7 @@ from paramiko import sftp_file
 
 from tobiko import config
 from tobiko.openstack import glance
+from tobiko.openstack import neutron
 from tobiko.openstack.stacks import _nova
 from tobiko.shell import sh
 from tobiko.shell import ssh
@@ -84,6 +85,13 @@ class CirrosServerStackFixture(_nova.ServerStackFixture):
             connection = CirrosShellConnection(ssh_client=ssh_client)
             sh.register_shell_connection(connection)
         return ssh_client
+
+
+class CirrosServerWithDefaultSecurityGroupStackFixture(
+        CirrosServerStackFixture):
+
+    #: Use "Default" Security Group of the project
+    security_groups = [neutron.DEFAULT_SG_NAME]
 
 
 class CirrosShellConnection(sh.SSHShellConnection):
