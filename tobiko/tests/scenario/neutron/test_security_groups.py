@@ -154,19 +154,29 @@ class StatelessSecurityGroupTest(BaseSecurityGroupTest):
         self._check_sg_rule_in_ovn_nb_db(new_rule['id'],
                                          neutron.STATEFUL_OVN_ACTION)
 
-    def test_new_security_group_is_stateful(self):
-        """Test that newly created security group is stateful by default.
+    def test_security_group_stateful_to_stateless_switch(self):
+        """Test that security group can be switched from stateful to stateless.
 
-        This test checks if newly created SG is stateful by default
+        This test initially checks if newly created SG is stateful by default
         and if OVN's ACLs corresponding to the SG's rules have correct
         action which is "allow-related".
+        Later it also checks if SG can be updated to be stateless and if OVN's
+        ACLs corresponding to the SG's rules are properly updated too.
 
         Steps:
         1. Create SG for the project,
         2. Check if ACLs corresponding to the rules from that SG have
            "action-related" action,
         3. Add new SG rule in the SG,
-        4. Check action of the ACL corresponding to the newly created SG rule.
+        4. Check action of the ACL corresponding to the newly created SG rule,
+        5. Update SG to be stateless,
+        6. Check if ACLs corresponding to the rules from that SG have
+           "action-stateless" action,
+        7. Add new SG rule in the SG,
+        8. Check action of the ACL corresponding to the newly created SG rule,
+        9. Update SG to be stateful again,
+        10. Add new SG rule in the SG,
+        11. Check action of the ACL corresponding to the newly created SG rule,
         """
         sg = neutron.create_security_group(
             name="test_new_security_group_is_statefull_SG",
@@ -179,7 +189,41 @@ class StatelessSecurityGroupTest(BaseSecurityGroupTest):
             port_range_max=1111,
             ethertype="IPv4",
             protocol="tcp",
-            description="test_new_security_group_is_statefull_SG rule",
+            description="stateful SG rule 1",
+            direction="ingress"
+        )
+        self._check_sg_rule_in_ovn_nb_db(new_rule['id'],
+                                         neutron.STATEFUL_OVN_ACTION)
+
+        # Update to stateless
+        neutron.update_security_group(sg['id'], stateful=False)
+        sg = neutron.get_security_group_by_id(sg['id'])
+        self.assertFalse(sg['stateful'])
+        self._check_sg_rules_in_ovn_nb_db(sg, neutron.STATELESS_OVN_ACTION)
+        new_rule = neutron.create_security_group_rule(
+            sg['id'],
+            port_range_min=2222,
+            port_range_max=2222,
+            ethertype="IPv4",
+            protocol="tcp",
+            description="stateless SG rule",
+            direction="ingress"
+        )
+        self._check_sg_rule_in_ovn_nb_db(new_rule['id'],
+                                         neutron.STATELESS_OVN_ACTION)
+
+        # And get back to stateful
+        neutron.update_security_group(sg['id'], stateful=True)
+        sg = neutron.get_security_group_by_id(sg['id'])
+        self.assertTrue(sg['stateful'])
+        self._check_sg_rules_in_ovn_nb_db(sg, neutron.STATEFUL_OVN_ACTION)
+        new_rule = neutron.create_security_group_rule(
+            sg['id'],
+            port_range_min=3333,
+            port_range_max=3333,
+            ethertype="IPv4",
+            protocol="tcp",
+            description="stateful SG rule 2",
             direction="ingress"
         )
         self._check_sg_rule_in_ovn_nb_db(new_rule['id'],
