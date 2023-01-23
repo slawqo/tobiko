@@ -53,3 +53,10 @@ test_log_file: '{{ test_report_dir | realpath }}/tobiko.log'
 
 # Local where test cases results are being collected to
 test_collect_dir: '{{ test_src_dir | realpath }}/{{ test_report_name }}'
+
+# --- download-images options -------------------------------------------------
+download_images_dir: "{{ ansible_user_dir }}/.downloaded-images"
+download_images:
+  ubuntu-minimal:
+    type: ubuntu
+    url: "https://cloud-images.ubuntu.com/minimal/releases/jammy/release/ubuntu-22.04-minimal-cloudimg-amd64.img"

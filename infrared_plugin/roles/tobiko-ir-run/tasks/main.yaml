@@ -66,6 +66,9 @@
     - name: apply pre-requisites before tests run
       include_role: name=tobiko-ir-before-run
 
+    - name: "download images"
+      include_role: name=tobiko-download-images
+
     - name: "initialize test execution"
       include_role: name=tobiko-configure
 

@@ -1,0 +1,15 @@
+---
+
+- name: create directory to store images
+  file:
+    state: directory
+    dest: "{{ download_images_dir }}"
+
+- name: download images
+  get_url:
+    dest: "{{ download_images_dir }}/{{ item.key }}"
+    url: "{{ item.value.url }}"
+  register: download
+  retries: 5
+  until: download is success
+  with_dict: "{{ download_images }}"

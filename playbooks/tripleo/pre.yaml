@@ -7,6 +7,7 @@
 - hosts: primary
   roles:
     - tobiko-zuul
+    - tobiko-download-images
     - tobiko-configure
     - ci-common-vars
     - run-test
