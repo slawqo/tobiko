@@ -26,24 +26,14 @@ from tobiko.shell import sh
 
 CONF = config.CONF
 
-UBUNTU_IMAGE_VERSION = 'jammy'
 
-UBUNTU_IMAGE_VERSION_NUMBER = '22.04'
-
-UBUNTU_MINIMAL_IMAGE_URL = (
-    'https://cloud-images.ubuntu.com/minimal/releases/'
-    f'{UBUNTU_IMAGE_VERSION}/release/'
-    f'ubuntu-{UBUNTU_IMAGE_VERSION_NUMBER}-minimal-cloudimg-amd64.img')
-
-
-class UbuntuMinimalImageFixture(glance.URLGlanceImageFixture):
-    image_url = CONF.tobiko.ubuntu.image_url or UBUNTU_MINIMAL_IMAGE_URL
+class UbuntuMinimalImageFixture(glance.FileGlanceImageFixture):
     image_name = CONF.tobiko.ubuntu.image_name
     image_file = CONF.tobiko.ubuntu.image_file
     disk_format = CONF.tobiko.ubuntu.disk_format or "qcow2"
     container_format = CONF.tobiko.ubuntu.container_format or "bare"
     username = CONF.tobiko.ubuntu.username or 'ubuntu'
-    password = CONF.tobiko.ubuntu.password or 'ununtu'
+    password = CONF.tobiko.ubuntu.password or 'ubuntu'
     connection_timeout = CONF.tobiko.ubuntu.connection_timeout or 1500.
     disabled_algorithms = CONF.tobiko.ubuntu.disabled_algorithms
 
@@ -83,10 +73,9 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
     """
 
     def __init__(self,
-                 image_url: str = None,
                  ethernet_devide: str = None,
                  **kwargs):
-        super().__init__(image_url=image_url, **kwargs)
+        super().__init__(**kwargs)
         self._ethernet_device = ethernet_devide
 
     @property

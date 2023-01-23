@@ -185,7 +185,7 @@ class GlanceImageFixture(_client.HasGlanceClientMixin, tobiko.SharedFixture):
                                            expected_status=expected_status)
 
 
-class UploadGranceImageFixture(GlanceImageFixture):
+class UploadGlanceImageFixture(GlanceImageFixture):
 
     disk_format = "raw"
     container_format = "bare"
@@ -194,7 +194,7 @@ class UploadGranceImageFixture(GlanceImageFixture):
 
     def __init__(self, disk_format=None, container_format=None, tags=None,
                  **kwargs):
-        super(UploadGranceImageFixture, self).__init__(**kwargs)
+        super(UploadGlanceImageFixture, self).__init__(**kwargs)
 
         if container_format:
             self.container_format = container_format
@@ -296,7 +296,7 @@ class UploadGranceImageFixture(GlanceImageFixture):
         raise NotImplementedError
 
 
-class FileGlanceImageFixture(UploadGranceImageFixture):
+class FileGlanceImageFixture(UploadGlanceImageFixture):
 
     image_file = None
     image_dir = None
@@ -331,6 +331,7 @@ class FileGlanceImageFixture(UploadGranceImageFixture):
         return self.get_image_file(image_file=self.real_image_file)
 
     def get_image_file(self, image_file: str):
+        image_file = self.customize_image_file(base_file=image_file)
         image_size = os.path.getsize(image_file)
         LOG.debug('Uploading image %r data from file %r (%d bytes)',
                   self.image_name, image_file, image_size)
@@ -338,6 +339,9 @@ class FileGlanceImageFixture(UploadGranceImageFixture):
             filename=image_file, mode='rb',
             compression_type=self.compression_type)
         return image_data, image_size
+
+    def customize_image_file(self, base_file: str) -> str:
+        return base_file
 
 
 class URLGlanceImageFixture(FileGlanceImageFixture):
@@ -387,7 +391,6 @@ class URLGlanceImageFixture(FileGlanceImageFixture):
             self._download_image_file(image_file=image_file,
                                       chunks=chunks,
                                       expected_size=expected_size)
-        image_file = self.customize_image_file(base_file=image_file)
         return super(URLGlanceImageFixture, self).get_image_file(
             image_file=image_file)
 
@@ -412,11 +415,8 @@ class URLGlanceImageFixture(FileGlanceImageFixture):
             raise RuntimeError(message)
         os.rename(temp_file, image_file)
 
-    def customize_image_file(self, base_file: str) -> str:
-        return base_file
 
-
-class CustomizedGlanceImageFixture(URLGlanceImageFixture):
+class CustomizedGlanceImageFixture(FileGlanceImageFixture):
 
     @property
     def firstboot_commands(self) -> typing.List[str]:
