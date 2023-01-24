@@ -157,6 +157,10 @@ subparsers:
             type: Value
             help: user name to be used to connect to TripleO Overcloud hosts
             ansible_variable: overcloud_ssh_username
+          has_external_load_balancer:
+            type: Bool
+            help: OSP env was done with an external load balancer
+            ansible_variable: has_external_load_balancer
 
       - title: Run stage
         options:
