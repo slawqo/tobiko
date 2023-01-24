@@ -144,6 +144,7 @@ class ResourceTest(testtools.TestCase):
     router_stack = tobiko.required_fixture(stacks.RouterStackFixture)
 
     def test_find_resource(self):
+        self.router_stack.wait_for_create_complete()
         resource = heat.list_resources(stack=self.router_stack).first
         result = heat.find_resource(
             stack=self.router_stack,
@@ -153,6 +154,7 @@ class ResourceTest(testtools.TestCase):
                          result.physical_resource_id)
 
     def test_list_resource(self):
+        self.router_stack.wait_for_create_complete()
         resources = heat.list_resources(stack=self.router_stack)
         self.assertIsInstance(resources, tobiko.Selection)
         self.assertNotEqual([], resources)
