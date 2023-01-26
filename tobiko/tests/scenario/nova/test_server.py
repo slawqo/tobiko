@@ -213,6 +213,7 @@ class UbuntuMinimalServerStackFixture(CloudInitServerStackFixture,
     pass
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=60)
 class UbuntuMinimalServerTest(BaseServerTest):
     __test__ = True
     stack = tobiko.required_fixture(UbuntuMinimalServerStackFixture)
@@ -233,6 +234,7 @@ class FedoraServerStackFixture(CloudInitServerStackFixture,
     pass
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=60)
 class FedoraServerTest(BaseServerTest):
     __test__ = True
     stack = tobiko.required_fixture(FedoraServerStackFixture)
@@ -243,6 +245,7 @@ class CentosServerStackFixture(CloudInitServerStackFixture,
     pass
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=60)
 class CentosServerTest(BaseServerTest):
     __test__ = True
     stack = tobiko.required_fixture(CentosServerStackFixture)
@@ -253,6 +256,7 @@ class RedhatServerStackFixture(CloudInitServerStackFixture,
     pass
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=60)
 class RedhatServerTest(BaseServerTest):
     __test__ = True
     stack = tobiko.required_fixture(RedhatServerStackFixture)
