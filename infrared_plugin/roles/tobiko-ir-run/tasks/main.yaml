@@ -68,7 +68,6 @@
 
     - name: "download images"
       include_role: name=tobiko-download-images
-      ignore_errors: yes
 
     - name: "initialize test execution"
       include_role: name=tobiko-configure
