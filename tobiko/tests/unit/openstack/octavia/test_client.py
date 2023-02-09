@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import inspect
 
 from keystoneclient.v3 import endpoints
+import mock
 from octaviaclient.api.v2 import octavia as octaviaclient
 
 from tobiko.openstack import keystone
@@ -87,20 +88,25 @@ class OctaviaClientTest(openstack.OpenstackTest):
         super(OctaviaClientTest, self).setUp()
         self.useFixture(KeystoneModulePatch())
 
+    def _get_octavia_client(self, client_type):
+        with mock.patch('tobiko.openstack.keystone._services.has_service',
+                        return_value=True):
+            return octavia.octavia_client(client_type)
+
     def test_octavia_client_with_none(self):
         default_client = octavia.get_octavia_client()
-        client = octavia.octavia_client(None)
+        client = self._get_octavia_client(None)
         self.assertIsInstance(client, octaviaclient.OctaviaAPI)
         self.assertIs(default_client, client)
 
     def test_octavia_client_with_client(self):
         default_client = octavia.get_octavia_client()
-        client = octavia.octavia_client(default_client)
+        client = self._get_octavia_client(default_client)
         self.assertIsInstance(client, octaviaclient.OctaviaAPI)
         self.assertIs(default_client, client)
 
     def test_octavia_client_with_fixture(self):
         fixture = octavia.OctaviaClientFixture()
-        client = octavia.octavia_client(fixture)
+        client = self._get_octavia_client(fixture)
         self.assertIsInstance(client, octaviaclient.OctaviaAPI)
         self.assertIs(client, fixture.client)
