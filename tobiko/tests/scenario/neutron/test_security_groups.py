@@ -184,3 +184,35 @@ class StatelessSecurityGroupTest(BaseSecurityGroupTest):
         )
         self._check_sg_rule_in_ovn_nb_db(new_rule['id'],
                                          neutron.STATEFUL_OVN_ACTION)
+
+    def test_create_stateless_security_group(self):
+        """Test that stateless security group can be created.
+
+        This test checks if creation of the stateless SG is working fine
+        and if OVN's ACLs corresponding to the SG's rules have correct
+        action which is "allow-stateless".
+
+        Steps:
+        1. Create stateless security group,
+        2. Check if ACLs corresponding to the rules from that SG have
+           "action-stateless" action,
+        3. Add new SG rule in the SG,
+        4. Check action of the ACL corresponding to the newly created SG rule.
+        """
+        sg = neutron.create_security_group(
+            name="test_stateless_SG",
+            stateful=False
+        )
+        self.assertFalse(sg['stateful'])
+        self._check_sg_rules_in_ovn_nb_db(sg, neutron.STATELESS_OVN_ACTION)
+        new_rule = neutron.create_security_group_rule(
+            sg['id'],
+            port_range_min=1111,
+            port_range_max=1111,
+            ethertype="IPv4",
+            protocol="tcp",
+            description="test_new_security_group_is_statefull_SG rule",
+            direction="ingress"
+        )
+        self._check_sg_rule_in_ovn_nb_db(new_rule['id'],
+                                         neutron.STATELESS_OVN_ACTION)
