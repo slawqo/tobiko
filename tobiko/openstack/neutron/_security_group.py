@@ -43,6 +43,15 @@ def list_security_groups(client=None, **params) \
     return tobiko.Selection[SecurityGroupType](security_groups)
 
 
+def get_security_group_by_id(sg_id: SecurityGroupIdType,
+                             client: _client.NeutronClientType = None,
+                             **params) \
+        -> SecurityGroupType:
+    return _client.neutron_client(client).show_security_group(
+        sg_id, **params
+    )['security_group']
+
+
 def get_default_security_group(project_id, client=None, **list_params) \
         -> SecurityGroupType:
     list_params["project_id"] = project_id
@@ -64,6 +73,16 @@ def create_security_group(client=None, add_cleanup=True,
                            client=client)
 
     return sg
+
+
+def update_security_group(sg_id: SecurityGroupIdType,
+                          client: _client.NeutronClientType = None,
+                          **params) \
+                              -> SecurityGroupType:
+    return _client.neutron_client(client).update_security_group(
+        sg_id,
+        body={'security_group': params}
+    )['security_group']
 
 
 def delete_security_group(sg_id: SecurityGroupIdType,

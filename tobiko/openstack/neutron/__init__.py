@@ -137,6 +137,8 @@ SubnetIdType = _subnet.SubnetIdType
 NoSuchSubnet = _subnet.NoSuchSubnet
 
 list_security_groups = _security_group.list_security_groups
+get_security_group_by_id = _security_group.get_security_group_by_id
 get_default_security_group = _security_group.get_default_security_group
 create_security_group = _security_group.create_security_group
+update_security_group = _security_group.update_security_group
 create_security_group_rule = _security_group.create_security_group_rule
