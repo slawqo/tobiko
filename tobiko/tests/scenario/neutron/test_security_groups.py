@@ -58,7 +58,13 @@ class BaseSecurityGroupTest(testtools.TestCase):
                 "sed -e 's/\"//g' | sed 's/6642/6641/g'",
                 ssh_client=self.host_ssh_client,
                 sudo=True)
-            self._ovn_nb_db = command_result.stdout
+            ssl_params = ''
+            if 'ssl' in command_result.stdout:
+                ssl_params = ' -p {} -c {} -C {} '.format(
+                    '/etc/pki/tls/private/ovn_controller.key',
+                    '/etc/pki/tls/certs/ovn_controller.crt',
+                    '/etc/ipa/ca.crt')
+            self._ovn_nb_db = command_result.stdout + ssl_params
         return self._ovn_nb_db
 
     @property
