@@ -1,0 +1,8 @@
+---
+
+test_workflow_steps:
+  - tox_description: 'check Designate resources'
+    tox_envlist: designate
+    tox_step_name: check_resources
+    tox_environment:
+      TOBIKO_PREVENT_CREATE: yes
