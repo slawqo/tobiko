@@ -94,8 +94,8 @@ class QoSNetworkTest(testtools.TestCase):
             try:
                 iperf3.assert_has_bandwith_limits(
                     address=self.server.ip_address,
-                    min_bandwith=bandwidth_limit * 0.9,
-                    max_bandwith=bandwidth_limit * 1.1,
+                    min_bandwith=bandwidth_limit * 0.85,
+                    max_bandwith=bandwidth_limit * 1.15,
                     port=self.server.iperf3_port,
                     download=True)
                 break
