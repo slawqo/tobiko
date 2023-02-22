@@ -80,7 +80,7 @@ class PcsEnableException(tobiko.TobikoException):
 
 
 class GaleraBoostrapException(tobiko.TobikoException):
-    message = "Bootstrap should not be done from node without grastate.dat"
+    message = "Bootstrap has not been activated"
 
 
 class TimestampException(tobiko.TobikoException):
@@ -478,7 +478,7 @@ def remove_one_grastate_galera():
         raise PcsEnableException()
     # gcomm:// without args means that bootstrap is done from this node
     bootstrap = sh.execute(check_bootstrap, ssh_client=node.ssh_client).stdout
-    if re.search('wsrep-cluster-address=gcomm:// --', bootstrap) is not None:
+    if re.search('wsrep-cluster-address=gcomm://', bootstrap) is None:
         raise GaleraBoostrapException()
     lastDate = re.findall(r"\w{,3}\s*\w{,3}\s*\d{,2}\s*\d{,2}:\d{,2}:\d{,2}\s*"
                           r"\d{4}", bootstrap)[-1]
