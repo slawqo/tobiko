@@ -46,7 +46,6 @@ After=syslog.target network.target
 [Service]
 ExecStart=/usr/bin/iperf3 -s -p %i
 Restart=always
-RuntimeMaxSec=3600
 User=root
 
 [Install]
