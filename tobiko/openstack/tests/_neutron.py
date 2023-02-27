@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import collections
 import json
 import re
+import threading
+import time
 import typing
 
 from keystoneauth1 import exceptions
@@ -18,6 +20,7 @@ from tobiko.shell import sh
 from tobiko.shell import ss
 from tobiko.tripleo import _overcloud
 from tobiko.tripleo import pacemaker
+
 
 LOG = log.getLogger(__name__)
 
@@ -603,3 +606,89 @@ def test_ovs_interfaces_are_absent(
     test_case.assertEqual(
         {}, interfaces,
         f"OVS interface(s) found on OpenStack nodes: {interfaces}")
+
+
+def cleanup_ports_network(port_count):
+    # This function cleans up the ports and the created network
+    for _ in range(port_count):
+        try:
+            port = neutron.find_port(name=f'tobiko_ovn_leader_test_port-{_}')
+            neutron.delete_port(port=port['id'])
+        except neutron.NoSuchPort:
+            LOG.debug("No Such port found")
+    network = neutron.find_network(name='tobiko_ovn_leader_test_network')
+    neutron.delete_network(network=network)
+
+
+def check_port_created(port_count):
+    # This function checks the number of ports created
+    test_case = tobiko.get_test_case()
+    port_count_created = 0
+    for _ in range(port_count):
+        try:
+            port = neutron.find_port(name=f'tobiko_ovn_leader_test_port-{_}')
+            if port:
+                port_count_created += 1
+        except neutron.NoSuchPort:
+            LOG.debug("No Such port found")
+    test_case.assertEqual(port_count_created, port_count)
+
+
+def create_multiple_port_network(port_count):
+    # This function is run in threading mode
+    session = keystone.get_keystone_session()
+    client = neutron.get_neutron_client(session=session)
+    network = neutron.create_network(client=client, add_cleanup=False,
+                                     name='tobiko_ovn_leader_test_network')
+    for _ in range(port_count):
+        # Multiple requests are sent in background mode to save time
+        # and not to wait till the control returns
+        sh.start_background_process(bg_function=neutron.create_port,
+                                    bg_process_name=f"create_port-{_}",
+                                    client=client, network=network,
+                                    add_cleanup=False,
+                                    name=f'tobiko_ovn_leader_test_port-{_}')
+    LOG.debug("Finished creating %r ports", port_count)
+
+
+def transfer_leadership_ovsdb(cluster_details):
+    for db in cluster_details:
+        transfer_leadership_cmd = "ovs-appctl -t {} cluster/failure-test " \
+                                  "transfer-leadership".format(db['ctlfile'])
+        node_ssh = topology.get_openstack_node(hostname=db['host']).ssh_client
+        sh.execute(transfer_leadership_cmd, ssh_client=node_ssh, sudo=True)
+    LOG.debug("Ovsdb leadership transferred")
+
+
+def get_leader_ovsdb():
+    cluster_details = []
+    leader_map = {}
+    ctl_files = find_ovn_db_ctl_files()
+    for db in OVNDBS:
+        for node in topology.list_openstack_nodes(group='controller'):
+            details = get_raft_cluster_details(node.hostname, db)
+            if details['Role'] == 'leader':
+                leader_map = {'db': db, 'ctlfile': ctl_files[db],
+                              'Role': 'leader', 'host': node.hostname}
+        cluster_details.append(leader_map)
+    return cluster_details
+
+
+def test_ovsdb_transactions():
+    # Set the number of ports to be created for test
+    port_count = 20
+    cluster_details = get_leader_ovsdb()
+    thread_create_ports = threading.Thread(target=create_multiple_port_network,
+                                           args=(port_count,))
+    # Start the thread to create ports
+    thread_create_ports.start()
+    LOG.debug("Start to create 20 multiple ports")
+    # Add cleanup of ports and network
+    tobiko.add_cleanup(cleanup_ports_network, port_count=port_count)
+    # Wait for some port creation request to reach neutron
+    time.sleep(7)
+    LOG.debug("Start the ovsdb leadership change")
+    transfer_leadership_ovsdb(cluster_details)
+    # Wait for the port creation to complete
+    thread_create_ports.join()
+    check_port_created(port_count)
