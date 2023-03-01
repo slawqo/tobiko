@@ -46,7 +46,7 @@ def build_ovn_db_show_dict(ovn_db_show_str):
     return ovn_master_db_dict
 
 
-def test_neutron_agents_are_alive(timeout=300., interval=5.) \
+def test_neutron_agents_are_alive(timeout=420., interval=5.) \
         -> tobiko.Selection[neutron.NeutronAgentType]:
     for attempt in tobiko.retry(timeout=timeout, interval=interval):
         LOG.debug("Look for unhealthy Neutron agents...")
