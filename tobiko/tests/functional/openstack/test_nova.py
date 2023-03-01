@@ -45,14 +45,14 @@ class ClientTest(testtools.TestCase):
     @nova.skip_if_missing_hypervisors(count=1)
     def test_list_hypervisors(self):
         hypervisor = nova.list_hypervisors().first
-        self.assertIsInstance(hypervisor.id, int)
+        self.assertIsInstance(hypervisor.id, str)
         self.assertTrue(hypervisor.hypervisor_hostname)
         netaddr.IPAddress(hypervisor.host_ip)
 
     @nova.skip_if_missing_hypervisors(count=1)
     def test_list_hypervisors_without_details(self):
         hypervisor = nova.list_hypervisors(detailed=False).first
-        self.assertIsInstance(hypervisor.id, int)
+        self.assertIsInstance(hypervisor.id, str)
         self.assertTrue(hypervisor.hypervisor_hostname)
         self.assertFalse(hasattr(hypervisor, 'host_ip'))
 
