@@ -21,8 +21,7 @@ import tobiko
 from tobiko import tripleo
 from tobiko import config
 from tobiko.openstack.octavia import _client
-from tobiko.openstack.octavia import _load_balancer
-from tobiko.openstack import nova
+from tobiko.openstack import nova, openstacksdkclient
 from tobiko.openstack.octavia import _validators
 from tobiko.openstack import topology
 from tobiko.shell import sh
@@ -34,32 +33,24 @@ AmphoraType = typing.Dict[str, typing.Any]
 AmphoraIdType = typing.Union[str, AmphoraType]
 
 
-def get_amphora_id(amphora: AmphoraIdType) -> str:
-    if isinstance(amphora, str):
-        return amphora
-    else:
-        return amphora['id']
+def get_os_conn():
+    """Get openstacksdk client fixture
+    """
+    return openstacksdkclient.openstacksdk_client()
 
 
-def get_amphora(amphora: AmphoraIdType,
-                client: _client.OctaviaClientType = None) -> AmphoraType:
-    amphora_id = get_amphora_id(amphora)
-    return _client.octavia_client(client).amphora_show(amphora_id)['amphora']
+def get_amphora(amp_id: str):
+    return get_os_conn().load_balancer.get_amphora(amp_id)
 
 
-def list_amphorae(load_balancer: _load_balancer.LoadBalancerIdType = None,
-                  client: _client.OctaviaClientType = None,
-                  **params) \
-        -> tobiko.Selection[AmphoraType]:
-    if load_balancer is not None:
-        params['load_balancer_id'] = _load_balancer.get_load_balancer_id(
-            load_balancer)
-    amphorae = _client.octavia_client(client).amphora_list(
-        **params)['amphorae']
-    return tobiko.select(amphorae)
+def list_amphorae(load_balancer_id: str = None, **params):
+    if load_balancer_id is not None:
+        params['load_balancer_id'] = load_balancer_id
+    return get_os_conn().load_balancer.amphorae(
+        loadbalancer_id=load_balancer_id)
 
 
-def get_amphora_compute_node(load_balancer: _load_balancer.LoadBalancerIdType,
+def get_amphora_compute_node(load_balancer_id: str,
                              port: int,
                              protocol: str,
                              ip_address: str,
@@ -72,14 +63,14 @@ def get_amphora_compute_node(load_balancer: _load_balancer.LoadBalancerIdType,
     (e.g. if the LB's topology is Active/standby), so the compute node which
     hosts the master amphora will be returned.
 
-    :param load_balancer: the load balancer ID.
+    :param load_balancer_id: the load balancer ID.
     :param port: the load balancer port.
     :param protocol: the load balancer protocol.
     :param ip_address: the IP address of the load balancer
     :param client: the Octavia client
     :return: the compute node which hosts the Amphora.
     """
-    amphorae = list_amphorae(load_balancer)
+    amphorae = list_amphorae(load_balancer_id=load_balancer_id)
     amphora = get_master_amphora(amphorae=amphorae,
                                  port=port,
                                  protocol=protocol,
@@ -90,6 +81,8 @@ def get_amphora_compute_node(load_balancer: _load_balancer.LoadBalancerIdType,
     return topology.get_openstack_node(hostname=hostname)
 
 
+# TODO (oschwart): use openstacksdk in this method implementation whenever
+#  openstacksdk has its API call
 def get_amphora_stats(amphora_id, client=None):
     """
     :param amphora_id: the amphora id
@@ -146,8 +139,8 @@ def get_master_amphora(amphorae: typing.Iterable[AmphoraType],
 
 
 def run_command_on_amphora(command: str,
-                           lb_id: _load_balancer.LoadBalancerIdType = None,
-                           lb_fip: str = None,
+                           lb_id: str = None,
+                           lb_vip: str = None,
                            amp_id: str = None,
                            sudo: bool = False) -> str:
     """
@@ -155,22 +148,21 @@ def run_command_on_amphora(command: str,
 
     :param command: The command to run on the amphora
     :param lb_id: The load balancer id whose amphora should run the command
-    :param lb_fip: The loadbalancer floating ip
+    :param lb_vip: The loadbalancer VIP
     :param amp_id: The single/master amphora id
     :param sudo: (bool) Whether to run the command with sudo permissions
            on the amphora
     :return: The command output (str)
     """
-
     # Get the master/single amphora lb_network_ip
     if amp_id:
-        amp_lb_network_ip = get_amphora(amphora=amp_id)['lb_network_ip']
-    elif lb_id and lb_fip:
+        amp_lb_network_ip = get_amphora(amp_id)['lb_network_ip']
+    elif lb_id and lb_vip:
         amphorae = list_amphorae(load_balancer_id=lb_id)
         amphora = get_master_amphora(amphorae=amphorae,
                                      port=80,
                                      protocol='HTTP',
-                                     ip_address=lb_fip)
+                                     ip_address=lb_vip)
         amp_lb_network_ip = amphora['lb_network_ip']
     else:
         raise ValueError('Either amphora id or both the loadbalancer id '

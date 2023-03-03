@@ -50,7 +50,7 @@ def check_members_balanced(ip_address: str,
                              ' to the function.')
 
         else:  # members_count is None and pool_id is not None
-            members_count = len(octavia.list_members(pool_id=pool_id))
+            members_count = len(list(octavia.list_members(pool_id=pool_id)))
 
     last_content = None
     replies: typing.Dict[str, int] = collections.defaultdict(lambda: 0)

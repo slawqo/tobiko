@@ -36,35 +36,29 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
     Create a client that is connected to the load balancer VIP port,
     Generate network traffic from the client to the load balanacer.
     """
-    loadbalancer_stack = tobiko.required_fixture(
-        stacks.AmphoraIPv4LoadBalancerStack)
-
-    listener_stack = tobiko.required_fixture(
-        stacks.HttpRoundRobinAmphoraIpv4Listener)
+    lb = None
+    listener = None
+    pool = None
+    server_stack = tobiko.required_fixture(
+        stacks.UbuntuServerStackFixture)
+    other_server_stack = tobiko.required_fixture(
+        stacks.OctaviaOtherServerStackFixture)
 
     def setUp(self):
         # pylint: disable=no-member
         super(OctaviaBasicTrafficScenarioTest, self).setUp()
 
-        # Wait for Octavia objects to be active
-        LOG.info('Waiting for member '
-                 f'{self.listener_stack.server_stack.stack_name} and '
-                 f'for member '
-                 f'{self.listener_stack.other_server_stack.stack_name} '
-                 f'to be created...')
-        self.listener_stack.wait_for_active_members()
-
-        self.loadbalancer_stack.wait_for_octavia_service()
-
-        self.listener_stack.wait_for_members_to_be_reachable()
+        self.lb, self.listener, self.pool = octavia.deploy_ipv4_amphora_lb(
+            servers_stacks=[self.server_stack, self.other_server_stack]
+        )
 
     def test_round_robin_traffic(self):
         _test_traffic(
-            pool_id=self.listener_stack.pool_id,
-            ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.listener_stack.lb_algorithm,
-            protocol=self.listener_stack.lb_protocol,
-            port=self.listener_stack.lb_port)
+            pool_id=self.pool.id,
+            ip_address=self.lb.vip_address,
+            lb_algorithm=self.pool.lb_algorithm,
+            protocol=self.listener.protocol,
+            port=self.listener.protocol_port)
 
 
 def _test_traffic(pool_id: str, ip_address: str, lb_algorithm: str,
@@ -107,30 +101,28 @@ class OctaviaOVNProviderTrafficTest(testtools.TestCase):
     Create a client that is connected to the load balancer VIP port via FIP,
     Generate TCP network traffic from the client to the load balancer FIP.
     """
-    loadbalancer_stack = tobiko.required_fixture(
-        stacks.OVNIPv4LoadBalancerStack)
-
-    listener_stack = tobiko.required_fixture(
-        stacks.TcpSourceIpPortOvnIpv4Listener)
+    lb = None
+    listener = None
+    pool = None
+    server_stack = tobiko.required_fixture(
+        stacks.UbuntuServerStackFixture)
+    other_server_stack = tobiko.required_fixture(
+        stacks.OctaviaOtherServerStackFixture)
 
     def setUp(self):
         # pylint: disable=no-member
         super(OctaviaOVNProviderTrafficTest, self).setUp()
 
-        # Wait for Octavia objects to be active
-        LOG.info(f'Waiting for member {self.listener_stack.member_id} and '
-                 f'for member {self.listener_stack.other_member_id} '
-                 f'to be created...')
-        self.listener_stack.wait_for_active_members()
-
-        self.loadbalancer_stack.wait_for_octavia_service()
+        self.lb, self.listener, self.pool = octavia.deploy_ipv4_ovn_lb(
+            servers_stacks=[self.server_stack, self.other_server_stack]
+        )
 
     def test_source_ip_port_traffic(self):
         """Send traffic to the load balancer FIP to test source ip port
         """
         _test_traffic(
-            pool_id=self.listener_stack.pool_id,
-            ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.listener_stack.lb_algorithm,
-            protocol=self.listener_stack.lb_protocol,
-            port=self.listener_stack.lb_port)
+            pool_id=self.pool.id,
+            ip_address=self.lb.vip_address,
+            lb_algorithm=self.pool.lb_algorithm,
+            protocol=self.listener.protocol,
+            port=self.listener.protocol_port)

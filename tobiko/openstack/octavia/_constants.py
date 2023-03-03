@@ -21,6 +21,18 @@ ACTIVE = 'ACTIVE'
 ERROR = 'ERROR'
 PENDING_UPDATE = 'PENDING_UPDATE'
 
+# Octavia protocols
+PROTOCOL_HTTP = 'HTTP'
+PROTOCOL_TCP = 'TCP'
+
+# Octavia lb algorithms
+LB_ALGORITHM_ROUND_ROBIN = 'ROUND_ROBIN'
+LB_ALGORITHM_SOURCE_IP_PORT = 'SOURCE_IP_PORT'
+
+# Octavia providers
+AMPHORA_PROVIDER = 'amphora'
+OVN_PROVIDER = 'ovn'
+
 # Octavia services
 WORKER_SERVICE = 'tripleo_octavia_worker.service'
 HOUSEKEEPING_SERVICE = 'tripleo_octavia_housekeeping.service'
@@ -32,3 +44,35 @@ WORKER_CONTAINER = 'octavia_worker'
 HOUSEKEEPING_CONTAINER = 'octavia_housekeeping'
 HM_CONTAINER = 'octavia_health_manager'
 API_CONTAINER = 'octavia_api'
+
+# Octavia amphora provider resources names
+LB_AMP_NAME = 'tobiko_octavia_amphora_lb'
+LISTENER_AMP_NAME = 'tobiko_octavia_http_listener'
+POOL_AMP_NAME = 'tobiko_octavia_http_pool'
+MEMBER_AMP_NAME_PREFIX = 'tobiko_octavia_http_member'
+
+# Octavia ovn provider resources names
+LB_OVN_NAME = 'tobiko_octavia_ovn_lb'
+LISTENER_OVN_NAME = 'tobiko_octavia_tcp_listener'
+POOL_OVN_NAME = 'tobiko_octavia_tcp_pool'
+MEMBER_OVN_NAME_PREFIX = 'tobiko_octavia_tcp_member'
+
+# Providers/lb-names dictionary
+OCTAVIA_PROVIDERS_NAMES = {
+    'lb': {
+        AMPHORA_PROVIDER: LB_AMP_NAME,
+        OVN_PROVIDER: LB_OVN_NAME
+    },
+    'listener': {
+        AMPHORA_PROVIDER: LISTENER_AMP_NAME,
+        OVN_PROVIDER: LISTENER_OVN_NAME
+    },
+    'pool': {
+        AMPHORA_PROVIDER: POOL_AMP_NAME,
+        OVN_PROVIDER: POOL_OVN_NAME
+    },
+    'member': {
+        AMPHORA_PROVIDER: MEMBER_AMP_NAME_PREFIX,
+        OVN_PROVIDER: MEMBER_OVN_NAME_PREFIX
+    }
+}

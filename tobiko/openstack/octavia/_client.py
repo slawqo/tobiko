@@ -18,7 +18,7 @@ import typing
 from octaviaclient.api.v2 import octavia
 
 import tobiko
-from tobiko.openstack import _client
+from tobiko.openstack import _client, openstacksdkclient
 from tobiko.openstack import keystone
 
 
@@ -76,10 +76,47 @@ def get_octavia_client(session=None, shared=True, init_client=None,
     return client.client
 
 
-def get_member(pool_id: str, member_id: str, client=None):
-    return octavia_client(client).member_show(pool_id=pool_id,
-                                              member_id=member_id)
+def list_members(pool_id: str):
+    os_sdk_client = openstacksdkclient.openstacksdk_client()
+    return os_sdk_client.load_balancer.members(pool=pool_id)
 
 
-def list_members(pool_id: str, client=None):
-    return octavia_client(client).member_list(pool_id=pool_id)['members']
+def find_load_balancer(lb_name: str):
+    os_sdk_client = openstacksdkclient.openstacksdk_client()
+    return os_sdk_client.load_balancer.find_load_balancer(lb_name)
+
+
+def create_load_balancer(lb_kwargs):
+    os_sdk_client = openstacksdkclient.openstacksdk_client()
+    return os_sdk_client.load_balancer.create_load_balancer(**lb_kwargs)
+
+
+def find_listener(listener_name: str):
+    os_sdk_client = openstacksdkclient.openstacksdk_client()
+    return os_sdk_client.load_balancer.find_listener(listener_name)
+
+
+def create_listener(listener_kwargs):
+    os_sdk_client = openstacksdkclient.openstacksdk_client()
+    return os_sdk_client.load_balancer.create_listener(**listener_kwargs)
+
+
+def find_pool(pool_name: str):
+    os_sdk_client = openstacksdkclient.openstacksdk_client()
+    return os_sdk_client.load_balancer.find_pool(pool_name)
+
+
+def create_pool(pool_kwargs):
+    os_sdk_client = openstacksdkclient.openstacksdk_client()
+    return os_sdk_client.load_balancer.create_pool(**pool_kwargs)
+
+
+def find_member(member_name: str, pool: str):
+    # Note that pool could be either id or name
+    os_sdk_client = openstacksdkclient.openstacksdk_client()
+    return os_sdk_client.load_balancer.find_member(member_name, pool)
+
+
+def create_member(member_kwargs):
+    os_sdk_client = openstacksdkclient.openstacksdk_client()
+    return os_sdk_client.load_balancer.create_member(**member_kwargs)

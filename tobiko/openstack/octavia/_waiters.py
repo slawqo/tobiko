@@ -14,10 +14,13 @@
 #    under the License.
 from __future__ import absolute_import
 
+import typing
+
 from oslo_log import log
 
 import tobiko
-from tobiko.openstack import octavia
+from tobiko.openstack import octavia, openstacksdkclient
+from tobiko.openstack.octavia import _constants
 from tobiko import config
 
 LOG = log.getLogger(__name__)
@@ -25,26 +28,31 @@ LOG = log.getLogger(__name__)
 CONF = config.CONF
 
 
-def wait_for_status(status_key, status, get_client, object_id,
+def wait_for_status(object_id: str,
+                    status_key: str = _constants.PROVISIONING_STATUS,
+                    status: str = _constants.ACTIVE,
+                    get_client: typing.Callable = None,
                     interval: tobiko.Seconds = None,
-                    timeout: tobiko.Seconds = None,
-                    error_ok=False, **kwargs):
+                    timeout: tobiko.Seconds = None, **kwargs):
     """Waits for an object to reach a specific status.
 
+    :param object_id: The id of the object to query.
     :param status_key: The key of the status field in the response.
                        Ex. provisioning_status
     :param status: The status to wait for. Ex. "ACTIVE"
     :param get_client: The tobiko client get method.
                         Ex. _client.get_loadbalancer
-    :param object_id: The id of the object to query.
     :param interval: How often to check the status, in seconds.
     :param timeout: The maximum time, in seconds, to check the status.
-    :param error_ok: When true, ERROR status will not raise an exception.
     :raises TimeoutException: The object did not achieve the status or ERROR in
                               the check_timeout period.
     :raises UnexpectedStatusException: The request returned an unexpected
                                        response code.
     """
+
+    if not get_client:
+        os_sdk_client = openstacksdkclient.openstacksdk_client()
+        get_client = os_sdk_client.load_balancer.get_load_balancer
 
     for attempt in tobiko.retry(timeout=timeout,
                                 interval=interval,
@@ -56,13 +64,26 @@ def wait_for_status(status_key, status, get_client, object_id,
         if response[status_key] == status:
             return response
 
-        if response[status_key] == octavia.ERROR and not error_ok:
-            message = ('{name} {field} was updated to an invalid state of '
-                       'ERROR'.format(name=get_client.__name__,
-                                      field=status_key))
-            raise octavia.RequestException(message)
         # it will raise tobiko.RetryTimeLimitError in case of timeout
         attempt.check_limits()
 
         LOG.debug(f"Waiting for {get_client.__name__} {status_key} to get "
                   f"from '{response[status_key]}' to '{status}'...")
+
+
+def wait_for_octavia_service(interval: tobiko.Seconds = None,
+                             timeout: tobiko.Seconds = None):
+    for attempt in tobiko.retry(timeout=timeout,
+                                interval=interval,
+                                default_timeout=180.,
+                                default_interval=5.):
+        try:  # Call any Octavia API
+            octavia.list_amphorae()
+        except octavia.OctaviaClientException as ex:
+            LOG.debug(f"Error listing amphorae: {ex}")
+            if attempt.is_last:
+                raise
+            LOG.info('Waiting for the LB to become functional again...')
+        else:
+            LOG.info('Octavia service is available!')
+            break

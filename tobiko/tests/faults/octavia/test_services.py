@@ -49,11 +49,13 @@ class OctaviaServicesFaultTest(testtools.TestCase):
     Then we test that traffic which is being sent from the client to the LB
     is received as expected.
     """
-    loadbalancer_stack = tobiko.required_fixture(
-        stacks.AmphoraIPv4LoadBalancerStack)
-
-    listener_stack = tobiko.required_fixture(
-        stacks.HttpRoundRobinAmphoraIpv4Listener)
+    lb = None
+    listener = None
+    pool = None
+    server_stack = tobiko.required_fixture(
+        stacks.UbuntuServerStackFixture)
+    other_server_stack = tobiko.required_fixture(
+        stacks.OctaviaOtherServerStackFixture)
 
     # ssh clients of the participating TripleO nodes
     ssh_clients: typing.List[ssh.SSHClientFixture] = list()
@@ -79,34 +81,26 @@ class OctaviaServicesFaultTest(testtools.TestCase):
                           "service is necessary."
             self.skipTest(skip_reason)
 
-        # Wait for Octavia objects to be active
-        LOG.info('Waiting for member '
-                 f'{self.listener_stack.server_stack.stack_name} and '
-                 f'for member '
-                 f'{self.listener_stack.other_server_stack.stack_name} '
-                 f'to be created...')
-        self.listener_stack.wait_for_active_members()
+        self.lb, self.listener, self.pool = octavia.deploy_ipv4_amphora_lb(
+            servers_stacks=[self.server_stack, self.other_server_stack]
+        )
 
-        self.loadbalancer_stack.wait_for_octavia_service()
+        self._send_http_traffic()
 
-        self.listener_stack.wait_for_members_to_be_reachable()
-
-        # For 5 minutes we ignore specific exceptions as we know
-        # that Octavia resources are being provisioned
-        # Sending initial traffic before we stop octavia services
-        for attempt in tobiko.retry(timeout=300.):
+    def _send_http_traffic(self):
+        # For 30 seconds we ignore the OctaviaClientException as we know
+        # that Octavia services are being stopped and restarted
+        for attempt in tobiko.retry(timeout=30.):
             try:
                 octavia.check_members_balanced(
-                    pool_id=self.listener_stack.pool_id,
-                    ip_address=self.loadbalancer_stack.floating_ip_address,
-                    lb_algorithm=self.listener_stack.lb_algorithm,
-                    protocol=self.listener_stack.lb_protocol,
-                    port=self.listener_stack.lb_port)
+                    pool_id=self.pool.id,
+                    ip_address=self.lb.vip_address,
+                    lb_algorithm=self.pool.lb_algorithm,
+                    protocol=self.listener.protocol,
+                    port=self.listener.protocol_port)
                 break
-            except (octavia.RoundRobinException,
-                    octavia.TrafficTimeoutError,
-                    sh.ShellCommandFailed):
-                LOG.exception(f"Traffic didn't reach all members after "
+            except octavia.OctaviaClientException:
+                LOG.exception(f"Octavia service was unavailable after "
                               f"#{attempt.number} attempts and "
                               f"{attempt.elapsed_time} seconds")
                 if attempt.is_last:
@@ -167,7 +161,7 @@ class OctaviaServicesFaultTest(testtools.TestCase):
                 if service.unit in octavia.OCTAVIA_SERVICES:
                     services_on_nodes[service.unit].append(ssh_client)
 
-        # Example of the curret services_on_nodes:
+        # Example of the current services_on_nodes:
         # {
         #     'tripleo_octavia_worker.service': [ssh_client_of_controller-0,
         #                                        ssh_client_of_controller-1],
@@ -204,25 +198,9 @@ class OctaviaServicesFaultTest(testtools.TestCase):
                 sh.stop_systemd_units(service, ssh_client=ssh_client)
                 LOG.debug(f'We stopped {service} on {ssh_client.host}')
 
-        self.loadbalancer_stack.wait_for_octavia_service()
+        octavia.wait_for_octavia_service()
 
-        # For 30 seconds we ignore the OctaviaClientException as we know
-        # that Octavia services are being stopped and restarted
-        for attempt in tobiko.retry(timeout=30.):
-            try:
-                octavia.check_members_balanced(
-                    pool_id=self.listener_stack.pool_id,
-                    ip_address=self.loadbalancer_stack.floating_ip_address,
-                    lb_algorithm=self.listener_stack.lb_algorithm,
-                    protocol=self.listener_stack.lb_protocol,
-                    port=self.listener_stack.lb_port)
-                break
-            except octavia.OctaviaClientException:
-                LOG.exception(f"Octavia service was unavailable after "
-                              f"#{attempt.number} attempts and "
-                              f"{attempt.elapsed_time} seconds")
-                if attempt.is_last:
-                    raise
+        self._send_http_traffic()
 
     def _start_octavia_main_services(self, services_to_stop: dict):
 
@@ -240,9 +218,4 @@ class OctaviaServicesFaultTest(testtools.TestCase):
 
                 LOG.debug(f'We started {service} on {ssh_client.host}')
 
-        octavia.check_members_balanced(
-            pool_id=self.listener_stack.pool_id,
-            ip_address=self.loadbalancer_stack.floating_ip_address,
-            lb_algorithm=self.listener_stack.lb_algorithm,
-            protocol=self.listener_stack.lb_protocol,
-            port=self.listener_stack.lb_port)
+        self._send_http_traffic()
