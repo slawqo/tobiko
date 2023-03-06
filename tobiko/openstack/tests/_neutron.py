@@ -61,7 +61,7 @@ def test_neutron_agents_are_alive(timeout=420., interval=5.) \
             else:
                 # retry because Neutron server could still be unavailable
                 # after a disruption
-                LOG.debug(f"Waiting for neutron service... ({ex})")
+                LOG.warning(f"Waiting for neutron service... ({ex})")
                 continue  # Let retry
 
         dead_agents = agents.with_items(alive=False)
@@ -73,8 +73,16 @@ def test_neutron_agents_are_alive(timeout=420., interval=5.) \
             else:
                 # retry because some Neutron agent could still be unavailable
                 # after a disruption
-                LOG.debug("Waiting for Neutron agents to get alive...\n"
-                          f"{dead_agents_details}")
+                LOG.warning("Waiting for Neutron agents to get alive...\n"
+                            f"{dead_agents_details}")
+                continue
+
+        if len(agents) == 0:
+            message = "neutron returned 0 agents, which is not valid"
+            if attempt.is_last:
+                tobiko.fail(message)
+            else:
+                LOG.warning(message + "... retrying...")
                 continue
 
         LOG.debug(f"All {len(agents)} Neutron agents are alive.")
