@@ -10,6 +10,7 @@ import netaddr
 from oslo_log import log
 
 import tobiko
+from tobiko.openstack import keystone
 from tobiko.openstack import neutron
 from tobiko.openstack import topology
 from tobiko.shell import ip
@@ -461,9 +462,25 @@ def test_raft_clients_connected():
             test_case.assertIn(soc['remote_addr'], addrs)
         test_case.assertTrue(ovn_controller_found)
 
+    ref_processes = {'ovn-controller', 'neutron-server:', 'ovn-northd'}
+
+    # the octavia driver connects to the ovn dbs when the octavia service is
+    # configured
+    if keystone.has_service(name='octavia'):
+        ref_processes.add('octavia-driver-')
+
+    # the ovn-bgp-agent connects to the ovn dbs when the bgp service is
+    # configured (but this service cannot be obtained from keystone and does
+    # not have any API implemented yet)
+    from tobiko.tripleo import containers
+    if containers.assert_containers_running(
+            group="controller",
+            expected_containers=['ovn_bgp_agent'],
+            bool_check=True):
+        ref_processes.add('ovn-bgp-agent')
+
     for node in topology.list_openstack_nodes(group='controller'):
         socs = ss.tcp_connected(dst_port=port, ssh_client=node.ssh_client)
-        ref_processes = {'ovn-controller', 'neutron-server:', 'ovn-northd'}
         processes = set()
         for soc in socs:
             processes.add(soc['process'][0])
