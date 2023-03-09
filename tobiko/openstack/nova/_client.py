@@ -38,7 +38,7 @@ NovaHypervisor = typing.Union[novaclient.v2.hypervisors.Hypervisor]
 class NovaClientFixture(_client.OpenstackClientFixture):
 
     def init_client(self, session) -> NovaClient:
-        return novaclient.client.Client('2', session=session)
+        return novaclient.client.Client('2.56', session=session)
 
 
 class NovaClientManager(_client.OpenstackClientManager):
@@ -190,36 +190,20 @@ def live_migrate_server(server: ServerType = None,
                         server_id: str = None,
                         host: str = None,
                         block_migration: bool = None,
-                        disk_over_commit=False,
                         client: NovaClientType = None,
                         **params):
     server_id = get_server_id(server=server, server_id=server_id)
+    params.update(host=host)
     if block_migration is None:
-        # some setups work only with block migration and some only
-        # with without
-        try:
-            return live_migrate_server(server_id=server_id,
-                                       host=host,
-                                       block_migration=False,
-                                       disk_over_commit=disk_over_commit,
-                                       client=client,
-                                       **params)
-        except NotInSharedStorageMigrateServerError:
-            return live_migrate_server(server_id=server_id,
-                                       host=host,
-                                       block_migration=True,
-                                       disk_over_commit=disk_over_commit,
-                                       client=client,
-                                       **params)
+        params.update(block_migration='auto')
     else:
-        params.update(host=host,
-                      block_migration=block_migration,
-                      disk_over_commit=disk_over_commit)
-        LOG.debug(f"Start server '{server_id}' live migration...\n" +
-                  f"{params}")
-        with handle_migration_errors(server_id=server_id, **params):
-            return nova_client(client).servers.live_migrate(server=server_id,
-                                                            **params)
+        params.update(block_migration=block_migration)
+
+    LOG.debug(f"Start server '{server_id}' live migration...\n" +
+              f"{params}")
+    with handle_migration_errors(server_id=server_id, **params):
+        return nova_client(client).servers.live_migrate(server=server_id,
+                                                        **params)
 
 
 @contextlib.contextmanager

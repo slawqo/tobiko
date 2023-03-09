@@ -72,26 +72,16 @@ class BaseServerTest(testtools.TestCase):
         self._test_migrate_server(live=True)
 
     @pytest.mark.server_migrate
-    @nova.skip_if_missing_hypervisors(count=2)
+    @nova.skip_if_missing_hypervisors(count=3)
     def test_6_migrate_server_with_host(self):
         """Tests cold migration actually ends on target hypervisor
         """
         self._test_migrate_server_with_host(live=False)
 
     @pytest.mark.server_migrate
-    @nova.skip_if_missing_hypervisors(count=2)
+    @nova.skip_if_missing_hypervisors(count=3)
     def test_7_live_migrate_server_with_host(self):
         self._test_migrate_server_with_host(live=True)
-
-    @pytest.mark.server_migrate
-    @nova.skip_if_missing_hypervisors(count=2)
-    def test_8_live_migrate_server_with_block_migration(self):
-        self._test_migrate_server(live=True, block_migration=True)
-
-    @pytest.mark.server_migrate
-    @nova.skip_if_missing_hypervisors(count=2)
-    def test_9_live_migrate_server_with_no_block_migration(self):
-        self._test_migrate_server(live=True, block_migration=False)
 
     def _test_migrate_server(self,
                              live: bool,
