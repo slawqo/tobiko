@@ -587,21 +587,26 @@ pcs_resource_list = ['haproxy', 'galera', 'redis', 'ovn-dbs', 'cinder',
                      'rabbitmq', 'manila', 'ceph', 'pacemaker']
 
 
-def remove_containers_if_pacemaker_resources(comparable_containers_df):
-    """remove any containers in
-    param: comparable_containers_df that are pacemaker resources
-    i.e if they contain tha names of resources defined in
-    pcs_resources_list"""
+sidecar_container_list = [
+    'neutron-haproxy-ovnmeta', 'neutron-haproxy-qrouter',
+    'neutron-dnsmasq-qdhcp', 'neutron-keepalived-qrouter']
 
+
+def remove_containers_from_comparison(comparable_containers_df):
+    """remove any containers if comparing them with previous status is not
+    necessary or makes no sense
+    """
+    ignore_containers_list = pcs_resource_list + sidecar_container_list
     for row in comparable_containers_df.iterrows():
-        for pcs_resource in pcs_resource_list:
-            if pcs_resource in str(row):
-                LOG.info(f'pcs resource {pcs_resource} has changed state, '
-                         f'but that\'s ok since pcs resources can change '
-                         f'state/host: {str(row)}')
+        for ignore_container in ignore_containers_list:
+            if ignore_container in str(row):
+                LOG.info(f'container {ignore_container} has changed state, '
+                         'but that\'s ok - it will be ignored and the test '
+                         f'will not fail due to this: {str(row)}')
                 # if a pcs resource is found , we drop that row
                 comparable_containers_df.drop(row[0], inplace=True)
-    return comparable_containers_df
+                # this row was already dropped, go to next row
+                break
 
 
 def dataframe_difference(df1, df2, which=None):
@@ -616,10 +621,12 @@ def dataframe_difference(df1, df2, which=None):
     else:
         diff_df = comparison_df[comparison_df['same_state'] == which]
 
-    # if the list of diffrent state container are pacemaker resources ignore
-    # the error since we are checking pacemaker also.
-
-    remove_containers_if_pacemaker_resources(diff_df)
+    # if the list of different state containers includes sidecar containers,
+    # ignore them because the existence of these containers depends on the
+    # created resources
+    # if the list of different state containers includes pacemaker resources,
+    # ignore them since the sanity and fault tests check pacemaker status too
+    remove_containers_from_comparison(diff_df)
 
     return diff_df
 
