@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import enum
 import io
 import time
 import typing
@@ -11,22 +12,20 @@ import tobiko
 from tobiko import config
 from tobiko.tripleo import overcloud
 from tobiko.shell import sh
+from tobiko.shell import ssh
 from tobiko.openstack import topology
 
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)
 
+GALERA_RESOURCE = "galera-bundle"
+HAPROXY_RESOURCE = "haproxy-bundle"
+OVN_DBS_RESOURCE = "ovn-dbs-bundle"
+
 
 class PcsResourceException(tobiko.TobikoException):
     message = "pcs cluster is not in a healthy state"
-
-
-def get_random_controller_ssh_client():
-    """get a random controler's ssh client """
-    nodes = topology.list_openstack_nodes(group='controller')
-    controller_node = nodes[0]
-    return controller_node.ssh_client
 
 
 def get_pcs_resources_table(timeout=720, interval=2) -> pandas.DataFrame:
@@ -45,15 +44,11 @@ def get_pcs_resources_table(timeout=720, interval=2) -> pandas.DataFrame:
     failures: typing.List[str] = []
     start = time.time()
 
-    ssh_client = get_random_controller_ssh_client()
-
     # prevent pcs table read failure while pacemaker is starting
     while time.time() - start < timeout:
         failures = []
         try:
-            output = sh.execute("sudo pcs status resources |grep ocf",
-                                ssh_client=ssh_client,
-                                expect_exit_status=None).stdout
+            output = run_pcs_status(options=['resources'], grep_str='ocf')
             # remove the first column when it only includes '*' characters
             output = output.replace('*', '').strip()
             stream = io.StringIO(output)
@@ -62,9 +57,7 @@ def get_pcs_resources_table(timeout=720, interval=2) -> pandas.DataFrame:
             table.columns = ['resource', 'resource_type', 'resource_state',
                              'overcloud_node']
         except ValueError:
-            pcs_status_raw = sh.execute("sudo pcs status ",
-                                        ssh_client=ssh_client,
-                                        expect_exit_status=None).stdout
+            pcs_status_raw = run_pcs_status()
             failures.append(f'pcs status table import failed : '
                             f'pcs status stdout:\n {pcs_status_raw}')
             LOG.info('Retrying , timeout at: {}'
@@ -347,13 +340,9 @@ skip_if_instanceha_not_delpoyed = tobiko.skip_unless(
 def fencing_deployed():
     """check fencing deployment
     checks for existence of the stonith-fence type resources"""
-    ssh_client = get_random_controller_ssh_client()
-    fencing_output = sh.execute("sudo pcs status |grep "
-                                "'stonith:fence_ipmilan'",
-                                ssh_client=ssh_client,
-                                expect_exit_status=None)
+    fencing_output = run_pcs_status(grep_str="stonith:fence_ipmilan")
 
-    if fencing_output.exit_status == 0:
+    if fencing_output:
         return True
     else:
         return False
@@ -361,3 +350,104 @@ def fencing_deployed():
 
 skip_if_fencing_not_deployed = tobiko.skip_unless(
     'fencing not delpoyed', fencing_deployed)
+
+
+def run_pcs_status(ssh_client: ssh.SSHClientFixture = None,
+                   options: list = None,
+                   grep_str: str = None) -> str:
+    command_args = ['status']
+    command_args += options or []
+
+    output = execute_pcs(command_args,
+                         ssh_client=ssh_client,
+                         sudo=True)
+
+    if not grep_str:
+        return output
+
+    output_ocf_lines = []
+    for line in output.splitlines():
+        if grep_str in line:
+            output_ocf_lines.append(line)
+
+    return '\n'.join(output_ocf_lines)
+
+
+class PcsResourceOperation(enum.Enum):
+    DISABLE = "disable"
+    ENABLE = "enable"
+    RESTART = "restart"
+    SHOW = "show"
+
+    def __init__(self, pcsoperation: str):
+        self.pcsoperation = pcsoperation
+
+
+DISABLE = PcsResourceOperation.DISABLE
+ENABLE = PcsResourceOperation.ENABLE
+RESTART = PcsResourceOperation.RESTART
+SHOW = PcsResourceOperation.SHOW
+
+
+def run_pcs_resource_operation(resource: str,
+                               operation: PcsResourceOperation,
+                               ssh_client: ssh.SSHClientFixture = None,
+                               node: str = None,
+                               operation_wait: int = 60,
+                               retry_timeout: float = 180.,
+                               retry_interval: float = 5.) -> str:
+    tobiko.check_valid_type(operation, PcsResourceOperation)
+
+    command_args = ['resource', operation.pcsoperation, resource]
+    if node is not None:
+        command_args.append(node)
+
+    command_args.append(f'--wait={operation_wait}')
+
+    # add stderr to the output if the operation is disable or enable
+    add_stderr = operation in (DISABLE, ENABLE)
+    # execute the command with retries
+    for attempt in tobiko.retry(timeout=retry_timeout,
+                                interval=retry_interval):
+        try:
+            output = execute_pcs(command_args,
+                                 ssh_client=ssh_client,
+                                 add_stderr=add_stderr,
+                                 sudo=True)
+        except sh.ShellCommandFailed as exc:
+            if attempt.is_last:
+                raise exc
+            else:
+                LOG.info('the pcs command failed - retrying...')
+                continue
+        break
+    return output
+
+
+PCS_COMMAND = sh.shell_command(['pcs'])
+
+
+def execute_pcs(command_args: list,
+                ssh_client: ssh.SSHClientFixture = None,
+                pcs_command: sh.ShellCommand = None,
+                add_stderr: bool = False,
+                **execute_params) -> str:
+    if ssh_client is None:
+        ssh_client = topology.find_openstack_node(
+            group='controller').ssh_client
+
+    if pcs_command:
+        pcs_command = sh.shell_command(pcs_command)
+    else:
+        pcs_command = PCS_COMMAND
+
+    command = pcs_command + command_args
+    result = sh.execute(
+        command, ssh_client=ssh_client, stdin=False, stdout=True, stderr=True,
+        **execute_params)
+
+    if add_stderr:
+        output = '\n'.join([result.stdout, result.stderr])
+    else:
+        output = result.stdout
+    return output

@@ -57,15 +57,18 @@ network_disruption = """
 undisrupt_network = """
  sudo iptables-restore ~/working.iptables.rules
 """
-ovn_db_pcs_resource_restart = "sudo pcs resource restart ovn-dbs-bundle"
+
+# TODO(eolivare): run ovn_db_pcs_resource_restart using
+# run_pcs_resource_operation
+# Now it is not possible because it is executed with
+# ssh_client.connect().exec_command and run_pcs_resource_operation only
+# supports sh.execute
+ovn_db_pcs_resource_restart = (f"sudo pcs resource restart "
+                               f"{pacemaker.OVN_DBS_RESOURCE}")
 kill_rabbit = "sudo pkill -9 beam.smp"
 remove_grastate = "sudo rm -rf /var/lib/mysql/grastate.dat"
 check_bootstrap = """ps -eo lstart,cmd | grep -v grep|
 grep wsrep-cluster-address=gcomm://"""
-disable_galera = "sudo pcs resource disable galera --wait=60 2>&1"
-enable_galera = "sudo pcs resource enable galera --wait=90 2>&1"
-disable_haproxy = "sudo pcs resource disable haproxy-bundle --wait=30 2>&1"
-enable_haproxy = "sudo pcs resource enable haproxy-bundle --wait=60 2>&1"
 galera_sst_request = """sudo grep 'wsrep_sst_rsync.*'
 /var/log/containers/mysql/mysqld.log"""
 kill_mysqld = "sudo pkill -9 mysqld"
@@ -512,22 +515,28 @@ def remove_all_grastate_galera():
         nodes = topology.list_openstack_nodes(group='database')
     else:
         nodes = topology.list_openstack_nodes(group='controller')
-    LOG.info('shut down galera: {} on all servers: {}'.
-             format(disable_galera, nodes))
-    if "resource 'galera' is not running on any node" not in\
-            sh.execute(disable_galera, ssh_client=nodes[0].ssh_client).stdout:
+    LOG.info('shut down {} on all servers: {}'.format(
+        pacemaker.GALERA_RESOURCE, nodes))
+    if f"resource '{pacemaker.GALERA_RESOURCE}' is not running on any node" \
+            not in pacemaker.run_pcs_resource_operation(
+                pacemaker.GALERA_RESOURCE,
+                pacemaker.DISABLE,
+                nodes[0].ssh_client):
         raise PcsDisableException()
     for node in nodes:
         sh.execute(remove_grastate, ssh_client=node.ssh_client)
 
-    LOG.info('enable back galera: {} on all servers: {}'.
-             format(enable_galera, nodes))
+    LOG.info('enable back {} on all servers: {}'.format(
+        pacemaker.GALERA_RESOURCE, nodes))
     if topology.verify_osp_version('17.0', lower=True):
         promoted = "master"
     else:
         promoted = "promoted"
-    if f"resource 'galera' is {promoted} on node" not in\
-            sh.execute(enable_galera, ssh_client=nodes[0].ssh_client).stdout:
+    if f"resource '{pacemaker.GALERA_RESOURCE}' is {promoted} on node" not in \
+            pacemaker.run_pcs_resource_operation(pacemaker.GALERA_RESOURCE,
+                                                 pacemaker.ENABLE,
+                                                 nodes[0].ssh_client,
+                                                 operation_wait=90):
         raise PcsEnableException()
 
 
@@ -540,31 +549,42 @@ def remove_one_grastate_galera():
     else:
         nodes = topology.list_openstack_nodes(group='controller')
     node = random.choice(nodes)
-    LOG.info('disable haproxy-bunble')
-    if "resource 'haproxy-bundle' is not running on any node" not in\
-            sh.execute(disable_haproxy, ssh_client=node.ssh_client).stdout:
+    LOG.info(f'disable {pacemaker.HAPROXY_RESOURCE}')
+    if f"resource '{pacemaker.HAPROXY_RESOURCE}' is not running on any node" \
+            not in pacemaker.run_pcs_resource_operation(
+                pacemaker.HAPROXY_RESOURCE,
+                pacemaker.DISABLE,
+                node.ssh_client,
+                operation_wait=30):
         raise PcsDisableException()
-    LOG.info('shut down galera: {} on all servers: {}'.
-             format(disable_galera, nodes))
-    if "resource 'galera' is not running on any node" not in\
-            sh.execute(disable_galera, ssh_client=node.ssh_client).stdout:
+    LOG.info('shut down {} on all servers: {}'.format(
+        pacemaker.GALERA_RESOURCE, nodes))
+    if f"resource '{pacemaker.GALERA_RESOURCE}' is not running on any node" \
+            not in pacemaker.run_pcs_resource_operation(
+                pacemaker.GALERA_RESOURCE,
+                pacemaker.DISABLE,
+                node.ssh_client):
         raise PcsDisableException()
     LOG.info('remove grastate: {} on server: {}'.format(remove_grastate,
                                                         node.name))
     sh.execute(remove_grastate, ssh_client=node.ssh_client)
 
-    LOG.info('enable back galera: {} on all servers: {}'.
-             format(enable_galera, nodes))
+    LOG.info('enable back {} on all servers: {}'.format(
+        pacemaker.GALERA_RESOURCE, nodes))
     if topology.verify_osp_version('17.0', lower=True):
         promoted = "master"
     else:
         promoted = "promoted"
-    if f"resource 'galera' is {promoted} on node" not in\
-            sh.execute(enable_galera, ssh_client=node.ssh_client).stdout:
+    if f"resource '{pacemaker.GALERA_RESOURCE}' is {promoted} on node" not in \
+            pacemaker.run_pcs_resource_operation(
+                pacemaker.GALERA_RESOURCE, pacemaker.ENABLE, node.ssh_client,
+                operation_wait=90):
         raise PcsEnableException()
-    LOG.info('enable haproxy-bundle')
-    if "resource 'haproxy-bundle' is running on node" not in\
-            sh.execute(enable_haproxy, ssh_client=node.ssh_client).stdout:
+    LOG.info(f'enable {pacemaker.HAPROXY_RESOURCE}')
+    if f"resource '{pacemaker.HAPROXY_RESOURCE}' is running on node" not in \
+            pacemaker.run_pcs_resource_operation(pacemaker.HAPROXY_RESOURCE,
+                                                 pacemaker.ENABLE,
+                                                 node.ssh_client):
         raise PcsEnableException()
     # gcomm:// without args means that bootstrap is done from this node
     bootstrap = sh.execute(check_bootstrap, ssh_client=node.ssh_client).stdout

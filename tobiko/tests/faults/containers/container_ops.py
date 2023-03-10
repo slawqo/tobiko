@@ -22,6 +22,7 @@ from oslo_log import log
 import tobiko
 from tobiko.openstack import topology
 from tobiko.shell import sh
+from tobiko.tripleo import pacemaker
 
 
 LOG = log.getLogger(__name__)
@@ -202,10 +203,8 @@ def get_node_logdir_from_pcs(node, container):
     if pcs_resource is None:
         return
     logdir = None
-    pcs_rsrc_cmd = f'pcs resource show {pcs_resource}'
-    out_lines = sh.execute(pcs_rsrc_cmd,
-                           ssh_client=node.ssh_client,
-                           sudo=True).stdout.splitlines()
+    out_lines = pacemaker.run_pcs_resource_operation(
+            pcs_resource, pacemaker.SHOW, node=node.ssh_client).splitlines()
     log_files_regex = re.compile(
         r'^\s*options=.*source-dir=(.*) target-dir=.*-log-files\)$')
     for line in out_lines:
@@ -223,10 +222,8 @@ def get_pacemaker_resource_logfiles(node, container):
     logfiles = []
     exclude_pid_files = 'ovn-controller.pid'
     resource = get_pacemaker_resource_from_container(container)
-    pcs_rsrc_cmd = f'pcs resource show {resource}'
-    out_lines = sh.execute(pcs_rsrc_cmd,
-                           ssh_client=node.ssh_client,
-                           sudo=True).stdout.splitlines()
+    out_lines = pacemaker.run_pcs_resource_operation(
+        resource, pacemaker.SHOW, node=node.ssh_client).splitlines()
     run_files_regex = re.compile(
         r'^\s*options=.*source-dir=(.*) target-dir=.*-run-files\)$')
     for line in out_lines:
