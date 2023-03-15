@@ -23,7 +23,6 @@
       - publish-to-pypi
       - tobiko-docker
       - tobiko-infrared
-      - tobiko-tripleo
     vars:
         rtd_webhook_id: '84947'
     periodic:
