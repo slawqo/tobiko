@@ -45,7 +45,7 @@ def overcloud_health_checks(passive_checks_only=False,
     check_pacemaker_resources_health()
     check_overcloud_processes_health()
     nova.check_nova_services_health()
-    tests.test_neutron_agents_are_alive()
+    tests.test_alive_agents_are_consistent_along_time()
     if not passive_checks_only:
         # create a uniq stack
         check_vm_create()
@@ -265,7 +265,7 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.request_galera_sst()
         OvercloudHealthCheck.run_after()
 
-    @pytest.mark.flaky(reruns=3, reruns_delay=60)
+    @pytest.mark.flaky(reruns=0)
     def test_controllers_shutdown(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.test_controllers_shutdown()

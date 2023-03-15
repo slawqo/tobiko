@@ -22,6 +22,8 @@ from tobiko.openstack.tests import _nova
 InvalidDBConnString = _neutron.InvalidDBConnString
 RAFTStatusError = _neutron.RAFTStatusError
 test_neutron_agents_are_alive = _neutron.test_neutron_agents_are_alive
+test_alive_agents_are_consistent_along_time = (
+    _neutron.test_alive_agents_are_consistent_along_time)
 test_ovn_dbs_validations = _neutron.test_ovn_dbs_validations
 test_ovs_bridges_mac_table_size = _neutron.test_ovs_bridges_mac_table_size
 test_ovs_namespaces_are_absent = _neutron.test_ovs_namespaces_are_absent
