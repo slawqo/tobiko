@@ -27,6 +27,7 @@ from tobiko.openstack.neutron import _subnet
 
 
 SERVER = 'neutron-server'
+METADATA_IPv4 = '169.254.169.254'
 DHCP_AGENT = _agent.DHCP_AGENT
 L3_AGENT = _agent.L3_AGENT
 METADATA_AGENT = _agent.METADATA_AGENT
@@ -39,7 +40,10 @@ STATEFUL_OVN_ACTION = _security_group.STATEFUL_OVN_ACTION
 STATELESS_OVN_ACTION = _security_group.STATELESS_OVN_ACTION
 
 AgentNotFoundOnHost = _agent.AgentNotFoundOnHost
+NotFound = _client.NotFound
 NeutronAgentType = _agent.NeutronAgentType
+SecurityGroupType = _security_group.SecurityGroupType
+SecurityGroupIdOrNameType = _security_group.SecurityGroupIdOrNameType
 get_l3_agent_mode = _agent.get_l3_agent_mode
 find_l3_agent_hosting_router = _agent.find_l3_agent_hosting_router
 list_agents = _agent.list_agents
@@ -137,8 +141,9 @@ SubnetIdType = _subnet.SubnetIdType
 NoSuchSubnet = _subnet.NoSuchSubnet
 
 list_security_groups = _security_group.list_security_groups
-get_security_group_by_id = _security_group.get_security_group_by_id
+get_security_group = _security_group.get_security_group
 get_default_security_group = _security_group.get_default_security_group
 create_security_group = _security_group.create_security_group
 update_security_group = _security_group.update_security_group
+delete_security_group = _security_group.delete_security_group
 create_security_group_rule = _security_group.create_security_group_rule

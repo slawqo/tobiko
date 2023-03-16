@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 import json
+import typing
 
 from oslo_log import log
 import testtools
@@ -31,10 +32,6 @@ LOG = log.getLogger(__name__)
 
 
 class BaseSecurityGroupTest(testtools.TestCase):
-
-    #: Resources stack with Nova server to send messages to
-    stack = tobiko.required_fixture(
-        stacks.CirrosServerWithDefaultSecurityGroupStackFixture)
 
     _ovn_nb_db = None
     _host_ssh_client = None
@@ -128,6 +125,10 @@ class BaseSecurityGroupTest(testtools.TestCase):
 @neutron.skip_if_missing_networking_extensions('stateful-security-group')
 class StatelessSecurityGroupTest(BaseSecurityGroupTest):
 
+    #: Resources stack with Nova server to send messages to
+    stack = tobiko.required_fixture(
+        stacks.CirrosServerWithDefaultSecurityGroupStackFixture)
+
     def test_default_security_group_is_stateful(self):
         """Test that default security group is always stateful.
 
@@ -203,7 +204,7 @@ class StatelessSecurityGroupTest(BaseSecurityGroupTest):
 
         # Update to stateless
         neutron.update_security_group(sg['id'], stateful=False)
-        sg = neutron.get_security_group_by_id(sg['id'])
+        sg = neutron.get_security_group(sg['id'])
         self.assertFalse(sg['stateful'])
         self._check_sg_rules_in_ovn_nb_db(sg, neutron.STATELESS_OVN_ACTION)
         new_rule = neutron.create_security_group_rule(
@@ -220,7 +221,7 @@ class StatelessSecurityGroupTest(BaseSecurityGroupTest):
 
         # And get back to stateful
         neutron.update_security_group(sg['id'], stateful=True)
-        sg = neutron.get_security_group_by_id(sg['id'])
+        sg = neutron.get_security_group(sg['id'])
         self.assertTrue(sg['stateful'])
         self._check_sg_rules_in_ovn_nb_db(sg, neutron.STATEFUL_OVN_ACTION)
         new_rule = neutron.create_security_group_rule(
@@ -266,3 +267,55 @@ class StatelessSecurityGroupTest(BaseSecurityGroupTest):
         )
         self._check_sg_rule_in_ovn_nb_db(new_rule['id'],
                                          neutron.STATELESS_OVN_ACTION)
+
+
+@neutron.skip_if_missing_networking_extensions('port-security',
+                                               'stateful-security-group')
+class CirrosServerWithStatelessSecurityGroupFixture(
+        stacks.CirrosServerStackFixture):
+    """Heat stack for testing a floating IP instance with port security"""
+
+    #: Resources stack with security group to allow ping Nova servers
+    security_groups_stack = tobiko.required_fixture(
+        stacks.StatelessSecurityGroupFixture)
+
+    @property
+    def security_groups(self) -> typing.List[str]:
+        """List with Stateless security group"""
+        return [self.security_groups_stack.security_group_id]
+
+
+@neutron.skip_if_missing_networking_extensions('stateful-security-group')
+class StatelessSecurityGroupInstanceTest(BaseSecurityGroupTest):
+
+    #: Resources stack with Nova server to send messages to
+    vm = tobiko.required_fixture(
+        CirrosServerWithStatelessSecurityGroupFixture)
+
+    def test_no_conntrack_entries_related_to_stateless_sg(self):
+        """ Test that there is no conntrack entry related to stateless SG.
+
+        This test ensures that there is no conntrack entry for connection
+        that passes stateless security group.
+
+        Steps:
+        1. Create server with stateless SG,
+        2. Allow SSH to that instance
+        3. Make SSH connection to the instance,
+        4. Ensure on compute node that there are no conntrack entries
+           related to that connection there,
+        """
+        host_ssh_client = topology.get_openstack_node(
+            hostname=self.vm.hypervisor_hostname).ssh_client
+        vm_ip_address = self.vm.find_fixed_ip(ip_version=4)
+
+        # Now lets make ssh connection to the vm and then check in conntrack if
+        # entry is there or not (it shouldn't be)
+        sh.execute('hostname', ssh_client=self.vm.ssh_client)
+        conntrack_list_result = sh.execute(
+            "conntrack -L --proto tcp --dport 22 --dst %s" % vm_ip_address,
+            ssh_client=host_ssh_client, sudo=True)
+        # And ensure that there is no entry found in conntrack
+        self.assertEqual("", conntrack_list_result.stdout)
+        self.assertTrue(
+            "0 flow entries have been shown" in conntrack_list_result.stderr)
