@@ -286,18 +286,18 @@ def disrupt_controller_galera_main_vip(disrupt_method=sh.soft_reset_method):
     # This case reboots controller while VM creation is in progress
     # Please refer to RHBZ#2124877 for more info
     # Find the Galera VIP (port name : internal_api_virtual_ip)
+    session = tripleo.undercloud_keystone_session()
+    uc_neutron_client = neutron.get_neutron_client(session=session)
     try:
-        session = tripleo.undercloud_keystone_session()
-        uc_neutron_client = neutron.get_neutron_client(session=session)
         new_port = neutron.find_port(client=uc_neutron_client, unique=False,
                                      name='internal_api_virtual_ip')
-        galera_vip_address = new_port['fixed_ips'][0]['ip_address']
-        LOG.info("The Galera VIP address is: %r", galera_vip_address)
-    except sh.ShellCommandFailed as no_internal_api:
+    except tobiko.ObjectNotFound as no_internal_api:
         raise tobiko.SkipException(
             'This OSP environment doesnt have an internal_api \
               network, so this test cannot be executed') from no_internal_api
 
+    galera_vip_address = new_port['fixed_ips'][0]['ip_address']
+    LOG.info("The Galera VIP address is: %r", galera_vip_address)
     # Find the controller hosting VIP resource
     galera_vip_resource = "ip-"+galera_vip_address
     galera_vip_controller = pacemaker.get_overcloud_nodes_running_pcs_resource(
