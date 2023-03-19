@@ -42,9 +42,6 @@ class DesignateBasicScenarioTest(testtools.TestCase):
     def setUp(self):
         super(DesignateBasicScenarioTest, self).setUp()
         # Wait for Designate recourses to be active
-        create_recordset = self.zone_stack.recordset_create()
-        LOG.debug(create_recordset)
-
         self.zone_stack.wait_for_active_recordsets()
 
     def test_basic_sanity_scenario(self):
@@ -53,6 +50,8 @@ class DesignateBasicScenarioTest(testtools.TestCase):
         recordset_list = self.zone_stack.recordset_list
         expected_recordset_types = ["SOA", "NS", "A"]
         actual_recordset_types = [item["type"] for item in recordset_list]
+        expected_recordset_types.sort()
+        actual_recordset_types.sort()
         self.assertEqual(expected_recordset_types, actual_recordset_types)
 
         # list all Controller nodes
@@ -82,7 +81,7 @@ class DesignateBasicScenarioTest(testtools.TestCase):
                               f" is stored for a zone")
                     LOG.debug(f"{dns_ip} is a valid DNS server!")
                     valid_dns_ip_list.append(str(dns_ip))
-                except (dns.resolver.Timeout, dns.resolver.NoNameservers):
+                except (dns.resolver.Timeout, dns.resolver.NXDOMAIN):
                     LOG.warn(f"{dns_ip} is NOT a valid DNS server!")
 
         self.assertEqual(len(valid_dns_ip_list), len(nodes))
