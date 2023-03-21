@@ -206,7 +206,7 @@ def run_command_on_amphora(command: str,
     start_agent_cmd = f'eval {ssh_agent_output} {ssh_add_command}; '
 
     # Example: ssh -A -t heat-admin@192.168.24.13
-    controller_user = CONF.tobiko.tripleo.overcloud_ssh_username
+    controller_user = tripleo.get_overcloud_ssh_username()
     controller_ssh_command = f'ssh -A -t {controller_user}@{controller_ip}'
 
     amphora_user = CONF.tobiko.octavia.amphora_user

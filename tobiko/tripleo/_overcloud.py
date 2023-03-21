@@ -236,7 +236,7 @@ class OvercloudHostConfig(tobiko.SharedFixture):
         if self.port is None:
             self.port = CONF.tobiko.tripleo.overcloud_ssh_port
         if self.username is None:
-            self.username = CONF.tobiko.tripleo.overcloud_ssh_username
+            self.username = get_overcloud_ssh_username()
         if self.key_filename is None:
             self.key_filename = self.key_file.key_filename
 
@@ -376,6 +376,18 @@ def check_overcloud(min_version: str = None,
                              min_version=min_version,
                              max_version=max_version,
                              mismatch_error=OvercloudVersionMismatch)
+
+
+@functools.lru_cache()
+def get_overcloud_ssh_username():
+    if CONF.tobiko.tripleo.overcloud_ssh_username is not None:
+        return CONF.tobiko.tripleo.overcloud_ssh_username
+
+    if tobiko.check_version(_undercloud.undercloud_version(),
+                            min_version='17.0'):
+        return "tripleo-admin"
+    else:
+        return "heat-admin"
 
 
 class OvercloudNotFound(tobiko.ObjectNotFound):

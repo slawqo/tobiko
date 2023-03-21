@@ -48,7 +48,7 @@ OPTIONS = [
                default=None,
                help="TCP port of SSH server on overcloud hosts"),
     cfg.StrOpt('overcloud_ssh_username',
-               default='heat-admin',
+               default=None,
                help="Default username used to connect to overcloud nodes"),
     cfg.StrOpt('overcloud_ssh_key_filename',
                default='~/.ssh/id_overcloud',

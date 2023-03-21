@@ -26,6 +26,7 @@ import tobiko
 from tobiko.shell import ansible
 from tobiko.shell import sh
 from tobiko.shell import ssh
+from tobiko.tripleo import _overcloud
 from tobiko.tripleo import _undercloud
 from tobiko.tripleo import _config
 
@@ -129,7 +130,7 @@ def read_tripleo_ansible_inventory():
     ssh_client = _undercloud.undercloud_ssh_client()
     script = READ_TRIPLEO_ANSIBLE_INVENTORY_SCRIPT.format(
         undercloud_rcfile=tripleo.undercloud_rcfile[0],
-        overcloud_ssh_username=tripleo.overcloud_ssh_username)
+        overcloud_ssh_username=_overcloud.get_overcloud_ssh_username())
     return sh.execute('/bin/bash', stdin=script, ssh_client=ssh_client).stdout
 
 

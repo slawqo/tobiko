@@ -97,7 +97,7 @@ class OvercloudMetalsmithApiTest(testtools.TestCase):
         netaddr.IPAddress(host_config.hostname)
         self.assertEqual(CONF.tobiko.tripleo.overcloud_ssh_port,
                          host_config.port)
-        self.assertEqual(CONF.tobiko.tripleo.overcloud_ssh_username,
+        self.assertEqual(tripleo.get_overcloud_ssh_username(),
                          host_config.username)
         key_filename = tobiko.tobiko_config_path(
             CONF.tobiko.tripleo.overcloud_ssh_key_filename)
