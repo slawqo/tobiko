@@ -489,6 +489,100 @@ class SecurityGroupsFixture(heat.HeatStackFixture):
     #: Heat template file
     template = _hot.heat_template_file('neutron/security_groups.yaml')
 
+    def __init__(self, stateful: bool = True):
+        self._stateful = stateful
+        super(SecurityGroupsFixture, self).__init__()
+
+    @property
+    def stateful(self):
+        return self._stateful
+
+
+@neutron.skip_if_missing_networking_extensions('stateful-security-group')
+class StatelessSecurityGroupFixture(tobiko.SharedFixture):
+    """Neutron Stateless Security Group Fixture.
+
+    This SG will by default allow SSH and ICMP to the instance and also
+    ingress traffic from the metadata service as it can't rely on conntrack.
+    """
+
+    name: typing.Optional[str] = None
+    description: typing.Optional[str] = ""
+    rules = [
+        {
+            'protocol': 'tcp',
+            'port_range_min': 22,
+            'port_range_max': 22,
+            'direction': 'ingress'
+        }, {
+            'protocol': 'icmp',
+            'direction': 'ingress'
+        }, {
+            'protocol': 'tcp',
+            'remote_ip_prefix': '%s/32' % neutron.METADATA_IPv4,
+            'direction': 'ingress'
+        }
+    ]
+    _security_group: typing.Optional[neutron.SecurityGroupType] = None
+
+    def __init__(self,
+                 name: typing.Optional[str] = None,
+                 description: typing.Optional[str] = None,
+                 rules: typing.Optional[list] = None):
+        self.name = name or self.fixture_name
+        if description:
+            self.description = description
+        if rules:
+            self.rules = rules
+        super(StatelessSecurityGroupFixture, self).__init__()
+
+    def setup_fixture(self):
+        if not self.security_group:
+            self._security_group = neutron.create_security_group(
+                name=self.name, description=self.description,
+                add_cleanup=False, stateful=False)
+        if self.security_group:
+            for rule in self.rules:
+                neutron.create_security_group_rule(
+                    self._security_group['id'],
+                    add_cleanup=False,
+                    **rule)
+            tobiko.addme_to_shared_resource(__name__, self.name)
+
+    def cleanup_fixture(self):
+        n_tests_using_stack = len(tobiko.removeme_from_shared_resource(
+             __name__, self.name))
+        if n_tests_using_stack == 0:
+            self._cleanup_security_group()
+        else:
+            LOG.info('Security Group %r not deleted because %d tests '
+                     'are using it still.',
+                     self.name, n_tests_using_stack)
+
+    def _cleanup_security_group(self):
+        sg_id = self.security_group_id
+        if sg_id:
+            self._security_group = None
+            LOG.debug('Deleting Security Group %r (%r)...',
+                      self.name, sg_id)
+            neutron.delete_security_group(sg_id)
+            LOG.debug('Security Group %r (%r) deleted.', self.name, sg_id)
+
+    @property
+    def security_group_id(self):
+        if self.security_group:
+            return self._security_group['id']
+
+    @property
+    def security_group(self):
+        if not self._security_group:
+            try:
+                self._security_group = neutron.get_security_group(self.name)
+            except neutron.NotFound:
+                LOG.debug("Security group %r not found.", self.name)
+                self._security_group = None
+        return self._security_group
+
 
 def list_external_networks(name: str = None) -> \
         tobiko.Selection[neutron.NetworkType]:

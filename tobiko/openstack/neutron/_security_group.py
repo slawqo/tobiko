@@ -29,7 +29,7 @@ STATEFUL_OVN_ACTION = "allow-related"
 STATELESS_OVN_ACTION = "allow-stateless"
 
 SecurityGroupType = typing.Dict[str, typing.Any]
-SecurityGroupIdType = typing.Union[str, SecurityGroupType]
+SecurityGroupIdOrNameType = typing.Union[str, SecurityGroupType]
 SecurityGroupRuleType = typing.Dict[str, typing.Any]
 SecurityGroupRuleIdType = typing.Union[str, SecurityGroupRuleType]
 
@@ -43,12 +43,12 @@ def list_security_groups(client=None, **params) \
     return tobiko.Selection[SecurityGroupType](security_groups)
 
 
-def get_security_group_by_id(sg_id: SecurityGroupIdType,
-                             client: _client.NeutronClientType = None,
-                             **params) \
+def get_security_group(sg: SecurityGroupIdOrNameType,
+                       client: _client.NeutronClientType = None,
+                       **params) \
         -> SecurityGroupType:
     return _client.neutron_client(client).show_security_group(
-        sg_id, **params
+        sg, **params
     )['security_group']
 
 
@@ -75,7 +75,7 @@ def create_security_group(client=None, add_cleanup=True,
     return sg
 
 
-def update_security_group(sg_id: SecurityGroupIdType,
+def update_security_group(sg_id: SecurityGroupIdOrNameType,
                           client: _client.NeutronClientType = None,
                           **params) \
                               -> SecurityGroupType:
@@ -85,7 +85,7 @@ def update_security_group(sg_id: SecurityGroupIdType,
     )['security_group']
 
 
-def delete_security_group(sg_id: SecurityGroupIdType,
+def delete_security_group(sg_id: SecurityGroupIdOrNameType,
                           should_exists: bool = False,
                           client: _client.NeutronClientType = None):
     try:

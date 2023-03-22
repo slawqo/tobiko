@@ -75,6 +75,7 @@ NetworkWithNetMtuWriteStackFixture = (
 RouterInterfaceStackFixture = _neutron.RouterInterfaceStackFixture
 RouterStackFixture = _neutron.RouterStackFixture
 SecurityGroupsFixture = _neutron.SecurityGroupsFixture
+StatelessSecurityGroupFixture = _neutron.StatelessSecurityGroupFixture
 get_external_network = _neutron.get_external_network
 has_external_network = _neutron.has_external_network
 skip_unless_has_external_network = _neutron.skip_unless_has_external_network

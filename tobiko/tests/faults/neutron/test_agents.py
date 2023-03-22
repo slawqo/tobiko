@@ -725,9 +725,8 @@ class MetadataAgentTest(BaseAgentTest):
         if is_reachable not in [True, False]:
             raise TypeError("'is_reachable' parameter is not a bool: "
                             f"{is_reachable!r}")
-        # TODO: fix hard coded IP address
         metadata_url = (metadata_url or
-                        'http://169.254.169.254/latest/meta-data/')
+                        'http://%s/latest/meta-data/' % neutron.METADATA_IPv4)
 
         try:
             result = sh.execute(f"curl '{metadata_url}' -I",
