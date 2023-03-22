@@ -111,7 +111,7 @@ class RetryAttempt(object):
         if self.timeout is not None:
             details.append(f"timeout={self.timeout}")
         if self.sleep_time is not None:
-            details.append(f"timeout={self.sleep_time}")
+            details.append(f"sleep_time={self.sleep_time}")
         if self.interval is not None:
             details.append(f"interval={self.interval}")
         return ', '.join(details)
