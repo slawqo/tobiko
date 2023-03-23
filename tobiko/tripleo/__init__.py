@@ -51,6 +51,7 @@ overcloud_ssh_client = overcloud.overcloud_ssh_client
 overcloud_version = overcloud.overcloud_version
 skip_if_missing_overcloud = overcloud.skip_if_missing_overcloud
 skip_unless_has_overcloud = overcloud.skip_unless_has_overcloud
+get_overcloud_ssh_username = overcloud.get_overcloud_ssh_username
 skip_if_ceph_rgw = containers.skip_if_ceph_rgw
 
 get_rhosp_release = _rhosp.get_rhosp_release

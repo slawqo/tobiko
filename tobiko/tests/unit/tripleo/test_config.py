@@ -61,7 +61,9 @@ class OvercloudConfigTest(unit.TobikoUnitTest):
             self.assertLess(value, 2 ** 16)
 
     def test_overcloud_ssh_username(self):
-        self.assertIsInstance(TRIPLEO_CONF.overcloud_ssh_username, str)
+        value = TRIPLEO_CONF.overcloud_ssh_username
+        if value is not None:
+            self.assertIsInstance(value, str)
 
     def test_overcloud_rcfile(self):
         for rcfile in TRIPLEO_CONF.overcloud_rcfile:
