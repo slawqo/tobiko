@@ -32,16 +32,10 @@ CONF = config.CONF
 
 CIRROS_IMAGE_VERSION = '0.5.2'
 
-if tobiko.tripleo.has_undercloud():
-    CIRROS_IMAGE_URL = (
-        f"http://rhos-qe-mirror-rdu2.usersys.redhat.com/images/cirros-"
-        f"{CIRROS_IMAGE_VERSION}-x86_64-disk.img")
-
-else:
-    CIRROS_IMAGE_URL = (
-        'http://download.cirros-cloud.net/{version}/'
-        'cirros-{version}-x86_64-disk.img').format(
-        version=CIRROS_IMAGE_VERSION)
+CIRROS_IMAGE_URL = (
+    'http://download.cirros-cloud.net/{version}/'
+    'cirros-{version}-x86_64-disk.img').format(
+    version=CIRROS_IMAGE_VERSION)
 
 
 class CirrosImageFixture(glance.URLGlanceImageFixture):

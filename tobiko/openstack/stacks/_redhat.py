@@ -27,13 +27,11 @@ LOG = log.getLogger(__name__)
 CONF = config.CONF
 
 RHEL_IMAGE_MAJOR_VERSION = '8.4'
-RHEL_IMAGE_MINOR_VERSION = '1254'
+RHEL_IMAGE_MINOR_VERSION = '1313'
 
-RHEL_IMAGE_URL = ('http://download.devel.redhat.com/brewroot/packages/'
-                  f'rhel-guest-image/{RHEL_IMAGE_MAJOR_VERSION}/'
-                  f'{RHEL_IMAGE_MINOR_VERSION}/images/'
-                  f'rhel-guest-image-{RHEL_IMAGE_MAJOR_VERSION}-'
-                  f'{RHEL_IMAGE_MINOR_VERSION}.x86_64.qcow2')
+RHEL_IMAGE_URL = ('https://url.corp.redhat.com/rhel-guest-image-'
+                  f'{RHEL_IMAGE_MAJOR_VERSION.replace(".", "-")}-'
+                  f'{RHEL_IMAGE_MINOR_VERSION}-x86-64-qcow2')
 
 
 def skip_unless_has_rhel_image():
