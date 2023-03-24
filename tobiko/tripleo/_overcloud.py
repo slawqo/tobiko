@@ -383,7 +383,7 @@ def get_overcloud_ssh_username():
     if CONF.tobiko.tripleo.overcloud_ssh_username is not None:
         return CONF.tobiko.tripleo.overcloud_ssh_username
 
-    if tobiko.check_version(_undercloud.undercloud_version(),
+    if tobiko.match_version(_undercloud.undercloud_version(),
                             min_version='17.0'):
         return "tripleo-admin"
     else:
