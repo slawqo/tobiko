@@ -37,3 +37,4 @@ test_servers_creation = _nova.test_servers_creation
 test_server_creation_and_shutoff = _nova.test_server_creation_and_shutoff
 TestServerCreationStack = _nova.TestServerCreationStack
 TestEvacuableServerCreationStack = _nova.TestEvacuableServerCreationStack
+test_ovsdb_transactions = _neutron.test_ovsdb_transactions
