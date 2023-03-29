@@ -55,14 +55,6 @@
         deploy_git_refspec: '{{ openshift_infrared_git_refspec }}'
         deploy_git_remote: '{{ openshift_infrared_git_remote }}'
 
-    # validations-common here since it's packaged by rhel-osp
-    - name: install validations-common
-      ignore_errors: yes
-      become: true
-      package:
-        name: validations-common
-        state: present
-
     - name: apply pre-requisites before tests run
       include_role: name=tobiko-ir-before-run
 
