@@ -1,6 +1,19 @@
 [DEFAULT]
 
 
+[ansible]
+
+#
+# From tobiko
+#
+
+# Default Ansible inventory files (list value)
+#inventory_files = /etc/ansible/hosts
+
+# Default Ansible playbook verbosity (integer value)
+#verbosity = <None>
+
+
 [centos]
 
 #
@@ -30,6 +43,10 @@
 
 # Default centos SSH connection timeout (seconds) (floating point value)
 #connection_timeout = <None>
+
+# Allow to disable SSH auth algorithmsin order to SSH to old servers likeCirrOS ones
+# (dict value)
+#disabled_algorithms = <None>
 
 
 [centos7]
@@ -62,6 +79,10 @@
 # Default centos7 SSH connection timeout (seconds) (floating point value)
 #connection_timeout = <None>
 
+# Allow to disable SSH auth algorithmsin order to SSH to old servers likeCirrOS ones
+# (dict value)
+#disabled_algorithms = <None>
+
 
 [cirros]
 
@@ -93,6 +114,20 @@
 # Default cirros SSH connection timeout (seconds) (floating point value)
 #connection_timeout = <None>
 
+# Allow to disable SSH auth algorithmsin order to SSH to old servers likeCirrOS ones
+# (dict value)
+#disabled_algorithms = <None>
+
+
+[common]
+
+#
+# From tobiko
+#
+
+# Default directory where to look for shelves. (string value)
+#shelves_dir = ~/.tobiko/cache/shelves
+
 
 [fedora]
 
@@ -123,6 +158,10 @@
 
 # Default fedora SSH connection timeout (seconds) (floating point value)
 #connection_timeout = <None>
+
+# Allow to disable SSH auth algorithmsin order to SSH to old servers likeCirrOS ones
+# (dict value)
+#disabled_algorithms = <None>
 
 
 [glance]
@@ -215,6 +254,9 @@
 # Cloud name used pick authentication parameters from clouds.* (string value)
 #cloud_name = <None>
 
+# Host login from where to search for clouds file (list value)
+#clouds_file_hosts = localhost
+
 # Directories where to look for clouds files (list value)
 #clouds_file_dirs = .,~/.config/openstack,/etc/openstack
 
@@ -289,7 +331,10 @@
 #
 
 # Default SSH key to login to server instances (string value)
-#key_file = ~/.ssh/id_rsa
+#key_file = ~/.ssh/id_ecdsa
+
+# Default SSH key type to login to server instances (string value)
+#key_type = ecdsa
 
 
 [octavia]
@@ -303,6 +348,9 @@
 
 # Timeout, in seconds, to wait for a status change. (integer value)
 #check_timeout = 360
+
+# The user we should use when we SSH the amphora. (string value)
+#amphora_user = cloud-user
 
 
 [ping]
@@ -362,6 +410,10 @@
 # Default rhel SSH connection timeout (seconds) (floating point value)
 #connection_timeout = <None>
 
+# Allow to disable SSH auth algorithmsin order to SSH to old servers likeCirrOS ones
+# (dict value)
+#disabled_algorithms = <None>
+
 
 [shell]
 
@@ -375,6 +427,25 @@
 # Default sudo command used for executing commands as superuser or another user (string
 # value)
 #sudo = sudo
+
+
+[shiftstack]
+
+#
+# From tobiko
+#
+
+# local clouds file path (string value)
+#local_clouds_file_path = .tobiko/shifstack/clouds.yaml
+
+# remote clouds file path on undercloud-0 host (string value)
+#remote_clouds_file_path = ~/clouds.yaml
+
+# Keystone credentials cloud name (string value)
+#cloud_name = shiftstack
+
+# Path to the RC file used to populate OS_* environment variables (list value)
+#rcfile = ./shiftstackrc
 
 
 [ssh]
@@ -398,8 +469,8 @@
 # Default user SSH configuration files (list value)
 #config_files = ssh_config,.ssh/config
 
-# Default SSH private key file(s) (list value)
-#key_file = ~/.ssh/id_rsa,.ssh/id
+# Default SSH private key file(s) wildcard (list value)
+#key_file = .ssh/id,~/.ssh/id_dsa,~/.ssh/id_rsa,~/.ssh/id_ecdsa,~/.ssh/id_ed25519
 
 # Set to False to disable connecting to the SSH agent (boolean value)
 #allow_agent = false
@@ -487,16 +558,20 @@
 #undercloud_ssh_username = stack
 
 # SSH key filename used to login to Undercloud node (string value)
-#undercloud_ssh_key_filename = ~/.ssh/id_rsa
+#undercloud_ssh_key_filename = <None>
 
 # Undercloud RC filename (list value)
 #undercloud_rcfile = ~/stackrc
+
+# undercloud cloud name to be used for loading credentials from the undercloud clouds
+# files (string value)
+#undercloud_cloud_name = undercloud
 
 # TCP port of SSH server on overcloud hosts (integer value)
 #overcloud_ssh_port = <None>
 
 # Default username used to connect to overcloud nodes (string value)
-#overcloud_ssh_username = heat-admin
+#overcloud_ssh_username = <None>
 
 # SSH key filename used to login to Overcloud nodes (string value)
 #overcloud_ssh_key_filename = ~/.ssh/id_overcloud
@@ -504,14 +579,28 @@
 # Overcloud RC filenames (list value)
 #overcloud_rcfile = ~/overcloudrc,~/qe-Cloud-0rc
 
+# overcloud cloud name to be used for loading credentials from the overcloud clouds
+# files (string value)
+#overcloud_cloud_name = overcloud
+
 # Default IP address version to be used to connect to overcloud nodes  (integer value)
 #overcloud_ip_version = <None>
 
 # Name of network used to connect to overcloud nodes (string value)
 #overcloud_network_name = <None>
 
+# Dictionary with the node groups corresponding to different hostname prefixes (dict
+# value)
+#overcloud_groups_dict = cmp:compute,ctrl:controller
+
 # path to where to export tripleo inventory file (string value)
-#inventory_file = tripleo-hosts.yaml
+#inventory_file = .ansible/inventory/tripleo.yaml
+
+# OSP env was done with an external load balancer (boolean value)
+#has_external_load_balancer = false
+
+# whether Ceph RGW is deployed (boolean value)
+#ceph_rgw = false
 
 
 [ubuntu]
@@ -543,3 +632,7 @@
 
 # Default ubuntu SSH connection timeout (seconds) (floating point value)
 #connection_timeout = <None>
+
+# Allow to disable SSH auth algorithmsin order to SSH to old servers likeCirrOS ones
+# (dict value)
+#disabled_algorithms = <None>

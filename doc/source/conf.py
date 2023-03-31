@@ -67,6 +67,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.graphviz',
     'sphinx.ext.todo',
+    'sphinx.ext.napoleon',
     'oslo_config.sphinxext',
     'oslo_config.sphinxconfiggen',
 ]
@@ -127,3 +128,13 @@ html_static_path = [f'{TOBIKO_DOC_DIR}/_static']
 config_generator_config_file = [
     (f'etc/tobiko.conf.gen', f"{TOBIKO_DOC_DIR}/_static/tobiko")
 ]
+
+def autodoc_skip_member(app, what, name, obj, skip, options):
+    # NOTE(slaweq): skip all external modules, like fixtures from the autodoc
+    if "tobiko" not in str(obj):
+        return True
+    # for tobiko modules, lets do what autodoc already decided to do
+    return skip
+
+def setup(app):
+    app.connect('autodoc-skip-member', autodoc_skip_member)

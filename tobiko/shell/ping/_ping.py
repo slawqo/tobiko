@@ -136,7 +136,7 @@ def ping(host: PingHostType, until=TRANSMITTED, check: bool = True,
     """Send ICMP messages to host address until timeout
 
     :param host: destination host address
-    :param **ping_params: parameters to be forwarded to get_statistics()
+    :param ping_params: parameters to be forwarded to :mod:`get_statistics`
         function
     :returns: PingStatistics
     """
@@ -152,7 +152,7 @@ def ping_until_delivered(host, **ping_params):
     transmitted without being counted as errors.
 
     :param host: destination host address
-    :param **ping_params: parameters to be forwarded to get_statistics()
+    :param ping_params: parameters to be forwarded to :mod:`get_statistics`
         function
     :returns: PingStatistics
     :raises: PingFailed in case timeout expires before delivering all
@@ -171,7 +171,7 @@ def ping_until_undelivered(host, **ping_params):
     example because of errors into the route to remote address).
 
     :param host: destination host address
-    :param **ping_params: parameters to be forwarded to get_statistics()
+    :param ping_params: parameters to be forwarded to :mod:`get_statistics`
         function
     :returns: PingStatistics
     :raises: PingFailed in case timeout expires before failing delivering
@@ -189,7 +189,7 @@ def ping_until_received(host, **ping_params):
     transmitted without any routing errors and they are received back
 
     :param host: destination host address
-    :param **ping_params: parameters to be forwarded to get_statistics()
+    :param ping_params: parameters to be forwarded to :mod:`get_statistics`
         function
     :returns: PingStatistics
     :raises: PingFailed in case timeout expires before receiving all
@@ -208,7 +208,7 @@ def ping_until_unreceived(host, **ping_params):
     back (for example because of network filtering).
 
     :param host: destination host address
-    :param **ping_params: parameters to be forwarded to get_statistics()
+    :param ping_params: parameters to be forwarded to :mod:`get_statistics`
         function
     :returns: PingStatistics
     :raises: PingFailed in case timeout expires before failed receiving

@@ -29,10 +29,10 @@ class TobikoException(Exception):
     """Base Tobiko Exception.
 
     To use this class, inherit from it and define attribute 'message' string.
-    If **properties parameters is given, then it will format message string
+    If ``properties`` parameters is given, then it will format message string
     using properties as key-word arguments.
 
-    Example:
+    Example::
 
         class MyException(TobikoException):
             message = "This exception occurred because of {reason}"

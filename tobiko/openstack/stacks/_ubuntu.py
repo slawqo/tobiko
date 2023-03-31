@@ -60,15 +60,17 @@ class UbuntuImageFixture(UbuntuMinimalImageFixture,
 
     The server has additional installed packages compared to
     the minimal one:
-      - iperf3
-      - ping
-      - ncat
-      - nginx
-      - vlan
+
+    - iperf3
+    - ping
+    - ncat
+    - nginx
+    - vlan
 
     The image will also have below running services:
-      - nginx HTTP server listening on TCP port 80
-      - iperf3 server listening on TCP port 5201
+
+    - nginx HTTP server listening on TCP port 80
+    - iperf3 server listening on TCP port 5201
     """
 
     def __init__(self,
@@ -189,8 +191,9 @@ class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture,
     """Ubuntu server running an HTTP server
 
     The server has additional commands compared to the minimal one:
-      iperf3
-      ping
+
+    - iperf3
+    - ping
     """
 
     #: Glance image used to create a Nova server instance

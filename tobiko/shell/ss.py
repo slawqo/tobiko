@@ -95,15 +95,16 @@ class SockData(dict):
     Output of ss command line tool should be parsed and stored in the dict
     with keys are items of the SockHeader object. In most of the cases it
     should contain the following keys:
-      - protocol (optional)
-      - state (optional)
-      - recv_q
-      - send_q
-      - local_addr (IP or filename)
-      - local_port
-      - remote_addr (IP or filename)
-      - remote_port
-      - process (list of processes names)
+
+    - protocol (optional)
+    - state (optional)
+    - recv_q
+    - send_q
+    - local_addr (IP or filename)
+    - local_port
+    - remote_addr (IP or filename)
+    - remote_port
+    - process (list of processes names)
     """
 
 
@@ -240,15 +241,16 @@ def tcp_listening(address: str = '',
 
     Information can be filtered by local address and port and will be returned
     as a list of SockData object where the following keys should exist:
-      - protocol (optional)
-      - state (optional)
-      - recv_q
-      - send_q
-      - local_addr (netaddr.IPAddress object)
-      - local_port
-      - remote_addr (netaddr.IPAddress object)
-      - remote_port
-      - process (list of processes names)
+
+    - protocol (optional)
+    - state (optional)
+    - recv_q
+    - send_q
+    - local_addr (netaddr.IPAddress object)
+    - local_port
+    - remote_addr (netaddr.IPAddress object)
+    - remote_port
+    - process (list of processes names)
     """
     params = '-t state listening'
     ss_fields = SockHeader('Recv-Q Send-Q Local Address:Port'
@@ -291,15 +293,16 @@ def unix_listening(file_name: str = '',
 
     Information can be filtered by file name and will be returned as a list of
     SockData object where the following keys should exist:
-      - protocol (optional)
-      - state (optional)
-      - recv_q
-      - send_q
-      - local_addr (filename string)
-      - local_port (should be *)
-      - remote_addr (filename string - should be *)
-      - remote_port (should be *)
-      - process (list of processes names)
+
+    - protocol (optional)
+    - state (optional)
+    - recv_q
+    - send_q
+    - local_addr (filename string)
+    - local_port (should be ``*``)
+    - remote_addr (filename string - should be ``*``)
+    - remote_port (should be ``*``)
+    - process (list of processes names)
     """
     params = '-x state listening'
     ss_fields = SockHeader('Netid Recv-Q Send-Q Local Address:Port'

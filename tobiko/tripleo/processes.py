@@ -100,7 +100,7 @@ class OvercloudProcessesStatus(object):
     checks that all of these are running in the overcloud:
     'ovsdb-server','pcsd', 'corosync', 'beam.smp', 'mysqld', 'redis-server',
     'haproxy', 'nova-conductor', 'nova-scheduler', 'neutron-server',
-     'nova-compute', 'glance-api'
+    'nova-compute', 'glance-api'
     """
     def __init__(self):
         self.processes_to_check = ['ovsdb-server', 'pcsd', 'corosync',

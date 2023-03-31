@@ -71,47 +71,37 @@ def ping_parameters(default=None, count=None, deadline=None,
     """Validate parameters and initialize a new PingParameters instance
 
     :param default: (PingParameters or None) instance from where to take
-    default values when other value is not provided. If None (that is the
-    default value) it will copy default parameters from
-    DEFAULT_PING_PARAMETERS
-
+        default values when other value is not provided. If None (that is the
+        default value) it will copy default parameters from
+        DEFAULT_PING_PARAMETERS
     :param count: (int or None) number of ping ICMP message expecting to be
-    received before having a success. Default value can be configured using
-    'count' option in [ping] config section.
-
+        received before having a success. Default value can be configured using
+        'count' option in [ping] config section.
     :param host: (str or None) IP address or host name to send ICMP
-    messages to. It is required to format a valid ping command, therefore
-    no default value exists for this parameter.
-
+        messages to. It is required to format a valid ping command, therefore
+        no default value exists for this parameter.
     :param deadline: (int or None) positive number representing the maximum
-    number of seconds ping command can send ICMP messages before stop
-    executing. Default value can be configured using 'deadline' option
-    in [ping] config section.
-
+        number of seconds ping command can send ICMP messages before stop
+        executing. Default value can be configured using 'deadline' option in
+        [ping] config section.
     :param fragmentation: (bool or None) when False this would tell ping
-    to forbid ICMP messages fragmentation. Default value can be configured
-    using 'fragmentation' option in [ping] config section. Fragmentation can't
-    be disabled when using ping provided by BusyBox (IE with CirrOS images).
-
+        to forbid ICMP messages fragmentation. Default value can be configured
+        using 'fragmentation' option in [ping] config section. Fragmentation
+        can't be disabled when using ping provided by BusyBox (IE with CirrOS
+        images).
     :param interval: (int or None) interval of time before sending following
-    ICMP message. Default value can be configured using 'interval' option
-    in [ping] config section.
-
+        ICMP message. Default value can be configured using 'interval' option
+        in [ping] config section.
     :param ip_version: (4, 6 or None) If not None it makes sure it will
-    use specified IP version for sending ICMP packages.
-
+        use specified IP version for sending ICMP packages.
     :param packet_size: (int or None) if not None, it specifies the total ICMP
-    message size (headers + payload).
-
+        message size (headers + payload).
     :param source: (str or None) IP address or interface name from where
-    to send ICMP message.
-
+        to send ICMP message.
     :param timeout: (int or None) time in seconds after which ping operation
-    would raise PingFailed exception.
-
+        would raise PingFailed exception.
     :raises TypeError: in case some parameter cannot be converted to right
-    expected type
-
+        expected type
     :raises ValueError: in case some parameter has an unexpected value
     """
 

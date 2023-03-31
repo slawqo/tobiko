@@ -543,14 +543,16 @@ def check_or_start_background_process(bg_function=None,
                                       bg_process_name=None,
                                       check_function=None,
                                       **kwargs):
-    """ Check if process exists, if so restart the process,
-        execute some check logic i.e. a check function.
-        if the process by name isn't running,
-        start a new separate process i.e a background function
-        params:
-            bg_process_name= process name
-            bg_function: function name
-            check_function: function name """
+    """Start or restart a process.
+
+    Check if a process exists, if so restart the process, execute some check
+    logic i.e. a check function. if the process by name isn't running, start a
+    new separate process i.e a background function
+
+    :param bg_process_name: process name
+    :param bg_function: function name
+    :param check_function: function name
+    """
 
     procs_running_list = get_bg_procs_pids(bg_process_name)
     if procs_running_list:

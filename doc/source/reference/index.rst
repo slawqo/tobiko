@@ -23,8 +23,22 @@
 Tobiko Framework Reference Guide
 ================================
 
+Tobiko package
+--------------
+
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 4
+
+   modules/tobiko
+   modules/actors
+   modules/docker
+   modules/http
+   modules/openstack/index
+   modules/podman
+   modules/run
+   modules/shell/index
+   modules/shiftstack
+   modules/tripleo/index
 
 * :ref:`genindex`
 * :ref:`search`
