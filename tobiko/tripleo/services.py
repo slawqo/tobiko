@@ -67,9 +67,13 @@ def get_overcloud_nodes_running_service(service):
     """
     oc_procs_df = overcloud.get_overcloud_nodes_dataframe(
                                             get_overcloud_node_services_table)
+    # remove the ".service" suffix
+    oc_procs_df = oc_procs_df.replace(to_replace={'UNIT': '.service'},
+                                      value='',
+                                      regex=True)
     oc_nodes_running_service = oc_procs_df.query('UNIT=="{}"'.format(service))[
                                                 'overcloud_node'].unique()
-    return oc_nodes_running_service
+    return oc_nodes_running_service.tolist()
 
 
 def check_if_process_running_on_overcloud(process):

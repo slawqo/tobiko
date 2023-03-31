@@ -17,7 +17,6 @@ from __future__ import absolute_import
 
 import os
 import typing  # noqa
-import time
 
 import tobiko
 from tobiko.shell import ping
@@ -25,6 +24,7 @@ from tobiko.shell import sh
 from tobiko.openstack import nova
 from tobiko.openstack.stacks import _cirros
 from tobiko.openstack.stacks import _nova
+from tobiko.openstack.stacks import _neutron
 
 
 class TestServerCreationStack(_cirros.CirrosServerStackFixture):
@@ -36,6 +36,27 @@ def test_server_creation(stack=TestServerCreationStack):
     """
     return test_servers_creation(stack=stack,
                                  number_of_servers=0).first
+
+
+class NetworkNoFipStackFixture(_neutron.NetworkStackFixture):
+    """Neutron network where VMs will be created with no FIP"""
+    def setup_fixture(self):
+        super().setup_fixture()
+        # this stack will be deleted at the end of the test
+        tobiko.add_cleanup(NetworkNoFipStackFixture.cleanup_fixture, self)
+
+
+class TestServerNoFipCreationStack(_cirros.CirrosServerStackFixture):
+    """Nova instance without FIP intended to be used for testing server
+    creation"""
+    has_floating_ip = False
+    network_stack = tobiko.required_fixture(NetworkNoFipStackFixture)
+
+
+def test_server_creation_no_fip():
+    """Test Nova server without FIP creation
+    """
+    return test_server_creation(stack=TestServerNoFipCreationStack)
 
 
 class TestEvacuableServerCreationStack(_cirros.EvacuableServerStackFixture):
@@ -86,14 +107,16 @@ def test_servers_creation(stack=TestServerCreationStack,
     test_case.assertEqual(number_of_servers or 1, len(server_ids))
     test_case.assertFalse(server_ids & initial_servers_ids)
 
-    # sleep for 20 sec , ensure no race condition with ssh
-    time.sleep(20)
-
-    # Test SSH connectivity to floating IP address
     for fixture in fixtures:
+        # Test pinging to floating IP address (or fixed IP)
+        if fixture.floating_ip_address is not None:
+            pingable_ips = [fixture.floating_ip_address]
+        else:
+            pingable_ips = [fixed_ip['ip_address']
+                            for fixed_ip in fixture.fixed_ips]
+        ping.assert_reachable_hosts(pingable_ips)
+
+        # Test SSH connectivity to floating IP address (or fixed IP)
         test_case.assertTrue(sh.get_hostname(ssh_client=fixture.ssh_client))
 
-    # Test pinging to floating IP address
-    ping.assert_reachable_hosts(fixture.floating_ip_address
-                                for fixture in fixtures)
     return fixtures

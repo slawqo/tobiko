@@ -135,17 +135,15 @@ def list_systemd_units(*units: SystemdUnitType,
 
 
 def stop_systemd_units(*units: SystemdUnitType,
-                       ssh_client: ssh.SSHClientType = None,
-                       sudo: bool = None):
+                       ssh_client: ssh.SSHClientType = None):
     command = systemctl_command('stop', *units)
-    _execute.execute(command, ssh_client=ssh_client, sudo=sudo)
+    _execute.execute(command, ssh_client=ssh_client, sudo=True)
 
 
 def start_systemd_units(*units: SystemdUnitType,
-                        ssh_client: ssh.SSHClientType = None,
-                        sudo: bool = None):
+                        ssh_client: ssh.SSHClientType = None):
     command = systemctl_command('start', *units)
-    _execute.execute(command, ssh_client=ssh_client, sudo=sudo)
+    _execute.execute(command, ssh_client=ssh_client, sudo=True)
 
 
 def wait_for_active_systemd_units(*units: SystemdUnitType,

@@ -45,7 +45,9 @@ class TripleoTopology(topology.OpenStackTopology):
         neutron.METADATA_AGENT: 'tripleo_neutron_metadata_agent',
         neutron.OVN_METADATA_AGENT: 'tripleo_ovn_metadata_agent',
         neutron.NEUTRON_OVN_METADATA_AGENT: 'tripleo_ovn_metadata_agent',
-        neutron.OVN_CONTROLLER: 'tripleo_ovn_controller'
+        neutron.OVN_CONTROLLER: 'tripleo_ovn_controller',
+        neutron.OVN_BGP_AGENT: 'tripleo_ovn_bgp_agent',
+        neutron.FRR: 'tripleo_frr'
     }
 
     agent_to_container_name_mappings = {
@@ -55,14 +57,18 @@ class TripleoTopology(topology.OpenStackTopology):
         neutron.METADATA_AGENT: 'neutron_metadata_agent',
         neutron.OVN_METADATA_AGENT: 'ovn_metadata_agent',
         neutron.NEUTRON_OVN_METADATA_AGENT: 'ovn_metadata_agent',
-        neutron.OVN_CONTROLLER: 'ovn_controller'
+        neutron.OVN_CONTROLLER: 'ovn_controller',
+        neutron.OVN_BGP_AGENT: 'ovn_bgp_agent',
+        neutron.FRR: 'frr'
     }
 
     has_containers = True
 
     config_file_mappings = {
         'ml2_conf.ini': '/var/lib/config-data/puppet-generated/neutron'
-                        '/etc/neutron/plugins/ml2/ml2_conf.ini'
+                        '/etc/neutron/plugins/ml2/ml2_conf.ini',
+        'bgp-agent.conf': '/var/lib/config-data/ansible-generated/'
+                          'ovn-bgp-agent/etc/ovn-bgp-agent/bgp-agent.conf'
     }
 
     # TODO: add more known subgrups here

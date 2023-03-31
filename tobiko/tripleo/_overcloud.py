@@ -22,6 +22,7 @@ from oslo_log import log
 
 import tobiko
 from tobiko import config
+from tobiko import tripleo
 from tobiko.openstack import keystone
 from tobiko.openstack import ironic
 from tobiko.openstack import metalsmith
@@ -339,6 +340,16 @@ skip_unless_ovn_using_raft = tobiko.skip_unless(
 
 skip_unless_ovn_using_ha = tobiko.skip_unless(
     'OVN does not use HA DB model', is_ovn_using_ha)
+
+
+def is_ovn_bgp_agent_running():
+    return (len(tripleo.get_overcloud_nodes_running_service(
+        topology.get_agent_service_name(neutron.OVN_BGP_AGENT))) > 0)
+
+
+skip_unless_ovn_bgp_agent = tobiko.skip_unless(
+    'The OVN BGP Agent is not running on the System Under Test',
+    is_ovn_bgp_agent_running)
 
 
 @functools.lru_cache()
