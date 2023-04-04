@@ -37,6 +37,7 @@ Centos7ServerStackFixture = _centos.Centos7ServerStackFixture
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture
 CirrosServerStackFixture = _cirros.CirrosServerStackFixture
+CirrosNoFipServerStackFixture = _cirros.CirrosNoFipServerStackFixture
 CirrosServerWithDefaultSecurityGroupStackFixture = (
     _cirros.CirrosServerWithDefaultSecurityGroupStackFixture)
 CirrosShellConnection = _cirros.CirrosShellConnection

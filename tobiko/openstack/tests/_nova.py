@@ -38,19 +38,18 @@ def test_server_creation(stack=TestServerCreationStack):
                                  number_of_servers=0).first
 
 
-class NetworkNoFipStackFixture(_neutron.NetworkStackFixture):
+class TestNetworkNoFipStackFixture(_neutron.NetworkNoFipStackFixture):
     """Neutron network where VMs will be created with no FIP"""
     def setup_fixture(self):
         super().setup_fixture()
         # this stack will be deleted at the end of the test
-        tobiko.add_cleanup(NetworkNoFipStackFixture.cleanup_fixture, self)
+        tobiko.add_cleanup(TestNetworkNoFipStackFixture.cleanup_fixture, self)
 
 
-class TestServerNoFipCreationStack(_cirros.CirrosServerStackFixture):
+class TestServerNoFipCreationStack(_cirros.CirrosNoFipServerStackFixture):
     """Nova instance without FIP intended to be used for testing server
     creation"""
-    has_floating_ip = False
-    network_stack = tobiko.required_fixture(NetworkNoFipStackFixture)
+    network_stack = tobiko.required_fixture(TestNetworkNoFipStackFixture)
 
 
 def test_server_creation_no_fip():

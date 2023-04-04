@@ -182,6 +182,13 @@ def remove_router_interface(router: RouterIdType,
         raise tobiko.ObjectNotFound() from ex
 
 
+def update_router(router: RouterIdType, client=None, **params) -> RouterType:
+    router_id = get_router_id(router)
+    reply = _client.neutron_client(client).update_router(
+        router_id, body={'router': params})
+    return reply['router']
+
+
 class NoSuchRouter(tobiko.ObjectNotFound):
     message = "No such router found for {id!r}"
 

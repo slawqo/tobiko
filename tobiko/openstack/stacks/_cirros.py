@@ -22,6 +22,7 @@ from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack import neutron
 from tobiko.openstack import heat
+from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _nova
 from tobiko.shell import sh
 from tobiko.shell import ssh
@@ -150,6 +151,11 @@ class EvacuableServerStackFixture(CirrosServerStackFixture):
 
 class ExtraDhcpOptsCirrosServerStackFixture(CirrosServerStackFixture):
     use_extra_dhcp_opts = True
+
+
+class CirrosNoFipServerStackFixture(ExtraDhcpOptsCirrosServerStackFixture):
+    has_floating_ip = False
+    network_stack = tobiko.required_fixture(_neutron.NetworkNoFipStackFixture)
 
 
 class MultiIPCirrosServerStackFixture(CirrosServerStackFixture):
