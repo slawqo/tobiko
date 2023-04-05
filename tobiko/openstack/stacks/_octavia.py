@@ -298,11 +298,9 @@ class OVNIPv6LoadBalancerStack(OVNIPv4LoadBalancerStack):
 class TcpSourceIpPortOvnIpv4Listener(HttpRoundRobinAmphoraIpv4Listener):
     loadbalancer = tobiko.required_fixture(OVNIPv4LoadBalancerStack)
     lb_protocol = 'TCP'
-    lb_port = 22
-    has_monitor = False
+    hm_type = 'TCP'
     lb_algorithm = 'SOURCE_IP_PORT'
     pool_protocol = 'TCP'
-    application_port = 22
 
 
 class TcpSourceIpPortOvnIpv6Listener(TcpSourceIpPortOvnIpv4Listener):
