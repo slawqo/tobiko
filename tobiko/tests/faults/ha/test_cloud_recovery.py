@@ -22,6 +22,7 @@ from oslo_log import log
 import testtools
 
 import tobiko
+from tobiko import config
 from tobiko.openstack import neutron
 from tobiko.openstack import nova as nova_osp
 from tobiko.openstack import topology
@@ -35,7 +36,11 @@ from tobiko.tripleo import overcloud
 from tobiko.tripleo import undercloud
 
 
+CONF = config.CONF
 LOG = log.getLogger(__name__)
+SKIP_MESSAGE_EXTLB = ('Tests requiring a main VIP should be skipped when an '
+                      'external load balancer is used')
+has_external_lb = CONF.tobiko.tripleo.has_external_load_balancer
 
 
 def overcloud_health_checks(passive_checks_only=False,
@@ -169,6 +174,7 @@ class DisruptTripleoNodesTest(testtools.TestCase):
             except nova_osp.ServerNotFoundError:
                 LOG.debug(f"Server {vm_id} not found")
 
+    @testtools.skipIf(has_external_lb, SKIP_MESSAGE_EXTLB)
     def test_z99_reboot_controller_galera_main_vip(self):
         # This test case may fail at times if RHBZ#2124877 is not resolved
         # but that bug is due to a race condition,
@@ -182,28 +188,33 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.check_no_duplicate_ips(
             self.vms_detailed_info, ports_before_stack_creation)
 
+    @testtools.skipIf(has_external_lb, SKIP_MESSAGE_EXTLB)
     def test_z99_reboot_controller_main_vip(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_controller_main_vip()
         OvercloudHealthCheck.run_after()
 
+    @testtools.skipIf(has_external_lb, SKIP_MESSAGE_EXTLB)
     def test_z99_reboot_controller_non_main_vip(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.reset_controllers_non_main_vip()
         OvercloudHealthCheck.run_after()
 
+    @testtools.skipIf(has_external_lb, SKIP_MESSAGE_EXTLB)
     def test_z99_crash_controller_main_vip(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.crash_controller_main_vip()
         OvercloudHealthCheck.run_after()
 
     @overcloud.skip_unless_kexec_tools_installed
+    @testtools.skipIf(has_external_lb, SKIP_MESSAGE_EXTLB)
     def test_z99_crash_controller_non_main_vip(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.crash_controllers_non_main_vip()
         OvercloudHealthCheck.run_after()
 
     @pacemaker.skip_if_fencing_not_deployed
+    @testtools.skipIf(has_external_lb, SKIP_MESSAGE_EXTLB)
     def test_network_disruptor_main_vip(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.network_disrupt_controller_main_vip()

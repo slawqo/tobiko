@@ -27,6 +27,7 @@ import netaddr
 from oslo_log import log
 
 import tobiko
+from tobiko import config
 from tobiko.openstack import glance
 from tobiko.openstack import keystone
 from tobiko.openstack import neutron
@@ -42,6 +43,8 @@ from tobiko.tripleo import pacemaker
 from tobiko.tripleo import topology as tripleo_topology
 from tobiko import tripleo
 
+
+CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 network_disruption = """
@@ -549,19 +552,26 @@ def remove_one_grastate_galera():
     else:
         nodes = topology.list_openstack_nodes(group='controller')
     node = random.choice(nodes)
-    LOG.info(f'disable {pacemaker.HAPROXY_RESOURCE}')
-    if f"resource '{pacemaker.HAPROXY_RESOURCE}' is not running on any node" \
-            not in pacemaker.run_pcs_resource_operation(
-                pacemaker.HAPROXY_RESOURCE,
-                pacemaker.DISABLE,
-                node.ssh_client,
-                operation_wait=30):
-        raise PcsDisableException()
-    LOG.info('shut down {} on all servers: {}'.format(
-        pacemaker.GALERA_RESOURCE, nodes))
-    if f"resource '{pacemaker.GALERA_RESOURCE}' is not running on any node" \
-            not in pacemaker.run_pcs_resource_operation(
-                pacemaker.GALERA_RESOURCE,
+
+    pcs_haproxy = pacemaker.HAPROXY_RESOURCE
+    pcs_galera = pacemaker.GALERA_RESOURCE
+
+    if not CONF.tobiko.tripleo.has_external_load_balancer:
+        LOG.info(f'disable {pcs_haproxy}')
+        if f"resource '{pcs_haproxy}' is not running on any node" not in \
+                pacemaker.run_pcs_resource_operation(
+                    pcs_haproxy,
+                    pacemaker.DISABLE,
+                    node.ssh_client,
+                    operation_wait=30):
+            raise PcsDisableException()
+    else:
+        LOG.debug(f'With Ext LB setups, {pcs_haproxy} is not deployed')
+
+    LOG.info('shut down {} on all servers: {}'.format(pcs_galera, nodes))
+    if f"resource '{pcs_galera}' is not running on any node" not in \
+            pacemaker.run_pcs_resource_operation(
+                pcs_galera,
                 pacemaker.DISABLE,
                 node.ssh_client):
         raise PcsDisableException()
@@ -569,23 +579,27 @@ def remove_one_grastate_galera():
                                                         node.name))
     sh.execute(remove_grastate, ssh_client=node.ssh_client)
 
-    LOG.info('enable back {} on all servers: {}'.format(
-        pacemaker.GALERA_RESOURCE, nodes))
+    LOG.info('enable back {} on all servers: {}'.format(pcs_galera, nodes))
     if topology.verify_osp_version('17.0', lower=True):
         promoted = "master"
     else:
         promoted = "promoted"
-    if f"resource '{pacemaker.GALERA_RESOURCE}' is {promoted} on node" not in \
+    if f"resource '{pcs_galera}' is {promoted} on node" not in \
             pacemaker.run_pcs_resource_operation(
-                pacemaker.GALERA_RESOURCE, pacemaker.ENABLE, node.ssh_client,
+                pcs_galera, pacemaker.ENABLE, node.ssh_client,
                 operation_wait=90):
         raise PcsEnableException()
-    LOG.info(f'enable {pacemaker.HAPROXY_RESOURCE}')
-    if f"resource '{pacemaker.HAPROXY_RESOURCE}' is running on node" not in \
-            pacemaker.run_pcs_resource_operation(pacemaker.HAPROXY_RESOURCE,
-                                                 pacemaker.ENABLE,
-                                                 node.ssh_client):
-        raise PcsEnableException()
+
+    if not CONF.tobiko.tripleo.has_external_load_balancer:
+        LOG.info(f'enable {pcs_haproxy}')
+        if f"resource '{pcs_haproxy}' is running on node" not in \
+                pacemaker.run_pcs_resource_operation(pcs_haproxy,
+                                                     pacemaker.ENABLE,
+                                                     node.ssh_client):
+            raise PcsEnableException()
+    else:
+        LOG.debug(f'With Ext LB setups, {pcs_haproxy} is not deployed')
+
     # gcomm:// without args means that bootstrap is done from this node
     bootstrap = sh.execute(check_bootstrap, ssh_client=node.ssh_client).stdout
     if re.search('wsrep-cluster-address=gcomm://', bootstrap) is None:
