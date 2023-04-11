@@ -611,11 +611,13 @@ def test_ovs_interfaces_are_absent(
 def cleanup_ports_network(port_count):
     # This function cleans up the ports and the created network
     for _ in range(port_count):
+        port_name = f'tobiko_ovn_leader_test_port-{_}'
         try:
-            port = neutron.find_port(name=f'tobiko_ovn_leader_test_port-{_}')
+            port = neutron.find_port(name=port_name)
             neutron.delete_port(port=port['id'])
-        except neutron.NoSuchPort:
-            LOG.debug("No Such port found")
+            LOG.debug("Port deleted: %s", port_name)
+        except (neutron.NoSuchPort, tobiko.ObjectNotFound):
+            LOG.debug("No Such port found: %s", port_name)
     network = neutron.find_network(name='tobiko_ovn_leader_test_network')
     neutron.delete_network(network=network)
 
@@ -625,12 +627,14 @@ def check_port_created(port_count):
     test_case = tobiko.get_test_case()
     port_count_created = 0
     for _ in range(port_count):
+        port_name = f'tobiko_ovn_leader_test_port-{_}'
         try:
-            port = neutron.find_port(name=f'tobiko_ovn_leader_test_port-{_}')
+            port = neutron.find_port(name=port_name)
             if port:
                 port_count_created += 1
-        except neutron.NoSuchPort:
-            LOG.debug("No Such port found")
+                LOG.debug("Port found: %s", port_name)
+        except (neutron.NoSuchPort, tobiko.ObjectNotFound):
+            LOG.debug("No Such port found: %s", port_name)
     test_case.assertEqual(port_count_created, port_count)
 
 
