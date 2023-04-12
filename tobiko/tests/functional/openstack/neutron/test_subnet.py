@@ -40,13 +40,26 @@ class SubnetTest(testtools.TestCase):
             self.assertIn(self.stack.ipv6_subnet_id, subnets_ids)
 
     def test_list_subnet_cidrs(self):
-        subnets_cidrs = neutron.list_subnet_cidrs()
+        def _find_prefix(cidr, prefixes):
+            for prefix in prefixes:
+                if cidr in prefix:
+                    return prefix
+            return None
+
         if self.stack.has_ipv4:
             cidr = netaddr.IPNetwork(self.stack.ipv4_subnet_details['cidr'])
-            self.assertIn(cidr, subnets_cidrs)
+            prefixes = [
+                netaddr.IPNetwork(prefix)
+                for prefix in
+                self.stack.subnet_pools_ipv4_stack.subnet_pool['prefixes']]
+            self.assertIsNotNone(_find_prefix(cidr, prefixes))
         if self.stack.has_ipv6:
             cidr = netaddr.IPNetwork(self.stack.ipv6_subnet_details['cidr'])
-            self.assertIn(cidr, subnets_cidrs)
+            prefixes = [
+                netaddr.IPNetwork(prefix)
+                for prefix in
+                self.stack.subnet_pools_ipv6_stack.subnet_pool['prefixes']]
+            self.assertIsNotNone(_find_prefix(cidr, prefixes))
 
     def test_get_ipv4_subnet(self):
         if not self.stack.has_ipv4:
@@ -66,12 +79,18 @@ class SubnetTest(testtools.TestCase):
 
     def test_create_subnet(self):
         network = neutron.create_network(name=self.id())
-        cidr = neutron.new_ipv4_cidr()
+        subnet_pool_range = "192.168.0.0/16"
+        subnet_pool_default_prefixlen = 24
+        subnet_pool = neutron.create_subnet_pool(
+            name=self.id(),
+            prefixes=[subnet_pool_range],
+            default_prefixlen=subnet_pool_default_prefixlen)
         subnet = neutron.create_subnet(network=network,
                                        ip_version=4,
-                                       cidr=cidr)
+                                       subnetpool_id=subnet_pool['id'])
         self.assertEqual(network['id'], subnet['network_id'])
-        self.assertEqual(str(cidr), subnet['cidr'])
+        self.assertIn(netaddr.IPNetwork(subnet['cidr']),
+                      netaddr.IPNetwork(subnet_pool_range))
         self.assertEqual(subnet['id'], neutron.get_subnet(subnet=subnet)['id'])
         return subnet
 

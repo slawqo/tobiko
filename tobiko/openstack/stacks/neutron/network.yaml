@@ -27,17 +27,13 @@ parameters:
     type: boolean
     default: false
 
-  ipv4_cidr:
-    description: IPv4 subnet CIDR to be assigned to new network
+  subnet_pool_ipv4_id:
+    description: IPv4 Subnet Pool ID
     type: string
-    constraints:
-      - custom_constraint: net_cidr
 
-  ipv6_cidr:
-    description: IPv6 subnet CIDR to be assigned to new network
+  subnet_pool_ipv6_id:
+    description: IPv6 Subnet Pool ID
     type: string
-    constraints:
-      - custom_constraint: net_cidr
 
   ipv4_dns_nameservers:
     description: IPv4 nameservers IP addresses
@@ -125,7 +121,7 @@ resources:
     properties:
       network: {get_resource: _network}
       ip_version: 4
-      cidr: {get_param: ipv4_cidr}
+      subnetpool: {get_param: subnet_pool_ipv4_id}
       dns_nameservers: {get_param: ipv4_dns_nameservers}
 
   _ipv6_subnet:
@@ -134,7 +130,7 @@ resources:
     properties:
       network: {get_resource: _network}
       ip_version: 6
-      cidr: {get_param: ipv6_cidr}
+      subnetpool: {get_param: subnet_pool_ipv6_id}
       dns_nameservers: {get_param: ipv6_dns_nameservers}
       ipv6_address_mode: {get_param: ipv6_address_mode}
       ipv6_ra_mode: {get_param: ipv6_ra_mode}

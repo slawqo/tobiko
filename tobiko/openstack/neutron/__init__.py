@@ -15,7 +15,6 @@ from __future__ import absolute_import
 
 from tobiko.openstack.neutron import _agent
 from tobiko.openstack.neutron import _client
-from tobiko.openstack.neutron import _cidr
 from tobiko.openstack.neutron import _extension
 from tobiko.openstack.neutron import _floating_ip
 from tobiko.openstack.neutron import _port
@@ -24,6 +23,7 @@ from tobiko.openstack.neutron import _network
 from tobiko.openstack.neutron import _router
 from tobiko.openstack.neutron import _security_group
 from tobiko.openstack.neutron import _subnet
+from tobiko.openstack.neutron import _subnet_pool
 
 
 SERVER = 'neutron-server'
@@ -64,10 +64,6 @@ NeutronClientException = _client.NeutronClientException
 NeutronClientType = _client.NeutronClientType
 neutron_client = _client.neutron_client
 get_neutron_client = _client.get_neutron_client
-
-new_ipv4_cidr = _cidr.new_ipv4_cidr
-new_ipv6_cidr = _cidr.new_ipv6_cidr
-list_subnet_cidrs = _cidr.list_subnet_cidrs
 
 get_networking_extensions = _extension.get_networking_extensions
 missing_networking_extensions = _extension.missing_networking_extensions
@@ -139,6 +135,14 @@ list_subnets = _subnet.list_subnets
 SubnetType = _subnet.SubnetType
 SubnetIdType = _subnet.SubnetIdType
 NoSuchSubnet = _subnet.NoSuchSubnet
+
+SubnetPoolType = _subnet_pool.SubnetPoolType
+SubnetPoolIdType = _subnet_pool.SubnetPoolIdType
+NoSuchSubnetPool = _subnet_pool.NoSuchSubnetPool
+get_subnet_pool = _subnet_pool.get_subnet_pool
+create_subnet_pool = _subnet_pool.create_subnet_pool
+delete_subnet_pool = _subnet_pool.delete_subnet_pool
+find_subnet_pool = _subnet_pool.find_subnet_pool
 
 list_security_groups = _security_group.list_security_groups
 get_security_group = _security_group.get_security_group

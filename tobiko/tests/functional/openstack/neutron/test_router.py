@@ -95,9 +95,15 @@ class RouterTest(testtools.TestCase):
 
     def test_add_router_interface_with_subnet(self):
         network = neutron.create_network(name=self.id())
+        subnet_pool_range = "172.168.111.0/24"
+        subnet_pool_default_prefixlen = 26
+        subnet_pool = neutron.create_subnet_pool(
+            name=self.id(),
+            prefixes=[subnet_pool_range],
+            default_prefixlen=subnet_pool_default_prefixlen)
         subnet = neutron.create_subnet(name=self.id(),
                                        network=network,
-                                       cidr=neutron.new_ipv4_cidr(),
+                                       subnetpool_id=subnet_pool['id'],
                                        ip_version=4)
         router = self.test_create_router()
         interface = neutron.add_router_interface(router=router, subnet=subnet)

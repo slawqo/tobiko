@@ -16,9 +16,11 @@
 from __future__ import absolute_import
 
 import json
+import os
 import typing
 
 import netaddr
+from oslo_concurrency import lockutils
 from oslo_log import log
 
 import tobiko
@@ -33,6 +35,7 @@ from tobiko.shell import ssh
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)
+LOCK_DIR = os.path.expanduser(CONF.tobiko.common.lock_dir)
 
 
 class ExternalNetworkStackFixture(heat.HeatStackFixture):
@@ -272,9 +275,112 @@ def ensure_router_interface(
                                         add_cleanup=add_cleanup)
 
 
+@neutron.skip_if_missing_networking_extensions('subnet_allocation')
+class SubnetPoolFixture(tobiko.SharedFixture):
+    """Neutron Subnet Pool Fixture.
+
+    A subnet pool is a dependency of network fixtures with either IPv4 or
+    IPv6 subnets (or both). The CIDRs for those subnets are obtained from this
+    resource.
+    NOTE: this fixture does not represent a heat stack, but it is under the
+    stacks module until a decision is taken on where this kind of fixtures are
+    located
+    """
+
+    name: typing.Optional[str] = None
+    prefixes: list = [CONF.tobiko.neutron.ipv4_cidr]
+    default_prefixlen: int = CONF.tobiko.neutron.ipv4_prefixlen
+    _subnet_pool: typing.Optional[neutron.SubnetPoolType] = None
+
+    def __init__(self,
+                 name: typing.Optional[str] = None,
+                 prefixes: typing.Optional[list] = None,
+                 default_prefixlen: typing.Optional[int] = None):
+        self.name = name or self.fixture_name
+        if prefixes:
+            self.prefixes = prefixes
+        if default_prefixlen:
+            self.default_prefixlen = default_prefixlen
+        super().__init__()
+
+    @property
+    def ip_version(self):
+        valid_versions = (4, 6)
+        for valid_version in valid_versions:
+            if len(self.prefixes) > 0 and all(
+                    netaddr.IPNetwork(prefix).version == valid_version
+                    for prefix in self.prefixes):
+                return valid_version
+        # return None when neither IPv4 nor IPv6 (or when both)
+        return None
+
+    def setup_fixture(self):
+        if config.get_bool_env('TOBIKO_PREVENT_CREATE'):
+            LOG.debug("SubnetPoolFixture should have been already created: %r",
+                      self.subnet_pool)
+        else:
+            self.try_create_subnet_pool()
+
+        if self.subnet_pool:
+            tobiko.addme_to_shared_resource(__name__, self.name)
+
+    @lockutils.synchronized(
+        'create_subnet_pool', external=True, lock_path=LOCK_DIR)
+    def try_create_subnet_pool(self):
+        if not self.subnet_pool:
+            self._subnet_pool = neutron.create_subnet_pool(
+                name=self.name, prefixes=self.prefixes,
+                default_prefixlen=self.default_prefixlen, add_cleanup=False)
+
+    def cleanup_fixture(self):
+        n_tests_using_resource = len(tobiko.removeme_from_shared_resource(
+             __name__, self.name))
+        if n_tests_using_resource == 0:
+            self._cleanup_subnet_pool()
+        else:
+            LOG.info('Subnet Pool %r not deleted because %d tests '
+                     'are using it still.',
+                     self.name, n_tests_using_resource)
+
+    def _cleanup_subnet_pool(self):
+        sp_id = self.subnet_pool_id
+        if sp_id:
+            self._subnet_pool = None
+            LOG.debug('Deleting Subnet Pool %r (%r)...',
+                      self.name, sp_id)
+            neutron.delete_subnet_pool(sp_id)
+            LOG.debug('Subnet Pool %r (%r) deleted.', self.name, sp_id)
+
+    @property
+    def subnet_pool_id(self):
+        if self.subnet_pool:
+            return self._subnet_pool['id']
+
+    @property
+    def subnet_pool(self):
+        if not self._subnet_pool:
+            try:
+                self._subnet_pool = neutron.find_subnet_pool(name=self.name)
+            except neutron.NoSuchSubnetPool:
+                LOG.debug("Subnet Pool %r not found.", self.name)
+                self._subnet_pool = None
+        return self._subnet_pool
+
+
+class SubnetPoolIPv6Fixture(SubnetPoolFixture):
+    prefixes: list = [CONF.tobiko.neutron.ipv6_cidr]
+    default_prefixlen: int = CONF.tobiko.neutron.ipv6_prefixlen
+
+
 @neutron.skip_if_missing_networking_extensions('port-security')
 class NetworkStackFixture(heat.HeatStackFixture):
     """Heat stack for creating internal network with a router to external"""
+    subnet_pools_ipv4_stack = (tobiko.required_fixture(SubnetPoolFixture)
+                               if bool(CONF.tobiko.neutron.ipv4_cidr)
+                               else None)
+    subnet_pools_ipv6_stack = (tobiko.required_fixture(SubnetPoolIPv6Fixture)
+                               if bool(CONF.tobiko.neutron.ipv6_cidr)
+                               else None)
 
     #: Heat template file
     template = _hot.heat_template_file('neutron/network.yaml')
@@ -288,23 +394,17 @@ class NetworkStackFixture(heat.HeatStackFixture):
         return bool(CONF.tobiko.neutron.ipv4_cidr)
 
     @property
-    def ipv4_cidr(self):
-        if self.has_ipv4:
-            return neutron.new_ipv4_cidr(seed=self.fixture_name)
-        else:
-            return None
-
-    @property
     def has_ipv6(self):
         """Whenever to setup IPv6 subnet"""
         return bool(CONF.tobiko.neutron.ipv6_cidr)
 
     @property
-    def ipv6_cidr(self):
-        if self.has_ipv6:
-            return neutron.new_ipv6_cidr(seed=self.fixture_name)
-        else:
-            return None
+    def subnet_pool_ipv4_id(self):
+        return self.subnet_pools_ipv4_stack.subnet_pool_id
+
+    @property
+    def subnet_pool_ipv6_id(self):
+        return self.subnet_pools_ipv6_stack.subnet_pool_id
 
     @property
     def network_value_specs(self):

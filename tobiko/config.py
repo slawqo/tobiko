@@ -86,7 +86,10 @@ COMMON_GROUP_NAME = 'common'
 COMMON_OPTIONS = [
     cfg.StrOpt('shelves_dir',
                default='~/.tobiko/cache/shelves',
-               help=("Default directory where to look for shelves.")),
+               help="Directory where to look for shelves."),
+    cfg.StrOpt('lock_dir',
+               default='~/.tobiko/cache/lock',
+               help="Directory where lock persistent files will be saved"),
 ]
 
 

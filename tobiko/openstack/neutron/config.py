@@ -33,7 +33,7 @@ OPTIONS = [
                 default=None,
                 help="List of nameservers IPv4 addresses"),
     cfg.StrOpt('ipv6_cidr',
-               default='2001:db8::/48',
+               default='fc00::/48',
                help="The CIDR block to allocate IPv6 subnets from"),
     cfg.IntOpt('ipv6_prefixlen',
                default=64,
