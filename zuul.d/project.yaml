@@ -5,12 +5,13 @@
       - build-release-notes-jobs-python3
       - check-requirements
       - devstack-tobiko
+      - devstack-tobiko-designate
       - devstack-tobiko-functional
       - devstack-tobiko-heat
       - devstack-tobiko-minimal
-      - devstack-tobiko-octavia
       - devstack-tobiko-neutron
       - devstack-tobiko-nova
+      - devstack-tobiko-octavia
       - devstack-tobiko-ovs
       - devstack-tobiko-sanity
       - devstack-tobiko-storage
