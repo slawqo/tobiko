@@ -640,11 +640,16 @@ def check_port_created(port_count):
 
 def create_multiple_port_network(port_count):
     # This function is run in threading mode
-    session = keystone.get_keystone_session()
+    session = keystone.get_keystone_session(shared=False)
     client = neutron.get_neutron_client(session=session)
     network = neutron.create_network(client=client, add_cleanup=False,
                                      name='tobiko_ovn_leader_test_network')
     for _ in range(port_count):
+        # different clients are needed for the requests that are sent in
+        # parallel processes running in background
+        # with a common client, an SSLError exception is raised
+        session = keystone.get_keystone_session(shared=False)
+        client = neutron.get_neutron_client(session=session)
         # Multiple requests are sent in background mode to save time
         # and not to wait till the control returns
         sh.start_background_process(bg_function=neutron.create_port,
