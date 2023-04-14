@@ -637,17 +637,28 @@ class StatelessSecurityGroupFixture(tobiko.SharedFixture):
         super(StatelessSecurityGroupFixture, self).__init__()
 
     def setup_fixture(self):
+        if config.get_bool_env('TOBIKO_PREVENT_CREATE'):
+            LOG.debug("StatelessSecurityGroupFixture should have been already "
+                      "created: %r", self.security_group)
+        else:
+            self.try_create_security_group()
+
+        if self.security_group:
+            tobiko.addme_to_shared_resource(__name__, self.name)
+
+    @lockutils.synchronized(
+        'create_security_group', external=True, lock_path=LOCK_DIR)
+    def try_create_security_group(self):
         if not self.security_group:
             self._security_group = neutron.create_security_group(
                 name=self.name, description=self.description,
                 add_cleanup=False, stateful=False)
-        if self.security_group:
+            # add rules once the SG was created
             for rule in self.rules:
                 neutron.create_security_group_rule(
                     self._security_group['id'],
                     add_cleanup=False,
                     **rule)
-            tobiko.addme_to_shared_resource(__name__, self.name)
 
     def cleanup_fixture(self):
         n_tests_using_stack = len(tobiko.removeme_from_shared_resource(
@@ -676,11 +687,12 @@ class StatelessSecurityGroupFixture(tobiko.SharedFixture):
     @property
     def security_group(self):
         if not self._security_group:
-            try:
-                self._security_group = neutron.get_security_group(self.name)
-            except neutron.NotFound:
+            sgs = neutron.list_security_groups(name=self.name)
+            if len(sgs) == 0:
                 LOG.debug("Security group %r not found.", self.name)
                 self._security_group = None
+            else:
+                self._security_group = sgs.unique
         return self._security_group
 
 

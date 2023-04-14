@@ -27,6 +27,14 @@
         xargs -r openstack subnet pool delete
   ignore_errors: yes
 
+- name: "cleanup Security Groups created by Tobiko tests"
+  shell: |
+    source {{ stackrc_file }}
+    openstack security group list -f value -c 'Name' | \
+        grep "^tobiko\." | \
+        xargs -r openstack security group delete
+  ignore_errors: yes
+
 - name: "cleanup Glance images created by Tobiko tests"
   shell: |
     source {{ stackrc_file }}
