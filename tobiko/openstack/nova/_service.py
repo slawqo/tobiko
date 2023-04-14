@@ -16,6 +16,8 @@ from __future__ import absolute_import
 import json
 import typing
 
+from keystoneauth1 import exceptions as ks_exceptions
+from novaclient import exceptions as nc_exceptions
 from oslo_log import log
 
 import tobiko
@@ -48,7 +50,13 @@ def wait_for_services_up(retry: typing.Optional[tobiko.Retry] = None,
     for attempt in tobiko.retry(other_retry=retry,
                                 default_timeout=300.,
                                 default_interval=5.):
-        services = _client.list_services(**list_services_params)
+        try:
+            services = _client.list_services(**list_services_params)
+        except (ks_exceptions.connection.ConnectFailure,
+                nc_exceptions.ClientException):
+            # Re-raises this exception in case this is the last attempt
+            attempt.check_limits()
+            continue
         LOG.debug(f"Found {len(services)} Nova services")
         try:
             if not services:
@@ -70,7 +78,6 @@ def wait_for_services_up(retry: typing.Optional[tobiko.Retry] = None,
             break  # all Nova services are healthy
 
         except NovaServiceException:
-            # Re-raises this exception in case this is the last retry
-            # attempt
+            # Re-raises this exception in case this is the last attempt
             attempt.check_limits()
             continue
