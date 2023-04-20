@@ -68,7 +68,6 @@
     - pip
     - setuptools
     - wheel
-    - virtualenv
 
 
 - name: "show python_info facts"
