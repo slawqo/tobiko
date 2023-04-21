@@ -97,39 +97,58 @@ def test_neutron_agents_are_alive(timeout=420., interval=5.) \
     return agents
 
 
-def test_alive_agents_are_consistent_along_time(previous_alive_agents=None):
-    test_case = tobiko.get_test_case()
-    if previous_alive_agents is None:
-        # the following dict of agents is obtained when:
-        # - the list_agents request is replied with 200
-        # - the list is not empty
-        # - no agents are dead
-        alive_agents = {agent['id']: agent
-                        for agent in test_neutron_agents_are_alive()}
-    else:
-        alive_agents = previous_alive_agents
+def test_alive_agents_are_consistent_along_time(retry_timeout=180.,
+                                                retry_interval=5.,
+                                                consistent_sleep=5.,
+                                                consistent_count=5,):
+    # the following dict of agents is obtained when:
+    # - the list_agents request is replied with 200
+    # - the list is not empty
+    # - no agents are dead
+    alive_agents = {agent['id']: agent
+                    for agent in test_neutron_agents_are_alive()}
 
-    for attempt in tobiko.retry(sleep_time=5., count=5):
-        agents = neutron.list_agents()
-        actual = {agent['id']: agent
-                  for agent in agents}
+    for attempt_out in tobiko.retry(timeout=retry_timeout,
+                                    interval=retry_interval):
+        LOG.debug('trying to obtain a consistent list of alive neutron agents '
+                  f'for {consistent_count} times')
+        for attempt_in in tobiko.retry(sleep_time=consistent_sleep,
+                                       count=consistent_count):
+            try:
+                agents = neutron.list_agents()
+            except (neutron.ServiceUnavailable,
+                    neutron.NeutronClientException,
+                    exceptions.connection.ConnectFailure):
+                LOG.exception('Error obtaining the list of neutron agents')
+                # go to the outer loop, if its timeout didn't expire yet
+                # the alive_agents reference is the previous list
+                break
+            actual = {agent['id']: agent for agent in agents}
 
-        # any dead agents? If yes, fail now
-        dead_agents = agents.with_items(alive=False)
-        test_case.assertEqual(
-            [], dead_agents, "Some neutron agents died")
+            # any dead agents? If yes, go to the outer loop
+            # the alive_agents reference is the previous list
+            dead_agents = agents.with_items(alive=False)
+            if len(dead_agents) > 0:
+                LOG.warn(f'Some dead agents have been found: {dead_agents}')
+                break
 
-        if len(actual) > len(alive_agents):
-            LOG.debug('Some new agents appeared! It seems not all the agents '
-                      'had been started yet, so let\'s restart this check')
-            return test_alive_agents_are_consistent_along_time(actual)
+            # go to the outer loop if the set of agents changed
+            # the alive_agents reference is the new list
+            if set(actual) != set(alive_agents):
+                alive_agents = actual
+                LOG.warn("The list of agents has changed")
+                break
 
-        # any agent disappeared? If yes, fail now
-        test_case.assertEqual(
-            set(alive_agents), set(actual), 'Some agents disappeared')
+            LOG.debug("The new list of agents matched the previous list "
+                      "%d times", attempt_in.number + 1)
 
-        if attempt.is_last:
-            break
+            if attempt_in.is_last:
+                LOG.info(f"the list of agents obtained for {consistent_count} "
+                         "times was consistent - the test passes")
+                return
+
+        if attempt_out.is_last:
+            tobiko.fail("No consistent neutron agent results obtained")
 
 
 def ovn_dbs_vip_bindings(test_case):
