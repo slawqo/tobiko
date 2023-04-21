@@ -163,6 +163,8 @@ class RouterInterfaceTest(testtools.TestCase):
 
     required_fixtures = [router_stack, network_stack]
 
+    subnet_index = 201
+
     @classmethod
     def tearDownClass(cls) -> None:
         for fixture in cls.required_fixtures:
@@ -171,10 +173,30 @@ class RouterInterfaceTest(testtools.TestCase):
             except Exception:
                 LOG.exception(f'Error cleaning up fixture: {fixture.fixture}')
 
+    def _get_subnet_pool(self, ip_version=4):
+        if ip_version == 4:
+            subnet_pool_range = f"172.168.{self.subnet_index}.0/24"
+            subnet_pool_default_prefixlen = 26
+        elif ip_version == 6:
+            subnet_pool_range = f"2003:{self.subnet_index}::/64"
+            subnet_pool_default_prefixlen = 68
+        else:
+            raise ValueError
+
+        subnet_pool = neutron.create_subnet_pool(
+            name=self.id(),
+            prefixes=[subnet_pool_range],
+            default_prefixlen=subnet_pool_default_prefixlen)
+
+        self.subnet_index += 1
+        return subnet_pool
+
     def test_ensure_router_interface_with_subnet(self,
                                                  ip_version=4):
         network = neutron.create_network()
+        subnet_pool = self._get_subnet_pool(ip_version)
         subnet = neutron.create_subnet(network=network,
+                                       subnetpool_id=subnet_pool['id'],
                                        ip_version=ip_version)
         self._test_ensure_router(subnet=subnet)
 
@@ -189,7 +211,8 @@ class RouterInterfaceTest(testtools.TestCase):
 
     def test_ensure_router_interface_with_network(self):
         network = neutron.create_network()
-        neutron.create_subnet(network=network)
+        subnet_pool = self._get_subnet_pool()
+        neutron.create_subnet(network=network, subnetpool_id=subnet_pool['id'])
         self._test_ensure_router(network=network)
 
     def test_ensure_router_interface_with_routed_network(self):

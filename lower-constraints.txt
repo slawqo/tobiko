@@ -10,6 +10,7 @@ mock==3.0.5
 netaddr==0.8.0
 neutron-lib==2.7.0
 openstacksdk==0.31.2
+oslo.concurrency==3.26.0
 oslo.config==8.4.0
 oslo.log==4.4.0
 packaging==20.4

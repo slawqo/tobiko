@@ -529,7 +529,7 @@ class L3AgentTest(BaseAgentTest):
             'ipv6_ra_mode')
         ipv6_address_mode = self.stack.network_stack.ipv6_subnet_details.get(
             'ipv6_address_mode')
-        if not self.stack.network_stack.ipv6_cidr:
+        if not self.stack.network_stack.ipv6_subnet_details.get('cidr'):
             return False
         if (ipv6_ra_mode not in stateless_modes or
                 ipv6_address_mode not in stateless_modes):
