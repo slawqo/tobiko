@@ -18,6 +18,7 @@ import json
 import typing
 
 from oslo_log import log
+import pytest
 import testtools
 
 import tobiko
@@ -285,6 +286,7 @@ class CirrosServerWithStatelessSecurityGroupFixture(
         return [self.security_groups_stack.security_group_id]
 
 
+@pytest.mark.skip_during_ovn_migration
 @neutron.skip_if_missing_networking_extensions('stateful-security-group')
 class StatelessSecurityGroupInstanceTest(BaseSecurityGroupTest):
 
