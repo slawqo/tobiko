@@ -725,7 +725,7 @@ def verify_osp_version(required_version, higher=False, lower=False):
     except Exception:
         current_version = None
     if current_version is None:
-        return False
+        return True
 
     required_version_parsed = version.parse(required_version)
     current_version_parsed = version.parse(current_version)

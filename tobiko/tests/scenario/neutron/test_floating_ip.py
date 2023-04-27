@@ -28,6 +28,7 @@ from tobiko.shell import sh
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.openstack import topology
+from tobiko.tripleo import undercloud
 
 
 CONF = config.CONF
@@ -242,6 +243,7 @@ class FloatingIpWithL3HATest(FloatingIPTest):
     stack = tobiko.required_fixture(stacks.L3haServerStackFixture)
 
 
+@undercloud.skip_if_missing_undercloud
 @topology.skip_unless_osp_version('16.1', higher=True)
 class TestFloatingIPLogging(testtools.TestCase):
 
@@ -251,6 +253,8 @@ class TestFloatingIPLogging(testtools.TestCase):
         super(TestFloatingIPLogging, self).setUp()
         self.port = neutron.create_port(network_id=self.stack.network_id)
         self.fip = neutron.create_floating_ip()
+        # TODO(eolivare): adapt the following path to non-tripleo setups and
+        # remove the skip_if_missing_undercloud decorator
         log_filename = '/var/log/containers/neutron/server.log'
         self.log_digger = files.MultihostLogFileDigger(filename=log_filename,
                                                        sudo=True)
