@@ -415,13 +415,16 @@ class HeatStackFixture(tobiko.SharedFixture):
                 LOG.debug(f"Stack {self.stack_name} disappeared")
                 break
 
-            assert stack.stack_status == DELETE_COMPLETE
-            if attempt.is_last:
+            if stack.stack_status != DELETE_COMPLETE:
                 raise HeatStackDeletionFailed(
                     name=self.stack_name,
                     observed=stack.stack_status,
                     expected={DELETE_COMPLETE},
                     status_reason=stack.stack_status_reason)
+
+            if attempt.is_last:
+                tobiko.fail(f"Stack {self.stack_name} in status "
+                            f"{DELETE_COMPLETE}, but still present")
 
             cached = False
             LOG.debug("Waiting for deleted stack to disappear: '%s'",
