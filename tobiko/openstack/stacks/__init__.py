@@ -15,11 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
-from tobiko.openstack.stacks import _centos
 from tobiko.openstack.stacks import _cirros
 from tobiko.openstack.stacks import _designate
-from tobiko.openstack.stacks import _fedora
-from tobiko.openstack.stacks import _redhat
 from tobiko.openstack.stacks import _l3ha
 from tobiko.openstack.stacks import _neutron
 from tobiko.openstack.stacks import _nova
@@ -28,11 +25,6 @@ from tobiko.openstack.stacks import _qos
 from tobiko.openstack.stacks import _ubuntu
 from tobiko.openstack.stacks import _vlan
 
-
-CentosFlavorStackFixture = _centos.CentosFlavorStackFixture
-CentosImageFixture = _centos.CentosImageFixture
-CentosServerStackFixture = _centos.CentosServerStackFixture
-Centos7ServerStackFixture = _centos.Centos7ServerStackFixture
 
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture
@@ -53,14 +45,6 @@ MultiIPCirrosServerStackFixture = (
     _cirros.MultiIPCirrosServerStackFixture)
 
 DesignateZoneStackFixture = _designate.DesignateZoneStackFixture
-
-FedoraFlavorStackFixture = _fedora.FedoraFlavorStackFixture
-FedoraImageFixture = _fedora.FedoraImageFixture
-FedoraServerStackFixture = _fedora.FedoraServerStackFixture
-
-RedHatFlavorStackFixture = _redhat.RedHatFlavorStackFixture
-RhelImageFixture = _redhat.RhelImageFixture
-RedHatServerStackFixture = _redhat.RedHatServerStackFixture
 
 L3haNetworkStackFixture = _l3ha.L3haNetworkStackFixture
 L3haServerStackFixture = _l3ha.L3haServerStackFixture

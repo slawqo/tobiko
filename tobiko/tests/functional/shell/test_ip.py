@@ -29,14 +29,8 @@ from tobiko.tests.functional.shell import _fixtures
 
 class IpTest(testtools.TestCase):
 
-    centos_stack = tobiko.required_fixture(
-        stacks.CentosServerStackFixture)
-
     cirros_stack = tobiko.required_fixture(
         stacks.CirrosServerStackFixture)
-
-    fedora_stack = tobiko.required_fixture(
-        stacks.FedoraServerStackFixture)
 
     ubuntu_stack = tobiko.required_fixture(
         stacks.UbuntuServerStackFixture)
@@ -86,14 +80,8 @@ class IpTest(testtools.TestCase):
     def test_list_ip_addresses_with_ipv6(self):
         self.test_list_ip_addresses(ip_version=6)
 
-    def test_list_ip_addresses_with_centos_server(self):
-        self.test_list_ip_addresses(ssh_client=self.centos_stack.ssh_client)
-
     def test_list_ip_addresses_with_cirros_server(self):
         self.test_list_ip_addresses(ssh_client=self.cirros_stack.ssh_client)
-
-    def test_list_ip_addresses_with_fedora_server(self):
-        self.test_list_ip_addresses(ssh_client=self.fedora_stack.ssh_client)
 
     def test_list_ip_addresses_with_ubuntu_server(self):
         self.test_list_ip_addresses(ssh_client=self.ubuntu_stack.ssh_client)
@@ -154,14 +142,6 @@ class IpTest(testtools.TestCase):
         for namespace in namespaces:
             self.assertIsInstance(namespace, str)
             self.test_list_ip_addresses(network_namespace=namespace)
-
-    @pytest.mark.flaky(reruns=3, reruns_delay=5)
-    def test_list_namespaces_with_centos_server(self):
-        self.test_list_namespaces(ssh_client=self.centos_stack.ssh_client)
-
-    @pytest.mark.flaky(reruns=3, reruns_delay=5)
-    def test_list_namespaces_with_fedora_server(self):
-        self.test_list_namespaces(ssh_client=self.fedora_stack.ssh_client)
 
     @pytest.mark.flaky(reruns=3, reruns_delay=5)
     def test_list_namespaces_with_ubuntu_server(self):

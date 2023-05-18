@@ -220,16 +220,6 @@ class CirrosPingTest(PingTest):
         return self.stack.ssh_client
 
 
-class CentosPingTest(CirrosPingTest):
-
-    stack = tobiko.required_fixture(stacks.CentosServerStackFixture)
-
-
-class FedoraPingTest(CirrosPingTest):
-
-    stack = tobiko.required_fixture(stacks.FedoraServerStackFixture)
-
-
 class UbuntuPingTest(CirrosPingTest):
 
     stack = tobiko.required_fixture(stacks.UbuntuServerStackFixture)

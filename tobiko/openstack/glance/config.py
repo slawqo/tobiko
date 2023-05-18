@@ -27,11 +27,7 @@ OPTIONS = [
 ]
 
 
-GLANCE_IMAGE_NAMES = ['centos',
-                      'centos7',
-                      'cirros',
-                      'fedora',
-                      'rhel',
+GLANCE_IMAGE_NAMES = ['cirros',
                       'ubuntu']
 
 

@@ -14,76 +14,6 @@
 #verbosity = <None>
 
 
-[centos]
-
-#
-# From tobiko
-#
-
-# Default centos image name (string value)
-#image_name = <None>
-
-# Default centos image URL (string value)
-#image_url = <None>
-
-# Default centos image filename (string value)
-#image_file = <None>
-
-# Default centos container format (string value)
-#container_format = <None>
-
-# Default centos disk format (string value)
-#disk_format = <None>
-
-# Default centos username (string value)
-#username = <None>
-
-# Default centos password (string value)
-#password = <None>
-
-# Default centos SSH connection timeout (seconds) (floating point value)
-#connection_timeout = <None>
-
-# Allow to disable SSH auth algorithmsin order to SSH to old servers likeCirrOS ones
-# (dict value)
-#disabled_algorithms = <None>
-
-
-[centos7]
-
-#
-# From tobiko
-#
-
-# Default centos7 image name (string value)
-#image_name = <None>
-
-# Default centos7 image URL (string value)
-#image_url = <None>
-
-# Default centos7 image filename (string value)
-#image_file = <None>
-
-# Default centos7 container format (string value)
-#container_format = <None>
-
-# Default centos7 disk format (string value)
-#disk_format = <None>
-
-# Default centos7 username (string value)
-#username = <None>
-
-# Default centos7 password (string value)
-#password = <None>
-
-# Default centos7 SSH connection timeout (seconds) (floating point value)
-#connection_timeout = <None>
-
-# Allow to disable SSH auth algorithmsin order to SSH to old servers likeCirrOS ones
-# (dict value)
-#disabled_algorithms = <None>
-
-
 [cirros]
 
 #
@@ -127,41 +57,6 @@
 
 # Default directory where to look for shelves. (string value)
 #shelves_dir = ~/.tobiko/cache/shelves
-
-
-[fedora]
-
-#
-# From tobiko
-#
-
-# Default fedora image name (string value)
-#image_name = <None>
-
-# Default fedora image URL (string value)
-#image_url = <None>
-
-# Default fedora image filename (string value)
-#image_file = <None>
-
-# Default fedora container format (string value)
-#container_format = <None>
-
-# Default fedora disk format (string value)
-#disk_format = <None>
-
-# Default fedora username (string value)
-#username = <None>
-
-# Default fedora password (string value)
-#password = <None>
-
-# Default fedora SSH connection timeout (seconds) (floating point value)
-#connection_timeout = <None>
-
-# Allow to disable SSH auth algorithmsin order to SSH to old servers likeCirrOS ones
-# (dict value)
-#disabled_algorithms = <None>
 
 
 [glance]
@@ -378,41 +273,6 @@
 # Maximum time in seconds a sequence of ICMP messages is sent to a destination host
 # before reporting as a failure (integer value)
 #timeout = 300.0
-
-
-[rhel]
-
-#
-# From tobiko
-#
-
-# Default rhel image name (string value)
-#image_name = <None>
-
-# Default rhel image URL (string value)
-#image_url = <None>
-
-# Default rhel image filename (string value)
-#image_file = <None>
-
-# Default rhel container format (string value)
-#container_format = <None>
-
-# Default rhel disk format (string value)
-#disk_format = <None>
-
-# Default rhel username (string value)
-#username = <None>
-
-# Default rhel password (string value)
-#password = <None>
-
-# Default rhel SSH connection timeout (seconds) (floating point value)
-#connection_timeout = <None>
-
-# Allow to disable SSH auth algorithmsin order to SSH to old servers likeCirrOS ones
-# (dict value)
-#disabled_algorithms = <None>
 
 
 [shell]
