@@ -123,6 +123,7 @@ class BaseSecurityGroupTest(testtools.TestCase):
             self._check_sg_rule_in_ovn_nb_db(sg_rule_id, expected_action)
 
 
+@pytest.mark.skip_during_ovn_migration
 @neutron.skip_if_missing_networking_extensions('stateful-security-group')
 class StatelessSecurityGroupTest(BaseSecurityGroupTest):
 
