@@ -388,7 +388,9 @@ class ServerStackFixture(heat.HeatStackFixture, abc.ABC):
         requirements['port'] += 1
         return requirements
 
-    is_reachable_timeout: tobiko.Seconds = None
+    @property
+    def is_reachable_timeout(self) -> tobiko.Seconds:
+        return None
 
     def assert_is_reachable(self,
                             ssh_client: ssh.SSHClientType = None,
@@ -422,8 +424,10 @@ class CloudInitServerStackFixture(ServerStackFixture, ABC):
     #: nax SWAP file size in bytes
     swap_maxsize: typing.Optional[int] = None
 
-    # I expect cloud-init based servers to be slow to boot
-    is_reachable_timeout: tobiko.Seconds = 600.
+    @property
+    def is_reachable_timeout(self) -> tobiko.Seconds:
+        # I expect cloud-init based servers to be slow to boot
+        return CONF.tobiko.nova.cloudinit_is_reachable_timeout
 
     @property
     def user_data(self):

@@ -250,6 +250,19 @@ subparsers:
             help: Skip Swift containers healthchecks when CephAdm is deployed
             ansible_variable: ceph_rgw
             default: False
+          ubuntu-connection-timeout:
+            type: Value
+            help: |
+                Timeout error is raised if a connection to an ubuntu instance
+                is not successful before it expires
+            ansible_variable: ubuntu_connection_timeout
+          ubuntu-is-reachable-timeout:
+            type: Value
+            help: |
+                Timeout error is raised if an ubuntu instance is not reachable
+                before it expires
+            ansible_variable: ubuntu_is_reachable_timeout
+
 
       - title: Cleanup stage
         options:

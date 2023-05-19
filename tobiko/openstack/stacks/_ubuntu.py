@@ -34,8 +34,9 @@ class UbuntuMinimalImageFixture(glance.FileGlanceImageFixture):
     container_format = CONF.tobiko.ubuntu.container_format or "bare"
     username = CONF.tobiko.ubuntu.username or 'ubuntu'
     password = CONF.tobiko.ubuntu.password or 'ubuntu'
-    connection_timeout = CONF.tobiko.ubuntu.connection_timeout or 1500.
+    connection_timeout = CONF.tobiko.nova.ubuntu_connection_timeout
     disabled_algorithms = CONF.tobiko.ubuntu.disabled_algorithms
+    is_reachable_timeout = CONF.tobiko.nova.ubuntu_is_reachable_timeout
 
 
 IPERF3_SERVICE_FILE = """
@@ -199,8 +200,9 @@ class UbuntuServerStackFixture(UbuntuMinimalServerStackFixture,
     #: Glance image used to create a Nova server instance
     image_fixture = tobiko.required_fixture(UbuntuImageFixture)
 
-    # I expect Ubuntu based servers to be slow to boot
-    is_reachable_timeout = 900.
+    @property
+    def is_reachable_timeout(self) -> tobiko.Seconds:
+        return self.image_fixture.is_reachable_timeout
 
     # port of running HTTP server
     @property
