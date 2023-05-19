@@ -342,16 +342,26 @@ def get_vms_detailed_info(multi_ip_test_fixture):
 
 def check_no_duplicate_ips(vms_detailed_info, ports_before_stack_creation):
     test_case = tobiko.get_test_case()
-    ports_after_reboot = neutron.list_ports(device_owner="compute:nova")
     # check VM IP addresses are different
     ip4_list = []
     ip6_list = []
     for vm in vms_detailed_info:
         addresses = vm.get('addresses', {}) if vm is not None else {}
+        # try to obtain the port associated to a VM from neutron if the VM
+        # exists but vms_detailed_info does not show the port
+        if not addresses and vm is not None:
+            ports = neutron.list_ports(device_id=vm['id'])
+            test_case.assertLess(len(ports), 2)
+            for port in ports:
+                addresses[port['network_id']] = port['fixed_ips']
+
         for addresses_per_network in addresses.values():
             test_case.assertEqual(len(addresses_per_network), 2)
             for subnet_addr in addresses_per_network:
-                subnet_ip = subnet_addr['addr']
+                # the subnet_addr dict is different depending on how it was
+                # obtained: from vms_detailed_info or from neutron.list_ports
+                subnet_ip = (subnet_addr.get('addr') or
+                             subnet_addr.get('ip_address'))
                 if netaddr.valid_ipv4(subnet_ip):
                     ip4_list.append(subnet_ip)
                 elif netaddr.valid_ipv6(subnet_ip):
@@ -368,6 +378,8 @@ def check_no_duplicate_ips(vms_detailed_info, ports_before_stack_creation):
     LOG.debug("list of IPv4 and list of IPv6 addresses "
               "should have the same length")
     test_case.assertEqual(len(ip6_list), len(ip4_list))
+
+    ports_after_reboot = neutron.list_ports(device_owner="compute:nova")
     test_case.assertEqual(len(ip6_list), len(ports_after_reboot) - len(
         ports_before_stack_creation))
 
