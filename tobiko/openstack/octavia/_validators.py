@@ -59,12 +59,13 @@ def check_members_balanced(ip_address: str,
     for attempt in tobiko.retry(count=members_count * requests_count,
                                 interval=interval):
         try:
-            content = curl.execute_curl(hostname=ip_address,
-                                        scheme=protocol,
-                                        port=port,
-                                        path='id',
-                                        connect_timeout=connect_timeout,
-                                        ssh_client=ssh_client).strip()
+            content = curl.execute_curl(
+                hostname=ip_address,
+                scheme='HTTP' if protocol == 'TCP' else protocol,
+                port=port,
+                path='id',
+                connect_timeout=connect_timeout,
+                ssh_client=ssh_client).strip()
         except sh.ShellCommandFailed as ex:
             if ex.exit_status == 28:
                 raise octavia.TrafficTimeoutError(
@@ -93,6 +94,8 @@ def check_members_balanced(ip_address: str,
 
     # assert that 'members_count' servers replied
     missing_members_count = members_count - len(replies)
+    LOG.debug(f'Members count from pool {pool_id} is {members_count}')
+    LOG.debug(f'len(replies) is {len(replies)}')
     test_case.assertEqual(0, missing_members_count,
                           f'Missing replies from {missing_members_count} "'
                           '"members.')

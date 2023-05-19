@@ -14,10 +14,6 @@
 #    under the License.
 from __future__ import absolute_import
 
-import collections
-import json
-import typing
-
 import testtools
 from oslo_log import log
 
@@ -27,7 +23,6 @@ from tobiko.openstack import neutron
 from tobiko.openstack import octavia
 from tobiko.openstack import stacks
 from tobiko.shell import sh
-from tobiko.shell import ssh
 
 
 LOG = log.getLogger(__name__)
@@ -64,25 +59,42 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
         self.listener_stack.wait_for_members_to_be_reachable()
 
     def test_round_robin_traffic(self):
-        # For 5 minutes we ignore specific exceptions as we know
-        # that Octavia resources are being provisioned
-        for attempt in tobiko.retry(timeout=300.):
-            try:
-                octavia.check_members_balanced(
-                    pool_id=self.listener_stack.pool_id,
-                    ip_address=self.loadbalancer_stack.floating_ip_address,
-                    lb_algorithm=self.listener_stack.lb_algorithm,
-                    protocol=self.listener_stack.lb_protocol,
-                    port=self.listener_stack.lb_port)
-                break
-            except (octavia.RoundRobinException,
-                    octavia.TrafficTimeoutError,
-                    sh.ShellCommandFailed):
+        _test_traffic(
+            pool_id=self.listener_stack.pool_id,
+            ip_address=self.loadbalancer_stack.floating_ip_address,
+            lb_algorithm=self.listener_stack.lb_algorithm,
+            protocol=self.listener_stack.lb_protocol,
+            port=self.listener_stack.lb_port)
+
+
+def _test_traffic(pool_id: str, ip_address: str, lb_algorithm: str,
+                  protocol: str, port: int):
+    # For 5 minutes we ignore specific exceptions as we know
+    # that Octavia resources are being provisioned
+    for attempt in tobiko.retry(timeout=300.):
+        try:
+            octavia.check_members_balanced(pool_id=pool_id,
+                                           ip_address=ip_address,
+                                           lb_algorithm=lb_algorithm,
+                                           protocol=protocol,
+                                           port=port)
+            break
+
+        # TODO oschwart: change the following without duplicating code
+        except octavia.RoundRobinException:
+            if lb_algorithm == 'ROUND_ROBIN':
                 LOG.exception(f"Traffic didn't reach all members after "
                               f"#{attempt.number} attempts and "
                               f"{attempt.elapsed_time} seconds")
-                if attempt.is_last:
-                    raise
+            if attempt.is_last:
+                raise
+        except (octavia.TrafficTimeoutError,
+                sh.ShellCommandFailed):
+            LOG.exception(f"Traffic didn't reach all members after "
+                          f"#{attempt.number} attempts and "
+                          f"{attempt.elapsed_time} seconds")
+            if attempt.is_last:
+                raise
 
 
 @neutron.skip_unless_is_ovn()
@@ -93,7 +105,7 @@ class OctaviaOVNProviderTrafficTest(testtools.TestCase):
     Create an OVN provider load balancer with 2 members that run a server
     application,
     Create a client that is connected to the load balancer VIP port via FIP,
-    Generate network traffic from the client to the load balanacer via ssh.
+    Generate TCP network traffic from the client to the load balancer FIP.
     """
     loadbalancer_stack = tobiko.required_fixture(
         stacks.OVNIPv4LoadBalancerStack)
@@ -113,69 +125,12 @@ class OctaviaOVNProviderTrafficTest(testtools.TestCase):
 
         self.loadbalancer_stack.wait_for_octavia_service()
 
-    def test_ssh_traffic(self):
-        """SSH every member server to get its hostname using a load balancer
+    def test_source_ip_port_traffic(self):
+        """Send traffic to the load balancer FIP to test source ip port
         """
-        username: typing.Optional[str] = None
-        password: typing.Optional[str] = None
-        missing_replies = set()
-
-        for member_server in [self.listener_stack.server_stack,
-                              self.listener_stack.other_server_stack]:
-            ssh_client = member_server.ssh_client
-            hostname = sh.get_hostname(ssh_client=ssh_client)
-            missing_replies.add(hostname)
-            if username is None:
-                username = member_server.username
-            else:
-                self.assertEqual(username,
-                                 member_server.username,
-                                 "Not all member servers have the same "
-                                 "username to login with")
-            if password is None:
-                password = member_server.password
-            else:
-                self.assertEqual(password, member_server.password,
-                                 "Not all member servers have the same "
-                                 "password to login with")
-
-        # Get SSH client to the load balancer virtual IP
-        ssh_client = ssh.ssh_client(
-            host=self.loadbalancer_stack.floating_ip_address,
-            port=self.listener_stack.lb_port,
-            username=username,
-            password=password)
-
-        replies = []
-        for attempt in tobiko.retry(timeout=120.):
-            LOG.debug(f"SSH to member server by using the load balancer "
-                      f"(login='{ssh_client.login}', attempt={attempt})...")
-
-            with ssh_client:  # disconnect after every loop
-                hostname = sh.ssh_hostname(ssh_client=ssh_client)
-            try:
-                missing_replies.remove(hostname)
-            except KeyError:
-                self.assertIn(hostname, replies,
-                              f"Unexpected hostname reached: {hostname}")
-            replies.append(hostname)
-            if missing_replies:
-                LOG.debug('Reached member server(s):\n'
-                          f'{pretty_replies(replies)}')
-                if attempt.is_last:
-                    self.fail('Unreached member server(s): {missing_replies}')
-                else:
-                    LOG.debug('Waiting for reaching remaining server(s)... '
-                              f'{missing_replies}')
-            else:
-                LOG.debug('All member servers reached:\n'
-                          f'{pretty_replies(replies)}')
-                break
-        else:
-            raise RuntimeError('Broken retry loop')
-
-
-def pretty_replies(replies: typing.Iterable[str]):
-    return json.dumps(collections.Counter(replies),
-                      indent=4,
-                      sort_keys=True)
+        _test_traffic(
+            pool_id=self.listener_stack.pool_id,
+            ip_address=self.loadbalancer_stack.floating_ip_address,
+            lb_algorithm=self.listener_stack.lb_algorithm,
+            protocol=self.listener_stack.lb_protocol,
+            port=self.listener_stack.lb_port)
