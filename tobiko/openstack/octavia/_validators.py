@@ -43,8 +43,6 @@ def check_members_balanced(ip_address: str,
 
     """Check if traffic is properly balanced between members."""
 
-    test_case = tobiko.get_test_case()
-
     # Getting the members count
     if members_count is None:
         if pool_id is None:
@@ -96,8 +94,9 @@ def check_members_balanced(ip_address: str,
     missing_members_count = members_count - len(replies)
     LOG.debug(f'Members count from pool {pool_id} is {members_count}')
     LOG.debug(f'len(replies) is {len(replies)}')
-    test_case.assertEqual(0, missing_members_count,
-                          f'Missing replies from {missing_members_count} "'
-                          '"members.')
+
+    if 0 != missing_members_count:
+        raise octavia.RoundRobinException(
+            f'Missing replies from {missing_members_count} members.')
 
     return replies
