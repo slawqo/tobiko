@@ -15,6 +15,7 @@ from __future__ import absolute_import
 
 import collections
 from collections import abc
+import configparser
 import functools
 import re
 import typing
@@ -302,13 +303,16 @@ class OpenStackTopology(tobiko.SharedFixture):
         neutron.OVN_METADATA_AGENT: 'devstack@q-ovn-metadata-agent',
         neutron.NEUTRON_OVN_METADATA_AGENT: 'devstack@q-ovn-metadata-agent',
         neutron.OVN_CONTROLLER: 'ovn-controller'
+        # TODO(eolivare): ovn_bgp_agent on devstack?
+        # TODO(eolivare): frr on devstack?
     }
     agent_to_container_name_mappings: typing.Dict[str, str] = {}
 
     has_containers = False
 
     config_file_mappings = {
-        'ml2_conf.ini': '/etc/neutron/plugins/ml2/ml2_conf.ini'
+        'ml2_conf.ini': '/etc/neutron/plugins/ml2/ml2_conf.ini',
+        'bgp-agent.conf': '/etc/ovn-bgp-agent/bgp-agent.conf'
     }
 
     _connections = tobiko.required_fixture(
@@ -659,6 +663,25 @@ def get_log_file_digger(
 def get_config_file_path(file_name: str) -> str:
     topology = get_openstack_topology()
     return topology.get_config_file_path(file_name)
+
+
+def get_config_setting(file_name: str,
+                       ssh_client: ssh.SSHClientFixture,
+                       param: str,
+                       section: str = None) -> typing.Optional[str]:
+    config_file_path = get_config_file_path(file_name)
+    config_file_content = sh.execute(f'cat {config_file_path}',
+                                     ssh_client=ssh_client, sudo=True).stdout
+    config = configparser.ConfigParser()
+    config.read_string(config_file_content)
+    if section is None:
+        value = config.defaults().get(param)
+    elif section not in config.sections():
+        value = None
+    else:
+        value = config[section].get(param)
+
+    return value
 
 
 def get_rhosp_version():

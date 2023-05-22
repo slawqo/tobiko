@@ -201,9 +201,7 @@ class OctaviaServicesFaultTest(testtools.TestCase):
 
         for service, ssh_clients in services_to_stop.items():
             for ssh_client in ssh_clients:
-                sh.stop_systemd_units(service,
-                                      ssh_client=ssh_client,
-                                      sudo=True)
+                sh.stop_systemd_units(service, ssh_client=ssh_client)
                 LOG.debug(f'We stopped {service} on {ssh_client.host}')
 
         self.loadbalancer_stack.wait_for_octavia_service()
@@ -238,9 +236,7 @@ class OctaviaServicesFaultTest(testtools.TestCase):
 
         for service, ssh_clients in services_to_stop.items():
             for ssh_client in ssh_clients:
-                sh.start_systemd_units(service,
-                                       ssh_client=ssh_client,
-                                       sudo=True)
+                sh.start_systemd_units(service, ssh_client=ssh_client)
 
                 LOG.debug(f'We started {service} on {ssh_client.host}')
 

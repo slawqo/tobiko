@@ -482,6 +482,17 @@ def reset_ovndb_master_container():
                                    container_host=node)
 
 
+def restart_service_on_all_nodes(service):
+    """restart the ovn bgp agent or the frr service from all the nodes where it
+    is running and check the cloud is healthy after they are started again"""
+    node_names = tripleo.get_overcloud_nodes_running_service(service)
+    nodes = topology.list_openstack_nodes(hostnames=node_names)
+    for node in nodes:
+        sh.stop_systemd_units(service, ssh_client=node.ssh_client)
+    for node in nodes:
+        sh.start_systemd_units(service, ssh_client=node.ssh_client)
+
+
 def kill_rabbitmq_service():
     """kill a rabbit process on a random controller,
     check in pacemaker it is down"""

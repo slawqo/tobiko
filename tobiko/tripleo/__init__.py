@@ -19,6 +19,7 @@ from tobiko.tripleo import _rhosp
 from tobiko.tripleo import _topology as topology
 from tobiko.tripleo import _undercloud as undercloud
 from tobiko.tripleo import containers
+from tobiko.tripleo import services
 
 
 get_tripleo_ansible_inventory = _ansible.get_tripleo_ansible_inventory
@@ -74,3 +75,6 @@ undercloud_keystone_credentials = undercloud.undercloud_keystone_credentials
 undercloud_keystone_session = undercloud.undercloud_keystone_session
 undercloud_ssh_client = undercloud.undercloud_ssh_client
 undercloud_version = undercloud.undercloud_version
+
+get_overcloud_nodes_running_service = \
+    services.get_overcloud_nodes_running_service

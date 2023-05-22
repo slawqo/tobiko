@@ -70,6 +70,15 @@ def overcloud_health_checks(passive_checks_only=False,
 # check vm create with ssh and ping checks
 def check_vm_create():
     tests.test_server_creation()
+    if overcloud.is_ovn_bgp_agent_running():
+        try:
+            node = topology.find_openstack_node(group='networker')
+        except topology.NoSuchOpenStackTopologyNodeGroup:
+            node = topology.find_openstack_node(group='controller')
+        expose_tenant_networks = topology.get_config_setting(
+            'bgp-agent.conf', node.ssh_client, 'expose_tenant_networks')
+        if expose_tenant_networks and expose_tenant_networks.lower() == 'true':
+            tests.test_server_creation_no_fip()
 
 
 # check cluster failed statuses
@@ -278,6 +287,20 @@ class DisruptTripleoNodesTest(testtools.TestCase):
     def test_controllers_shutdown(self):
         OvercloudHealthCheck.run_before()
         cloud_disruptions.test_controllers_shutdown()
+        OvercloudHealthCheck.run_after()
+
+    @overcloud.skip_unless_ovn_bgp_agent
+    def test_restart_ovn_bgp_agents(self):
+        OvercloudHealthCheck.run_before()
+        cloud_disruptions.restart_service_on_all_nodes(
+            topology.get_agent_service_name(neutron.OVN_BGP_AGENT))
+        OvercloudHealthCheck.run_after()
+
+    @overcloud.skip_unless_ovn_bgp_agent
+    def test_restart_frr(self):
+        OvercloudHealthCheck.run_before()
+        cloud_disruptions.restart_service_on_all_nodes(
+            topology.get_agent_service_name(neutron.FRR))
         OvercloudHealthCheck.run_after()
 
 # [..]
