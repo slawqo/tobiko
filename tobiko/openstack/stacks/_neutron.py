@@ -275,6 +275,15 @@ def ensure_router_interface(
                                         add_cleanup=add_cleanup)
 
 
+class RouterNoSnatStackFixture(RouterStackFixture):
+    """Extra Router configured with SNAT disabled"""
+    def setup_fixture(self):
+        super().setup_fixture()
+        egi = neutron.get_router(self.router_id)['external_gateway_info']
+        egi['enable_snat'] = False
+        neutron.update_router(self.router_id, external_gateway_info=egi)
+
+
 @neutron.skip_if_missing_networking_extensions('subnet_allocation')
 class SubnetPoolFixture(tobiko.SharedFixture):
     """Neutron Subnet Pool Fixture.
@@ -565,6 +574,11 @@ class NetworkStackFixture(heat.HeatStackFixture):
             reason = "Distributed router is not supported"
         return tobiko.skip_if(reason=reason,
                               predicate=fixture.is_router_distributed)
+
+
+class NetworkNoFipStackFixture(NetworkStackFixture):
+    """Extra Network Stack where VMs will not have FIPs"""
+    gateway_stack = tobiko.required_fixture(RouterNoSnatStackFixture)
 
 
 @neutron.skip_if_missing_networking_extensions('net-mtu-writable')

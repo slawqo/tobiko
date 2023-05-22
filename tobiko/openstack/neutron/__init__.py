@@ -123,6 +123,7 @@ get_router = _router.get_router
 get_router_id = _router.get_router_id
 remove_router_interface = _router.remove_router_interface
 wait_for_master_and_backup_agents = _router.wait_for_master_and_backup_agents
+update_router = _router.update_router
 RouterType = _router.RouterType
 RouterIdType = _router.RouterIdType
 NoSuchRouter = _router.NoSuchRouter

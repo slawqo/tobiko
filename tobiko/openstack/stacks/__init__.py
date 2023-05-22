@@ -29,6 +29,7 @@ from tobiko.openstack.stacks import _vlan
 CirrosFlavorStackFixture = _cirros.CirrosFlavorStackFixture
 CirrosImageFixture = _cirros.CirrosImageFixture
 CirrosServerStackFixture = _cirros.CirrosServerStackFixture
+CirrosNoFipServerStackFixture = _cirros.CirrosNoFipServerStackFixture
 CirrosServerWithDefaultSecurityGroupStackFixture = (
     _cirros.CirrosServerWithDefaultSecurityGroupStackFixture)
 CirrosShellConnection = _cirros.CirrosShellConnection

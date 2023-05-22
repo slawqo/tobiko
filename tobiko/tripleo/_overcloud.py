@@ -342,6 +342,8 @@ skip_unless_ovn_using_ha = tobiko.skip_unless(
     'OVN does not use HA DB model', is_ovn_using_ha)
 
 
+# TODO(eolivare): make this method work with devstack
+@_undercloud.skip_if_missing_undercloud
 def is_ovn_bgp_agent_running():
     return (len(tripleo.get_overcloud_nodes_running_service(
         topology.get_agent_service_name(neutron.OVN_BGP_AGENT))) > 0)

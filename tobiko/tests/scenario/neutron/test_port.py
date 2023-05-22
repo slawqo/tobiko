@@ -31,6 +31,7 @@ from tobiko.shell import sh
 from tobiko.openstack import neutron
 from tobiko.openstack import stacks
 from tobiko.openstack import topology
+from tobiko.tripleo import overcloud
 
 
 LOG = log.getLogger(__name__)
@@ -157,6 +158,24 @@ class ExtraDhcpOptsPortTest(PortTest):
             re.search(r'^search\s+{domain}$'.format(domain=domain),
                       vm_resolv_conf,
                       re.MULTILINE))
+
+
+@overcloud.skip_unless_ovn_bgp_agent
+class NoFipPortTest(ExtraDhcpOptsPortTest):
+    stack = tobiko.required_fixture(stacks.CirrosNoFipServerStackFixture)
+
+    def setUp(self):
+        super().setUp()
+
+        try:
+            node = topology.find_openstack_node(group='networker')
+        except topology.NoSuchOpenStackTopologyNodeGroup:
+            node = topology.find_openstack_node(group='controller')
+        expose_tenant_networks = topology.get_config_setting(
+            'bgp-agent.conf', node.ssh_client, 'expose_tenant_networks')
+        if expose_tenant_networks is None or (
+                expose_tenant_networks.lower() != 'true'):
+            tobiko.skip_test('BGP expose_tenant_networks is disabled')
 
 
 @neutron.skip_unless_is_ovn()
