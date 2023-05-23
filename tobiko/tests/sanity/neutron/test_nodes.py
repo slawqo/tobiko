@@ -28,6 +28,5 @@ class NodeTest(testtools.TestCase):
     def test_ovs_namespaces_are_absent(self):
         tests.test_ovs_namespaces_are_absent()
 
-    @pytest.mark.ovn_migration
     def test_ovs_interfaces_are_absent(self):
         tests.test_ovs_interfaces_are_absent()
