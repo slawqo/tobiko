@@ -1,6 +1,7 @@
 # As openstack job build-reno-releasenotes and Read The Docs page support only
 # one single requirements file for a project, we need to have one such file
 # which will include all project requirements
+--constraint ../upper-constraints.txt
 -r ../requirements.txt
 -r ../test-requirements.txt
 -r ../extra-requirements.txt
