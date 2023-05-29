@@ -641,18 +641,31 @@ def cleanup_ports_network(port_count):
     neutron.delete_network(network=network)
 
 
+def find_port_retries(port_name, timeout=30., interval=3.):
+    for attempt in tobiko.retry(timeout=timeout, interval=interval):
+        try:
+            port = neutron.find_port(name=port_name)
+        except (neutron.NoSuchPort, tobiko.ObjectNotFound):
+            if attempt.is_last:
+                LOG.debug(
+                    "Port %s not found after %f seconds", port_name, timeout)
+                return None
+            else:
+                continue
+        return port
+
+
 def check_port_created(port_count):
     # This function checks the number of ports created
     test_case = tobiko.get_test_case()
     port_count_created = 0
     for _ in range(port_count):
         port_name = f'tobiko_ovn_leader_test_port-{_}'
-        try:
-            port = neutron.find_port(name=port_name)
-            if port:
-                port_count_created += 1
-                LOG.debug("Port found: %s", port_name)
-        except (neutron.NoSuchPort, tobiko.ObjectNotFound):
+        port = find_port_retries(port_name)
+        if port is not None:
+            port_count_created += 1
+            LOG.debug("Port found: %s", port_name)
+        else:
             LOG.debug("No Such port found: %s", port_name)
     test_case.assertEqual(port_count_created, port_count)
 
