@@ -41,6 +41,10 @@ OPTIONS = [
                default='undercloud',
                help='undercloud cloud name to be used for loading credentials '
                     'from the undercloud clouds files'),
+    cfg.StrOpt('undercloud_cacert_file',
+               default='/etc/pki/tls/certs/ca-bundle.trust.crt',
+               help='Path to cacert file that can be used to send https '
+                    'request from the undercloud'),
 
 
     # Overcloud options

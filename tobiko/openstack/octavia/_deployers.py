@@ -24,6 +24,26 @@ from tobiko.openstack.octavia import _constants
 LOG = log.getLogger(__name__)
 
 
+def get_external_subnet(ip_version=4):
+    try:
+        ext_subnet_list = neutron.find_network(
+            **{'router:external': True})['subnets']
+    except tobiko.ObjectNotFound:
+        LOG.warning('External network not found')
+        return None
+
+    for ext_subnet_id in ext_subnet_list:
+        try:
+            subnet = neutron.find_subnet(id=ext_subnet_id,
+                                         ip_version=ip_version)
+        except tobiko.ObjectNotFound:
+            continue
+        else:
+            return subnet
+
+    LOG.warning('External subnet with IP version %d not found', ip_version)
+
+
 def deploy_ipv4_lb(provider: str,
                    protocol: str,
                    protocol_port: int,
@@ -46,11 +66,7 @@ def deploy_ipv4_lb(provider: str,
         LOG.debug(f'Loadbalancer {lb.id} already exists. Skipping its'
                   ' creation')
     else:
-        try:
-            subnet = neutron.find_subnet('external_subnet')
-        except ModuleNotFoundError:
-            subnet = None
-
+        subnet = get_external_subnet()
         if subnet is None:
             tobiko.skip_test('Replacing heat networking resources for '
                              'octavia in tobiko wasn\'t implemented yet')

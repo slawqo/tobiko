@@ -18,7 +18,11 @@ from __future__ import absolute_import
 import openstack
 
 import tobiko
+from tobiko import config
 from tobiko.openstack import keystone
+
+
+CONF = config.CONF
 
 
 class OpenstacksdkClientFixture(tobiko.SharedFixture):
@@ -35,6 +39,8 @@ class OpenstacksdkClientFixture(tobiko.SharedFixture):
 
     def setup_client(self):
         client = self.client
+        # create a new connection if it was not created before or if TLS-e is
+        # enabled (otherwise, an SSLError exception is raised)
         if not client:
             credentials = keystone.keystone_credentials()
             tmp_auth = {
@@ -49,6 +55,9 @@ class OpenstacksdkClientFixture(tobiko.SharedFixture):
             }
             if credentials.api_version == 3:
                 tmp_auth['os-identity-api-version'] = credentials.api_version
+            if 'https://' in credentials.auth_url and not credentials.cacert:
+                tmp_auth['os-cacert'] = \
+                    CONF.tobiko.tripleo.undercloud_cacert_file
             self.client = client = openstack.connect(**tmp_auth)
         return client
 
