@@ -135,12 +135,14 @@ def test_alive_agents_are_consistent_along_time(retry_timeout=180.,
             # go to the outer loop if the set of agents changed
             # the alive_agents reference is the new list
             if set(actual) != set(alive_agents):
+                LOG.warn("The list of agents has changed\n"
+                         f"previous_agent_list:\n{alive_agents}\n"
+                         f"new_agent_list:\n{actual}")
                 alive_agents = actual
-                LOG.warn("The list of agents has changed")
                 break
 
             LOG.debug("The new list of agents matched the previous list "
-                      "%d times", attempt_in.number + 1)
+                      "%d times", attempt_in.number)
 
             if attempt_in.is_last:
                 LOG.info(f"the list of agents obtained for {consistent_count} "
