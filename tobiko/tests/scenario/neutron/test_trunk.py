@@ -65,10 +65,10 @@ class RebootTrunkTest(testtools.TestCase):
             if missing:
                 if attempt.is_last:
                     self.fail("IP addresses not assigned to VLAN port: "
-                              f"{unexpected}")
+                              f"{missing}")
                 else:
                     LOG.debug("IP addresses still not assigned to VLAN port: "
-                              f"{unexpected}")
+                              f"{missing}")
             else:
                 break
         else:
