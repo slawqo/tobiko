@@ -24,5 +24,9 @@ CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
-class OctaviaOtherServerStackFixture(_ubuntu.UbuntuServerStackFixture):
+class OctaviaServerStackFixture(_ubuntu.UbuntuServerStackFixture):
+    has_floating_ip = False
+
+
+class OctaviaOtherServerStackFixture(OctaviaServerStackFixture):
     pass
