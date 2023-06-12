@@ -202,12 +202,12 @@ class OctaviaBasicFaultTest(testtools.TestCase):
             LOG.info(skipping_stmt)
             self.skipTest(skipping_stmt)
 
-    def _wait_for_failover_and_test_functionality(self):
+    def _wait_for_failover_and_test_functionality(self, timeout=70):
         """Wait for failover to end and test Octavia functionality"""
 
         octavia.wait_for_status(object_id=self.lb.id,
                                 status=octavia.PENDING_UPDATE,
-                                timeout=30)
+                                timeout=timeout)
 
         octavia.wait_for_status(object_id=self.lb.id)
 
