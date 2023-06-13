@@ -40,7 +40,7 @@ class OctaviaBasicTrafficScenarioTest(testtools.TestCase):
     listener = None
     pool = None
     server_stack = tobiko.required_fixture(
-        stacks.UbuntuServerStackFixture)
+        stacks.OctaviaServerStackFixture)
     other_server_stack = tobiko.required_fixture(
         stacks.OctaviaOtherServerStackFixture)
 
@@ -105,7 +105,7 @@ class OctaviaOVNProviderTrafficTest(testtools.TestCase):
     listener = None
     pool = None
     server_stack = tobiko.required_fixture(
-        stacks.UbuntuServerStackFixture)
+        stacks.OctaviaServerStackFixture)
     other_server_stack = tobiko.required_fixture(
         stacks.OctaviaOtherServerStackFixture)
 
