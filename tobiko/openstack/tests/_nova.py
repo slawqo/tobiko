@@ -40,10 +40,6 @@ def test_server_creation(stack=TestServerCreationStack):
 
 class TestNetworkNoFipStackFixture(_neutron.NetworkNoFipStackFixture):
     """Neutron network where VMs will be created with no FIP"""
-    def setup_fixture(self):
-        super().setup_fixture()
-        # this stack will be deleted at the end of the test
-        tobiko.add_cleanup(TestNetworkNoFipStackFixture.cleanup_fixture, self)
 
 
 class TestServerNoFipCreationStack(_cirros.CirrosNoFipServerStackFixture):
