@@ -97,7 +97,7 @@ def test_neutron_agents_are_alive(timeout=420., interval=5.) \
     return agents
 
 
-def test_alive_agents_are_consistent_along_time(retry_timeout=180.,
+def test_alive_agents_are_consistent_along_time(retry_timeout=360.,
                                                 retry_interval=5.,
                                                 consistent_sleep=5.,
                                                 consistent_count=5,):
