@@ -602,6 +602,18 @@ class OvnControllerTest(BaseAgentTest):
         # agents
         ping.ping_until_received(self.stack.ip_address).assert_replied()
 
+    def _get_ovn_controller_pid(self, ssh_client):
+        for directory in ('ovn', 'openvswitch'):
+            try:
+                return sh.execute(f'{self.container_runtime_name} exec '
+                                  f'-uroot {self.container_name} cat '
+                                  f'/run/{directory}/ovn-controller.pid',
+                                  ssh_client=ssh_client,
+                                  sudo=True).stdout.splitlines()[0]
+            except sh.ShellCommandFailed:
+                LOG.debug(f'/run/{directory}/ovn-controller.pid cannot '
+                          f'be accessed')
+
     def kill_ovn_controller(self,
                             hosts: typing.Optional[typing.List[str]] = None,
                             timeout=60, interval=5):
@@ -629,33 +641,25 @@ class OvnControllerTest(BaseAgentTest):
 
         for host in hosts:
             ssh_client = topology.get_openstack_node(hostname=host).ssh_client
-            pid = None
-            for directory in ('ovn', 'openvswitch'):
-                try:
-                    pid = sh.execute(f'{self.container_runtime_name} exec '
-                                     f'-uroot {self.container_name} cat '
-                                     f'/run/{directory}/ovn-controller.pid',
-                                     ssh_client=ssh_client,
-                                     sudo=True).stdout.splitlines()[0]
-                except sh.ShellCommandFailed:
-                    LOG.debug(f'/run/{directory}/ovn-controller.pid cannot '
-                              f'be accessed')
-                else:
-                    LOG.debug(f'/run/{directory}/ovn-controller.pid returned '
-                              f'pid {pid}')
-                    break
-
+            pid = self._get_ovn_controller_pid(ssh_client)
             self.assertIsNotNone(pid)
             LOG.debug(f'Killing process {pid} from container '
                       f'{self.container_name} on host {host}')
-            sh.execute(f'{self.container_runtime_name} exec -uroot '
-                       f'{self.container_name} kill {pid}',
-                       ssh_client=ssh_client,
-                       sudo=True)
-            LOG.debug(f'Container {self.container_name} has been killed '
-                      f"on host '{host}'...")
             # Schedule auto-restart of service at the end of this test case
             self.addCleanup(self.start_agent, hosts=[host, ])
+            try:
+                sh.execute(f'{self.container_runtime_name} exec -uroot '
+                           f'{self.container_name} kill {pid}',
+                           ssh_client=ssh_client,
+                           sudo=True)
+            except sh.ShellCommandFailed as e:
+                if "exit status is 137" not in e.message:
+                    raise
+                else:
+                    LOG.exception("Error 137 when killing the ovn-controller "
+                                  "process is acceptable")
+            LOG.debug(f'Container {self.container_name} has been killed '
+                      f"on host '{host}'...")
 
             # Verify the container is restarted automatically
             for attempt in tobiko.retry(timeout=timeout, interval=interval):
