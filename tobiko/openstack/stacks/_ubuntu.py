@@ -13,7 +13,10 @@
 #    under the License.
 from __future__ import absolute_import
 
+import os
 import typing
+
+from oslo_concurrency import lockutils
 
 import tobiko
 from tobiko import config
@@ -25,6 +28,7 @@ from tobiko.shell import sh
 
 
 CONF = config.CONF
+LOCK_DIR = os.path.expanduser(CONF.tobiko.common.lock_dir)
 
 
 class UbuntuMinimalImageFixture(glance.FileGlanceImageFixture):
@@ -37,6 +41,11 @@ class UbuntuMinimalImageFixture(glance.FileGlanceImageFixture):
     connection_timeout = CONF.tobiko.nova.ubuntu_connection_timeout
     disabled_algorithms = CONF.tobiko.ubuntu.disabled_algorithms
     is_reachable_timeout = CONF.tobiko.nova.ubuntu_is_reachable_timeout
+
+    @lockutils.synchronized(
+        'ubuntu_minimal_setup_fixture', external=True, lock_path=LOCK_DIR)
+    def setup_fixture(self):
+        super(UbuntuMinimalImageFixture, self).setup_fixture()
 
 
 IPERF3_SERVICE_FILE = """

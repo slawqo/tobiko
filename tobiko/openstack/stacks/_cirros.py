@@ -14,8 +14,10 @@
 from __future__ import absolute_import
 
 import io
+import os
 import typing
 
+from oslo_concurrency import lockutils
 from paramiko import sftp_file
 
 from tobiko import config
@@ -30,6 +32,7 @@ import tobiko.tripleo
 from tobiko.openstack.stacks import _hot
 
 CONF = config.CONF
+LOCK_DIR = os.path.expanduser(CONF.tobiko.common.lock_dir)
 
 CIRROS_IMAGE_VERSION = '0.5.2'
 
@@ -53,6 +56,11 @@ class CirrosImageFixture(glance.URLGlanceImageFixture):
         #: disabled_algorithms is required to connect to CirrOS servers
         # when using recent Paramiko versions (>= 2.9.2)
         'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}
+
+    @lockutils.synchronized(
+        'cirros_image_setup_fixture', external=True, lock_path=LOCK_DIR)
+    def setup_fixture(self):
+        super(CirrosImageFixture, self).setup_fixture()
 
 
 class CirrosFlavorStackFixture(_nova.FlavorStackFixture):
