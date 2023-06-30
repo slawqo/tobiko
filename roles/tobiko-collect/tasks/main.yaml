@@ -39,6 +39,13 @@
            json_query("[?stat.exists].stat.path") }}
 
 
+- name: "workaround for Filebeat - add newline to the end of xml report"
+  lineinfile:
+    dest: '{{ item }}'
+    line: ''
+  loop: '{{ report_files }}'
+  when: item.endswith('xml')
+
 - name: "collect report files to local directory '{{ collect_dir }}'"
   synchronize:
     dest: '{{ collect_dir }}/{{ item | basename }}'
