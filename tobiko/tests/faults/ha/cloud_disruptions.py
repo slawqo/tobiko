@@ -188,8 +188,8 @@ def disrupt_all_controller_nodes(disrupt_method=sh.hard_reset_method,
             LOG.info('disrupt exec: {} on server: {}'.format(disrupt_method,
                                                              controller.name))
             tobiko.cleanup_fixture(controller.ssh_client)
-            if sequentially:
-                check_overcloud_node_responsive(controller)
+        if sequentially:
+            check_overcloud_node_responsive(controller)
     if not sequentially:
         for controller in nodes:
             check_overcloud_node_responsive(controller)
