@@ -6,6 +6,7 @@
 from __future__ import absolute_import
 
 
+import functools
 import subprocess
 import os
 
@@ -53,6 +54,7 @@ def podman_client(obj=None):
     raise TypeError('Cannot obtain a Podman client from {!r}'.format(obj))
 
 
+@functools.lru_cache()
 def podman_version_3():
     try:
         stdout = sh.execute('rpm -q podman').stdout
