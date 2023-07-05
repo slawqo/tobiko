@@ -23,8 +23,10 @@ import testtools
 
 import tobiko
 from tobiko import config
+from tobiko.openstack import keystone
 from tobiko.openstack import neutron
 from tobiko.openstack import nova as nova_osp
+from tobiko.openstack import octavia
 from tobiko.openstack import topology
 from tobiko.openstack import tests
 from tobiko.tests.faults.ha import cloud_disruptions
@@ -66,6 +68,8 @@ def overcloud_health_checks(passive_checks_only=False,
     if not skip_mac_table_size_test:
         tests.test_ovs_bridges_mac_table_size()
 
+    octavia_health_checks()
+
 
 # check vm create with ssh and ping checks
 def check_vm_create():
@@ -90,6 +94,23 @@ def check_overcloud_processes_health():
     procs = processes.OvercloudProcessesStatus()
     return (procs.basic_overcloud_processes_running and
             procs.ovn_overcloud_processes_validations)
+
+
+def octavia_health_checks():
+    if keystone.is_service_missing(name='octavia'):
+        LOG.debug('octavia service not available')
+        return
+    # check LBs and Amphorae are healthy
+    LOG.debug("check all LBs are in healthy status")
+    for lb in octavia.list_load_balancers():
+        LOG.debug("checkin LBs:\n%s", lb)
+        octavia.wait_for_status(lb['id'], interval=5., timeout=120.)
+        octavia.wait_for_status(lb['id'],
+                                status_key=octavia.OPERATING_STATUS,
+                                status=octavia.ONLINE,
+                                interval=5.,
+                                timeout=120.)
+    LOG.debug("All LBs are in healthy status")
 
 
 class OvercloudHealthCheck(tobiko.SharedFixture):

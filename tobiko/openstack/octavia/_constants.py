@@ -15,11 +15,13 @@
 
 # Octavia attributes
 PROVISIONING_STATUS = 'provisioning_status'
+OPERATING_STATUS = 'operating_status'
 
-# Octavia provisioning status
+# Octavia provisioning and operating status
 ACTIVE = 'ACTIVE'
 ERROR = 'ERROR'
 PENDING_UPDATE = 'PENDING_UPDATE'
+ONLINE = 'ONLINE'
 
 # Octavia protocols
 PROTOCOL_HTTP = 'HTTP'

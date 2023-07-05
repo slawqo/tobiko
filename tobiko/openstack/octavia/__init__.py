@@ -27,6 +27,7 @@ get_amphora_compute_node = _amphora.get_amphora_compute_node
 get_master_amphora = _amphora.get_master_amphora
 list_amphorae = _amphora.list_amphorae
 get_amphora_stats = _amphora.get_amphora_stats
+get_amphora = _amphora.get_amphora
 run_command_on_amphora = _amphora.run_command_on_amphora
 
 OCTAVIA_CLIENT_CLASSSES = _client.OCTAVIA_CLIENT_CLASSSES
@@ -35,6 +36,7 @@ octavia_client = _client.octavia_client
 OctaviaClientFixture = _client.OctaviaClientFixture
 OctaviaClientType = _client.OctaviaClientType
 list_members = _client.list_members
+list_load_balancers = _client.list_load_balancers
 find_load_balancer = _client.find_load_balancer
 create_load_balancer = _client.create_load_balancer
 find_listener = _client.find_listener
@@ -61,9 +63,11 @@ AmphoraMgmtPortNotFound = _exceptions.AmphoraMgmtPortNotFound
 
 # Constants
 PROVISIONING_STATUS = _constants.PROVISIONING_STATUS
+OPERATING_STATUS = _constants.OPERATING_STATUS
 ACTIVE = _constants.ACTIVE
 ERROR = _constants.ERROR
 PENDING_UPDATE = _constants.PENDING_UPDATE
+ONLINE = _constants.ONLINE
 PROTOCOL_HTTP = _constants.PROTOCOL_HTTP
 PROTOCOL_TCP = _constants.PROTOCOL_TCP
 LB_ALGORITHM_ROUND_ROBIN = _constants.LB_ALGORITHM_ROUND_ROBIN

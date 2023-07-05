@@ -81,6 +81,11 @@ def list_members(pool_id: str):
     return os_sdk_client.load_balancer.members(pool=pool_id)
 
 
+def list_load_balancers(**lb_kwargs):
+    os_sdk_client = openstacksdkclient.openstacksdk_client()
+    return os_sdk_client.load_balancer.load_balancers(**lb_kwargs)
+
+
 def find_load_balancer(lb_name: str):
     os_sdk_client = openstacksdkclient.openstacksdk_client()
     return os_sdk_client.load_balancer.find_load_balancer(lb_name)
