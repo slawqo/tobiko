@@ -205,7 +205,7 @@ class ContainerMismatchException(tobiko.TobikoException):
 
 
 def assert_containers_running(group, expected_containers, full_name=True,
-                              bool_check=False):
+                              bool_check=False, nodenames=None):
 
     """assert that all containers specified in the list are running
     on the specified openstack group(controller or compute etc..)
@@ -217,7 +217,8 @@ def assert_containers_running(group, expected_containers, full_name=True,
 
     failures = []
 
-    openstack_nodes = topology.list_openstack_nodes(group=group)
+    openstack_nodes = topology.list_openstack_nodes(group=group,
+                                                    hostnames=nodenames)
     for node in openstack_nodes:
         node_containers = list_node_containers(ssh_client=node.ssh_client)
         containers_list_df = pandas.DataFrame(

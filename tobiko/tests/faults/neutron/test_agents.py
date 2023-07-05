@@ -165,6 +165,11 @@ class BaseAgentTest(testtools.TestCase):
         :type hosts: list of strings
         '''
         self._do_agent_action(START, hosts)
+        if self.container_name:
+            containers.assert_containers_running(
+                group='overcloud',
+                expected_containers=[self.container_name],
+                nodenames=hosts or self.hosts)
 
     def restart_agent(self, hosts: typing.Optional[typing.List[str]] = None):
         '''Restart network agent on hosts
@@ -175,6 +180,11 @@ class BaseAgentTest(testtools.TestCase):
         :type hosts: list of strings
         '''
         self._do_agent_action(RESTART, hosts)
+        if self.container_name:
+            containers.assert_containers_running(
+                group='overcloud',
+                expected_containers=[self.container_name],
+                nodenames=hosts or self.hosts)
 
     def restart_agent_container(
             self, hosts: typing.Optional[typing.List[str]] = None):
@@ -201,6 +211,12 @@ class BaseAgentTest(testtools.TestCase):
                        f'{self.container_name}',
                        ssh_client=ssh_client,
                        sudo=True)
+
+        if self.container_name:
+            containers.assert_containers_running(
+                group='overcloud',
+                expected_containers=[self.container_name],
+                nodenames=hosts or self.hosts)
 
     def get_cmd_pids(self, process_name, command_filter, hosts=None,
                      timeout=120, interval=2, min_pids_per_host=1,
