@@ -427,26 +427,36 @@ def network_undisrupt_controllers_non_main_vip():
                                 inverse=True)
 
 
-def reset_all_compute_nodes(hard_reset=False):
+def reset_all_compute_nodes(hard_reset=False, sequentially=False):
 
     # reboot all computes and wait for ssh Up on them
-    # hard reset is simultaneous while soft is sequential
+    def _check_compute(ssh_client):
+        compute_checked = sh.execute(
+            "hostname", ssh_client=ssh_client, expect_exit_status=None).stdout
+        LOG.info('{} is up '.format(compute_checked))
+
     if hard_reset:
         reset_method = sh.hard_reset_method
     else:
         reset_method = sh.soft_reset_method
-    for compute in topology.list_openstack_nodes(group='compute'):
+
+    nodes = topology.list_openstack_nodes(group='compute')
+    for compute in nodes:
         # using ssh_client.connect we use a fire and forget reboot method
         sh.reboot_host(ssh_client=compute.ssh_client, wait=False,
                        method=reset_method)
         LOG.info('reboot exec:  {} on server: {}'.format(reset_method,
                                                          compute.name))
         tobiko.cleanup_fixture(compute.ssh_client)
+        if sequentially:
+            # without the sleep, the command succeeds right after the reboot
+            # - i.e. the node had not been stopped yet
+            time.sleep(5)
+            _check_compute(compute.ssh_client)
 
-    for compute in topology.list_openstack_nodes(group='compute'):
-        compute_checked = sh.execute("hostname", ssh_client=compute.ssh_client,
-                                     expect_exit_status=None).stdout
-        LOG.info('{} is up '.format(compute_checked))
+    if not sequentially:
+        for compute in nodes:
+            _check_compute(compute.ssh_client)
 
 
 def reset_ovndb_pcs_master_resource():
