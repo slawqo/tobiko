@@ -15,6 +15,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+from oslo_concurrency import lockutils
+
 import tobiko
 from tobiko import config
 from tobiko.openstack import heat
@@ -44,7 +46,7 @@ class QosPolicyStackFixture(heat.HeatStackFixture):
 
 
 @neutron.skip_if_missing_networking_extensions('qos')
-class QosNetworkStackFixture(_neutron.NetworkStackFixture):
+class QosNetworkStackFixture(_neutron.NetworkBaseStackFixture):
 
     #: stack with the qos policy for the network
     qos_stack = tobiko.required_fixture(QosPolicyStackFixture)
@@ -55,6 +57,11 @@ class QosNetworkStackFixture(_neutron.NetworkStackFixture):
     def network_value_specs(self):
         value_specs = super().network_value_specs
         return dict(value_specs, qos_policy_id=self.qos_stack.qos_policy_id)
+
+    @lockutils.synchronized(
+        'create_qos_network_stack', external=True, lock_path=tobiko.LOCK_DIR)
+    def setup_stack(self):
+        super().setup_stack()
 
 
 class QosServerStackFixture(_ubuntu.UbuntuServerStackFixture):

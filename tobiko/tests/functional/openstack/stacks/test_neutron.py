@@ -15,6 +15,7 @@
 #    under the License.
 from __future__ import absolute_import
 
+from oslo_concurrency import lockutils
 from oslo_log import log
 import testtools
 
@@ -150,8 +151,12 @@ class RouterInterfaceTestRouter(stacks.RouterStackFixture):
     pass
 
 
-class RouterInterfaceTestNetwork(stacks.NetworkStackFixture):
-    pass
+class RouterInterfaceTestNetwork(stacks.NetworkBaseStackFixture):
+    @lockutils.synchronized(
+        'create_router_interface_network_stack',
+        external=True, lock_path=tobiko.LOCK_DIR)
+    def setup_stack(self):
+        super().setup_stack()
 
 
 @keystone.skip_unless_has_keystone_credentials()

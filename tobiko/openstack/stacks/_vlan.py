@@ -19,6 +19,7 @@ import abc
 import typing
 
 import netaddr
+from oslo_concurrency import lockutils
 
 import tobiko
 from tobiko import config
@@ -33,8 +34,11 @@ from tobiko.openstack.stacks import _nova
 CONF = config.CONF
 
 
-class VlanNetworkStackFixture(_neutron.NetworkStackFixture):
-    pass
+class VlanNetworkStackFixture(_neutron.NetworkBaseStackFixture):
+    @lockutils.synchronized(
+        'create_vlan_network_stack', external=True, lock_path=tobiko.LOCK_DIR)
+    def setup_stack(self):
+        super().setup_stack()
 
 
 class VlanProxyServerStackFixture(_cirros.CirrosServerStackFixture):

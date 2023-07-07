@@ -174,3 +174,4 @@ load_yaml = _yaml.load_yaml
 
 from tobiko import config  # noqa
 config.init_config()
+LOCK_DIR = os.path.expanduser(config.CONF.tobiko.common.lock_dir)

@@ -13,6 +13,8 @@
 #    under the License.
 from __future__ import absolute_import
 
+from oslo_concurrency import lockutils
+
 import tobiko
 from tobiko.openstack import neutron
 from tobiko.openstack.stacks import _cirros
@@ -26,8 +28,13 @@ class L3haRouterStackFixture(_neutron.RouterStackFixture):
 
 
 @neutron.skip_if_missing_networking_extensions('l3-ha')
-class L3haNetworkStackFixture(_neutron.NetworkStackFixture):
+class L3haNetworkStackFixture(_neutron.NetworkBaseStackFixture):
     gateway_stack = tobiko.required_fixture(L3haRouterStackFixture)
+
+    @lockutils.synchronized(
+        'create_l3ha_network_stack', external=True, lock_path=tobiko.LOCK_DIR)
+    def setup_stack(self):
+        super().setup_stack()
 
 
 @neutron.skip_if_missing_networking_extensions('l3-ha')
