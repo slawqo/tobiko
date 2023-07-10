@@ -171,10 +171,21 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         cloud_disruptions.reset_all_controller_nodes()
         OvercloudHealthCheck.run_after()
 
+    @staticmethod
+    def _any_amphora_lb():
+        """ returns True if octavia is configured and any octavia amphora LB
+        exists"""
+        return (keystone.has_service(name='octavia') and
+                any([lb['provider'] == octavia.AMPHORA_PROVIDER
+                     for lb in octavia.list_load_balancers()]))
+
     @nova.skip_background_vm_ping_checks
     def test_soft_reboot_computes_recovery(self):
         OvercloudHealthCheck.run_before()
-        cloud_disruptions.reset_all_compute_nodes(hard_reset=False)
+
+        sequentially = self._any_amphora_lb()
+        cloud_disruptions.reset_all_compute_nodes(hard_reset=False,
+                                                  sequentially=sequentially)
         # verify VM status is updated after reboot
         nova.wait_for_all_instances_status('SHUTOFF')
         # start all VM instance
