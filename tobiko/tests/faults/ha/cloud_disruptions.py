@@ -57,9 +57,13 @@ network_disruption = """
  sudo iptables -I OUTPUT 2 ! -o lo -j DROP
 """
 
+network_disruption_ipv6 = network_disruption.replace('iptables', 'ip6tables')
+
 undisrupt_network = """
  sudo iptables-restore ~/working.iptables.rules
 """
+
+undisrupt_network_ipv6 = undisrupt_network.replace('iptables', 'ip6tables')
 
 # TODO(eolivare): run ovn_db_pcs_resource_restart using
 # run_pcs_resource_operation
@@ -220,6 +224,12 @@ def reboot_all_controller_nodes(reboot_method=sh.hard_reset_method,
     if not sequentially:
         for controller in nodes:
             check_overcloud_node_responsive(controller)
+
+
+def is_ipv6addr_main_vip():
+    """ Return True if main OC vip is ivp6 address. Otherwise return False."""
+    main_vip = get_main_vip()
+    return not netaddr.valid_ipv4(main_vip) and netaddr.valid_ipv6(main_vip)
 
 
 def get_main_vip():
@@ -412,23 +422,51 @@ def crash_controllers_non_main_vip():
 
 
 def network_disrupt_controller_main_vip():
-    disrupt_controller_main_vip(disrupt_method=network_disruption)
+    disrupt_controller_main_vip(disrupt_method=get_network_disruption(
+                                is_ipv6addr_main_vip()))
     LOG.info('waiting 60s to avoid race conditions...')
     time.sleep(60.0)
 
 
 def network_undisrupt_controller_main_vip():
-    disrupt_controller_main_vip(disrupt_method=undisrupt_network)
+    disrupt_controller_main_vip(disrupt_method=get_undisrupt_network(
+                                is_ipv6addr_main_vip()))
 
 
 def network_disrupt_controllers_non_main_vip():
-    disrupt_controller_main_vip(disrupt_method=network_disruption,
+    disrupt_controller_main_vip(disrupt_method=get_network_disruption(
+                                is_ipv6addr_main_vip()),
                                 inverse=True)
 
 
 def network_undisrupt_controllers_non_main_vip():
-    disrupt_controller_main_vip(disrupt_method=undisrupt_network,
+    disrupt_controller_main_vip(disrupt_method=get_undisrupt_network(
+                                is_ipv6addr_main_vip()),
                                 inverse=True)
+
+
+def get_network_disruption(isIpv6=False):
+    """
+    Param: isIpv6: boolean
+    Return network_disruption(for ipv4) or network_disruption_ipv6 (which are
+    iptables or ip6tables rules, correspondingly), according to the
+    isIpv6 flag.
+    """
+    if isIpv6:
+        return network_disruption_ipv6
+    else:
+        return network_disruption
+
+
+def get_undisrupt_network(isIpv6=False):
+    """
+    Return undisrupt_network(for ipv4) or undisrupt_network_ipv6 method,
+    according to the isIpv6 flag.
+    """
+    if isIpv6:
+        return undisrupt_network_ipv6
+    else:
+        return undisrupt_network
 
 
 def reset_all_compute_nodes(hard_reset=False, sequentially=False):
@@ -719,7 +757,8 @@ def check_iha_evacuation_hard_reset():
 
 
 def check_iha_evacuation_network_disruption():
-    check_iha_evacuation(failover_type=network_disruption)
+    check_iha_evacuation(failover_type=get_network_disruption(
+                         is_ipv6addr_main_vip()))
 
 
 def check_iha_evacuation_hard_reset_shutoff_instance():
