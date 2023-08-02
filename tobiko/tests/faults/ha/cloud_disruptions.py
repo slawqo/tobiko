@@ -380,10 +380,15 @@ def check_no_duplicate_ips(vms_detailed_info, ports_before_stack_creation):
     test_case.assertEqual(len(ip6_list), len(ip4_list))
 
     ports_after_reboot = neutron.list_ports(device_owner="compute:nova")
-    LOG.debug("list of ports obtained at the begining of this test: %r",
-              ports_before_stack_creation)
-    LOG.debug("list of ports obtained at the end of this test: %r",
-              ports_after_reboot)
+    ports_after_reboot_full = neutron.list_ports()
+    LOG.debug(
+        "list of compute:nova ports obtained at the begining of this test: %r",
+        ports_before_stack_creation)
+    LOG.debug(
+        "list of compute:nova ports obtained at the end of this test: %r",
+        ports_after_reboot)
+    LOG.debug("full list of ports obtained at the end of this test: %r",
+              ports_after_reboot_full)
     test_case.assertEqual(len(ip6_list), len(ports_after_reboot) - len(
         ports_before_stack_creation))
 

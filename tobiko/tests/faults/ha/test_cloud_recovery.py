@@ -226,6 +226,8 @@ class DisruptTripleoNodesTest(testtools.TestCase):
         OvercloudHealthCheck.run_after(passive_checks_only=True)
         self.vms_detailed_info = cloud_disruptions.get_vms_detailed_info(
             multi_ip_test_fixture)
+        LOG.debug('detailed info from the list of vms created: %r',
+                  self.vms_detailed_info)
         cloud_disruptions.check_no_duplicate_ips(
             self.vms_detailed_info, ports_before_stack_creation)
 
