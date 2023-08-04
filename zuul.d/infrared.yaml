@@ -9,7 +9,6 @@
         - tobiko-infrared-centos-7
         - tobiko-infrared-centos-8
         - tobiko-infrared-centos-9
-        - tobiko-infrared-fedora
     gate:
       jobs:
         - tobiko-infrared
@@ -18,14 +17,13 @@
         - tobiko-infrared-centos-7
         - tobiko-infrared-centos-8
         - tobiko-infrared-centos-9
-        - tobiko-infrared-fedora
         - tobiko-infrared-ubuntu
 
 
 - job:
     name: tobiko-infrared
     parent: tox
-    nodeset: tobiko-infrared-fedora
+    nodeset: centos-9-stream
     timeout: 3600
     description: |
       Run test cases using tobiko infrared plugin
@@ -108,24 +106,6 @@
         label: centos-9-stream
       - name: secondary
         label: centos-9-stream
-    groups: *NODESET_GROUPS
-
-
-- job:
-    name: tobiko-infrared-fedora
-    parent: tobiko-infrared
-    nodeset: tobiko-infrared-fedora
-    voting: true
-    description: |
-      Run test cases using tobiko infrared plugin on Fedora
-
-- nodeset:
-    name: tobiko-infrared-fedora
-    nodes:
-      - name: primary
-        label: fedora-36
-      - name: secondary
-        label: fedora-36
     groups: *NODESET_GROUPS
 
 
