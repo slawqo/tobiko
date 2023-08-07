@@ -100,9 +100,11 @@ class PodmanClientFixture(tobiko.SharedFixture):
             podman_socket_file = '/run/podman/io.podman'
 
         username = self.ssh_client.get_connect_parameters()['username']
+        podman_client_check_status_cmds = (
+            "sudo test -f /var/podman_client_access_setup && "
+            f"sudo grep {username} /etc/tmpfiles.d/podman.conf")
         podman_client_setup_cmds = \
-            f"""sudo test -f /var/podman_client_access_setup ||  \
-            (sudo groupadd -f podman &&  \
+            f"""sudo groupadd -f podman &&  \
             sudo usermod -a -G podman {username} && \
             sudo chmod -R o=wxr /etc/tmpfiles.d && \
             sudo echo 'd /run/podman 0770 root {username}' >  \
@@ -121,10 +123,20 @@ class PodmanClientFixture(tobiko.SharedFixture):
             sudo chmod g+rw {podman_socket_file} && \
             sudo chmod 777 {podman_socket_file} && \
             sudo setenforce 0 && \
-            sudo systemctl start {podman_service} && \
-            sudo touch /var/podman_client_access_setup)"""
+            sudo systemctl restart {podman_service} && \
+            sudo touch /var/podman_client_access_setup"""
 
-        sh.execute(podman_client_setup_cmds, ssh_client=self.ssh_client)
+        # check whether client setup was already executed or not
+        status_result = sh.execute(podman_client_check_status_cmds,
+                                   ssh_client=self.ssh_client,
+                                   expect_exit_status=None)
+        if status_result.exit_status != 0:
+            LOG.debug('executing podman client setup script for user %s',
+                      username)
+            sh.execute(podman_client_setup_cmds, ssh_client=self.ssh_client)
+        else:
+            LOG.debug('podman client setup was already completed for user %s',
+                      username)
 
         client = self.client
         if client is None:
