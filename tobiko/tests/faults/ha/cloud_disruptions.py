@@ -360,7 +360,8 @@ def check_no_duplicate_ips(vms_detailed_info, ports_before_stack_creation):
         # try to obtain the port associated to a VM from neutron if the VM
         # exists but vms_detailed_info does not show the port
         if not addresses and vm is not None:
-            ports = neutron.list_ports(device_id=vm['id'])
+            ports = neutron.list_ports(device_id=vm['id'],
+                                       device_owner="compute:nova")
             test_case.assertLess(len(ports), 2)
             for port in ports:
                 addresses[port['network_id']] = port['fixed_ips']
