@@ -167,7 +167,12 @@ def delete_server(server: ServerType = None,
                   client: NovaClientType = None,
                   **params):
     server_id = get_server_id(server=server, server_id=server_id)
-    return nova_client(client).servers.delete(server_id, **params)
+    try:
+        return nova_client(client).servers.delete(server_id, **params)
+    except novaclient.exceptions.NotFound as ex:
+        raise ServerNotFoundError(server_id=server_id,
+                                  params=params,
+                                  reason=str(ex)) from ex
 
 
 def migrate_server(server: ServerType = None,
