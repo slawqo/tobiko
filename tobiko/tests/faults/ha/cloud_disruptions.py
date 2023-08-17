@@ -107,18 +107,38 @@ def network_undisrupt_node(node_name, disrupt_method=undisrupt_network):
 
 
 def disrupt_node(node_name, disrupt_method=network_disruption):
-
     # reboot all controllers and wait for ssh Up on them
     # hard reset is simultaneous while soft is sequential
     # method : method of disruption to use : network_disruption |
     # container_restart
 
+    start_time = tobiko.time()
     # using ssh_client.connect we use a fire and forget reboot method
     node = tripleo_topology.get_node(node_name)
     node.ssh_client.connect().exec_command(disrupt_method)
     LOG.info('disrupt exec: {} on server: {}'.format(disrupt_method,
                                                      node.name))
-    check_overcloud_node_responsive(node)
+
+    if isinstance(disrupt_method, sh.RebootHostMethod):
+        check_overcloud_node_uptime(node.ssh_client, start_time)
+    else:
+        check_overcloud_node_responsive(node)
+
+
+def check_overcloud_node_uptime(ssh_client, start_time):
+    for attempt in tobiko.retry(timeout=600., interval=10.):
+        try:
+            uptime = sh.get_uptime(ssh_client=ssh_client, timeout=15.)
+        except (sh.ShellCommandFailed,
+                sh.ShellTimeoutExpired,
+                sh.ShellProcessTerminated):
+            uptime = None
+
+        if uptime and uptime < (tobiko.time() - start_time):
+            LOG.debug('Reboot has been completed')
+            break
+        else:
+            attempt.check_limits()
 
 
 def reboot_node(node_name, wait=True, reboot_method=sh.hard_reset_method):
@@ -182,8 +202,10 @@ def disrupt_all_controller_nodes(disrupt_method=sh.hard_reset_method,
     if exclude_list:
         nodes = [node for node in nodes if node.name not in exclude_list]
 
+    start_time = {}
     for controller in nodes:
         if isinstance(disrupt_method, sh.RebootHostMethod):
+            start_time[controller.name] = tobiko.time()
             reboot_node(controller.name, wait=sequentially,
                         reboot_method=disrupt_method)
         else:
@@ -194,9 +216,14 @@ def disrupt_all_controller_nodes(disrupt_method=sh.hard_reset_method,
             tobiko.cleanup_fixture(controller.ssh_client)
         if sequentially:
             check_overcloud_node_responsive(controller)
+
     if not sequentially:
         for controller in nodes:
-            check_overcloud_node_responsive(controller)
+            if isinstance(disrupt_method, sh.RebootHostMethod):
+                check_overcloud_node_uptime(
+                    controller.ssh_client, start_time[controller.name])
+            else:
+                check_overcloud_node_responsive(controller)
 
 
 def reboot_all_controller_nodes(reboot_method=sh.hard_reset_method,
@@ -215,7 +242,9 @@ def reboot_all_controller_nodes(reboot_method=sh.hard_reset_method,
     if exclude_list:
         nodes = [node for node in nodes if node.name not in exclude_list]
 
+    start_time = {}
     for controller in nodes:
+        start_time[controller.name] = tobiko.time()
         sh.reboot_host(ssh_client=controller.ssh_client, wait=sequentially,
                        method=reboot_method)
         LOG.info('reboot exec: {} on server: {}'.format(reboot_method,
@@ -223,7 +252,8 @@ def reboot_all_controller_nodes(reboot_method=sh.hard_reset_method,
         tobiko.cleanup_fixture(controller.ssh_client)
     if not sequentially:
         for controller in nodes:
-            check_overcloud_node_responsive(controller)
+            check_overcloud_node_uptime(
+                controller.ssh_client, start_time[controller.name])
 
 
 def is_ipv6addr_main_vip():
