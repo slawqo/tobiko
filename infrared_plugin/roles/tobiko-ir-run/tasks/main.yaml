@@ -1,15 +1,5 @@
 ---
 - block:
-  - include_role:
-      name: tobiko-fixup-stuff
-    # this role was added only since Tobiko version 0.5.0
-  #ignore nonexistent roles
-  rescue:
-   - name: Print when errors
-     ansible.builtin.debug:
-       msg: 'I caught an import error, skipping this role'
-
-- block:
     - include_role: name=tobiko-ir-jenkins
       when:  "(lookup('env','JENKINS_URL') | length) > 0"
 

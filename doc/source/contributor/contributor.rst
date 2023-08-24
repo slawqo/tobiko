@@ -47,7 +47,7 @@ For instance on RedHat Linux / Fedora::
 
     sudo dnf install -y git python3 which
 
-Check your Python 3 version is 3.6 or greater::
+Check your Python 3 version is 3.8 or greater::
 
     python3 --version
 

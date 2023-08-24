@@ -2,8 +2,8 @@
 setup_python: true
 setup_pip: true
 
-python_release: "3.7.7"
-python_version: "3.7"
+python_release: "3.9.16"
+python_version: "3.9"
 python_command: "python3"
 python_name: "Python-{{ python_release }}"
 python_prefix: "/usr/local"

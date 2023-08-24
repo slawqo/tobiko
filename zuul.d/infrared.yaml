@@ -6,16 +6,12 @@
       Infrared jobs intended to gate infrared Tobiko plugin changes
     check:
       jobs:
-        - tobiko-infrared-centos-7
-        - tobiko-infrared-centos-8
         - tobiko-infrared-centos-9
     gate:
       jobs:
         - tobiko-infrared
     periodic:
       jobs:
-        - tobiko-infrared-centos-7
-        - tobiko-infrared-centos-8
         - tobiko-infrared-centos-9
         - tobiko-infrared-ubuntu
 
@@ -51,53 +47,13 @@
       - ^tobiko/tests/scenario/
       - ^tobiko/tests/faults/
 
-
-- job:
-    name: tobiko-infrared-centos-7
-    parent: tobiko-infrared
-    nodeset: tobiko-infrared-centos-7
-    voting: true
-    description: |
-      Run test cases using tobiko infrared plugin on CentOS 7
-
-- nodeset:
-    name: tobiko-infrared-centos-7
-    nodes:
-      - name: primary
-        label: centos-7
-      - name: secondary
-        label: centos-7
-    groups: &NODESET_GROUPS
-      - name: undercloud
-        nodes:
-          - secondary
-
-
-- job:
-    name: tobiko-infrared-centos-8
-    parent: tobiko-infrared
-    nodeset: tobiko-infrared-centos-8
-    voting: true
-    description: |
-      Run test cases using tobiko infrared plugin on CentOS 8
-
-- nodeset:
-    name: tobiko-infrared-centos-8
-    nodes:
-      - name: primary
-        label: centos-8-stream
-      - name: secondary
-        label: centos-8-stream
-    groups: *NODESET_GROUPS
-
-
 - job:
     name: tobiko-infrared-centos-9
     parent: tobiko-infrared
     nodeset: tobiko-infrared-centos-9
     voting: true
     description: |
-      Run test cases using tobiko infrared plugin on CentOS 8
+      Run test cases using tobiko infrared plugin on CentOS 9
 
 - nodeset:
     name: tobiko-infrared-centos-9
@@ -106,7 +62,10 @@
         label: centos-9-stream
       - name: secondary
         label: centos-9-stream
-    groups: *NODESET_GROUPS
+    groups: &NODESET_GROUPS
+      - name: undercloud
+        nodes:
+          - secondary
 
 
 - job:

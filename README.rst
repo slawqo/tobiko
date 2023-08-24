@@ -27,24 +27,19 @@ Project Requirements
 Tobiko Python framework is being automatically tested with below Python
 versions:
 
-- Python 3.6
 - Python 3.8
 - Python 3.9
 - Python 3.10 (new)
 
 and below Linux distributions:
 
-- CentOS 7 / RHEL 7 (with Python 3.6)
-- CentOS 8 / RHEL 8 (with Python 3.6)
-- CentOS 9 / RHEL 8 (with Python 3.9) (new)
-- Fedora 34 (with Python 3.9)
-- Fedora 35 (with Python 3.10)
+- CentOS 9 / RHEL 8 (with Python 3.9)
 - Ubuntu Focal (with Python 3.8)
+- Ubuntu Jammy (with Python 3.10)
 
 Tobiko has also been tested for development purposes with below OSes:
 
 - OSX (with Python 3.6 to 3.10)
-- Ubuntu Bionic (with Python 3.6)
 
 The Tobiko Python framework is being used to implement test cases. As Tobiko
 can be executed on nodes that are not part of the cloud to test against, this

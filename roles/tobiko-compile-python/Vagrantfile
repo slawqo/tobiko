@@ -12,7 +12,7 @@ MEMORY = 512
 
 # Every Vagrant development environment requires a box. You can search for
 # boxes at https://vagrantcloud.com/search.
-BOX = "generic/centos7"
+BOX = "generic/centos9"
 
 TOX_INI_DIR = '../..'
 
