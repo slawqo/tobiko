@@ -102,21 +102,37 @@ class CirrosServerStackTest(testtools.TestCase):
         self.assertIn(self.stack.swap_filename, mounted_filenames, swaps_table)
 
     def test_ipv4_subnet_nameservers(self):
-        self._test_subnet_nameservers(
-            subnet=self.stack.network_stack.ipv4_subnet_details,
-            ip_version=4)
+        self._test_subnet_nameservers(ip_version=4)
 
     def test_ipv6_subnet_nameservers(self):
-        self._test_subnet_nameservers(
-            subnet=self.stack.network_stack.ipv6_subnet_details,
-            ip_version=6)
+        self._test_subnet_nameservers(ip_version=6)
 
-    def _test_subnet_nameservers(self, subnet, ip_version):
-        subnet_nameservers = [netaddr.IPAddress(nameserver)
-                              for nameserver in subnet['dns_nameservers']]
+    def _test_subnet_nameservers(self, ip_version):
+        def get_subnet_nameservers(network_stack, ip_version):
+            # returns a tuple with:
+            # 1. the subnet name (str)
+            # 2. the subnet dns nameservers (list of str)
+            subnet_details = (network_stack.ipv4_subnet_details
+                              if ip_version == 4
+                              else network_stack.ipv6_subnet_details)
+            nameservers = [netaddr.IPAddress(nameserver)
+                           for nameserver in subnet_details['dns_nameservers']]
+            return (subnet_details['name'], nameservers)
+
+        subnet_name, subnet_nameservers = get_subnet_nameservers(
+            self.stack.network_stack, ip_version)
+
+        if self.stack.has_vlan:
+            vlan_subnet_name, vlan_subnet_nameservers = get_subnet_nameservers(
+                self.stack.vlan_network_stack, ip_version)
+            subnet_names = ','.join([subnet_name, vlan_subnet_name])
+            subnet_nameservers += vlan_subnet_nameservers
+        else:
+            subnet_names = subnet_name
+
         if not subnet_nameservers:
-            self.skipTest(f"Subnet '{subnet['id']}' has any IPv{ip_version} "
-                          "nameserver")
+            self.skipTest(f"Subnet(s) '{subnet_names}' have no IPv{ip_version}"
+                          " nameservers")
         server_nameservers = sh.list_nameservers(
             ssh_client=self.stack.ssh_client, ip_version=ip_version,
             filenames=self.nameservers_filenames)
