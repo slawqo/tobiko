@@ -1,18 +1,16 @@
 ---
 - name: "cleanup Loadbalancers created by Tobiko tests"
   shell: |
-    source {{ stackrc_file }}
-    openstack loadbalancer list -f value -c 'name' | \
+    {{ openstack_cmd }} loadbalancer list -f value -c 'name' | \
         grep "^tobiko\." | \
-        xargs -r openstack loadbalancer delete --cascade --wait
+        xargs -r {{ openstack_cmd }} loadbalancer delete --cascade --wait
   ignore_errors: yes
 
 - name: "cleanup Heat stacks created by Tobiko tests"
   shell: |
-    source {{ stackrc_file }}
-    openstack stack list -f value -c 'Stack Name' | \
+    {{ openstack_cmd }} stack list -f value -c 'Stack Name' | \
         grep "^tobiko\." | \
-        xargs -r timeout 180 openstack stack delete -y --wait
+        xargs -r timeout 180 {{ openstack_cmd }} stack delete -y --wait
   register: result
   retries: 5
   delay: 5
@@ -21,24 +19,21 @@
 
 - name: "cleanup subnet pools created by Tobiko tests"
   shell: |
-    source {{ stackrc_file }}
-    openstack subnet pool list -f value -c 'Name' | \
+    {{ openstack_cmd }} subnet pool list -f value -c 'Name' | \
         grep "^tobiko\." | \
-        xargs -r openstack subnet pool delete
+        xargs -r {{ openstack_cmd }} subnet pool delete
   ignore_errors: yes
 
 - name: "cleanup Security Groups created by Tobiko tests"
   shell: |
-    source {{ stackrc_file }}
-    openstack security group list -f value -c 'Name' | \
+    {{ openstack_cmd }} security group list -f value -c 'Name' | \
         grep "^tobiko\." | \
-        xargs -r openstack security group delete
+        xargs -r {{ openstack_cmd }} security group delete
   ignore_errors: yes
 
 - name: "cleanup Glance images created by Tobiko tests"
   shell: |
-    source {{ stackrc_file }}
-    openstack image list -f value -c 'Name' | \
+    {{ openstack_cmd }} image list -f value -c 'Name' | \
         grep "^tobiko\." | \
-        xargs -r openstack image delete
+        xargs -r {{ openstack_cmd }} image delete
   ignore_errors: yes
