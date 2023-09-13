@@ -18,7 +18,7 @@
         key: "{{ test_host_pubkey_result.stdout }}"
   ignore_errors: yes
 
-- name: copy /etc/hosts from the undercloud to the test_host
+- name: copy files from the undercloud to the test_host
   block:
     - name: read /etc/hosts from the undercloud
       become: true
@@ -43,6 +43,24 @@
         path: /etc/hosts
         regexp: '^127.0.0.1 .*undercloud'
         state: absent
+
+    - name: copy crt file from the undercloud
+      become: true
+      slurp:
+        src: /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
+      delegate_to: "{{ groups.undercloud|first }}"
+      register: crt_file
+
+    - name: write crt file to the test_host
+      become: true
+      copy:
+        content: "{{ crt_file.content | b64decode }}"
+        dest: /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
+        force: true
+        owner: root
+        group: root
+        mode: '0444'
+
   ignore_errors: yes
   when:
     - groups.get("undercloud")
